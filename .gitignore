@@ -1,0 +1,44 @@
+# Secrets and local configuration: never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+codekavach.local.toml
+
+# CodeKavach runtime data: mapping vaults and egress ledgers contain client code
+.codekavach/
+*.vault
+*.ledger.jsonl
+scan-output/
+reports-out/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node / UI
+node_modules/
+ui/dist/
+*.tsbuildinfo
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Project tooling state
+.backlog-state/
