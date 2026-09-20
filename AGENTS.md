@@ -50,8 +50,38 @@ A change that touches `codekavach.privacy`, `codekavach.llm` or any outbound net
 - Do not add tool-generated attribution lines or co-author trailers to commits, issues or documents.
 - CI must be green before you close the issue.
 
+## 6. Closing an issue
 
-## 6. Before every push
+Post a closing comment with:
+
+1. What was implemented, in two to five lines.
+2. How it was verified: commands run and their result.
+3. Any deviation from the issue text and why.
+4. Follow-up issues created.
+
+Tick the acceptance-criteria checkboxes in the issue body. Close the issue with the commit (`Closes #n`) or manually.
+
+## 7. Definition of done
+
+- [ ] All acceptance criteria met and ticked
+- [ ] Unit tests, and integration tests where specified, written and passing
+- [ ] `ruff`, `mypy --strict` and the import-linter contracts pass
+- [ ] Documentation updated: docstrings, `docs/`, CLI help, and `CHANGELOG.md` for user-visible changes
+- [ ] No privacy invariant weakened; new outbound calls go through the egress guard
+- [ ] Board card moved, closing comment written
+
+## 8. Local setup
+
+```bash
+uv sync --all-extras
+uv run pre-commit install
+uv run pytest
+uv run codekavach --help
+```
+
+Until issue scaffolding (epic E01) lands these commands will not work; E01 creates them.
+
+## 9. Before every push
 
 Run this checklist; if any item fails, fix it before pushing.
 
@@ -63,34 +93,3 @@ Run this checklist; if any item fails, fix it before pushing.
 6. **Licences.** New dependencies and bundled rule packs are compatible with MIT distribution and with scanning proprietary code.
 7. **Quality.** `ruff`, `mypy --strict`, import-linter contracts and `pytest` (including the `privacy` marker) pass locally.
 8. **Size.** The push is one focused change, not a day's work in one commit.
-
-## 7. Closing an issue
-
-Post a closing comment with:
-
-1. What was implemented, in two to five lines.
-2. How it was verified: commands run and their result.
-3. Any deviation from the issue text and why.
-4. Follow-up issues created.
-
-Tick the acceptance-criteria checkboxes in the issue body. Close the issue with the commit (`Closes #n`) or manually.
-
-## 8. Definition of done
-
-- [ ] All acceptance criteria met and ticked
-- [ ] Unit tests, and integration tests where specified, written and passing
-- [ ] `ruff`, `mypy --strict` and the import-linter contracts pass
-- [ ] Documentation updated: docstrings, `docs/`, CLI help, and `CHANGELOG.md` for user-visible changes
-- [ ] No privacy invariant weakened; new outbound calls go through the egress guard
-- [ ] Board card moved, closing comment written
-
-## 9. Local setup
-
-```bash
-uv sync --all-extras
-uv run pre-commit install
-uv run pytest
-uv run codekavach --help
-```
-
-Until issue scaffolding (epic E01) lands these commands will not work; E01 creates them.
