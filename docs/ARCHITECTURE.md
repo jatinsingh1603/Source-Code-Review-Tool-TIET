@@ -102,7 +102,9 @@ data/                  taxonomy mapping tables
 fixtures/kavachbank/   deliberately vulnerable sample application with planted secrets and business logic
 tests/                 unit, integration, e2e, privacy (property-based)
 deploy/                Docker, compose, Helm, air-gapped bundle
-docs/                  plan, architecture, ADRs, threat model, research, status notes
+tools/                 project tooling that is not part of the shipped package (status reports, board coordinates, release helpers)
+docs/                  plan, architecture, ADRs (adr/), threat model, research (research/), process guides (process/),
+                       weekly status notes (status/), JSON schemas (schemas/), demo runbooks (demo/), sample reports (samples/)
 ```
 
 ## 4. Pipeline
