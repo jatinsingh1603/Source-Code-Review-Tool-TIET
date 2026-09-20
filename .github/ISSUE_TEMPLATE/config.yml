@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Project plan
+    url: https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIT/blob/main/docs/PLAN.md
+    about: Requirements baseline, milestones, epics and way of working
+  - name: Progress board
+    url: https://github.com/users/jatinsingh1603/projects/1
+    about: Kanban board with sprints, epics and the roadmap
