@@ -12,7 +12,7 @@
 
 ## 1. Vision
 
-Give any organisation an audit-grade security review of its source code, reasoned by the best available LLM, while guaranteeing that the organisation's business logic, hardcoded secrets and personal data never reach the LLM provider.
+Give any organisation a standards-based security review of its source code, reasoned by whichever LLM it chooses, while removing secrets and personal data before anything leaves its environment, and minimising and measuring what the provider can learn about its business logic.
 
 ## 2. Requirements baseline
 
@@ -71,7 +71,7 @@ Milestones M2 to M7 overlap in practice; the due date is when the milestone's ex
 1. `codekavach scan fixtures/kavachbank` completes on a laptop with no paid API key.
 2. The sample application contains planted vulnerabilities, planted secrets and recognisable business logic (an interest and fee engine).
 3. `codekavach privacy inspect` shows, side by side, the original code and the exact payload prepared for the LLM: secrets replaced by typed placeholders, identifiers, strings and comments pseudonymised, only slices present.
-4. An automated check proves that no planted secret and no business-domain identifier occurs anywhere in the egress ledger.
+4. An automated check proves that no planted secret and no listed business-domain term occurs *verbatim* anywhere in the egress ledger. With a mock or replay provider the ledger shows what *would* have left; this is stated as such in the demo.
 5. Findings come back mapped to the real files, lines and names.
 6. An HTML and a PDF report are produced with executive summary, risk matrix, findings with snippet evidence, impact and remediation.
 
