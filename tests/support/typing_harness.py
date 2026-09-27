@@ -49,7 +49,8 @@ def parse_mypy_output(stdout: str) -> dict[Path, Expectations]:
         match = _ERROR_LINE.match(raw.strip())
         if not match:
             continue
-        path = Path(match.group("path"))
+        # mypy on Windows prints backslash separators; normalise them on every platform.
+        path = Path(match.group("path").replace("\\", "/"))
         if not path.is_absolute():
             path = REPO_ROOT / path
         results.setdefault(path.resolve(), set()).add(
