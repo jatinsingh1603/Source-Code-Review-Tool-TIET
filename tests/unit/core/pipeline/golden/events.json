@@ -1,0 +1,104 @@
+[
+  {
+    "event": "scan.started",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "stage_count": 10
+  },
+  {
+    "event": "plan.resolved",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "stages": [
+      "ingest",
+      "parse"
+    ],
+    "wave_sizes": [
+      1,
+      1
+    ]
+  },
+  {
+    "event": "stage.started",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "stage": "parse",
+    "index": 2,
+    "total": 10
+  },
+  {
+    "event": "stage.progress",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "stage": "parse",
+    "current": 3,
+    "unit": "files"
+  },
+  {
+    "event": "stage.finished",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "stage": "parse",
+    "outcome": "succeeded",
+    "duration_ms": 842,
+    "items_in": 128,
+    "items_out": 128
+  },
+  {
+    "event": "stage.failed",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "stage": "llm-review",
+    "policy": "fail_closed",
+    "error_code": "egress_refused",
+    "error_type": "TimeoutError",
+    "duration_ms": 5
+  },
+  {
+    "event": "stage.skipped",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "stage": "restore",
+    "reason_code": "blocked",
+    "blocked_by": "llm-review"
+  },
+  {
+    "event": "item.failed",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "stage": "llm-review",
+    "item_id": "cand_01ARYZ6S41",
+    "error_code": "timeout"
+  },
+  {
+    "event": "warning",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "code": "mock_provider_in_use"
+  },
+  {
+    "event": "scan.cancelled",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "stages_completed": 3
+  },
+  {
+    "event": "scan.finished",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "status": "succeeded",
+    "duration_ms": 9000,
+    "findings_total": 4
+  }
+]
