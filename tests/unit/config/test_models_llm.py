@@ -23,7 +23,7 @@ default_provider = "primary"
 [llm.providers.primary]
 kind = "anthropic"
 model = "your-model-id"
-api_key = "env:ANTHROPIC_API_KEY"
+api_key = "env:ANTHROPIC_API_KEY"  # pragma: allowlist secret
 
 [llm.providers.lab]
 kind = "openai-compatible"
@@ -281,5 +281,6 @@ def test_unknown_key_and_task_rejected() -> None:
 
 def test_plaintext_api_key_is_not_echoed() -> None:
     with pytest.raises(ValidationError) as error:
+        # pragma: allowlist nextline secret
         llm(p={"kind": "openai", "model": "m", "api_key": "sk-NOTAREALKEY1234567890"})
     assert "NOTAREALKEY" not in str(error.value)
