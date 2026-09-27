@@ -18,6 +18,7 @@ from codekavach.core.models.enums import (
     SliceStrategy,
     StageStatus,
     TaintRole,
+    TrustTier,
 )
 from codekavach.core.models.errors import (
     FingerprintInputError,
@@ -47,6 +48,7 @@ __all__ = [
     "SliceStrategy",
     "StageStatus",
     "TaintRole",
+    "TrustTier",
     "UnsupportedSchemaVersion",
     "UtcDatetime",
     "VersionedModel",

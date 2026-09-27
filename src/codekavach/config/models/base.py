@@ -19,6 +19,8 @@ from typing import Annotated, Any
 
 from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict
 
+from codekavach.core.models import PrivacyLevel
+
 INVALID = "[CK-CFG-003]"
 
 
@@ -42,6 +44,14 @@ def split_csv(value: Any) -> Any:
 
 
 StrList = Annotated[list[str], BeforeValidator(split_csv)]
+
+
+def _upper(value: Any) -> Any:
+    return value.upper() if isinstance(value, str) else value
+
+
+# Accepts "l3" as well as "L3".
+PrivacyLevelField = Annotated[PrivacyLevel, BeforeValidator(_upper)]
 
 
 def in_range(low: int, high: int, key: str) -> AfterValidator:

@@ -15,8 +15,8 @@ class _RankedStrEnum(StrEnum):
 
     @property
     def rank(self) -> int:
-        """Position of the member in ascending order."""
-        return list(type(self)).index(self)
+        """1-based position of the member in ascending order (the first member has rank 1)."""
+        return list(type(self)).index(self) + 1
 
     def _other_rank(self, other: object) -> int:
         if type(other) is not type(self):
@@ -102,7 +102,14 @@ class Confidence(_RankedStrEnum):
 
 
 class PrivacyLevel(_RankedStrEnum):
-    """Privacy level, ranked by strictness: L1 < L2 < L3 < L4 < L0 (L0 sends nothing)."""
+    """Privacy level, ordered by strictness, not by the digit: L1 < L2 < L3 < L4 < L0.
+
+    Rank (ADR E03-01 decision D5): L1=1, L2=2, L3=3, L4=4, L0=5. L0 sends nothing, L4 sends
+    abstract facts but no code, L3 a pseudonymised slice, L2 pseudonymised files and L1 code with
+    only secrets and PII replaced. Comparisons mean "stricter than", ``strictest`` returns the
+    maximum by rank, and ``at_least`` checks a floor. Ordering by the digit would make L0 the
+    weakest level and silently turn a floor of L3 into permission for L1.
+    """
 
     L1 = "L1"
     L2 = "L2"
@@ -116,6 +123,15 @@ class PrivacyLevel(_RankedStrEnum):
         if not levels:
             raise ValueError("strictest() needs at least one privacy level")
         return max(levels)
+
+    @property
+    def strictness(self) -> int:
+        """Alias of ``rank`` for readability at call sites."""
+        return self.rank
+
+    def at_least(self, floor: "PrivacyLevel") -> bool:
+        """True when this level is at least as strict as ``floor``."""
+        return self.rank >= floor.rank
 
     @property
     def sends_code(self) -> bool:
@@ -237,6 +253,7 @@ class CandidateKind(StrEnum):
     """Kind of candidate produced by deterministic analysis."""
 
     VULNERABILITY = "vulnerability"
+    # pragma: allowlist nextline secret
     SECRET = "secret"  # noqa: S105 - enum value naming a candidate kind, not a password
     DEPENDENCY = "dependency"
     MISCONFIGURATION = "misconfiguration"
@@ -337,3 +354,16 @@ class EgressOutcome(StrEnum):
     BLOCKED = "blocked"
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+class TrustTier(StrEnum):
+    """How far a provider sits from the client environment."""
+
+    LOCAL = "local"
+    PRIVATE = "private"
+    PUBLIC = "public"
+
+    @property
+    def exposure(self) -> int:
+        """0 for local, 1 for private, 2 for public."""
+        return {"local": 0, "private": 1, "public": 2}[self.value]

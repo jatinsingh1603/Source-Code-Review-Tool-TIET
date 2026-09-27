@@ -12,7 +12,7 @@
       "type": "string"
     },
     "PrivacyLevel": {
-      "description": "Privacy level, ranked by strictness: L1 < L2 < L3 < L4 < L0 (L0 sends nothing).",
+      "description": "Privacy level, ordered by strictness, not by the digit: L1 < L2 < L3 < L4 < L0.\n\nRank (ADR E03-01 decision D5): L1=1, L2=2, L3=3, L4=4, L0=5. L0 sends nothing, L4 sends\nabstract facts but no code, L3 a pseudonymised slice, L2 pseudonymised files and L1 code with\nonly secrets and PII replaced. Comparisons mean \"stricter than\", ``strictest`` returns the\nmaximum by rank, and ``at_least`` checks a floor. Ordering by the digit would make L0 the\nweakest level and silently turn a floor of L3 into permission for L1.",
       "enum": [
         "L1",
         "L2",

@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 # Source: AWS documentation, "Managing access keys for IAM users" (example key pair).
 AWS_EXAMPLE_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
 # Source: AWS documentation, "Managing access keys for IAM users" (example key pair).
+# pragma: allowlist nextline secret
 AWS_EXAMPLE_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 
 # Personal-looking values for the domain models (E02-25). Never real people or numbers.

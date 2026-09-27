@@ -18,7 +18,9 @@ from codekavach.core.models.fingerprint import (
 from tests.support.synthetic import AWS_EXAMPLE_ACCESS_KEY_ID
 
 LINE_A = '        cur.execute("SELECT * FROM accounts WHERE owner = \'" + owner + "\'")'
+# pragma: allowlist nextline secret
 HASH_A = "9867178e39754d0a9269ea7d0e3c00b5e209e8d51eb77e229cc33b4aa04bb6dc"
+# pragma: allowlist nextline secret
 EMPTY_HASH = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 
@@ -60,6 +62,7 @@ def test_vector_e() -> None:
     lines = [f'API_KEY = "{AWS_EXAMPLE_ACCESS_KEY_ID}"', "", "   DEBUG = True  "]
     assert normalise_snippet(lines) == f'API_KEY = "{AWS_EXAMPLE_ACCESS_KEY_ID}"\nDEBUG = True'
     digest = snippet_hash(lines)
+    # pragma: allowlist nextline secret
     assert digest == "222d88a0743ae3767b7e54f3c00199210371e49d751f475519cb02187aaa4210"
     fingerprint = compute_fingerprint(
         parts(

@@ -18,6 +18,7 @@ from codekavach.core.models import (
     SliceStrategy,
     StageStatus,
     TaintRole,
+    TrustTier,
 )
 from codekavach.core.models.enums import (
     ActorKind,
@@ -173,8 +174,15 @@ def test_members_remain_hashable_and_equal_to_value() -> None:
 
 
 def test_rank() -> None:
-    assert [s.rank for s in Severity] == [0, 1, 2, 3, 4]
-    assert PrivacyLevel.L0.rank == 4
+    assert [s.rank for s in Severity] == [1, 2, 3, 4, 5]
+    assert {level.value: level.rank for level in PrivacyLevel} == {
+        "L1": 1,
+        "L2": 2,
+        "L3": 3,
+        "L4": 4,
+        "L0": 5,
+    }
+    assert PrivacyLevel.L0.strictness == 5
 
 
 # helpers
@@ -306,3 +314,58 @@ def test_json_round_trip_of_every_enum() -> None:
     restored = Holder.model_validate_json(holder.model_dump_json())
     assert restored == holder
     assert restored.privacy is PrivacyLevel.L0
+
+
+# strictness (E03-04)
+
+L1, L2, L3, L4, L0 = (
+    PrivacyLevel.L1,
+    PrivacyLevel.L2,
+    PrivacyLevel.L3,
+    PrivacyLevel.L4,
+    PrivacyLevel.L0,
+)
+# at_least(row, column), written out literally: a row level satisfies a column floor.
+AT_LEAST = {
+    L1: {L1: True, L2: False, L3: False, L4: False, L0: False},
+    L2: {L1: True, L2: True, L3: False, L4: False, L0: False},
+    L3: {L1: True, L2: True, L3: True, L4: False, L0: False},
+    L4: {L1: True, L2: True, L3: True, L4: True, L0: False},
+    L0: {L1: True, L2: True, L3: True, L4: True, L0: True},
+}
+
+
+@pytest.mark.parametrize(("level", "floor"), list(product(STRICTNESS, STRICTNESS)))
+def test_at_least_truth_table(level: PrivacyLevel, floor: PrivacyLevel) -> None:
+    assert level.at_least(floor) is AT_LEAST[level][floor]
+
+
+def test_strictness_examples() -> None:
+    assert PrivacyLevel.strictest(*PrivacyLevel) is L0
+    assert sorted(PrivacyLevel) == [L1, L2, L3, L4, L0]
+    assert PrivacyLevel.strictest(L2, L4) is L4
+    assert PrivacyLevel.strictest(L4, L0) is L0
+    assert L3.at_least(L2)
+    assert not L1.at_least(L3)
+    assert L0.at_least(L4)
+    assert L0 > L4
+    with pytest.raises(TypeError):
+        _ = L3 < "L4"
+
+
+_levels = st.sampled_from(PrivacyLevel)
+
+
+@given(_levels, _levels, _levels)
+def test_strictest_algebra(a: PrivacyLevel, b: PrivacyLevel, c: PrivacyLevel) -> None:
+    strictest = PrivacyLevel.strictest
+    assert strictest(a, b) is strictest(b, a)
+    assert strictest(strictest(a, b), c) is strictest(a, strictest(b, c))
+    assert strictest(a, a) is a
+    assert a.at_least(b) or b.at_least(a)
+    assert strictest(a, b).at_least(a)
+
+
+def test_trust_tier() -> None:
+    assert [tier.value for tier in TrustTier] == ["local", "private", "public"]
+    assert [tier.exposure for tier in TrustTier] == [0, 1, 2]

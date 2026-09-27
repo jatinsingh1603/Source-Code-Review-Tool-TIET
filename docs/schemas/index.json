@@ -22,7 +22,7 @@
       "file": "egress_record.schema.json",
       "name": "EgressRecord",
       "schema_version": 1,
-      "sha256": "aa6ed3354b1774213f5f08fab2caa22c97b7a737660974bd88f5d0963a255c23"
+      "sha256": "43d7f7326e240ab14d77c301ee9e92ccba714be79799f304e395a2527f4df8f2"
     },
     {
       "file": "evidence.schema.json",
@@ -34,7 +34,7 @@
       "file": "finding.schema.json",
       "name": "Finding",
       "schema_version": 1,
-      "sha256": "a8e60ff97c7dcaa09418e767a862df476208e99542914e5733880bb0f8c0bfb0"
+      "sha256": "9c4893f70779e9f53f4c8ef621499e51bd09cdb5ecf4010ca44c2505694e55df"
     },
     {
       "file": "llm_verdict.schema.json",
@@ -58,25 +58,25 @@
       "file": "project.schema.json",
       "name": "Project",
       "schema_version": 1,
-      "sha256": "4f5f408ad8bc8b946f70577082097cb34f52b541ec5bd4520fb04d57bb250c4f"
+      "sha256": "1358b22ffd3b73317255e9e172b1eeab28818713dea2ea65373fa85acc1b2387"
     },
     {
       "file": "sanitised_payload.schema.json",
       "name": "SanitisedPayload",
       "schema_version": 1,
-      "sha256": "0a14abb190fabfaae356efa435991e7509eb7cac5c84fdb6bd825c44c8450d78"
+      "sha256": "c0b4778227dabd3282519b42b6f4ae26858fc0f9fa1f90068403c5df7865e38f"
     },
     {
       "file": "scan.schema.json",
       "name": "Scan",
       "schema_version": 1,
-      "sha256": "c3f6aa6b0804bb2ddc4b4381d1c18d2101850a68dedc0d3c6eb3bd44879b7e01"
+      "sha256": "95c6df54c5dea14f2922093b110cc595b04e33c136d2ee1d3d6c2d91301029b7"
     },
     {
       "file": "scan_summary.schema.json",
       "name": "ScanSummary",
       "schema_version": 0,
-      "sha256": "04d3cea66d659e4c428c6301208f5164929c26a6f261c2e434cfee37c5da2f3a"
+      "sha256": "38c36fd1bbf8c7e8cb5047a81471f84f40f0b7a68e2164e5dfc5df5d8579b169"
     },
     {
       "file": "taint_path.schema.json",

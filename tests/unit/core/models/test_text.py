@@ -124,6 +124,7 @@ def test_representations_never_show_text(cls: type[RawCode | SanitisedText]) -> 
 
 
 def test_redacted_form_example() -> None:
+    # pragma: allowlist nextline secret
     assert repr(RawCode("password = 'hunter2'")) == "RawCode(<redacted, 20 chars, 1 line>)"
     assert f"{SanitisedText('x = fn_1()')}" == "SanitisedText(<redacted, 10 chars, 1 line>)"
     assert repr(RawCode("")) == "RawCode(<redacted, 0 chars, 0 lines>)"

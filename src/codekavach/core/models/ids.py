@@ -18,6 +18,7 @@ from pydantic import StringConstraints
 
 from codekavach.core.models.errors import ModelError
 
+# pragma: allowlist nextline secret
 _ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 _DECODE = {char: index for index, char in enumerate(_ALPHABET)}
 _ULID_LENGTH = 26

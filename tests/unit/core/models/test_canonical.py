@@ -42,6 +42,7 @@ def test_no_trailing_newline_and_no_normalisation() -> None:
 
 
 def test_sha256_of_empty_string() -> None:
+    # pragma: allowlist nextline secret
     assert sha256_hex("") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     assert sha256_hex(b"") == sha256_hex("")
 
