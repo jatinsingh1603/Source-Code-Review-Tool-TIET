@@ -92,7 +92,7 @@ class ReportingSettings(SectionModel):
     )
     output_dir: Path = Field(
         # A string default keeps the JSON Schema serialisable; validate_default makes it a Path.
-        default="codekavach-report",
+        default="codekavach-report",  # type: ignore[assignment]  # converted by validate_default
         description="Directory for reports, relative to the project root.",
         json_schema_extra=volatile(),
     )
