@@ -44,6 +44,7 @@ A local model (Ollama, vLLM) can sit inside the trusted boundary; policy may the
 | Dashboard | React, TypeScript, Vite, Tailwind | Common, large talent pool for student contributors |
 | Reports | Jinja2 + WeasyPrint (PDF), docxtpl (DOCX), self-contained HTML, XlsxWriter, Pygments for snippets | Pure Python, templates editable by auditors |
 | Quality | ruff, mypy (strict), pytest, hypothesis, import-linter, pre-commit, GitHub Actions | Privacy invariants are enforced by tests and import contracts |
+| Logging | structlog; events on stderr as console text or JSON; redaction processor; no telemetry | Structured by design; the processor chain makes scrubbing a fixed step (ADR-0005) |
 
 ## 3. Repository layout
 
@@ -56,6 +57,8 @@ src/codekavach/
     pipeline/          Stage protocol, Orchestrator, RunContext, events, caching, resume
     plugins/           entry-point discovery and registry
     store/             local database and artefact store
+    log/               structured logging setup and redaction
+    no_telemetry.py    opt-out environment defaults for third-party tools
   ingest/              sources (path, git, archive), discovery, language detection, filters, safety limits
   parsing/             tree-sitter loader, LanguageSpec, queries/, symbols, scopes, imports, call graph
   analysis/
