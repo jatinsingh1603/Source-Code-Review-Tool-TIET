@@ -1,5 +1,7 @@
 # CodeKavach
 
+[![CI](https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/workflows/ci.yml)
+
 **Privacy-preserving, LLM-assisted secure source code review.**
 *Kavach* (कवच) means armour: CodeKavach lets an organisation get a standards-based security review of its source code from any large language model, **while keeping secrets and personal data local, and minimising and measuring how much business logic is disclosed to the LLM provider.**
 

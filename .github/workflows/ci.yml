@@ -1,0 +1,189 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # Direct pushes to main are never cancelled: each commit needs its own verdict.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  HYPOTHESIS_PROFILE: ci
+  CODEKAVACH_PERF_FACTOR: "3.0"
+  DO_NOT_TRACK: "1"
+  PYTHONUTF8: "1"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked --all-extras
+      - run: make lock-check fmt-check lint
+        env:
+          UV_NO_SYNC: "1"
+
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked --all-extras
+      - run: make type
+        env:
+          UV_NO_SYNC: "1"
+
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked --all-extras
+      - run: make contracts
+        env:
+          UV_NO_SYNC: "1"
+
+  hooks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+      - run: uv sync --locked --all-extras
+      - run: uv run pre-commit run --all-files --show-diff-on-failure
+        env:
+          UV_NO_SYNC: "1"
+
+  test:
+    name: test (${{ matrix.os }}, ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.12", "3.13"]
+    env:
+      UV_PYTHON: ${{ matrix.python }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked --all-extras
+      - run: uv run python --version
+        env:
+          UV_NO_SYNC: "1"
+      - name: Tests with coverage (Linux runs the perf budgets)
+        if: runner.os == 'Linux'
+        run: make cov
+        env:
+          UV_NO_SYNC: "1"
+          PYTEST_ARGS: --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml
+      - name: Tests with coverage (macOS deselects the perf budgets)
+        if: runner.os == 'macOS'
+        run: make cov
+        env:
+          UV_NO_SYNC: "1"
+          PYTEST_ARGS: -m "not network and not perf" --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml
+      - name: Coverage total in the job summary
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
+        run: |
+          echo "### Coverage" >> "$GITHUB_STEP_SUMMARY"
+          uv run coverage report | tail -n 1 >> "$GITHUB_STEP_SUMMARY"
+        env:
+          UV_NO_SYNC: "1"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            htmlcov/
+          retention-days: 14
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: junit-${{ matrix.os }}-${{ matrix.python }}
+          path: junit-${{ matrix.os }}-${{ matrix.python }}.xml
+          retention-days: 14
+          if-no-files-found: ignore
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked --all-extras
+      - run: make build
+        env:
+          UV_NO_SYNC: "1"
+      - name: Check wheel contents
+        run: |
+          python3 -m zipfile -l dist/*.whl | tee wheel-contents.txt
+          if grep -qE '(^|/)tests/' wheel-contents.txt; then echo "wheel contains tests/"; exit 1; fi
+          grep -q 'codekavach/py.typed' wheel-contents.txt || { echo "wheel lacks py.typed"; exit 1; }
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
+          retention-days: 14
+
+  ci-ok:
+    if: always()
+    needs: [lint, typecheck, contracts, hooks, test, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: |
+          echo '${{ toJSON(needs) }}' | python3 -c "import json,sys; r=json.load(sys.stdin); bad=[k for k,v in r.items() if v['result']!='success']; print('failed:', bad); sys.exit(1 if bad else 0)"
