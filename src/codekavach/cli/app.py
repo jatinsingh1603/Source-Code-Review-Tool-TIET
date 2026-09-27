@@ -10,6 +10,7 @@ from typing import Annotated
 import typer
 
 from codekavach import __version__
+from codekavach.core.log import configure_logging
 
 # pretty_exceptions_show_locals must stay False: Rich tracebacks with locals would
 # print client code, secrets or vault entries to the terminal on a crash.
@@ -49,5 +50,6 @@ def version_command() -> None:
 
 
 def main() -> None:
-    """Console-script entry point."""
+    """Console-script entry point: process-wide set-up, then the Typer app."""
+    configure_logging()
     app()

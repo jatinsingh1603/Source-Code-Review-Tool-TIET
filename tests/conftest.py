@@ -1,12 +1,15 @@
 """Suite-wide pytest configuration: hypothesis profiles, tier markers and shared fixtures."""
 
+import io
 import os
+from collections.abc import Iterator
 from datetime import timedelta
 from pathlib import Path
 
 import pytest
 from hypothesis import settings
 
+from codekavach.core.log import configure_logging
 from tests.support.tiers import tier_of
 
 PROFILE_VARIABLE = "HYPOTHESIS_PROFILE"
@@ -41,3 +44,12 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
 def repo_root(pytestconfig: pytest.Config) -> Path:
     """Return the repository root."""
     return pytestconfig.rootpath
+
+
+@pytest.fixture
+def log_output() -> Iterator[io.StringIO]:
+    """Configure JSON logging into a buffer; restore the default configuration afterwards."""
+    buffer = io.StringIO()
+    configure_logging(fmt="json", level="DEBUG", stream=buffer, force=True)
+    yield buffer
+    configure_logging(force=True)

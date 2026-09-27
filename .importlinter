@@ -100,6 +100,7 @@ source_modules =
 forbidden_modules =
     codekavach.cli
     codekavach.config
+    codekavach.core.log
     codekavach.core.pipeline
     codekavach.core.plugins
     codekavach.core.store

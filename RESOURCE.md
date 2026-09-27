@@ -32,7 +32,7 @@ An entry carries at most two tags. In the paper tables of section 1 the tag is t
 |---|---------|---------|
 | 1 | [Research papers](#1-research-papers) | 354 |
 | 2 | [Datasets and benchmarks](#2-datasets-and-benchmarks) | 55 |
-| 3 | [Open-source tools and libraries](#3-open-source-tools-and-libraries) | 272 |
+| 3 | [Open-source tools and libraries](#3-open-source-tools-and-libraries) | 276 |
 | 4 | [LLM provider and open-model documentation](#4-llm-provider-and-open-model-documentation) | 32 |
 | 5 | [Platform integration documentation](#5-platform-integration-documentation) | 39 |
 | 6 | [Competitor and adjacent product landscape](#6-competitor-and-adjacent-product-landscape) | 51 |
@@ -1162,6 +1162,17 @@ Engines, libraries and data sources. Read the Notes column before adding a depen
 |---|---|---|---|---|
 | humanify | MIT | [GitHub: jehna/humanify](https://github.com/jehna/humanify) | [evaluation] | CLI that un-minifies JavaScript by asking an LLM (OpenAI, Gemini or a local model) for better identifier names and applying the renames through Babel so the AST stays equivalent. Practical, scriptable attacker for the evaluation harness: run it over pseudonymised JS/TS slices and score how many recovered names match or are semantically close to the originals. |
 | javascript-obfuscator | BSD-2-Clause | [GitHub: javascript-obfuscator/javascript-obfuscator](https://github.com/javascript-obfuscator/javascript-obfuscator) | [baseline] | Widely used open-source JS/Node obfuscator offering identifier renaming, string-array encoding. Baseline 'off-the-shelf obfuscator' for the JS/TS experiments, to contrast heavy obfuscation (destroys detection accuracy) with CodeKavach's analysis-preserving pseudonymisation. |
+
+### 3.11 Core runtime libraries
+
+Runtime dependencies of the `codekavach` package itself (`[project.dependencies]` in `pyproject.toml`). AGENTS.md section 3 requires each one to be recorded here in the commit that adds it.
+
+| Library | Licence | Link | Role tag | Notes |
+|---|---|---|---|---|
+| Typer | MIT | [GitHub: fastapi/typer](https://github.com/fastapi/typer); [typer.tiangolo.com](https://typer.tiangolo.com/) | [integrated] | Command line framework (`docs/ARCHITECTURE.md` section 2). Added by E01-01. Pretty exceptions are configured without locals so a crash never prints client code. |
+| Rich | MIT | [GitHub: Textualize/rich](https://github.com/Textualize/rich); [rich.readthedocs.io](https://rich.readthedocs.io/) | [integrated] | Terminal rendering for the CLI. Added by E01-01. |
+| Pydantic v2 | MIT | [GitHub: pydantic/pydantic](https://github.com/pydantic/pydantic); [docs.pydantic.dev](https://docs.pydantic.dev/) | [integrated] | Data models, validation and JSON Schema export for the core domain model. Added by E01-05. |
+| structlog | MIT or Apache-2.0 (dual) | [GitHub: hynek/structlog](https://github.com/hynek/structlog); [structlog.org](https://www.structlog.org/) | [integrated] | Structured logging with a processor chain in which redaction is a fixed step (ADR-0005). Added by E01-20. |
 
 ## 4. LLM provider and open-model documentation
 
