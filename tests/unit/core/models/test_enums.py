@@ -19,6 +19,7 @@ from codekavach.core.models import (
     StageStatus,
     TaintRole,
 )
+from codekavach.core.models.enums import SegmentRole, StubReason
 
 GOLDEN: dict[type[StrEnum], list[str]] = {
     Severity: ["info", "low", "medium", "high", "critical"],
@@ -67,6 +68,8 @@ GOLDEN: dict[type[StrEnum], list[str]] = {
         "cancelled",
     ],
     StageStatus: ["pending", "running", "succeeded", "failed", "skipped"],
+    SegmentRole: ["primary", "taint_step", "context", "imports", "definition"],
+    StubReason: ["out_of_slice_callee", "token_budget", "external_library"],
 }
 
 

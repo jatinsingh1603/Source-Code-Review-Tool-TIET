@@ -26,6 +26,19 @@ from codekavach.core.models.paths import RepoPath
 MAX_SYMBOL_LENGTH = 512
 
 
+def check_symbol(value: str) -> str:
+    """Return a qualified symbol name stripped, or raise ValueError.
+
+    A symbol is 1 to 512 characters after stripping and contains no control characters.
+    """
+    stripped = value.strip()
+    if not 1 <= len(stripped) <= MAX_SYMBOL_LENGTH:
+        raise ValueError("symbol must be 1 to 512 characters after stripping")
+    if any(ord(char) < 32 or 127 <= ord(char) < 160 for char in stripped):
+        raise ValueError("symbol must not contain control characters")
+    return stripped
+
+
 def _validate_span(
     start_line: int, end_line: int, start_col: int | None, end_col: int | None
 ) -> None:
@@ -149,14 +162,7 @@ class Location(KavachModel):
     @field_validator("symbol")
     @classmethod
     def _check_symbol(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        stripped = value.strip()
-        if not 1 <= len(stripped) <= MAX_SYMBOL_LENGTH:
-            raise ValueError("symbol must be 1 to 512 characters after stripping")
-        if any(ord(char) < 32 or 127 <= ord(char) < 160 for char in stripped):
-            raise ValueError("symbol must not contain control characters")
-        return stripped
+        return None if value is None else check_symbol(value)
 
     @model_validator(mode="after")
     def _check_span(self) -> Self:

@@ -262,3 +262,21 @@ class StageStatus(StrEnum):
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     SKIPPED = "skipped"
+
+
+class SegmentRole(StrEnum):
+    """Why a segment is part of a code slice."""
+
+    PRIMARY = "primary"
+    TAINT_STEP = "taint_step"
+    CONTEXT = "context"
+    IMPORTS = "imports"
+    DEFINITION = "definition"
+
+
+class StubReason(StrEnum):
+    """Why a callee was replaced by a signature-only stub."""
+
+    OUT_OF_SLICE_CALLEE = "out_of_slice_callee"
+    TOKEN_BUDGET = "token_budget"  # noqa: S105 - enum value, not a credential
+    EXTERNAL_LIBRARY = "external_library"
