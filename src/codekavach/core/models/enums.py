@@ -280,3 +280,11 @@ class StubReason(StrEnum):
     OUT_OF_SLICE_CALLEE = "out_of_slice_callee"
     TOKEN_BUDGET = "token_budget"  # noqa: S105 - enum value, not a credential
     EXTERNAL_LIBRARY = "external_library"
+
+
+class PlaceholderKind(StrEnum):
+    """Kind of redaction placeholder; upper case because it appears inside the token."""
+
+    SECRET = "SECRET"  # noqa: S105 - enum value  # pragma: allowlist secret
+    PII = "PII"
+    TERM = "TERM"
