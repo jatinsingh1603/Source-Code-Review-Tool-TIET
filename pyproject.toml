@@ -40,7 +40,7 @@ codekavach = "codekavach.cli.app:main"
 [dependency-groups]
 lint = ["ruff>=0.16"]
 typecheck = ["mypy>=2.3"]
-test = ["pytest>=9.1"]
+test = ["pytest>=9.1", "pytest-cov", "coverage[toml]", "pytest-xdist", "pytest-randomly", "pytest-timeout"]
 dev = [{ include-group = "lint" }, { include-group = "typecheck" }, { include-group = "test" }]
 
 [tool.uv]
@@ -82,7 +82,38 @@ init_typed = true
 warn_required_dynamic_aliases = true
 
 [tool.pytest.ini_options]
-markers = ["slow: tests that start subprocesses or take longer than a second"]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib", "-m", "not network"]
+xfail_strict = true
+timeout = 120
+filterwarnings = ["error"]
+markers = [
+  "unit: fast, in-process, no subprocess except the interpreter itself, no network",
+  "integration: several modules together, real filesystem, subprocess of our own CLI allowed",
+  "e2e: full codekavach runs against fixtures",
+  "privacy: invariant tests I1 to I6, property-based where possible",
+  "slow: takes more than about two seconds",
+  "perf: performance budget test; part of the default run; limits scale with CODEKAVACH_PERF_FACTOR; macOS CI cells deselect it",
+  "network: needs external network; deselected by default and never run in CI",
+  "requires_engine(name): needs an external analysis engine on PATH; skipped when absent",
+]
+
+[tool.coverage.run]
+source_pkgs = ["codekavach"]
+branch = true
+parallel = true
+patch = ["subprocess"]
+
+[tool.coverage.paths]
+source = ["src/codekavach", "*/site-packages/codekavach"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "@overload", '^\s*\.\.\.$']
 
 [tool.ruff]
 line-length = 100
