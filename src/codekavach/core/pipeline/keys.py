@@ -24,6 +24,7 @@ Key                    Constant                Produced by                 Notes
 ``report.outputs``     ``REPORT_OUTPUTS``      report (E30, E31)
 ``sync.result``        ``SYNC_RESULT``         sync (E34)
 ``scan.manifest``      ``MANIFEST``            orchestrator (E04)
+``scan.record``        ``SCAN_RECORD``         runner (E04-16)             final ``Scan``
 =====================  ======================  ==========================  =====================
 
 The vocabulary is open: a plugin may use any key matching ``KEY_PATTERN`` (at most 64
@@ -54,6 +55,7 @@ SCAN_SUMMARY: Final = "scan.summary"
 REPORT_OUTPUTS: Final = "report.outputs"
 SYNC_RESULT: Final = "sync.result"
 MANIFEST: Final = "scan.manifest"
+SCAN_RECORD: Final = "scan.record"
 
 # Artefacts that contain or point at client code in the clear, and those produced by the privacy
 # layer; E04-13 checks that an LLM stage reads only the latter (pipeline-level support for I2).

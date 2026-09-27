@@ -10,6 +10,7 @@ orchestrator derives one per stage with ``for_stage``.
 import dataclasses
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 from codekavach.config import Settings
 from codekavach.core.pipeline.budget import Budget
@@ -18,6 +19,18 @@ from codekavach.core.pipeline.events import EventBus, StageProgress, WarningRais
 from codekavach.core.pipeline.result import RunLog, StageRun
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.store.base import ArtefactStore
+
+
+@dataclass(frozen=True, slots=True)
+class ConsentDecision:
+    """The operator's decision about remote egress for this scan (built by E05-13 and the APIs).
+
+    ``None`` on ``RunContext.consent`` means no consent was given; the egress guard (E12) fails
+    closed when consent is absent or not granted.
+    """
+
+    granted: bool
+    source: Literal["none", "user-file", "flag", "env"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,6 +48,7 @@ class RunContext:
     state_dir: Path | None = None
     run_log: RunLog = field(default_factory=RunLog)
     stage: str | None = None
+    consent: ConsentDecision | None = None
 
     def for_stage(
         self,
