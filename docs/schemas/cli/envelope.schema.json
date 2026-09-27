@@ -1,0 +1,91 @@
+{
+  "$defs": {
+    "EnvelopeMessage": {
+      "description": "One warning or error in the envelope.",
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hint"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "EnvelopeMessage",
+      "type": "object"
+    },
+    "JsonValue": {}
+  },
+  "$id": "urn:codekavach:schema:cli_envelope:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "The JSON document written to stdout in ``--json`` mode (stable while additive).",
+  "properties": {
+    "codekavach_version": {
+      "title": "Codekavach Version",
+      "type": "string"
+    },
+    "command": {
+      "title": "Command",
+      "type": "string"
+    },
+    "data": {
+      "$ref": "#/$defs/JsonValue"
+    },
+    "errors": {
+      "items": {
+        "$ref": "#/$defs/EnvelopeMessage"
+      },
+      "title": "Errors",
+      "type": "array"
+    },
+    "exit_code": {
+      "title": "Exit Code",
+      "type": "integer"
+    },
+    "ok": {
+      "title": "Ok",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "$ref": "#/$defs/EnvelopeMessage"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "codekavach_version",
+    "command",
+    "ok",
+    "exit_code",
+    "data",
+    "warnings",
+    "errors"
+  ],
+  "title": "Envelope",
+  "type": "object"
+}

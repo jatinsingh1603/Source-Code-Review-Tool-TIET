@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "codekavach_version": "0.0.0",
+  "command": "doctor",
+  "ok": false,
+  "exit_code": 1,
+  "data": {
+    "checks": [
+      {
+        "name": "grammar:python",
+        "status": "fail"
+      }
+    ]
+  },
+  "warnings": [],
+  "errors": []
+}

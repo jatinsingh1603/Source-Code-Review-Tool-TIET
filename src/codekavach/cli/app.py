@@ -26,6 +26,7 @@ import typer
 from typer import _click as click  # Typer >= 0.27 ships its own copy of Click
 from typer._click.exceptions import NoArgsIsHelpError
 
+from codekavach.cli import output
 from codekavach.cli._version import get_version
 from codekavach.cli.console import get_err_console
 from codekavach.cli.errors import CliError, error_line, render_error
@@ -138,7 +139,10 @@ def _handle(error: BaseException, argv: Sequence[str]) -> int:  # noqa: PLR0911
     if isinstance(error, NoArgsIsHelpError):
         return ExitCode.OK  # Typer has already printed the help
     if isinstance(error, click.ClickException):
-        error.show()
+        if json_mode:
+            output.write_error_envelope(code="usage", message=error.format_message(), hint=None)
+        else:
+            error.show()
         return ExitCode.USAGE
     if isinstance(error, typer.Abort | KeyboardInterrupt) or (
         cancelled is not None and isinstance(error, cancelled)
@@ -168,8 +172,32 @@ def _handle(error: BaseException, argv: Sequence[str]) -> int:  # noqa: PLR0911
     raise error
 
 
+def _command_from_argv(command: click.Command, argv: Sequence[str]) -> str:
+    """Best-effort command path for errors raised before any command body ran."""
+    path: list[str] = []
+    node = command
+    for token in argv:
+        children: dict[str, click.Command] = getattr(node, "commands", {}) or {}
+        if token in children:
+            path.append(token)
+            node = children[token]
+    return " ".join(path)
+
+
 def run(command: click.Command, argv: Sequence[str]) -> int:
-    """Execute ``command`` with ``argv`` and return the process exit code."""
+    """Execute ``command`` with ``argv``, write the JSON envelope if any, return the exit code."""
+    output.begin_invocation()
+    code = _execute(command, argv)
+    found = output.current_output()
+    if found is None and _flags(argv)[2]:
+        found = output.fallback_output(json_mode=True, command=_command_from_argv(command, argv))
+    if found is not None:
+        found.finish(code)
+    return code
+
+
+def _execute(command: click.Command, argv: Sequence[str]) -> int:
+    """Run the command and map every outcome to an exit code."""
     try:
         result = command.main(args=list(argv), prog_name="codekavach", standalone_mode=False)
     except SystemExit as exit_:
