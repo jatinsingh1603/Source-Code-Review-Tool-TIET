@@ -32,7 +32,7 @@ An entry carries at most two tags. In the paper tables of section 1 the tag is t
 |---|---------|---------|
 | 1 | [Research papers](#1-research-papers) | 354 |
 | 2 | [Datasets and benchmarks](#2-datasets-and-benchmarks) | 55 |
-| 3 | [Open-source tools and libraries](#3-open-source-tools-and-libraries) | 276 |
+| 3 | [Open-source tools and libraries](#3-open-source-tools-and-libraries) | 277 |
 | 4 | [LLM provider and open-model documentation](#4-llm-provider-and-open-model-documentation) | 32 |
 | 5 | [Platform integration documentation](#5-platform-integration-documentation) | 39 |
 | 6 | [Competitor and adjacent product landscape](#6-competitor-and-adjacent-product-landscape) | 51 |
@@ -1172,6 +1172,7 @@ Runtime dependencies of the `codekavach` package itself (`[project.dependencies]
 | Typer | MIT | [GitHub: fastapi/typer](https://github.com/fastapi/typer); [typer.tiangolo.com](https://typer.tiangolo.com/) | [integrated] | Command line framework (`docs/ARCHITECTURE.md` section 2). Added by E01-01. Pretty exceptions are configured without locals so a crash never prints client code. |
 | Rich | MIT | [GitHub: Textualize/rich](https://github.com/Textualize/rich); [rich.readthedocs.io](https://rich.readthedocs.io/) | [integrated] | Terminal rendering for the CLI. Added by E01-01. |
 | Pydantic v2 | MIT | [GitHub: pydantic/pydantic](https://github.com/pydantic/pydantic); [docs.pydantic.dev](https://docs.pydantic.dev/) | [integrated] | Data models, validation and JSON Schema export for the core domain model. Added by E01-05. |
+| pydantic-settings | MIT | [GitHub: pydantic/pydantic-settings](https://github.com/pydantic/pydantic-settings); [docs.pydantic.dev](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) | [integrated] | Root `Settings` model of the configuration. Only the constructor source is enabled; the loader layers files, environment and flags itself (ADR decision D9). Added by E03-03. |
 | structlog | MIT or Apache-2.0 (dual) | [GitHub: hynek/structlog](https://github.com/hynek/structlog); [structlog.org](https://www.structlog.org/) | [integrated] | Structured logging with a processor chain in which redaction is a fixed step (ADR-0005). Added by E01-20. |
 
 ## 4. LLM provider and open-model documentation
