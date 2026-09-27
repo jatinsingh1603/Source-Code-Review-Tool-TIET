@@ -6,7 +6,9 @@ is not a terminal, so the switch is reset here.
 """
 
 from collections.abc import Iterator
+from pathlib import Path
 
+import platformdirs
 import pytest
 import typer.rich_utils
 
@@ -21,3 +23,19 @@ def plain_terminal(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     reset_consoles()
     yield
     reset_consoles()
+
+
+def _listing(folder: Path) -> list[str] | None:
+    if not folder.is_dir():
+        return None
+    return sorted(str(path) for path in folder.rglob("*"))
+
+
+@pytest.fixture(autouse=True)
+def real_home_untouched() -> Iterator[None]:
+    """Fail a test that writes into the developer's real CodeKavach configuration folder."""
+    folder = platformdirs.user_config_path("codekavach", appauthor=False, roaming=True)
+    before = _listing(folder)
+    yield
+    if before is not None:
+        assert _listing(folder) == before, "a CLI test wrote into the real user folder"
