@@ -30,10 +30,23 @@ HEADER = (
 )
 
 
+RESERVED_ROWS = (
+    "| 0001 | Technology stack | Reserved | | | #21 (E01-10) |\n"
+    "| 0002 | External engines as subprocesses | Reserved | | | #22 (E01-11) |\n"
+    "| 0003 | Single egress | Reserved | | | #23 (E01-12) |\n"
+    "| 0004 | Changelog and versioning | Reserved | | | #33 (E01-22) |\n"
+    "| 0005 | Logging and no-telemetry | Reserved | | | #24 (E01-13) |\n"
+)
+
+
 @pytest.fixture
 def adr_dir(tmp_path: Path) -> Path:
+    """An ADR directory with the real template and five reserved numbers, independent of
+    which records the repository has accepted since."""
     target = tmp_path / "adr"
-    shutil.copytree(REPO_ROOT / "docs/adr", target)
+    target.mkdir()
+    shutil.copy(REPO_ROOT / "docs/adr/0000-template.md", target)
+    (target / "README.md").write_text(HEADER + RESERVED_ROWS, encoding="utf-8")
     return target
 
 

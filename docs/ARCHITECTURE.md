@@ -167,6 +167,7 @@ Policy resolves the effective level per file path and per provider trust tier. T
 ### 6.3 Invariants (enforced by tests and import contracts)
 
 - **I1 Single egress.** Only `codekavach.privacy.egress.transport` opens connections to LLM endpoints. `codekavach.llm.providers` builds requests but cannot send them without an `EgressTicket` issued by the guard. An import-linter contract and a socket-blocking test enforce this.
+  Rationale and exception procedure: [ADR-0003](adr/0003-single-egress.md).
 - **I2 No raw code in LLM modules.** `codekavach.llm` accepts `SanitisedPayload` only, never `CodeSlice` or file contents.
 - **I3 Vault locality.** Vault contents are never logged, never included in reports sent to integrations, and never serialised outside the vault module.
 - **I4 Fail closed.** An exception in any privacy step aborts the request for that candidate; the candidate is still reported from deterministic evidence.

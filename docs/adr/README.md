@@ -45,6 +45,6 @@ If the title matches a `Reserved` row, the helper uses that number and changes t
 |--------|-------|--------|------|------------|-------|
 | 0001 | Technology stack | Reserved | | | #21 (E01-10) |
 | 0002 | External engines as subprocesses | Reserved | | | #22 (E01-11) |
-| 0003 | Single egress | Reserved | | | #23 (E01-12) |
+| [0003](0003-single-egress.md) | Single egress | Accepted | 2026-09-27 | | #23 (E01-12) |
 | 0004 | Changelog and versioning | Reserved | | | #33 (E01-22) |
 | 0005 | Logging and no-telemetry | Reserved | | | #24 (E01-13) |
