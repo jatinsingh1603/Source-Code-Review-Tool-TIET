@@ -20,6 +20,15 @@ AWS_EXAMPLE_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
 # Source: AWS documentation, "Managing access keys for IAM users" (example key pair).
 AWS_EXAMPLE_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 
+# Personal-looking values for the domain models (E02-25). Never real people or numbers.
+# Reserved test domain from RFC 2606 and RFC 6761.
+EXAMPLE_EMAIL = "asha.verma@example.test"
+# UK Ofcom range 07700 900000 to 900999, reserved for drama and documentation.
+EXAMPLE_PHONE = "+44 7700 900123"
+# North American 555-0100 to 555-0199, reserved for fictional use.
+EXAMPLE_PHONE_US = "+1 202 555 0143"
+EXAMPLE_PERSON = "Asha Verma"
+
 _ALNUM = string.ascii_letters + string.digits
 _UPPER_DIGITS = string.ascii_uppercase + string.digits
 _URL_SAFE = _ALNUM + "_-"
