@@ -2,6 +2,7 @@ import os
 import re
 import secrets
 import stat
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -156,11 +157,12 @@ def test_ensure_refuses_symlinked_root(tmp_path: Path) -> None:
 def test_property_contained_or_refused(text: str) -> None:
     root = Path("state-root")
     layout = StateLayout(root)
-    for call in (
+    calls: list[Callable[[], Path]] = [
         lambda: layout.scan_dir(text),
         lambda: layout.items_dir(text),
         lambda: layout.index_path(SCAN, text),
-    ):
+    ]
+    for call in calls:
         try:
             path = call()
         except StateLayoutError:
