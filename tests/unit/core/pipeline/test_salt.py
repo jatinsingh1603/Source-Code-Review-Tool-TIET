@@ -12,7 +12,7 @@ from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.store.base import ArtefactForbiddenError
 from codekavach.core.store.memory import InMemoryArtefactStore
 
-VECTOR = "00112233445566778899aabbccddeeff" * 2
+VECTOR = "00112233445566778899aabbccddeeff" * 2  # pragma: allowlist secret
 
 
 def test_fingerprint_vector() -> None:
