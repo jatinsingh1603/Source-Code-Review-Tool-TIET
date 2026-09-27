@@ -1,10 +1,31 @@
-"""Suite-wide pytest configuration: automatic tier markers and shared fixtures."""
+"""Suite-wide pytest configuration: hypothesis profiles, tier markers and shared fixtures."""
 
+import os
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from hypothesis import settings
 
 from tests.support.tiers import tier_of
+
+PROFILE_VARIABLE = "HYPOTHESIS_PROFILE"
+PROFILES = ("dev", "ci", "nightly")
+
+# E02 extends this registration; never register a profile name twice.
+settings.register_profile("dev", max_examples=50, deadline=timedelta(milliseconds=500))
+settings.register_profile("ci", max_examples=200, deadline=None, derandomize=True, print_blob=True)
+settings.register_profile("nightly", max_examples=2000, deadline=None)
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Load the hypothesis profile named by HYPOTHESIS_PROFILE (default dev)."""
+    name = os.environ.get(PROFILE_VARIABLE, "dev")
+    if name not in PROFILES:
+        raise pytest.UsageError(
+            f"unknown {PROFILE_VARIABLE} {name!r}; valid profiles: {', '.join(PROFILES)}"
+        )
+    settings.load_profile(name)
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:

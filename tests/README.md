@@ -49,13 +49,46 @@ Inside a tier, tests mirror the source path: `src/codekavach/core/models/locatio
 
 Every test directory has an `__init__.py` with a one-line docstring, so two files with the same name in different directories never collide. Whoever creates a directory creates its `__init__.py`. Shared helpers are imported from the repository root, for example `from tests.support.tiers import tier_of`.
 
+## Property-based tests (hypothesis)
+
+Profiles are registered in `tests/conftest.py` and selected with `HYPOTHESIS_PROFILE`; an unknown name stops the run with a usage error.
+
+| Profile | max_examples | deadline | derandomize | Use |
+|---------|--------------|----------|-------------|-----|
+| `dev` (default) | 50 | 500 ms | no | local runs |
+| `ci` | 200 | none | yes | GitHub Actions: reproducible, prints a reproduction blob |
+| `nightly` | 2000 | none | no | before a release and in scheduled runs |
+
+`ci` is derandomised so that a privacy regression reproduces on every run and every machine; `nightly` explores new examples. To reproduce a failing example, copy the `@reproduce_failure(...)` decorator that hypothesis prints (the `ci` profile prints it) onto the test, or rerun locally with `HYPOTHESIS_PROFILE=ci`. The example database `.hypothesis/` is not committed.
+
+Shared strategies live in `tests/support/strategies.py`: `identifiers()`, `fake_secrets()` and `nested_json(leaves)`. E02 adds model strategies to the same module and profiles to the same registration; never register a profile name twice.
+
+## Synthetic values
+
+Tests hold synthetic values only, never a real credential, not even an expired one (`AGENTS.md` section 3). Secret-shaped values come only from `tests/support/synthetic.py`:
+
+- the only contiguous secret-shaped literals are the two AWS documentation examples (`AWS_EXAMPLE_ACCESS_KEY_ID`, `AWS_EXAMPLE_SECRET_ACCESS_KEY`);
+- every other value is assembled at runtime from prefix fragments with `build_secret(kind, body)` or `example_secret(kind)` (a fixed value per kind), so no token-shaped literal is ever committed;
+- values match the detector pattern of their kind in `SECRET_SHAPES` but are not live; formats with a checksum (GitHub tokens) fail it.
+
+Do not paste a token-shaped string into a test; add a kind to `SECRET_SHAPES` instead. Small static inputs shared by several tests go in `tests/fixtures/`.
+
 ## Golden files
 
-Expected outputs live in a `golden/` directory next to the test that uses them and are compared byte for byte. The comparison helper arrives with E01-07.
+Expected outputs live in a `golden/` directory next to the test that uses them and are compared byte for byte with `tests.support.golden.assert_matches_golden(actual, path)`. Text differences are shown as a unified diff, binary ones by the offset of the first differing byte. To create or update expectations, run the test with `CODEKAVACH_UPDATE_GOLDEN=1` and review the diff before committing. The update is refused when `CI` is set, so a pipeline can never rewrite its own expectations.
 
-## Test data
+## Performance budgets
 
-Tests hold synthetic values only, never a real credential, not even an expired one (`AGENTS.md` section 3). Secret-shaped values come only from `tests/support/synthetic.py` (E01-07). Small static inputs shared by several tests go in `tests/fixtures/`.
+A `perf` test builds its input outside the timed region, then asserts `measure(fn) <= budget(seconds)` using `tests/support/perf.py` and prints the measured number. `measure` returns the best of three runs; `budget` scales the limit by `CODEKAVACH_PERF_FACTOR` (default 1.0; must be a positive number).
+
+```python
+@pytest.mark.perf
+def test_load_settings_budget() -> None:
+    data = build_input()
+    elapsed = measure(lambda: load(data))
+    print(f"load: {elapsed * 1000:.1f} ms")
+    assert elapsed <= budget(0.05)
+```
 
 ## Warnings
 

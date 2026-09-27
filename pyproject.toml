@@ -40,7 +40,7 @@ codekavach = "codekavach.cli.app:main"
 [dependency-groups]
 lint = ["ruff>=0.16"]
 typecheck = ["mypy>=2.3"]
-test = ["pytest>=9.1", "pytest-cov", "coverage[toml]", "pytest-xdist", "pytest-randomly", "pytest-timeout"]
+test = ["pytest>=9.1", "hypothesis", "pytest-cov", "coverage[toml]", "pytest-xdist", "pytest-randomly", "pytest-timeout"]
 dev = [{ include-group = "lint" }, { include-group = "typecheck" }, { include-group = "test" }]
 
 [tool.uv]
