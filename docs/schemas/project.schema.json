@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "PrivacyLevel": {
+      "description": "Privacy level, ranked by strictness: L1 < L2 < L3 < L4 < L0 (L0 sends nothing).",
+      "enum": [
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L0"
+      ],
+      "title": "PrivacyLevel",
+      "type": "string"
+    }
+  },
+  "$id": "urn:codekavach:schema:project:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A code base that is scanned.",
+  "properties": {
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "default_privacy_level": {
+      "$ref": "#/$defs/PrivacyLevel",
+      "default": "L3"
+    },
+    "id": {
+      "pattern": "^proj_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "repository_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Repository Url"
+    },
+    "root": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Local directory as given by the user; may contain a user name, so reports must not print it unless asked (E30).",
+      "title": "Root"
+    },
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "created_at"
+  ],
+  "title": "Project",
+  "type": "object",
+  "x-data-classification": "raw",
+  "x-schema-version": 1
+}

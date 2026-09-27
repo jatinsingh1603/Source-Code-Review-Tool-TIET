@@ -1,0 +1,47 @@
+{
+  "$id": "urn:codekavach:schema:code_region:0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A span of lines, optionally with columns, without a path.",
+  "properties": {
+    "end_col": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "End Col"
+    },
+    "end_line": {
+      "title": "End Line",
+      "type": "integer"
+    },
+    "start_col": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Start Col"
+    },
+    "start_line": {
+      "title": "Start Line",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "start_line",
+    "end_line"
+  ],
+  "title": "CodeRegion",
+  "type": "object",
+  "x-data-classification": "metadata"
+}

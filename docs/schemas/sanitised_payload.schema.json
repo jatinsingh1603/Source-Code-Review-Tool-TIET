@@ -1,0 +1,176 @@
+{
+  "$defs": {
+    "LineMapEntry": {
+      "additionalProperties": false,
+      "description": "A run of payload lines that maps linearly onto lines of one slice segment.",
+      "properties": {
+        "file_start_line": {
+          "minimum": 1,
+          "title": "File Start Line",
+          "type": "integer"
+        },
+        "payload_end_line": {
+          "minimum": 1,
+          "title": "Payload End Line",
+          "type": "integer"
+        },
+        "payload_start_line": {
+          "minimum": 1,
+          "title": "Payload Start Line",
+          "type": "integer"
+        },
+        "segment_index": {
+          "minimum": 0,
+          "title": "Segment Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "payload_start_line",
+        "payload_end_line",
+        "segment_index",
+        "file_start_line"
+      ],
+      "title": "LineMapEntry",
+      "type": "object"
+    },
+    "PlaceholderKind": {
+      "description": "Kind of redaction placeholder; upper case because it appears inside the token.",
+      "enum": [
+        "SECRET",
+        "PII",
+        "TERM"
+      ],
+      "title": "PlaceholderKind",
+      "type": "string"
+    },
+    "PlaceholderRef": {
+      "additionalProperties": false,
+      "description": "One distinct placeholder in a payload: its type is evidence, its value is not kept.",
+      "properties": {
+        "index": {
+          "maximum": 999999,
+          "minimum": 1,
+          "title": "Index",
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/PlaceholderKind"
+        },
+        "occurrences": {
+          "minimum": 1,
+          "title": "Occurrences",
+          "type": "integer"
+        },
+        "subtype": {
+          "description": "Detector type from the closed vocabulary owned by E08 (aws_access_key, email, domain, ...). Never derived from the matched text.",
+          "title": "Subtype",
+          "type": "string"
+        },
+        "token": {
+          "title": "Token",
+          "type": "string"
+        }
+      },
+      "required": [
+        "token",
+        "kind",
+        "subtype",
+        "index",
+        "occurrences"
+      ],
+      "title": "PlaceholderRef",
+      "type": "object"
+    },
+    "PrivacyLevel": {
+      "description": "Privacy level, ranked by strictness: L1 < L2 < L3 < L4 < L0 (L0 sends nothing).",
+      "enum": [
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L0"
+      ],
+      "title": "PrivacyLevel",
+      "type": "string"
+    }
+  },
+  "$id": "urn:codekavach:schema:sanitised_payload:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "What the LLM may see for one candidate.",
+  "properties": {
+    "candidate_id": {
+      "pattern": "^cand_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^pay_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "level": {
+      "$ref": "#/$defs/PrivacyLevel"
+    },
+    "line_map": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/LineMapEntry"
+      },
+      "title": "Line Map",
+      "type": "array"
+    },
+    "payload_hash": {
+      "title": "Payload Hash",
+      "type": "string"
+    },
+    "placeholders": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PlaceholderRef"
+      },
+      "title": "Placeholders",
+      "type": "array"
+    },
+    "pseudonym_count": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Pseudonym Count",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "slice_id": {
+      "anyOf": [
+        {
+          "pattern": "^slice_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Slice Id"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "candidate_id",
+    "slice_id",
+    "text",
+    "level",
+    "payload_hash"
+  ],
+  "title": "SanitisedPayload",
+  "type": "object",
+  "x-data-classification": "sanitised",
+  "x-schema-version": 1
+}

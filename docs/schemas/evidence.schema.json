@@ -1,0 +1,222 @@
+{
+  "$defs": {
+    "EvidenceRole": {
+      "description": "What an evidence snippet shows.",
+      "enum": [
+        "primary",
+        "source",
+        "propagator",
+        "sanitiser",
+        "sink",
+        "context"
+      ],
+      "title": "EvidenceRole",
+      "type": "string"
+    },
+    "HighlightRange": {
+      "additionalProperties": false,
+      "description": "A highlighted column range on one snippet line.",
+      "properties": {
+        "end_col": {
+          "title": "End Col",
+          "type": "integer"
+        },
+        "line": {
+          "minimum": 1,
+          "title": "Line",
+          "type": "integer"
+        },
+        "start_col": {
+          "minimum": 1,
+          "title": "Start Col",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "start_col",
+        "end_col"
+      ],
+      "title": "HighlightRange",
+      "type": "object"
+    },
+    "Language": {
+      "description": "Source language of a file (unordered).",
+      "enum": [
+        "python",
+        "javascript",
+        "typescript",
+        "java",
+        "kotlin",
+        "c",
+        "cpp",
+        "php",
+        "go",
+        "csharp",
+        "ruby",
+        "dockerfile",
+        "terraform",
+        "yaml",
+        "json",
+        "toml",
+        "xml",
+        "shell",
+        "sql",
+        "html",
+        "unknown"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "Location": {
+      "additionalProperties": false,
+      "description": "A place in the client's code. Client data: never part of anything sent to an LLM.",
+      "properties": {
+        "end_col": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Col"
+        },
+        "end_line": {
+          "title": "End Line",
+          "type": "integer"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "start_col": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start Col"
+        },
+        "start_line": {
+          "title": "Start Line",
+          "type": "integer"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Symbol"
+        }
+      },
+      "required": [
+        "path",
+        "start_line",
+        "end_line"
+      ],
+      "title": "Location",
+      "type": "object"
+    },
+    "SnippetLine": {
+      "additionalProperties": false,
+      "description": "One file line of a snippet, without its line terminator.",
+      "properties": {
+        "number": {
+          "minimum": 1,
+          "title": "Number",
+          "type": "integer"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "truncated": {
+          "default": false,
+          "title": "Truncated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "number",
+        "text"
+      ],
+      "title": "SnippetLine",
+      "type": "object"
+    }
+  },
+  "$id": "urn:codekavach:schema:evidence:0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A snippet of client code with context lines and highlights for one location.",
+  "properties": {
+    "caption": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Caption"
+    },
+    "clipped": {
+      "default": false,
+      "title": "Clipped",
+      "type": "boolean"
+    },
+    "highlights": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/HighlightRange"
+      },
+      "title": "Highlights",
+      "type": "array"
+    },
+    "language": {
+      "$ref": "#/$defs/Language"
+    },
+    "lines": {
+      "items": {
+        "$ref": "#/$defs/SnippetLine"
+      },
+      "minItems": 1,
+      "title": "Lines",
+      "type": "array"
+    },
+    "location": {
+      "$ref": "#/$defs/Location"
+    },
+    "masked": {
+      "default": false,
+      "title": "Masked",
+      "type": "boolean"
+    },
+    "role": {
+      "$ref": "#/$defs/EvidenceRole",
+      "default": "primary"
+    }
+  },
+  "required": [
+    "location",
+    "language",
+    "lines"
+  ],
+  "title": "Evidence",
+  "type": "object",
+  "x-data-classification": "raw"
+}

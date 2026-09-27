@@ -1,0 +1,250 @@
+{
+  "$defs": {
+    "CodeRegion": {
+      "additionalProperties": false,
+      "description": "A span of lines, optionally with columns, without a path.",
+      "properties": {
+        "end_col": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Col"
+        },
+        "end_line": {
+          "title": "End Line",
+          "type": "integer"
+        },
+        "start_col": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start Col"
+        },
+        "start_line": {
+          "title": "Start Line",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start_line",
+        "end_line"
+      ],
+      "title": "CodeRegion",
+      "type": "object"
+    },
+    "Language": {
+      "description": "Source language of a file (unordered).",
+      "enum": [
+        "python",
+        "javascript",
+        "typescript",
+        "java",
+        "kotlin",
+        "c",
+        "cpp",
+        "php",
+        "go",
+        "csharp",
+        "ruby",
+        "dockerfile",
+        "terraform",
+        "yaml",
+        "json",
+        "toml",
+        "xml",
+        "shell",
+        "sql",
+        "html",
+        "unknown"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "SegmentRole": {
+      "description": "Why a segment is part of a code slice.",
+      "enum": [
+        "primary",
+        "taint_step",
+        "context",
+        "imports",
+        "definition"
+      ],
+      "title": "SegmentRole",
+      "type": "string"
+    },
+    "SliceSegment": {
+      "additionalProperties": false,
+      "description": "A contiguous range of whole lines of one file, with their text.",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "region": {
+          "$ref": "#/$defs/CodeRegion"
+        },
+        "role": {
+          "$ref": "#/$defs/SegmentRole",
+          "default": "context"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "region",
+        "text"
+      ],
+      "title": "SliceSegment",
+      "type": "object"
+    },
+    "SliceStrategy": {
+      "description": "Strategy used to extract a code slice.",
+      "enum": [
+        "enclosing_function",
+        "taint_path",
+        "backward_slice"
+      ],
+      "title": "SliceStrategy",
+      "type": "string"
+    },
+    "Stub": {
+      "additionalProperties": false,
+      "description": "Signature of a callee whose body was left out of the slice.",
+      "properties": {
+        "line": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "reason": {
+          "$ref": "#/$defs/StubReason"
+        },
+        "signature": {
+          "title": "Signature",
+          "type": "string"
+        },
+        "symbol": {
+          "title": "Symbol",
+          "type": "string"
+        }
+      },
+      "required": [
+        "symbol",
+        "signature",
+        "reason"
+      ],
+      "title": "Stub",
+      "type": "object"
+    },
+    "StubReason": {
+      "description": "Why a callee was replaced by a signature-only stub.",
+      "enum": [
+        "out_of_slice_callee",
+        "token_budget",
+        "external_library"
+      ],
+      "title": "StubReason",
+      "type": "string"
+    }
+  },
+  "$id": "urn:codekavach:schema:code_slice:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Minimal code context for one candidate, built by the slicer (E11).",
+  "properties": {
+    "candidate_id": {
+      "pattern": "^cand_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^slice_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "language": {
+      "$ref": "#/$defs/Language"
+    },
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "segments": {
+      "items": {
+        "$ref": "#/$defs/SliceSegment"
+      },
+      "minItems": 1,
+      "title": "Segments",
+      "type": "array"
+    },
+    "strategy": {
+      "$ref": "#/$defs/SliceStrategy"
+    },
+    "stubs": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Stub"
+      },
+      "title": "Stubs",
+      "type": "array"
+    },
+    "token_estimate": {
+      "minimum": 0,
+      "title": "Token Estimate",
+      "type": "integer"
+    },
+    "truncated": {
+      "default": false,
+      "title": "Truncated",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "candidate_id",
+    "language",
+    "strategy",
+    "segments",
+    "token_estimate"
+  ],
+  "title": "CodeSlice",
+  "type": "object",
+  "x-data-classification": "raw",
+  "x-schema-version": 1
+}

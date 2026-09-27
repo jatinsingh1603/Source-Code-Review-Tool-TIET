@@ -1,0 +1,88 @@
+{
+  "models": [
+    {
+      "file": "candidate.schema.json",
+      "name": "Candidate",
+      "schema_version": 1,
+      "sha256": "7b046d485f40564d8485a8a6589e9edcaccd7e53a1dcb0fd41886a36fe3bb921"
+    },
+    {
+      "file": "code_region.schema.json",
+      "name": "CodeRegion",
+      "schema_version": 0,
+      "sha256": "b2557d965d9a000468b56e9a55a2478c5c818283dddbfa28ff039bf94ccf4148"
+    },
+    {
+      "file": "code_slice.schema.json",
+      "name": "CodeSlice",
+      "schema_version": 1,
+      "sha256": "e23293b429336b5f2f404b66535fcb1458a30ea96872eb3ee69975c44845a6eb"
+    },
+    {
+      "file": "egress_record.schema.json",
+      "name": "EgressRecord",
+      "schema_version": 1,
+      "sha256": "aa6ed3354b1774213f5f08fab2caa22c97b7a737660974bd88f5d0963a255c23"
+    },
+    {
+      "file": "evidence.schema.json",
+      "name": "Evidence",
+      "schema_version": 0,
+      "sha256": "d12f8001d4424103b7a1e424755c4316c7eb1f4087a778be93097690684c4a2f"
+    },
+    {
+      "file": "finding.schema.json",
+      "name": "Finding",
+      "schema_version": 1,
+      "sha256": "a8e60ff97c7dcaa09418e767a862df476208e99542914e5733880bb0f8c0bfb0"
+    },
+    {
+      "file": "llm_verdict.schema.json",
+      "name": "LLMVerdict",
+      "schema_version": 1,
+      "sha256": "93f916c09ff499a244048665e7c55e4fcf55586a5a999bf2e9fdc1fece494b12"
+    },
+    {
+      "file": "llm_verdict.output.schema.json",
+      "name": "LLMVerdictOutput",
+      "schema_version": 1,
+      "sha256": "0da0e582ca7fa30815bb9004d253c27ef8aab304dd415d2f4db86992d58aa43c"
+    },
+    {
+      "file": "location.schema.json",
+      "name": "Location",
+      "schema_version": 0,
+      "sha256": "630e7e22c3c179d4d75f6a0c5b24ed39ff4aedc5f9bc5d32c1005e09918539d1"
+    },
+    {
+      "file": "project.schema.json",
+      "name": "Project",
+      "schema_version": 1,
+      "sha256": "4f5f408ad8bc8b946f70577082097cb34f52b541ec5bd4520fb04d57bb250c4f"
+    },
+    {
+      "file": "sanitised_payload.schema.json",
+      "name": "SanitisedPayload",
+      "schema_version": 1,
+      "sha256": "0a14abb190fabfaae356efa435991e7509eb7cac5c84fdb6bd825c44c8450d78"
+    },
+    {
+      "file": "scan.schema.json",
+      "name": "Scan",
+      "schema_version": 1,
+      "sha256": "c3f6aa6b0804bb2ddc4b4381d1c18d2101850a68dedc0d3c6eb3bd44879b7e01"
+    },
+    {
+      "file": "scan_summary.schema.json",
+      "name": "ScanSummary",
+      "schema_version": 0,
+      "sha256": "04d3cea66d659e4c428c6301208f5164929c26a6f261c2e434cfee37c5da2f3a"
+    },
+    {
+      "file": "taint_path.schema.json",
+      "name": "TaintPath",
+      "schema_version": 0,
+      "sha256": "3f64e29e6c47f4e13d023743f0eb40b38c8eea6d3b08d34b075e36249fc1386a"
+    }
+  ]
+}

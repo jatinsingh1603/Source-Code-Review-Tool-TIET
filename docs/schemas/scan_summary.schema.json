@@ -1,0 +1,277 @@
+{
+  "$defs": {
+    "EgressTotals": {
+      "additionalProperties": false,
+      "description": "Totals over the egress ledger entries of one scan.",
+      "properties": {
+        "completion_tokens": {
+          "minimum": 0,
+          "title": "Completion Tokens",
+          "type": "integer"
+        },
+        "levels": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "$ref": "#/$defs/PrivacyLevel"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Levels",
+          "type": "array"
+        },
+        "prompt_tokens": {
+          "minimum": 0,
+          "title": "Prompt Tokens",
+          "type": "integer"
+        },
+        "requests_blocked": {
+          "minimum": 0,
+          "title": "Requests Blocked",
+          "type": "integer"
+        },
+        "requests_failed": {
+          "minimum": 0,
+          "title": "Requests Failed",
+          "type": "integer"
+        },
+        "requests_sent": {
+          "minimum": 0,
+          "title": "Requests Sent",
+          "type": "integer"
+        },
+        "tokens_estimated": {
+          "title": "Tokens Estimated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "requests_sent",
+        "requests_blocked",
+        "requests_failed",
+        "prompt_tokens",
+        "completion_tokens",
+        "tokens_estimated",
+        "levels"
+      ],
+      "title": "EgressTotals",
+      "type": "object"
+    },
+    "FindingStatus": {
+      "description": "Lifecycle status of a finding (unordered; transitions are defined in E02-16).",
+      "enum": [
+        "open",
+        "confirmed",
+        "false_positive",
+        "accepted_risk",
+        "suppressed",
+        "fixed"
+      ],
+      "title": "FindingStatus",
+      "type": "string"
+    },
+    "Language": {
+      "description": "Source language of a file (unordered).",
+      "enum": [
+        "python",
+        "javascript",
+        "typescript",
+        "java",
+        "kotlin",
+        "c",
+        "cpp",
+        "php",
+        "go",
+        "csharp",
+        "ruby",
+        "dockerfile",
+        "terraform",
+        "yaml",
+        "json",
+        "toml",
+        "xml",
+        "shell",
+        "sql",
+        "html",
+        "unknown"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "PrivacyLevel": {
+      "description": "Privacy level, ranked by strictness: L1 < L2 < L3 < L4 < L0 (L0 sends nothing).",
+      "enum": [
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L0"
+      ],
+      "title": "PrivacyLevel",
+      "type": "string"
+    },
+    "Severity": {
+      "description": "Severity of a candidate or finding, in ascending order.",
+      "enum": [
+        "info",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Severity",
+      "type": "string"
+    }
+  },
+  "$id": "urn:codekavach:schema:scan_summary:0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The single aggregate of one scan's findings, scope and egress.",
+  "properties": {
+    "by_language": {
+      "default": [],
+      "items": {
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
+          {
+            "$ref": "#/$defs/Language"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "By Language",
+      "type": "array"
+    },
+    "by_severity": {
+      "items": {
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
+          {
+            "$ref": "#/$defs/Severity"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "By Severity",
+      "type": "array"
+    },
+    "by_status": {
+      "items": {
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
+          {
+            "$ref": "#/$defs/FindingStatus"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "By Status",
+      "type": "array"
+    },
+    "candidates_reviewed_by_llm": {
+      "minimum": 0,
+      "title": "Candidates Reviewed By Llm",
+      "type": "integer"
+    },
+    "candidates_total": {
+      "minimum": 0,
+      "title": "Candidates Total",
+      "type": "integer"
+    },
+    "duration_seconds": {
+      "minimum": 0.0,
+      "title": "Duration Seconds",
+      "type": "number"
+    },
+    "egress": {
+      "$ref": "#/$defs/EgressTotals"
+    },
+    "files_scanned": {
+      "minimum": 0,
+      "title": "Files Scanned",
+      "type": "integer"
+    },
+    "findings_total": {
+      "minimum": 0,
+      "title": "Findings Total",
+      "type": "integer"
+    },
+    "lines_scanned": {
+      "minimum": 0,
+      "title": "Lines Scanned",
+      "type": "integer"
+    },
+    "risk_matrix": {
+      "default": [],
+      "items": {
+        "maxItems": 3,
+        "minItems": 3,
+        "prefixItems": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "Risk Matrix",
+      "type": "array"
+    },
+    "top_cwes": {
+      "default": [],
+      "items": {
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
+      "maxItems": 10,
+      "title": "Top Cwes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "findings_total",
+    "by_severity",
+    "by_status",
+    "files_scanned",
+    "lines_scanned",
+    "candidates_total",
+    "candidates_reviewed_by_llm",
+    "egress",
+    "duration_seconds"
+  ],
+  "title": "ScanSummary",
+  "type": "object",
+  "x-data-classification": "metadata"
+}

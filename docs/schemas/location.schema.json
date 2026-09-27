@@ -1,0 +1,64 @@
+{
+  "$id": "urn:codekavach:schema:location:0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A place in the client's code. Client data: never part of anything sent to an LLM.",
+  "properties": {
+    "end_col": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "End Col"
+    },
+    "end_line": {
+      "title": "End Line",
+      "type": "integer"
+    },
+    "path": {
+      "title": "Path",
+      "type": "string"
+    },
+    "start_col": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Start Col"
+    },
+    "start_line": {
+      "title": "Start Line",
+      "type": "integer"
+    },
+    "symbol": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Symbol"
+    }
+  },
+  "required": [
+    "path",
+    "start_line",
+    "end_line"
+  ],
+  "title": "Location",
+  "type": "object",
+  "x-data-classification": "raw"
+}

@@ -1,0 +1,127 @@
+{
+  "$defs": {
+    "Location": {
+      "additionalProperties": false,
+      "description": "A place in the client's code. Client data: never part of anything sent to an LLM.",
+      "properties": {
+        "end_col": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Col"
+        },
+        "end_line": {
+          "title": "End Line",
+          "type": "integer"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "start_col": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start Col"
+        },
+        "start_line": {
+          "title": "Start Line",
+          "type": "integer"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Symbol"
+        }
+      },
+      "required": [
+        "path",
+        "start_line",
+        "end_line"
+      ],
+      "title": "Location",
+      "type": "object"
+    },
+    "TaintRole": {
+      "description": "Role of a step in a taint path.",
+      "enum": [
+        "source",
+        "propagator",
+        "sanitiser",
+        "sink"
+      ],
+      "title": "TaintRole",
+      "type": "string"
+    },
+    "TaintStep": {
+      "additionalProperties": false,
+      "description": "One step of a taint path.",
+      "properties": {
+        "location": {
+          "$ref": "#/$defs/Location"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "role": {
+          "$ref": "#/$defs/TaintRole"
+        }
+      },
+      "required": [
+        "location",
+        "role"
+      ],
+      "title": "TaintStep",
+      "type": "object"
+    }
+  },
+  "$id": "urn:codekavach:schema:taint_path:0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Steps from a source to a sink; a sanitiser step does not make the path invalid.",
+  "properties": {
+    "steps": {
+      "items": {
+        "$ref": "#/$defs/TaintStep"
+      },
+      "minItems": 2,
+      "title": "Steps",
+      "type": "array"
+    }
+  },
+  "required": [
+    "steps"
+  ],
+  "title": "TaintPath",
+  "type": "object",
+  "x-data-classification": "raw"
+}

@@ -1,0 +1,557 @@
+{
+  "$defs": {
+    "EgressTotals": {
+      "additionalProperties": false,
+      "description": "Totals over the egress ledger entries of one scan.",
+      "properties": {
+        "completion_tokens": {
+          "minimum": 0,
+          "title": "Completion Tokens",
+          "type": "integer"
+        },
+        "levels": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "$ref": "#/$defs/PrivacyLevel"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Levels",
+          "type": "array"
+        },
+        "prompt_tokens": {
+          "minimum": 0,
+          "title": "Prompt Tokens",
+          "type": "integer"
+        },
+        "requests_blocked": {
+          "minimum": 0,
+          "title": "Requests Blocked",
+          "type": "integer"
+        },
+        "requests_failed": {
+          "minimum": 0,
+          "title": "Requests Failed",
+          "type": "integer"
+        },
+        "requests_sent": {
+          "minimum": 0,
+          "title": "Requests Sent",
+          "type": "integer"
+        },
+        "tokens_estimated": {
+          "title": "Tokens Estimated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "requests_sent",
+        "requests_blocked",
+        "requests_failed",
+        "prompt_tokens",
+        "completion_tokens",
+        "tokens_estimated",
+        "levels"
+      ],
+      "title": "EgressTotals",
+      "type": "object"
+    },
+    "FindingStatus": {
+      "description": "Lifecycle status of a finding (unordered; transitions are defined in E02-16).",
+      "enum": [
+        "open",
+        "confirmed",
+        "false_positive",
+        "accepted_risk",
+        "suppressed",
+        "fixed"
+      ],
+      "title": "FindingStatus",
+      "type": "string"
+    },
+    "Language": {
+      "description": "Source language of a file (unordered).",
+      "enum": [
+        "python",
+        "javascript",
+        "typescript",
+        "java",
+        "kotlin",
+        "c",
+        "cpp",
+        "php",
+        "go",
+        "csharp",
+        "ruby",
+        "dockerfile",
+        "terraform",
+        "yaml",
+        "json",
+        "toml",
+        "xml",
+        "shell",
+        "sql",
+        "html",
+        "unknown"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "PrivacyLevel": {
+      "description": "Privacy level, ranked by strictness: L1 < L2 < L3 < L4 < L0 (L0 sends nothing).",
+      "enum": [
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L0"
+      ],
+      "title": "PrivacyLevel",
+      "type": "string"
+    },
+    "ScanStatus": {
+      "description": "Status of a scan.",
+      "enum": [
+        "pending",
+        "running",
+        "completed",
+        "completed_with_errors",
+        "failed",
+        "cancelled"
+      ],
+      "title": "ScanStatus",
+      "type": "string"
+    },
+    "ScanSummary": {
+      "additionalProperties": false,
+      "description": "The single aggregate of one scan's findings, scope and egress.",
+      "properties": {
+        "by_language": {
+          "default": [],
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "$ref": "#/$defs/Language"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "By Language",
+          "type": "array"
+        },
+        "by_severity": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "$ref": "#/$defs/Severity"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "By Severity",
+          "type": "array"
+        },
+        "by_status": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "$ref": "#/$defs/FindingStatus"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "By Status",
+          "type": "array"
+        },
+        "candidates_reviewed_by_llm": {
+          "minimum": 0,
+          "title": "Candidates Reviewed By Llm",
+          "type": "integer"
+        },
+        "candidates_total": {
+          "minimum": 0,
+          "title": "Candidates Total",
+          "type": "integer"
+        },
+        "duration_seconds": {
+          "minimum": 0.0,
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "egress": {
+          "$ref": "#/$defs/EgressTotals"
+        },
+        "files_scanned": {
+          "minimum": 0,
+          "title": "Files Scanned",
+          "type": "integer"
+        },
+        "findings_total": {
+          "minimum": 0,
+          "title": "Findings Total",
+          "type": "integer"
+        },
+        "lines_scanned": {
+          "minimum": 0,
+          "title": "Lines Scanned",
+          "type": "integer"
+        },
+        "risk_matrix": {
+          "default": [],
+          "items": {
+            "maxItems": 3,
+            "minItems": 3,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Risk Matrix",
+          "type": "array"
+        },
+        "top_cwes": {
+          "default": [],
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array"
+          },
+          "maxItems": 10,
+          "title": "Top Cwes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "findings_total",
+        "by_severity",
+        "by_status",
+        "files_scanned",
+        "lines_scanned",
+        "candidates_total",
+        "candidates_reviewed_by_llm",
+        "egress",
+        "duration_seconds"
+      ],
+      "title": "ScanSummary",
+      "type": "object"
+    },
+    "Severity": {
+      "description": "Severity of a candidate or finding, in ascending order.",
+      "enum": [
+        "info",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "StageResult": {
+      "additionalProperties": false,
+      "description": "The outcome of one pipeline stage.\n\n``error_summary`` is a short static message; callers pass the exception class name and a\nfixed text, never ``str(exc)`` of arbitrary exceptions, which could contain code or file\ncontent.",
+      "properties": {
+        "error_code": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{1,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "error_summary": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Summary"
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Finished At"
+        },
+        "items_in": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Items In"
+        },
+        "items_out": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Items Out"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9-]{0,47}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Started At"
+        },
+        "status": {
+          "$ref": "#/$defs/StageStatus"
+        }
+      },
+      "required": [
+        "name",
+        "status"
+      ],
+      "title": "StageResult",
+      "type": "object"
+    },
+    "StageStatus": {
+      "description": "Status of one pipeline stage run.",
+      "enum": [
+        "pending",
+        "running",
+        "succeeded",
+        "failed",
+        "skipped"
+      ],
+      "title": "StageStatus",
+      "type": "string"
+    }
+  },
+  "$id": "urn:codekavach:schema:scan:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One run of the pipeline over one project.",
+  "properties": {
+    "codekavach_version": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Codekavach Version",
+      "type": "string"
+    },
+    "config_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Config Hash",
+      "type": "string"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "git_branch": {
+      "anyOf": [
+        {
+          "maxLength": 255,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Git Branch"
+    },
+    "git_commit": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{7,64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Git Commit"
+    },
+    "git_dirty": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Git Dirty"
+    },
+    "id": {
+      "pattern": "^scan_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "languages": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Language"
+      },
+      "title": "Languages",
+      "type": "array"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "privacy_level": {
+      "$ref": "#/$defs/PrivacyLevel"
+    },
+    "project_id": {
+      "pattern": "^proj_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "title": "Project Id",
+      "type": "string"
+    },
+    "provider": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Provider"
+    },
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "stages": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/StageResult"
+      },
+      "title": "Stages",
+      "type": "array"
+    },
+    "started_at": {
+      "title": "Started At",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/ScanStatus"
+    },
+    "summary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ScanSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "status",
+    "started_at",
+    "codekavach_version",
+    "config_hash",
+    "privacy_level"
+  ],
+  "title": "Scan",
+  "type": "object",
+  "x-data-classification": "raw",
+  "x-schema-version": 1
+}

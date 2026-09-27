@@ -1,0 +1,132 @@
+{
+  "$id": "urn:codekavach:schema:llm_verdict_output:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The model's structured answer for one candidate, in pseudonym space.",
+  "properties": {
+    "cited_lines": {
+      "default": [],
+      "description": "List the line numbers of the given code that your answer relies on.",
+      "items": {
+        "maximum": 100000,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "maxItems": 20,
+      "title": "Cited Lines",
+      "type": "array"
+    },
+    "confidence": {
+      "description": "Rate your confidence as low, medium or high.",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "cwe": {
+      "default": [],
+      "description": "List the CWE numbers that apply, most specific first, at most five.",
+      "items": {
+        "maximum": 99999,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "maxItems": 5,
+      "title": "Cwe",
+      "type": "array"
+    },
+    "impact": {
+      "default": "",
+      "description": "Describe what an attacker could achieve; leave empty if none. Names in the code are placeholders; repeat them exactly as written.",
+      "maxLength": 2000,
+      "title": "Impact",
+      "type": "string"
+    },
+    "is_vulnerable": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Answer true if the code is vulnerable, false if not; use null only together with needs_context.",
+      "title": "Is Vulnerable"
+    },
+    "needs_context": {
+      "default": [],
+      "description": "Request up to three pieces of additional code if you cannot decide.",
+      "items": {
+        "additionalProperties": false,
+        "description": "A request for more code before the model can decide.",
+        "properties": {
+          "kind": {
+            "description": "State which kind of additional code you need.",
+            "enum": [
+              "callee_body",
+              "caller",
+              "type_definition",
+              "config_value",
+              "other"
+            ],
+            "title": "ContextKind",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Explain in one sentence why you need it. Names in the code are placeholders; repeat them exactly as written.",
+            "maxLength": 300,
+            "title": "Reason",
+            "type": "string"
+          },
+          "symbol": {
+            "description": "Give the name you need more code for. Names in the code are placeholders; repeat them exactly as written.",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Symbol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "symbol",
+          "reason"
+        ],
+        "title": "ContextRequest",
+        "type": "object"
+      },
+      "maxItems": 3,
+      "title": "Needs Context",
+      "type": "array"
+    },
+    "reasoning": {
+      "description": "Explain the data flow and why it is or is not exploitable. Names in the code are placeholders; repeat them exactly as written.",
+      "maxLength": 4000,
+      "title": "Reasoning",
+      "type": "string"
+    },
+    "remediation": {
+      "default": "",
+      "description": "Describe how to fix the code; leave empty if none. Names in the code are placeholders; repeat them exactly as written.",
+      "maxLength": 4000,
+      "title": "Remediation",
+      "type": "string"
+    }
+  },
+  "required": [
+    "is_vulnerable",
+    "confidence",
+    "cwe",
+    "reasoning",
+    "impact",
+    "remediation",
+    "needs_context",
+    "cited_lines"
+  ],
+  "title": "LLMVerdict",
+  "type": "object",
+  "x-data-classification": "untrusted"
+}

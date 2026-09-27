@@ -1,0 +1,924 @@
+{
+  "$defs": {
+    "ActorKind": {
+      "description": "Who made a finding status change.\n\nThere is deliberately no ``llm`` member: a model's opinion is recorded in the finding's\nprovenance and adjusts confidence, but it never changes a finding's status.",
+      "enum": [
+        "system",
+        "human",
+        "policy"
+      ],
+      "title": "ActorKind",
+      "type": "string"
+    },
+    "CandidateKind": {
+      "description": "Kind of candidate produced by deterministic analysis.",
+      "enum": [
+        "vulnerability",
+        "secret",
+        "dependency",
+        "misconfiguration",
+        "hotspot"
+      ],
+      "title": "CandidateKind",
+      "type": "string"
+    },
+    "Confidence": {
+      "description": "Confidence in a candidate or verdict, in ascending order.",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "DetectionOrigin": {
+      "description": "Whether a finding was first detected by deterministic analysis or by a model.",
+      "enum": [
+        "deterministic",
+        "llm"
+      ],
+      "title": "DetectionOrigin",
+      "type": "string"
+    },
+    "EngineRef": {
+      "additionalProperties": false,
+      "description": "An engine rule that reported the finding.",
+      "properties": {
+        "engine": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Engine",
+          "type": "string"
+        },
+        "engine_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Engine Version"
+        },
+        "rule_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Rule Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "engine",
+        "rule_id"
+      ],
+      "title": "EngineRef",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "description": "A snippet of client code with context lines and highlights for one location.",
+      "properties": {
+        "caption": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Caption"
+        },
+        "clipped": {
+          "default": false,
+          "title": "Clipped",
+          "type": "boolean"
+        },
+        "highlights": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/HighlightRange"
+          },
+          "title": "Highlights",
+          "type": "array"
+        },
+        "language": {
+          "$ref": "#/$defs/Language"
+        },
+        "lines": {
+          "items": {
+            "$ref": "#/$defs/SnippetLine"
+          },
+          "minItems": 1,
+          "title": "Lines",
+          "type": "array"
+        },
+        "location": {
+          "$ref": "#/$defs/Location"
+        },
+        "masked": {
+          "default": false,
+          "title": "Masked",
+          "type": "boolean"
+        },
+        "role": {
+          "$ref": "#/$defs/EvidenceRole",
+          "default": "primary"
+        }
+      },
+      "required": [
+        "location",
+        "language",
+        "lines"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "EvidenceRole": {
+      "description": "What an evidence snippet shows.",
+      "enum": [
+        "primary",
+        "source",
+        "propagator",
+        "sanitiser",
+        "sink",
+        "context"
+      ],
+      "title": "EvidenceRole",
+      "type": "string"
+    },
+    "FindingStatus": {
+      "description": "Lifecycle status of a finding (unordered; transitions are defined in E02-16).",
+      "enum": [
+        "open",
+        "confirmed",
+        "false_positive",
+        "accepted_risk",
+        "suppressed",
+        "fixed"
+      ],
+      "title": "FindingStatus",
+      "type": "string"
+    },
+    "HighlightRange": {
+      "additionalProperties": false,
+      "description": "A highlighted column range on one snippet line.",
+      "properties": {
+        "end_col": {
+          "title": "End Col",
+          "type": "integer"
+        },
+        "line": {
+          "minimum": 1,
+          "title": "Line",
+          "type": "integer"
+        },
+        "start_col": {
+          "minimum": 1,
+          "title": "Start Col",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "start_col",
+        "end_col"
+      ],
+      "title": "HighlightRange",
+      "type": "object"
+    },
+    "Impact": {
+      "additionalProperties": false,
+      "description": "Impact on the five-by-five risk matrix, with a narrative.",
+      "properties": {
+        "level": {
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Level",
+          "type": "integer"
+        },
+        "narrative": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Narrative",
+          "type": "string"
+        }
+      },
+      "required": [
+        "level"
+      ],
+      "title": "Impact",
+      "type": "object"
+    },
+    "LLMReviewRef": {
+      "additionalProperties": false,
+      "description": "One LLM review of the finding, shown to the auditor; it never changes the status.",
+      "properties": {
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "is_vulnerable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Is Vulnerable"
+        },
+        "ledger_seq": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ledger Seq"
+        },
+        "level": {
+          "$ref": "#/$defs/PrivacyLevel"
+        },
+        "model": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "prompt_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Version"
+        },
+        "provider": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "reasoning": {
+          "default": "",
+          "description": "The model's reasoning after restoration to real names; never pseudonymised.",
+          "maxLength": 4000,
+          "title": "Reasoning",
+          "type": "string"
+        },
+        "task": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Task",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "task",
+        "level",
+        "is_vulnerable",
+        "confidence"
+      ],
+      "title": "LLMReviewRef",
+      "type": "object"
+    },
+    "Language": {
+      "description": "Source language of a file (unordered).",
+      "enum": [
+        "python",
+        "javascript",
+        "typescript",
+        "java",
+        "kotlin",
+        "c",
+        "cpp",
+        "php",
+        "go",
+        "csharp",
+        "ruby",
+        "dockerfile",
+        "terraform",
+        "yaml",
+        "json",
+        "toml",
+        "xml",
+        "shell",
+        "sql",
+        "html",
+        "unknown"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "Likelihood": {
+      "additionalProperties": false,
+      "description": "Likelihood on the five-by-five risk matrix, with a rationale.",
+      "properties": {
+        "level": {
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Level",
+          "type": "integer"
+        },
+        "rationale": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "level"
+      ],
+      "title": "Likelihood",
+      "type": "object"
+    },
+    "Location": {
+      "additionalProperties": false,
+      "description": "A place in the client's code. Client data: never part of anything sent to an LLM.",
+      "properties": {
+        "end_col": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Col"
+        },
+        "end_line": {
+          "title": "End Line",
+          "type": "integer"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "start_col": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start Col"
+        },
+        "start_line": {
+          "title": "Start Line",
+          "type": "integer"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Symbol"
+        }
+      },
+      "required": [
+        "path",
+        "start_line",
+        "end_line"
+      ],
+      "title": "Location",
+      "type": "object"
+    },
+    "PrivacyLevel": {
+      "description": "Privacy level, ranked by strictness: L1 < L2 < L3 < L4 < L0 (L0 sends nothing).",
+      "enum": [
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L0"
+      ],
+      "title": "PrivacyLevel",
+      "type": "string"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Where a finding came from.",
+      "properties": {
+        "candidate_ids": {
+          "items": {
+            "pattern": "^cand_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "title": "Candidate Ids",
+          "type": "array"
+        },
+        "codekavach_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Codekavach Version",
+          "type": "string"
+        },
+        "engines": {
+          "items": {
+            "$ref": "#/$defs/EngineRef"
+          },
+          "title": "Engines",
+          "type": "array"
+        },
+        "llm_reviews": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/LLMReviewRef"
+          },
+          "title": "Llm Reviews",
+          "type": "array"
+        },
+        "origin": {
+          "$ref": "#/$defs/DetectionOrigin"
+        },
+        "scan_id": {
+          "pattern": "^scan_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+          "title": "Scan Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "origin",
+        "scan_id",
+        "candidate_ids",
+        "engines",
+        "codekavach_version"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "Reference": {
+      "additionalProperties": false,
+      "description": "An external reference shown with a finding.",
+      "properties": {
+        "title": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "title": "Reference",
+      "type": "object"
+    },
+    "Severity": {
+      "description": "Severity of a candidate or finding, in ascending order.",
+      "enum": [
+        "info",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "SnippetLine": {
+      "additionalProperties": false,
+      "description": "One file line of a snippet, without its line terminator.",
+      "properties": {
+        "number": {
+          "minimum": 1,
+          "title": "Number",
+          "type": "integer"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "truncated": {
+          "default": false,
+          "title": "Truncated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "number",
+        "text"
+      ],
+      "title": "SnippetLine",
+      "type": "object"
+    },
+    "StatusChange": {
+      "additionalProperties": false,
+      "description": "One entry of a finding's status history.",
+      "properties": {
+        "actor": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Actor",
+          "type": "string"
+        },
+        "actor_kind": {
+          "$ref": "#/$defs/ActorKind"
+        },
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expires At"
+        },
+        "from_status": {
+          "$ref": "#/$defs/FindingStatus"
+        },
+        "reason": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Reason",
+          "type": "string"
+        },
+        "to_status": {
+          "$ref": "#/$defs/FindingStatus"
+        }
+      },
+      "required": [
+        "from_status",
+        "to_status",
+        "at",
+        "actor_kind",
+        "actor"
+      ],
+      "title": "StatusChange",
+      "type": "object"
+    },
+    "TaintPath": {
+      "additionalProperties": false,
+      "description": "Steps from a source to a sink; a sanitiser step does not make the path invalid.",
+      "properties": {
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/TaintStep"
+          },
+          "minItems": 2,
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "steps"
+      ],
+      "title": "TaintPath",
+      "type": "object"
+    },
+    "TaintRole": {
+      "description": "Role of a step in a taint path.",
+      "enum": [
+        "source",
+        "propagator",
+        "sanitiser",
+        "sink"
+      ],
+      "title": "TaintRole",
+      "type": "string"
+    },
+    "TaintStep": {
+      "additionalProperties": false,
+      "description": "One step of a taint path.",
+      "properties": {
+        "location": {
+          "$ref": "#/$defs/Location"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "role": {
+          "$ref": "#/$defs/TaintRole"
+        }
+      },
+      "required": [
+        "location",
+        "role"
+      ],
+      "title": "TaintStep",
+      "type": "object"
+    },
+    "TaxonomyRef": {
+      "additionalProperties": false,
+      "description": "A reference into a taxonomy or compliance framework, for example OWASP Top 10 A03.",
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "scheme": {
+          "description": "Lower-case slug such as owasp-top10, owasp-asvs, capec, pci-dss, nist-ssdf.",
+          "title": "Scheme",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version"
+        }
+      },
+      "required": [
+        "scheme",
+        "id"
+      ],
+      "title": "TaxonomyRef",
+      "type": "object"
+    }
+  },
+  "$id": "urn:codekavach:schema:finding:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The final, restored and rated result for one weakness.",
+  "properties": {
+    "compliance": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/TaxonomyRef"
+      },
+      "title": "Compliance",
+      "type": "array"
+    },
+    "confidence": {
+      "$ref": "#/$defs/Confidence"
+    },
+    "correlation_key": {
+      "anyOf": [
+        {
+          "pattern": "^ckck1:[0-9a-f]{32}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Correlation Key"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "cvss4_score": {
+      "anyOf": [
+        {
+          "maximum": 10.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cvss4 Score"
+    },
+    "cvss4_vector": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cvss4 Vector"
+    },
+    "cwe": {
+      "default": [],
+      "items": {
+        "ge": 1,
+        "le": 99999,
+        "type": "integer"
+      },
+      "title": "Cwe",
+      "type": "array"
+    },
+    "description": {
+      "default": "",
+      "maxLength": 8000,
+      "title": "Description",
+      "type": "string"
+    },
+    "evidence": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Evidence"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "fingerprint": {
+      "pattern": "^ckfp1:[0-9a-f]{32}$",
+      "title": "Fingerprint",
+      "type": "string"
+    },
+    "first_seen_scan_id": {
+      "anyOf": [
+        {
+          "pattern": "^scan_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "First Seen Scan Id"
+    },
+    "id": {
+      "pattern": "^find_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "impact": {
+      "$ref": "#/$defs/Impact"
+    },
+    "kind": {
+      "$ref": "#/$defs/CandidateKind",
+      "default": "vulnerability"
+    },
+    "language": {
+      "$ref": "#/$defs/Language",
+      "default": "unknown"
+    },
+    "likelihood": {
+      "$ref": "#/$defs/Likelihood"
+    },
+    "locations": {
+      "items": {
+        "$ref": "#/$defs/Location"
+      },
+      "minItems": 1,
+      "title": "Locations",
+      "type": "array"
+    },
+    "owasp": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/TaxonomyRef"
+      },
+      "title": "Owasp",
+      "type": "array"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "references": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Reference"
+      },
+      "title": "References",
+      "type": "array"
+    },
+    "remediation": {
+      "default": "",
+      "description": "Guidance text only; never a patch that is applied automatically.",
+      "maxLength": 8000,
+      "title": "Remediation",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "severity": {
+      "$ref": "#/$defs/Severity"
+    },
+    "status": {
+      "$ref": "#/$defs/FindingStatus",
+      "default": "open"
+    },
+    "status_history": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/StatusChange"
+      },
+      "title": "Status History",
+      "type": "array"
+    },
+    "taint_path": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TaintPath"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "taxonomy": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/TaxonomyRef"
+      },
+      "title": "Taxonomy",
+      "type": "array"
+    },
+    "title": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "severity",
+    "locations",
+    "impact",
+    "likelihood",
+    "provenance",
+    "fingerprint",
+    "confidence",
+    "created_at"
+  ],
+  "title": "Finding",
+  "type": "object",
+  "x-data-classification": "raw",
+  "x-schema-version": 1
+}
