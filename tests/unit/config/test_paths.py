@@ -227,13 +227,13 @@ def test_trusted_file_refused_for_modes(tmp_path: Path, file_mode: int, dir_mode
 
 def foreign_owner(monkeypatch: pytest.MonkeyPatch, victim: Path) -> None:
     real_stat = os.stat
+    victims = {os.fspath(victim), os.fspath(victim.resolve())}  # resolved before patching
 
     def fake_stat(target: Any, *args: Any, **kwargs: Any) -> Any:
         result = real_stat(target, *args, **kwargs)
-        if Path(target).resolve() == victim.resolve():
-            return SimpleNamespace(
-                st_uid=getattr(os, "geteuid", lambda: 0)() + 4242, st_mode=result.st_mode
-            )
+        if os.fspath(target) in victims:
+            uid = getattr(os, "geteuid", lambda: 0)() + 4242
+            return SimpleNamespace(st_uid=uid, st_mode=result.st_mode)
         return result
 
     monkeypatch.setattr(os, "stat", fake_stat)
