@@ -4,7 +4,6 @@ import sys
 
 import pytest
 
-from codekavach.cli import _version
 from codekavach.cli._version import UNKNOWN_VERSION, get_version
 from codekavach.cli.app import main
 from codekavach.cli.console import get_console, get_err_console, reset_consoles
@@ -29,7 +28,7 @@ def test_unknown_version(monkeypatch: pytest.MonkeyPatch) -> None:
     def missing(name: str) -> str:
         raise importlib.metadata.PackageNotFoundError(name)
 
-    monkeypatch.setattr(_version.importlib.metadata, "version", missing)
+    monkeypatch.setattr(importlib.metadata, "version", missing)
     assert get_version() == UNKNOWN_VERSION == "0.0.0+unknown"
 
 
