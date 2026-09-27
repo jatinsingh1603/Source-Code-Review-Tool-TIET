@@ -32,6 +32,7 @@ from codekavach.cli.console import get_err_console
 from codekavach.cli.errors import CliError, error_line, render_error
 from codekavach.cli.exit_codes import EXIT_CODE_HELP, ExitCode
 from codekavach.cli.options import attach_global_options
+from codekavach.cli.scan import scan_command
 from codekavach.core.log import configure_logging
 
 # Typer 0.27 vendors Click as ``typer._click``; command objects and ``ClickException`` come from
@@ -85,6 +86,9 @@ def root(
 def version_command() -> None:
     """Show the version and exit."""
     typer.echo(f"codekavach {get_version()}")
+
+
+app.command("scan")(scan_command)
 
 
 def build_cli() -> click.Command:

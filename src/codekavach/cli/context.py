@@ -153,3 +153,20 @@ def with_target(ctx: click.Context, path: Path) -> CliContext:
     updated = dataclasses.replace(current, target_hint=path)
     ctx.find_root().meta[CONTEXT_KEY] = updated
     return updated
+
+
+def with_overrides(ctx: click.Context, overrides: CliOverrides) -> CliContext:
+    """Add command-specific flag overrides (for example ``scan --jobs``) before loading.
+
+    Raises:
+        ConfigError: CK-CFG-061 when a key is set both globally and by the command.
+    """
+    current = get_context(ctx)
+    if "loaded" in current.__dict__:
+        raise RuntimeError("the configuration was already loaded")
+    merged = combine(current.cli_overrides, overrides)
+    updated = dataclasses.replace(
+        current, cli_overrides=merged, argv_origin=dict(merged.key_sources)
+    )
+    ctx.find_root().meta[CONTEXT_KEY] = updated
+    return updated

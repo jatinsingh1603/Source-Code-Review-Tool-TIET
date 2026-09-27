@@ -1,0 +1,17 @@
+         Scan          
+scan_01ARYZ6S4100000000
+       00000000        
+┌──────────┬──────────┐
+│ Severity │ Findings │
+├──────────┼──────────┤
+│ critical │        0 │
+│ high     │        1 │
+│ medium   │        0 │
+│ low      │        0 │
+│ info     │        0 │
+└──────────┴──────────┘
+findings: 1
+LLM provider: mock (local), level L3, payloads recorded: 3, blocked by guard: 0
+provider is local/mock: payloads were recorded but not transmitted
+next: codekavach privacy inspect --scan scan_01ARYZ6S410000000000000000
+next: codekavach report --scan scan_01ARYZ6S410000000000000000
