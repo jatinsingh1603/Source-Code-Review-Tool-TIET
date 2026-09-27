@@ -67,7 +67,7 @@ plugins = ["pydantic.mypy"]
 mypy_path = ["src", "."]
 explicit_package_bases = true
 files = ["src/codekavach", "tests", "tools"]
-exclude = ["^fixtures/", "^build/", "^dist/", "^ui/", "^extensions/"]
+exclude = ["^fixtures/", "^build/", "^dist/", "^ui/", "^extensions/", '^tests/typing/fail_.*\.py$']
 show_error_codes = true
 pretty = true
 
@@ -172,6 +172,7 @@ ignore = [
 "tests/**" = ["S101", "S105", "S106", "S108", "D", "PLR2004", "N802"]
 "tools/**" = ["T20", "D"]            # project tooling (ARCHITECTURE section 3): stand-alone scripts may print
 "src/codekavach/cli/**" = ["B008"]   # Typer uses function calls as argument defaults
+"tests/typing/*" = ["F841", "B018"]  # typing case files hold deliberately unused names and expressions
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
