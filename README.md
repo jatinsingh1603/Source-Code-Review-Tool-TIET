@@ -68,8 +68,17 @@ CodeKavach reduces and measures disclosure; it does not make disclosure impossib
 |------|----------|
 | `REFERENCE.md` | Frameworks, standards and methodologies the tool is built on |
 | `RESOURCE.md` | Research papers, datasets, open-source tools and documentation links |
-| `docs/` | Plan, architecture, decision records, threat model, research notes |
-| `src/codekavach/` | Python core (coming with milestone M0) |
+| `docs/` | Plan, architecture, decision records, threat model, research notes, status notes, schemas, demo runbooks, sample reports |
+| `src/codekavach/` | Python core; package tree as in `docs/ARCHITECTURE.md` section 3 |
+| `tests/` | Unit, integration, end-to-end and privacy (property-based) tests |
+| `ui/` | Web dashboard |
+| `extensions/vscode/` | VS Code extension |
+| `action/` | GitHub Action |
+| `rules/` | Native rule packs (YAML) |
+| `data/` | Taxonomy and compliance mapping tables |
+| `fixtures/kavachbank/` | Deliberately vulnerable sample application with fake planted secrets |
+| `deploy/` | Docker, Compose, Helm and the air-gapped bundle |
+| `tools/` | Project tooling that is not part of the shipped package |
 
 ## Development
 
