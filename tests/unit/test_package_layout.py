@@ -110,7 +110,8 @@ def test_packages_match_architecture() -> None:
     missing = EXPECTED_PACKAGES - packages
     unexpected = packages - EXPECTED_PACKAGES
     assert not missing and not unexpected, (
-        f"missing packages: {sorted(missing)}; unexpected packages: {sorted(unexpected)}; {ADR_HINT}"
+        f"missing packages: {sorted(missing)}; "
+        f"unexpected packages: {sorted(unexpected)}; {ADR_HINT}"
     )
 
 
@@ -139,7 +140,9 @@ def _imported_modules(tree: ast.Module, package: str) -> list[str]:
             names.extend(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom):
             if node.level:
-                names.append(package + "." + (node.module or "") if node.level == 1 else "<relative>")
+                names.append(
+                    package + "." + (node.module or "") if node.level == 1 else "<relative>"
+                )
             else:
                 names.append(node.module or "")
     return names

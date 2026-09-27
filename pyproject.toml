@@ -51,3 +51,74 @@ packages = ["src/codekavach"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/src", "/tests", "/README.md", "/LICENSE", "/pyproject.toml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["fixtures", "ui", "extensions", "action", "deploy"]
+
+# Rule families and why they are selected:
+#   E, W, F        pycodestyle and pyflakes
+#   I              import sorting
+#   N              naming
+#   UP             modern syntax for Python 3.12
+#   B A C4 SIM RET PIE PERF  common bug and simplification checks
+#   PTH            pathlib instead of os.path
+#   DTZ            timezone-aware datetimes (ledger timestamps)
+#   T20            no print(): output goes through Rich consoles or the logger
+#   BLE            no blind except: protects fail-closed behaviour (invariant I4)
+#   S              flake8-bandit security checks
+#   G LOG          logging hygiene: no f-strings in log calls
+#   TID            banned imports and APIs (the list itself is added by E01-14)
+#   D              docstrings, Google convention
+#   PGH RUF PL     pygrep hooks, ruff-specific rules, pylint
+#
+# noqa policy: always name the rule code and give a reason on the same line,
+# for example `# noqa: BLE001 - fail closed: any error must abort the send`.
+# A bare `# noqa` is rejected by PGH004. COM812 and ISC001 stay off because they
+# conflict with the formatter. When ruff renames or stabilises rules, update the
+# selection in a dedicated commit; never silence a warning by removing a family.
+[tool.ruff.lint]
+select = [
+  "E", "W", "F",
+  "I",
+  "N",
+  "UP",
+  "B", "A", "C4", "SIM", "RET", "PIE", "PERF",
+  "PTH",
+  "DTZ",
+  "T20",
+  "BLE",
+  "S",
+  "G", "LOG",
+  "TID",
+  "D",
+  "PGH", "RUF",
+  "PL",
+]
+ignore = [
+  "A005",     # architecture mandates package names such as analysis.secrets and eval
+  "D105", "D107",
+  "PLR0913",  # argument count is reviewed by humans, not by a fixed number
+  "PLR2004",
+  "S603",     # subprocess without shell is our engine-adapter model (ADR-0002); S602 and S604 to S607 stay on
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S108", "D", "PLR2004", "N802"]
+"tools/**" = ["T20", "D"]            # project tooling (ARCHITECTURE section 3): stand-alone scripts may print
+"src/codekavach/cli/**" = ["B008"]   # Typer uses function calls as argument defaults
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["codekavach"]
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true
+# Code blocks in Markdown are illustrative and docs/ARCHITECTURE.md is normative;
+# the formatter must not rewrite them.
+exclude = ["*.md"]

@@ -1,4 +1,6 @@
-"""Pseudonymisation: the identifier classifier, per-language renamers, and literal and comment handling.
+"""Pseudonymisation.
+
+The identifier classifier, per-language renamers, and literal and comment handling.
 
 Owning epic: E09, E26. Normative layout: docs/ARCHITECTURE.md section 3.
 
