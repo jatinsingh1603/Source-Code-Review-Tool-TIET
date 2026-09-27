@@ -93,10 +93,6 @@ def test_traceback_on_request(
 ) -> None:
     RAISE[:] = [RuntimeError(f"password={SECRET}")]
     result = cli([*extra, "boom"] if extra else ["boom"], env=env)
-    if extra:
-        # The global options land with E05-05; until then the flags are unknown to Click.
-        assert result.exit_code == 2
-        return
     assert result.exit_code == 4
     assert "Traceback" in result.stderr
     assert SECRET in result.stderr
