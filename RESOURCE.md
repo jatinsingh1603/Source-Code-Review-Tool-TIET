@@ -1174,6 +1174,7 @@ Runtime dependencies of the `codekavach` package itself (`[project.dependencies]
 | Pydantic v2 | MIT | [GitHub: pydantic/pydantic](https://github.com/pydantic/pydantic); [docs.pydantic.dev](https://docs.pydantic.dev/) | [integrated] | Data models, validation and JSON Schema export for the core domain model. Added by E01-05. |
 | pydantic-settings | MIT | [GitHub: pydantic/pydantic-settings](https://github.com/pydantic/pydantic-settings); [docs.pydantic.dev](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) | [integrated] | Root `Settings` model of the configuration. Only the constructor source is enabled; the loader layers files, environment and flags itself (ADR decision D9). Added by E03-03. |
 | structlog | MIT or Apache-2.0 (dual) | [GitHub: hynek/structlog](https://github.com/hynek/structlog); [structlog.org](https://www.structlog.org/) | [integrated] | Structured logging with a processor chain in which redaction is a fixed step (ADR-0005). Added by E01-20. |
+| platformdirs | MIT | [GitHub: tox-dev/platformdirs](https://github.com/tox-dev/platformdirs); [platformdirs.readthedocs.io](https://platformdirs.readthedocs.io/) | [integrated] | Per-platform location of the user configuration directory when neither `CODEKAVACH_HOME` nor `XDG_CONFIG_HOME` is set. Added by E03-12. |
 
 ## 4. LLM provider and open-model documentation
 
