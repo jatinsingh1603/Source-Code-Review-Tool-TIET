@@ -1,0 +1,81 @@
+"""The context object every stage receives.
+
+Owning epic: E04.
+
+``RunContext`` carries configuration, the artefact store, the event bus, the cancellation token,
+the budget and the scan salt (ARCHITECTURE section 4). It carries no vault contents. The
+orchestrator derives one per stage with ``for_stage``.
+"""
+
+import dataclasses
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from codekavach.config import Settings
+from codekavach.core.pipeline.budget import Budget
+from codekavach.core.pipeline.cancel import CancellationToken, ScanCancelledError
+from codekavach.core.pipeline.events import EventBus, StageProgress, WarningRaised
+from codekavach.core.pipeline.result import RunLog, StageRun
+from codekavach.core.pipeline.salt import ScanSalt
+from codekavach.core.store.base import ArtefactStore
+
+
+@dataclass(frozen=True, slots=True)
+class RunContext:
+    """Everything a stage may use during a scan."""
+
+    scan_id: str
+    config: Settings
+    artefacts: ArtefactStore
+    events: EventBus
+    cancellation: CancellationToken
+    budget: Budget
+    scan_salt: ScanSalt
+    project_root: Path
+    state_dir: Path | None = None
+    run_log: RunLog = field(default_factory=RunLog)
+    stage: str | None = None
+
+    def for_stage(
+        self,
+        stage: str,
+        *,
+        artefacts: ArtefactStore | None = None,
+        cancellation: CancellationToken | None = None,
+    ) -> "RunContext":
+        """A copy bound to ``stage``, optionally with a scoped store or a child token."""
+        return dataclasses.replace(
+            self,
+            stage=stage,
+            artefacts=artefacts if artefacts is not None else self.artefacts,
+            cancellation=cancellation if cancellation is not None else self.cancellation,
+        )
+
+    def check_cancelled(self) -> None:
+        """Raise ``ScanCancelledError`` when cancelled or when the wall-clock budget is used up."""
+        self.cancellation.raise_if_cancelled()
+        if self.budget.deadline_exceeded():
+            self.cancellation.cancel("deadline")
+            raise ScanCancelledError("deadline")
+
+    def remaining_seconds(self) -> float | None:
+        """Seconds left of the wall-clock budget, or ``None``."""
+        return self.budget.remaining_seconds()
+
+    def emit_progress(self, current: int, total: int | None, unit: str) -> None:
+        """Publish ``StageProgress`` for the bound stage."""
+        if self.stage is None:
+            raise RuntimeError("emit_progress is only available inside a stage")
+        self.events.publish(
+            StageProgress(
+                scan_id=self.scan_id, stage=self.stage, current=current, total=total, unit=unit
+            )
+        )
+
+    def warn(self, code: str) -> None:
+        """Publish ``WarningRaised`` with a machine code."""
+        self.events.publish(WarningRaised(scan_id=self.scan_id, stage=self.stage, code=code))
+
+    def stage_runs(self) -> tuple[StageRun, ...]:
+        """The stage runs recorded so far."""
+        return self.run_log.snapshot()

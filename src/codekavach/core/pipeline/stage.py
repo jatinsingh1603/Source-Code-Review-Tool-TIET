@@ -13,12 +13,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from codekavach.core.pipeline.errors import StageDeclarationError
 
-# Replaced by ``codekavach.core.pipeline.context.RunContext`` when E04-06 lands.
-RunContext = Any
+if TYPE_CHECKING:
+    from codekavach.core.pipeline.context import RunContext
 
 PLUGIN_API = 1
 NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{0,47}$")
