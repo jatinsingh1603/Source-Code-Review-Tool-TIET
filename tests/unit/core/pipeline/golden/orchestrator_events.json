@@ -1,0 +1,87 @@
+[
+  {
+    "event": "scan.started",
+    "scan_id": "scan_00000000000000000000000000",
+    "at": "fixed",
+    "seq": 1,
+    "stage_count": 3
+  },
+  {
+    "event": "plan.resolved",
+    "scan_id": "scan_00000000000000000000000000",
+    "at": "fixed",
+    "seq": 2,
+    "stages": [
+      "a",
+      "b",
+      "c"
+    ],
+    "wave_sizes": [
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "event": "stage.started",
+    "scan_id": "scan_00000000000000000000000000",
+    "at": "fixed",
+    "seq": 3,
+    "stage": "a",
+    "index": 0,
+    "total": 3
+  },
+  {
+    "event": "stage.finished",
+    "scan_id": "scan_00000000000000000000000000",
+    "at": "fixed",
+    "seq": 4,
+    "stage": "a",
+    "outcome": "succeeded",
+    "duration_ms": 250
+  },
+  {
+    "event": "stage.started",
+    "scan_id": "scan_00000000000000000000000000",
+    "at": "fixed",
+    "seq": 5,
+    "stage": "b",
+    "index": 1,
+    "total": 3
+  },
+  {
+    "event": "stage.finished",
+    "scan_id": "scan_00000000000000000000000000",
+    "at": "fixed",
+    "seq": 6,
+    "stage": "b",
+    "outcome": "succeeded",
+    "duration_ms": 250
+  },
+  {
+    "event": "stage.started",
+    "scan_id": "scan_00000000000000000000000000",
+    "at": "fixed",
+    "seq": 7,
+    "stage": "c",
+    "index": 2,
+    "total": 3
+  },
+  {
+    "event": "stage.finished",
+    "scan_id": "scan_00000000000000000000000000",
+    "at": "fixed",
+    "seq": 8,
+    "stage": "c",
+    "outcome": "succeeded",
+    "duration_ms": 250
+  },
+  {
+    "event": "scan.finished",
+    "scan_id": "scan_00000000000000000000000000",
+    "at": "fixed",
+    "seq": 9,
+    "status": "completed",
+    "duration_ms": 1750
+  }
+]

@@ -14,7 +14,7 @@ from codekavach.core.models.ids import new_scan_id
 from codekavach.core.pipeline.budget import Budget
 from codekavach.core.pipeline.cancel import CancellationToken
 from codekavach.core.pipeline.context import RunContext
-from codekavach.core.pipeline.events import Event, InMemoryEventBus
+from codekavach.core.pipeline.events import Event, EventBus, InMemoryEventBus
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.pipeline.stage import StageCategory
 from codekavach.core.store.base import ArtefactStore
@@ -112,7 +112,7 @@ class FakeStage:
 def make_run_context(
     *,
     store: ArtefactStore | None = None,
-    bus: InMemoryEventBus | None = None,
+    bus: EventBus | None = None,
     salt: ScanSalt | None = None,
     settings: Settings | None = None,
     project_root: Path | None = None,

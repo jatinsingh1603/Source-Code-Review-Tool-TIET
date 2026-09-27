@@ -10,9 +10,13 @@ import threading
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
-from codekavach.core.models import StageStatus
+from codekavach.core.models import ScanStatus, StageStatus
 from codekavach.core.models.scan import StageResult
+
+if TYPE_CHECKING:
+    from codekavach.core.pipeline.plan import ExcludedStage
 
 FALLBACK_ERROR_CODES = {"failed": "stage_failed", "timed_out": "timeout"}
 
@@ -89,3 +93,31 @@ class RunLog:
         """The runs recorded so far, in order."""
         with self._lock:
             return tuple(self._runs)
+
+
+@dataclass(frozen=True, slots=True)
+class PipelineResult:
+    """What one orchestrator run did; the runner turns it into a ``Scan`` record."""
+
+    scan_id: str
+    status: ScanStatus
+    order: tuple[str, ...]
+    waves: tuple[tuple[str, ...], ...]
+    stage_runs: tuple[StageRun, ...]
+    produced_keys: tuple[str, ...]
+    excluded: tuple["ExcludedStage", ...]
+    egress_locked: bool = False
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+
+    def run_of(self, stage: str) -> StageRun | None:
+        """The run of ``stage``, or ``None``."""
+        return next((run for run in self.stage_runs if run.stage == stage), None)
+
+    def failed_stages(self) -> tuple[str, ...]:
+        """Stages whose outcome is failed or timed out, in order."""
+        return tuple(
+            run.stage
+            for run in self.stage_runs
+            if run.outcome in {StageOutcome.FAILED, StageOutcome.TIMED_OUT}
+        )
