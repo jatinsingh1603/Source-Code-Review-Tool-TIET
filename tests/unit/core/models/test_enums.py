@@ -19,7 +19,12 @@ from codekavach.core.models import (
     StageStatus,
     TaintRole,
 )
-from codekavach.core.models.enums import PlaceholderKind, SegmentRole, StubReason
+from codekavach.core.models.enums import (
+    ContextKind,
+    PlaceholderKind,
+    SegmentRole,
+    StubReason,
+)
 
 GOLDEN: dict[type[StrEnum], list[str]] = {
     Severity: ["info", "low", "medium", "high", "critical"],
@@ -71,6 +76,7 @@ GOLDEN: dict[type[StrEnum], list[str]] = {
     SegmentRole: ["primary", "taint_step", "context", "imports", "definition"],
     StubReason: ["out_of_slice_callee", "token_budget", "external_library"],
     PlaceholderKind: ["SECRET", "PII", "TERM"],
+    ContextKind: ["callee_body", "caller", "type_definition", "config_value", "other"],
 }
 
 

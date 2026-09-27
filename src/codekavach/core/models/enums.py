@@ -288,3 +288,13 @@ class PlaceholderKind(StrEnum):
     SECRET = "SECRET"  # noqa: S105 - enum value  # pragma: allowlist secret
     PII = "PII"
     TERM = "TERM"
+
+
+class ContextKind(StrEnum):
+    """Kind of additional context a model may ask for."""
+
+    CALLEE_BODY = "callee_body"
+    CALLER = "caller"
+    TYPE_DEFINITION = "type_definition"
+    CONFIG_VALUE = "config_value"
+    OTHER = "other"
