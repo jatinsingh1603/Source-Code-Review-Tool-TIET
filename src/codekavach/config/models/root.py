@@ -8,6 +8,7 @@ from typing import Any, Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
+from codekavach.config.models.llm import LLMSettings
 from codekavach.config.models.log import LoggingSettings
 from codekavach.config.models.plugins import PluginsSettings
 from codekavach.config.models.privacy import PrivacySettings
@@ -45,6 +46,9 @@ class Settings(BaseSettings):
     scan: ScanSettings = Field(default_factory=ScanSettings, description="What to scan and how.")
     privacy: PrivacySettings = Field(
         default_factory=PrivacySettings, description="What may leave the machine."
+    )
+    llm: LLMSettings = Field(
+        default_factory=LLMSettings, description="Language models and their providers."
     )
     plugins: PluginsSettings = Field(
         default_factory=PluginsSettings, description="Which installed plugins may load."
