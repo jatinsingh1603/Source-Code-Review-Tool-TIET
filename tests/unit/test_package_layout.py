@@ -83,6 +83,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.config.models.base",
         "codekavach.config.models.log",
         "codekavach.config.models.plugins",
+        "codekavach.config.models.privacy",
         "codekavach.config.models.project",
         "codekavach.config.models.root",
         "codekavach.config.models.scan",

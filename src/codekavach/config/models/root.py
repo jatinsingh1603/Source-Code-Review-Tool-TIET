@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, Settings
 
 from codekavach.config.models.log import LoggingSettings
 from codekavach.config.models.plugins import PluginsSettings
+from codekavach.config.models.privacy import PrivacySettings
 from codekavach.config.models.project import ProjectSettings
 from codekavach.config.models.scan import ScanSettings
 
@@ -42,6 +43,9 @@ class Settings(BaseSettings):
         default_factory=ProjectSettings, description="Identity of the scanned project."
     )
     scan: ScanSettings = Field(default_factory=ScanSettings, description="What to scan and how.")
+    privacy: PrivacySettings = Field(
+        default_factory=PrivacySettings, description="What may leave the machine."
+    )
     plugins: PluginsSettings = Field(
         default_factory=PluginsSettings, description="Which installed plugins may load."
     )
