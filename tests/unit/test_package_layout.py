@@ -75,6 +75,10 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.llm.budget",
         "codekavach.llm.cache",
         "codekavach.llm.consensus",
+        "codekavach.core.models.base",
+        "codekavach.core.models.canonical",
+        "codekavach.core.models.errors",
+        "codekavach.core.models.timeutil",
     }
 )
 
@@ -88,7 +92,7 @@ ALLOWED_EXTRA_MODULES: frozenset[str] = frozenset(
 
 # Packages whose __init__.py may import. Add a package here in the same commit
 # that gives it a deliberate public API.
-INIT_IMPORT_ALLOWLIST: frozenset[str] = frozenset({"codekavach"})
+INIT_IMPORT_ALLOWLIST: frozenset[str] = frozenset({"codekavach", "codekavach.core.models"})
 
 SRC_ROOT = Path(codekavach.__file__).parent
 
