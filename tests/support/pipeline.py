@@ -162,3 +162,32 @@ def write_fake_distribution(
         path = site_dir / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(source, encoding="utf-8")
+
+
+def default_fake_stages() -> list[FakeStage]:
+    """The eleven stages of the default pipeline as fakes (the E04-12 worked example)."""
+    cat = StageCategory
+    return [
+        FakeStage("ingest", requires={"scan.target"}, provides={"files", "languages"},
+                  category=cat.INGEST),
+        FakeStage("parse", requires={"files"}, provides={"ast", "symbols", "callgraph"},
+                  category=cat.PARSE),
+        FakeStage("analyse-rules", requires={"files", "symbols"}, provides={"candidates.raw"},
+                  category=cat.ANALYSE, parts={"candidates.raw": []}),
+        FakeStage("analyse-taint", requires={"symbols", "callgraph"},
+                  provides={"candidates.raw"}, category=cat.ANALYSE,
+                  parts={"candidates.raw": []}),
+        FakeStage("aggregate", requires={"candidates.raw"}, provides={"candidates"},
+                  category=cat.AGGREGATE),
+        FakeStage("privacy-prepare", requires={"candidates", "files"},
+                  provides={"payloads.sanitised"}, category=cat.PRIVACY),
+        FakeStage("llm-review", requires={"payloads.sanitised"}, provides={"verdicts.raw"},
+                  category=cat.LLM),
+        FakeStage("restore", requires={"verdicts.raw"}, provides={"verdicts.restored"},
+                  category=cat.RESTORE),
+        FakeStage("rate", requires={"candidates"}, provides={"findings", "scan.summary"},
+                  optional_requires={"verdicts.restored"}, category=cat.RATE),
+        FakeStage("report", requires={"findings"}, provides={"report.outputs"},
+                  category=cat.REPORT),
+        FakeStage("sync", requires={"findings"}, provides={"sync.result"}, category=cat.SYNC),
+    ]  # fmt: skip
