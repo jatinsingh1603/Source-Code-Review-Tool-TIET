@@ -23,6 +23,7 @@ from codekavach.core.models.enums import (
     ActorKind,
     ContextKind,
     DetectionOrigin,
+    EgressOutcome,
     EvidenceRole,
     PlaceholderKind,
     SegmentRole,
@@ -83,6 +84,7 @@ GOLDEN: dict[type[StrEnum], list[str]] = {
     EvidenceRole: ["primary", "source", "propagator", "sanitiser", "sink", "context"],
     ActorKind: ["system", "human", "policy"],
     DetectionOrigin: ["deterministic", "llm"],
+    EgressOutcome: ["sent", "blocked", "completed", "failed"],
 }
 
 

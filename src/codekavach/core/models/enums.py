@@ -328,3 +328,12 @@ class DetectionOrigin(StrEnum):
 
     DETERMINISTIC = "deterministic"
     LLM = "llm"
+
+
+class EgressOutcome(StrEnum):
+    """Outcome recorded by an egress ledger entry."""
+
+    SENT = "sent"
+    BLOCKED = "blocked"
+    COMPLETED = "completed"
+    FAILED = "failed"
