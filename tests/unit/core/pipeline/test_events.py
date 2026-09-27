@@ -33,7 +33,7 @@ from tests.support.golden import assert_matches_golden
 
 GOLDEN = Path(__file__).parent / "golden" / "events.json"
 AT = datetime(2026, 9, 24, 10, 0, tzinfo=UTC)
-SCAN = "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P"
+SCAN = "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P"  # pragma: allowlist secret
 
 
 def samples() -> list[Event]:
