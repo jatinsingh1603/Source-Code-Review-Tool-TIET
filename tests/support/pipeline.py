@@ -15,6 +15,7 @@ from codekavach.core.pipeline.budget import Budget
 from codekavach.core.pipeline.cancel import CancellationToken
 from codekavach.core.pipeline.context import RunContext
 from codekavach.core.pipeline.events import Event, EventBus, InMemoryEventBus
+from codekavach.core.pipeline.keys import is_multi_provider
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.pipeline.stage import StageCategory
 from codekavach.core.store.base import ArtefactStore
@@ -92,7 +93,12 @@ class FakeStage:
         with self._lock:
             self.calls += 1
         for key in sorted(self.requires):
-            if ctx.artefacts.has(key):
+            if not ctx.artefacts.has(key):
+                continue
+            if is_multi_provider(key):
+                ref = ctx.artefacts.ref(key)
+                self.seen[key] = [part for part, _ in ref.parts] if ref else []
+            else:
                 self.seen[key] = ctx.artefacts.get_json(key)
         if self._sleep_seconds > 0:
             self._sleep(ctx)

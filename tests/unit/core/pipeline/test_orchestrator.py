@@ -16,7 +16,7 @@ from codekavach.core.pipeline.events import NullEventBus
 from codekavach.core.pipeline.orchestrator import Orchestrator, error_type_of
 from codekavach.core.pipeline.plan import RunPlan, plan_from_stages
 from codekavach.core.pipeline.result import StageOutcome
-from codekavach.core.pipeline.stage import StageCategory
+from codekavach.core.pipeline.stage import FailurePolicy, StageCategory
 from tests.support.golden import assert_matches_golden
 from tests.support.pipeline import CollectingBus, FakeStage, make_run_context
 
@@ -98,6 +98,7 @@ def test_failure_path(write_before: bool) -> None:
         category=C.ANALYSE,
         raises=ValueError(MARKER),
         write_before_raise=write_before,
+        failure_policy=FailurePolicy.ABORT_SCAN,
     )
     plan, ctx = prepared(chain(failing))
     result = orchestrator().run(plan, ctx)
@@ -201,7 +202,7 @@ def test_dependency_missing_is_skipped() -> None:
     run = result.run_of("c")
     assert run is not None
     assert (run.outcome, run.skip_reason, run.blocked_by) == (
-        StageOutcome.SKIPPED, "dependency_missing", "initial",
+        StageOutcome.SKIPPED, "dependency_missing", None,
     )  # fmt: skip
     assert result.status is ScanStatus.COMPLETED
     assert "stage.skipped" in kinds(ctx)
