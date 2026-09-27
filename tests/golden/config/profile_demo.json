@@ -1,0 +1,144 @@
+{
+  "config_version": 1,
+  "llm": {
+    "allow_remote": false,
+    "budget": {
+      "max_cost_usd": null,
+      "max_requests": null,
+      "max_total_input_tokens": null,
+      "max_total_output_tokens": null
+    },
+    "cache": true,
+    "consensus": 1,
+    "default_provider": "mock",
+    "enabled": true,
+    "max_output_tokens": 2048,
+    "max_retries": 2,
+    "model": null,
+    "providers": {
+      "mock": {
+        "allow_insecure_http": false,
+        "api_key": null,
+        "api_version": null,
+        "aws_profile": null,
+        "azure_deployment": null,
+        "base_url": null,
+        "cassette_dir": null,
+        "command": null,
+        "enabled": true,
+        "kind": "mock",
+        "model": null,
+        "options": {},
+        "region": null,
+        "trust_tier": null
+      }
+    },
+    "tasks": [
+      "triage",
+      "explain",
+      "remediate",
+      "summarise"
+    ],
+    "temperature": 0.0,
+    "timeout_seconds": 120
+  },
+  "logging": {
+    "format": "console",
+    "level": "info"
+  },
+  "plugins": {
+    "allow_distributions": [],
+    "disable": []
+  },
+  "privacy": {
+    "domain_terms": [],
+    "domain_terms_file": null,
+    "level": "L3",
+    "min_level": "L1",
+    "never_send": [
+      "**/.env",
+      "**/.env.*",
+      "**/*.pem",
+      "**/*.key",
+      "**/*.p12",
+      "**/*.pfx",
+      "**/*.jks",
+      "**/id_rsa*",
+      "**/id_ed25519*"
+    ],
+    "paths": [],
+    "provider_tier_levels": {
+      "local": "L1",
+      "private": "L2",
+      "public": "L3"
+    },
+    "public_allowlist_extra": [],
+    "vault": {
+      "key_source": "keyring",
+      "passphrase": null
+    }
+  },
+  "profile": "demo",
+  "profiles": {},
+  "project": {
+    "client": null,
+    "description": null,
+    "languages": [],
+    "name": null
+  },
+  "reporting": {
+    "auditor": null,
+    "classification": "Confidential",
+    "compliance": [
+      "owasp-top10",
+      "cwe-top25",
+      "pci-dss",
+      "iso27001",
+      "nist-ssdf"
+    ],
+    "formats": [
+      "html",
+      "pdf",
+      "sarif",
+      "json"
+    ],
+    "include_privacy_attestation": true,
+    "logo": null,
+    "min_severity": "info",
+    "output_dir": "codekavach-report",
+    "snippet_context_lines": 3,
+    "template_dir": null,
+    "title": null
+  },
+  "scan": {
+    "cache": true,
+    "cache_keep_scans": 5,
+    "cache_max_size_mb": 2048,
+    "exclude": [
+      ".git/**",
+      ".codekavach/**",
+      "node_modules/**",
+      ".venv/**",
+      "venv/**",
+      "__pycache__/**",
+      "dist/**",
+      "build/**",
+      "target/**",
+      "vendor/**"
+    ],
+    "fail_on": "none",
+    "follow_symlinks": false,
+    "include": [
+      "**/*"
+    ],
+    "jobs": 0,
+    "max_file_size_kb": 1024,
+    "max_files": 50000,
+    "max_total_size_mb": 2048,
+    "respect_gitignore": true,
+    "skip_stages": [],
+    "stage_timeout_seconds": 1800,
+    "stage_timeouts": {},
+    "timeout_seconds": 3600
+  }
+}

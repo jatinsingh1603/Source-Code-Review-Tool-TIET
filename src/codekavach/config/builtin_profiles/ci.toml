@@ -1,0 +1,12 @@
+# Built-in profile "ci": fail the pipeline on high findings and bound LLM use.
+[scan]
+fail_on = "high"
+
+[reporting]
+formats = ["sarif", "json", "html"]
+
+[llm]
+max_retries = 1
+
+[llm.budget]
+max_requests = 200

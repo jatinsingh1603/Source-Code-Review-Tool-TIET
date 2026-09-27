@@ -1,0 +1,13 @@
+# Built-in profile "demo": Demo 1 on a laptop with no key. Nothing leaves the machine.
+[llm]
+default_provider = "mock"
+allow_remote = false
+
+[privacy]
+level = "L3"
+
+[reporting]
+formats = ["html", "pdf", "sarif", "json"]
+
+[scan]
+fail_on = "none"

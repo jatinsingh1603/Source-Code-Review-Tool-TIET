@@ -24,7 +24,7 @@ error is never used because it may contain the rejected value (CWE-532).
 import os
 import re
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -36,6 +36,7 @@ from codekavach.config.errors import (
     ConfigErrorCode,
     ConfigIssue,
     ConfigValidationError,
+    ProfileError,
 )
 from codekavach.config.introspect import flatten_leaves, keys_with_marker, loc_to_key
 from codekavach.config.merge import deep_merge
@@ -46,6 +47,11 @@ from codekavach.config.paths import (
     find_project_config,
     project_root_for,
     user_config_file,
+)
+from codekavach.config.profiles import (
+    build_profile_layer,
+    check_user_defined,
+    select_profile_name,
 )
 from codekavach.config.provenance import Layer, Origin, compute_origins, origin_in
 from codekavach.config.toml_source import read_toml
@@ -148,11 +154,75 @@ def _discover_org_policies(*, env: Mapping[str, str], project_root: Path) -> tup
     return ()
 
 
+def _strip_profile_keys(layer: Layer) -> Layer:
+    if "profile" not in layer.data and "profiles" not in layer.data:
+        return layer
+    data = {key: value for key, value in layer.data.items() if key not in {"profile", "profiles"}}
+    return replace(layer, data=data)
+
+
 def _select_profile(
     layers: list[Layer], *, profile: str | None, env: Mapping[str, str]
-) -> tuple[list[Layer], str | None, Origin | None]:
-    """Choose a profile and insert its layer after the project layer (E03-14)."""
-    return layers, profile, None
+) -> tuple[list[Layer], str | None, Origin | None, dict[str, Any]]:
+    """Choose a profile and insert its layer after the project layer (E03-14).
+
+    The ``profile`` key and ``profiles`` tables leave the user and project layers; the caller puts
+    the selected name and the combined user-defined overlays into the defaults instead, so neither
+    takes part in layer precedence. Returns the layers, the name, the origin of the selection and
+    the combined ``profiles`` table.
+    """
+    by_name = {layer.name: layer for layer in layers}
+    user_defined: dict[str, Any] = {}
+    sources: dict[str, str] = {}
+    for name in ("user", "project"):
+        layer = by_name.get(name)
+        table = layer.data.get("profiles") if layer is not None else None
+        if layer is None or table is None:
+            continue
+        if not isinstance(table, Mapping):
+            raise ProfileError.single(
+                ConfigErrorCode.CK_CFG_003,
+                "profiles must be a table",
+                key="profiles",
+                source=layer.source,
+            )
+        for profile_name, overlay in table.items():
+            user_defined[profile_name] = overlay
+            sources[profile_name] = layer.source
+    selected, origin = select_profile_name(
+        profile,
+        env,
+        by_name["project"].data if "project" in by_name else None,
+        by_name["user"].data if "user" in by_name else None,
+    )
+    if origin.layer in {"user", "project"}:
+        origin = origin_in(by_name[origin.layer], "profile")
+    stripped = [_strip_profile_keys(layer) for layer in layers]
+    try:
+        check_user_defined(user_defined)
+        if selected is None:
+            return stripped, None, None, user_defined
+        profile_layer = build_profile_layer(
+            selected, user_defined, sources=sources, union_keys=union_keys_of(Settings)
+        )
+    except ProfileError as error:
+        raise ProfileError(
+            [replace(issue, source=issue.source or origin.source) for issue in error.issues]
+        ) from None
+    defaults = Settings().model_dump(mode="json")
+    try:
+        Settings.model_validate(
+            deep_merge(defaults, profile_layer.data, union_keys=union_keys_of(Settings))
+        )
+    except ValidationError as exc:
+        at_profile = Origin(layer="profile", source=profile_layer.source)
+        raise ProfileError(convert_validation_error(exc, lambda _key: at_profile)) from None
+    position = max(
+        (index + 1 for index, layer in enumerate(stripped) if layer.name in {"user", "project"}),
+        default=0,
+    )
+    stripped.insert(position, profile_layer)
+    return stripped, selected, origin, user_defined
 
 
 def _extra_layers(
@@ -266,7 +336,9 @@ def load_settings(
     if project is not None:
         layers.append(project)
 
-    layers, profile_name, profile_origin = _select_profile(layers, profile=profile, env=environment)
+    layers, profile_name, profile_origin, profiles_table = _select_profile(
+        layers, profile=profile, env=environment
+    )
     layers = _extra_layers(layers, env=environment, cli_overrides=cli_overrides)
     layers = [_expand_layer(layer) for layer in layers]
     warnings = list(
@@ -277,6 +349,8 @@ def load_settings(
 
     union_keys = union_keys_of(Settings)
     defaults = Settings().model_dump(mode="json")
+    defaults["profile"] = profile_name
+    defaults["profiles"] = profiles_table
     merged: dict[str, Any] = defaults
     for layer in layers:
         merged = deep_merge(merged, layer.data, union_keys=union_keys)
