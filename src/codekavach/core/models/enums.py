@@ -309,3 +309,15 @@ class EvidenceRole(StrEnum):
     SANITISER = "sanitiser"
     SINK = "sink"
     CONTEXT = "context"
+
+
+class ActorKind(StrEnum):
+    """Who made a finding status change.
+
+    There is deliberately no ``llm`` member: a model's opinion is recorded in the finding's
+    provenance and adjusts confidence, but it never changes a finding's status.
+    """
+
+    SYSTEM = "system"
+    HUMAN = "human"
+    POLICY = "policy"

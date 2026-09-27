@@ -85,6 +85,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.core.models.evidence",
         "codekavach.core.models.fingerprint",
         "codekavach.core.models.ids",
+        "codekavach.core.models.lifecycle",
         "codekavach.core.models.location",
         "codekavach.core.models.paths",
         "codekavach.core.models.payload",

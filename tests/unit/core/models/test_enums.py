@@ -20,6 +20,7 @@ from codekavach.core.models import (
     TaintRole,
 )
 from codekavach.core.models.enums import (
+    ActorKind,
     ContextKind,
     EvidenceRole,
     PlaceholderKind,
@@ -79,6 +80,7 @@ GOLDEN: dict[type[StrEnum], list[str]] = {
     PlaceholderKind: ["SECRET", "PII", "TERM"],
     ContextKind: ["callee_body", "caller", "type_definition", "config_value", "other"],
     EvidenceRole: ["primary", "source", "propagator", "sanitiser", "sink", "context"],
+    ActorKind: ["system", "human", "policy"],
 }
 
 
