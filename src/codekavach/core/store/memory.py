@@ -46,6 +46,22 @@ def check_part(part: object) -> str:
     return part
 
 
+def single_key(key: object) -> str:
+    """A valid single-provider key, else ``ArtefactKeyError``."""
+    checked = check_key(key)
+    if is_multi_provider(checked):
+        raise ArtefactKeyError(f"artefact key {checked!r} is multi-provider; use put_part")
+    return checked
+
+
+def multi_key(key: object) -> str:
+    """A valid multi-provider key, else ``ArtefactKeyError``."""
+    checked = check_key(key)
+    if not is_multi_provider(checked):
+        raise ArtefactKeyError(f"artefact key {checked!r} is single-provider; use put")
+    return checked
+
+
 class InMemoryArtefactStore:
     """A complete, thread-safe ``ArtefactStore`` held in memory."""
 
@@ -56,24 +72,12 @@ class InMemoryArtefactStore:
         self._transient: dict[str, object] = {}
         self._parts: dict[str, dict[str, str]] = {}
 
-    def _single_key(self, key: str) -> str:
-        check_key(key)
-        if is_multi_provider(key):
-            raise ArtefactKeyError(f"artefact key {key!r} is multi-provider; use put_part")
-        return key
-
-    def _multi_key(self, key: str) -> str:
-        check_key(key)
-        if not is_multi_provider(key):
-            raise ArtefactKeyError(f"artefact key {key!r} is single-provider; use put")
-        return key
-
     def _store(self, encoded: EncodedArtefact) -> None:
         self._content.setdefault(encoded.digest, encoded)
 
     def put(self, key: str, value: object, *, persist: bool = True) -> ArtefactRef:
         """Store ``value``; with ``persist=False`` keep the object itself (transient)."""
-        self._single_key(key)
+        single_key(key)
         if not persist:
             check_never_persist(value)
             with self._lock:
@@ -89,7 +93,7 @@ class InMemoryArtefactStore:
 
     def put_part(self, key: str, part: str, value: object) -> ArtefactRef:
         """Store one part of a multi-provider key."""
-        self._multi_key(key)
+        multi_key(key)
         check_part(part)
         encoded = encode_artefact(value)
         with self._lock:
@@ -134,7 +138,7 @@ class InMemoryArtefactStore:
 
     def get_parts(self, key: str, item: type[M]) -> dict[str, list[M]]:
         """Every part of ``key``, ordered by part name."""
-        self._multi_key(key)
+        multi_key(key)
         with self._lock:
             parts = sorted(self._parts.get(key, {}).items())
             encoded = [(name, self._content[digest]) for name, digest in parts]
@@ -174,14 +178,14 @@ class InMemoryArtefactStore:
         check_key(key)
         with self._lock:
             if ref.parts:
-                self._multi_key(key)
+                multi_key(key)
                 for part, digest in ref.parts:
                     check_part(part)
                     if digest not in self._content:
                         raise ArtefactMissingError(f"no stored content for part {part!r}")
                 self._parts[key] = dict(ref.parts)
                 return
-            self._single_key(key)
+            single_key(key)
             if ref.digest is None or ref.digest not in self._content:
                 raise ArtefactMissingError(f"no stored content for artefact {key!r}")
             self._transient.pop(key, None)

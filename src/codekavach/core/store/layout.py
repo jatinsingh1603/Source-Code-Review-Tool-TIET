@@ -46,8 +46,15 @@ class StateLayoutError(PipelineError):
 
 
 def secure_mkdir(path: Path) -> Path:
-    """Create ``path`` (and parents) with mode 0o700; refuse a symlink or a non-directory."""
-    path.mkdir(mode=DIR_MODE, parents=True, exist_ok=True)
+    """Create ``path`` and every missing parent with mode 0o700; refuse a symlink or a file."""
+    missing: list[Path] = []
+    current = path
+    while not os.path.lexists(current) and current.parent != current:
+        missing.append(current)
+        current = current.parent
+    for directory in reversed(missing):
+        with contextlib.suppress(FileExistsError):
+            directory.mkdir(mode=DIR_MODE)
     if path.is_symlink() or not path.is_dir():
         raise StateLayoutError(f"{path} is a symbolic link or not a directory")
     return path
@@ -85,12 +92,22 @@ class StateLayout:
     root: Path
 
     def contain(self, path: Path) -> Path:
-        """``path`` resolved, provided it lies inside the resolved root."""
-        root = self.root.resolve()
-        resolved = path.resolve()
-        if not resolved.is_relative_to(root):
+        """``path`` made absolute, provided it lies inside the root.
+
+        The check is lexical (``..`` collapsed) for every path and, for a path that already
+        exists, is repeated on the real path so that a symlink cannot lead outside the root.
+        Real paths are not compared for paths still being created, because on Windows their
+        resolved form can change while another thread creates the parent directories.
+        """
+        root = Path(os.path.abspath(self.root))  # noqa: PTH100 - lexical on purpose
+        candidate = Path(os.path.abspath(path))  # noqa: PTH100 - lexical on purpose
+        if not candidate.is_relative_to(root):
             raise StateLayoutError("path resolves outside the state directory")
-        return resolved
+        if os.path.lexists(candidate) and not candidate.resolve().is_relative_to(
+            self.root.resolve()
+        ):
+            raise StateLayoutError("path resolves outside the state directory")
+        return candidate
 
     def ensure(self) -> "StateLayout":
         """Create or tighten the root (0o700, self-ignoring ``.gitignore``); refuse a symlink."""

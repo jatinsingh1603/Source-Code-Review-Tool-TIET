@@ -129,7 +129,7 @@ def test_secure_mkdir_refuses_symlink(tmp_path: Path) -> None:
 def test_secure_mkdir_refuses_file(tmp_path: Path) -> None:
     path = tmp_path / "file"
     path.write_text("")
-    with pytest.raises(FileExistsError):
+    with pytest.raises(StateLayoutError):
         secure_mkdir(path)
 
 
