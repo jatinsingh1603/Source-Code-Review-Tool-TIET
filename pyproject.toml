@@ -24,7 +24,7 @@ classifiers = [
   "Operating System :: MacOS",
   "Typing :: Typed",
 ]
-dependencies = ["typer>=0.27", "rich>=15.0"]
+dependencies = ["typer>=0.27", "rich>=15.0", "pydantic>=2.9,<3"]
 
 [project.optional-dependencies]
 # Reserved names. Later epics fill them; do not invent other extra names without an ADR.
@@ -51,6 +51,38 @@ packages = ["src/codekavach"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/src", "/tests", "/README.md", "/LICENSE", "/pyproject.toml"]
+
+# Ignore policy: `# type: ignore[code]  # reason` only; ignore-without-code enforces the
+# code. There is no global ignore_missing_imports. For an untyped third-party package,
+# prefer a types-* stub package in the typecheck group; otherwise add a named override
+# below with a comment naming the issue that introduced it. Never set ignore_errors.
+# Any in a public signature in codekavach.privacy or codekavach.llm needs a
+# justification comment.
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool", "possibly-undefined"]
+plugins = ["pydantic.mypy"]
+mypy_path = ["src", "."]
+explicit_package_bases = true
+files = ["src/codekavach", "tests", "tools"]
+exclude = ["^fixtures/", "^build/", "^dist/", "^ui/", "^extensions/"]
+show_error_codes = true
+pretty = true
+
+# Overrides for untyped third-party packages. Example:
+# [[tool.mypy.overrides]]
+# module = ["some_untyped_pkg", "some_untyped_pkg.*"]   # added by E15-xx: engine wrapper without stubs
+# ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.ini_options]
+markers = ["slow: tests that start subprocesses or take longer than a second"]
 
 [tool.ruff]
 line-length = 100
