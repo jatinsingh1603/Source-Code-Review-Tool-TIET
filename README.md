@@ -71,6 +71,19 @@ CodeKavach reduces and measures disclosure; it does not make disclosure impossib
 | `docs/` | Plan, architecture, decision records, threat model, research notes |
 | `src/codekavach/` | Python core (coming with milestone M0) |
 
+## Development
+
+Requires [uv](https://docs.astral.sh/uv/); it installs Python 3.12 if needed.
+
+```bash
+uv sync --all-extras
+uv run pre-commit install
+uv run pytest
+uv run codekavach --help
+```
+
+`pre-commit` is configured by a later scaffolding issue; the other commands work now. The full quickstart follows in E01-34.
+
 ## Academic context
 
 CodeKavach is developed at the Thapar Institute of Engineering and Technology as an open-source project and the basis of a research paper on the privacy-utility trade-off in LLM-assisted vulnerability detection.

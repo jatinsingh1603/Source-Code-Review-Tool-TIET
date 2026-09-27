@@ -42,3 +42,6 @@ ui/dist/
 
 # Project tooling state
 .backlog-state/
+.hypothesis/
+.import_linter_cache/
+.coverage.*

@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "codekavach"
+version = "0.1.0.dev0"
+description = "Privacy-preserving, LLM-assisted secure source code review"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "CodeKavach contributors" }]
+keywords = ["security", "static-analysis", "code-review", "privacy", "llm", "sast"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "Topic :: Security",
+  "Topic :: Software Development :: Quality Assurance",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
+  "Typing :: Typed",
+]
+dependencies = ["typer>=0.27", "rich>=15.0"]
+
+[project.optional-dependencies]
+# Reserved names. Later epics fill them; do not invent other extra names without an ADR.
+server = []      # E32: fastapi, uvicorn, sqlalchemy, alembic, postgres driver
+reports = []     # E31: weasyprint, docxtpl, xlsxwriter
+providers = []   # E22: provider SDKs and LiteLLM
+pii = []         # E08: PII detection models
+eval = []        # E36/E37: dataset and metrics tooling
+
+[project.scripts]
+codekavach = "codekavach.cli.app:main"
+
+[dependency-groups]
+lint = ["ruff>=0.16"]
+typecheck = ["mypy>=2.3"]
+test = ["pytest>=9.1"]
+dev = [{ include-group = "lint" }, { include-group = "typecheck" }, { include-group = "test" }]
+
+[tool.uv]
+required-version = ">=0.5"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/codekavach"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/README.md", "/LICENSE", "/pyproject.toml"]
