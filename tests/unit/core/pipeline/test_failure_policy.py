@@ -152,7 +152,7 @@ NAMES = [stage.name for stage in default_fake_stages()]
 EGRESS = {C.PRIVACY, C.LLM, None}
 
 
-@settings(max_examples=60)
+@settings(max_examples=60, deadline=None)  # runs a whole fake pipeline per example
 @given(st.sets(st.sampled_from(NAMES)))
 def test_property_no_llm_after_privacy_failure(failing: set[str]) -> None:
     stages = default_fake_stages()

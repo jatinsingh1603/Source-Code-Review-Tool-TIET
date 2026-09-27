@@ -154,6 +154,12 @@ def _walk(
             yield from _walk(child, tokens, markers, through_mapping, (*stack, child))
         elif container is not None:
             wildcard, item = container
+            entry = (*tokens, wildcard)
+            # The entry itself (``llm.providers.*``, ``privacy.paths[]``) is a non-leaf key.
+            entry_ref = FieldRef(
+                _render(entry), item, field, markers, through_mapping or wildcard == ANY_KEY
+            )
+            yield _Node(entry_ref, entry, is_leaf=False, is_free_mapping=False)
             yield from _walk(
                 item,
                 (*tokens, wildcard),

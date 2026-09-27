@@ -41,6 +41,7 @@ from codekavach.config.errors import (
 from codekavach.config.introspect import flatten_leaves, keys_with_marker, loc_to_key
 from codekavach.config.merge import deep_merge
 from codekavach.config.models.root import Settings
+from codekavach.config.overrides import CliOverrides, cli_layer
 from codekavach.config.paths import (
     check_discovered_project_file,
     check_trusted_file,
@@ -226,14 +227,16 @@ def _select_profile(
 
 
 def _extra_layers(
-    layers: list[Layer], *, env: Mapping[str, str], cli_overrides: Mapping[str, Any] | None
+    layers: list[Layer],
+    *,
+    env: Mapping[str, str],
+    cli_overrides: CliOverrides | Mapping[str, Any] | None,
 ) -> list[Layer]:
-    """Append the environment layer (E03-16) and the CLI layer (E03-17).
-
-    Until E03-17 lands, non-empty ``cli_overrides`` form a plain ``cli`` layer.
-    """
-    if cli_overrides:
-        layers = [*layers, Layer(name="cli", source="command line", data=dict(cli_overrides))]
+    """Append the environment layer (E03-16) and the CLI layer (E03-17), in that order."""
+    if cli_overrides is not None and (
+        cli_overrides.data if isinstance(cli_overrides, CliOverrides) else cli_overrides
+    ):
+        layers = [*layers, cli_layer(cli_overrides)]
     return layers
 
 
@@ -303,7 +306,7 @@ def load_settings(
     target: Path | None = None,
     config_file: Path | None = None,
     profile: str | None = None,
-    cli_overrides: Mapping[str, Any] | None = None,
+    cli_overrides: CliOverrides | Mapping[str, Any] | None = None,
     env: Mapping[str, str] | None = None,
     use_user_config: bool = True,
     trust_project_config: bool = False,
