@@ -103,6 +103,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.core.pipeline.errors",
         "codekavach.core.pipeline.events",
         "codekavach.core.store.base",
+        "codekavach.core.store.layout",
         "codekavach.core.store.memory",
         "codekavach.core.pipeline.keys",
         "codekavach.core.pipeline.result",
