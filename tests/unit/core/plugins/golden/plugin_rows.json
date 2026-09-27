@@ -1,0 +1,62 @@
+[
+  {
+    "group": "codekavach.renderers",
+    "kind": "renderer",
+    "name": "pdf",
+    "target": "ck_fake:Renderer",
+    "dist": "ck-fake",
+    "version": "1.0",
+    "status": "ok",
+    "error_type": null,
+    "category": null,
+    "requires": [],
+    "optional_requires": [],
+    "provides": []
+  },
+  {
+    "group": "codekavach.stages",
+    "kind": "stage",
+    "name": "broken",
+    "target": "ck_missing:Nope",
+    "dist": "ck-fake",
+    "version": "1.0",
+    "status": "error",
+    "error_type": "ModuleNotFoundError",
+    "category": null,
+    "requires": [],
+    "optional_requires": [],
+    "provides": []
+  },
+  {
+    "group": "codekavach.stages",
+    "kind": "stage",
+    "name": "sample",
+    "target": "ck_fake:SampleStage",
+    "dist": "ck-fake",
+    "version": "1.0",
+    "status": "ok",
+    "error_type": null,
+    "category": null,
+    "requires": [
+      "files"
+    ],
+    "optional_requires": [],
+    "provides": [
+      "sample.out"
+    ]
+  },
+  {
+    "group": "codekavach.stages",
+    "kind": "stage",
+    "name": "sample",
+    "target": "ck_other:SampleStage",
+    "dist": "zz-plugin",
+    "version": "1.0",
+    "status": "shadowed",
+    "error_type": null,
+    "category": null,
+    "requires": [],
+    "optional_requires": [],
+    "provides": []
+  }
+]
