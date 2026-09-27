@@ -286,9 +286,14 @@ def test_nothing_on_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     assert "to_stderr" in captured.err
 
 
-def test_main_configures_logging_before_app(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_configures_logging_before_run(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
     monkeypatch.setattr(codekavach.cli.app, "configure_logging", lambda: calls.append("configure"))
-    monkeypatch.setattr(codekavach.cli.app, "app", lambda: calls.append("app"))
-    codekavach.cli.app.main()
-    assert calls == ["configure", "app"]
+
+    def fake_run(command: object, argv: object) -> int:
+        calls.append("run")
+        return 0
+
+    monkeypatch.setattr(codekavach.cli.app, "run", fake_run)
+    assert codekavach.cli.app.main([]) == 0
+    assert calls == ["configure", "run"]

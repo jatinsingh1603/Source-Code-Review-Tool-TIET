@@ -147,7 +147,9 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
 ALLOWED_EXTRA_MODULES: frozenset[str] = frozenset(
     {
         "codekavach.__main__",
+        "codekavach.cli._version",
         "codekavach.cli.app",
+        "codekavach.cli.console",
     }
 )
 
