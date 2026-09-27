@@ -22,6 +22,7 @@ from codekavach.core.models import (
 from codekavach.core.models.enums import (
     ActorKind,
     ContextKind,
+    DetectionOrigin,
     EvidenceRole,
     PlaceholderKind,
     SegmentRole,
@@ -81,6 +82,7 @@ GOLDEN: dict[type[StrEnum], list[str]] = {
     ContextKind: ["callee_body", "caller", "type_definition", "config_value", "other"],
     EvidenceRole: ["primary", "source", "propagator", "sanitiser", "sink", "context"],
     ActorKind: ["system", "human", "policy"],
+    DetectionOrigin: ["deterministic", "llm"],
 }
 
 

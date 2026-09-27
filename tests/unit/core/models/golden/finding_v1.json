@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "id": "find_01ARYZ6S410000000000000002",
+  "title": "SQL injection in AccountRepo.find_by_owner",
+  "severity": "high",
+  "cvss4_vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:N/SC:N/SI:N/SA:N",
+  "cwe": [
+    89
+  ],
+  "owasp": [
+    {
+      "scheme": "owasp-top10",
+      "id": "A03",
+      "title": "Injection",
+      "version": "2021"
+    }
+  ],
+  "compliance": [
+    {
+      "scheme": "pci-dss",
+      "id": "6.2.4",
+      "title": null,
+      "version": "4.0"
+    }
+  ],
+  "locations": [
+    {
+      "path": "src/bank/accounts.py",
+      "start_line": 88,
+      "end_line": 88,
+      "start_col": null,
+      "end_col": null,
+      "symbol": "AccountRepo.find_by_owner"
+    }
+  ],
+  "evidence": [
+    {
+      "location": {
+        "path": "src/bank/accounts.py",
+        "start_line": 88,
+        "end_line": 88,
+        "start_col": null,
+        "end_col": null,
+        "symbol": "AccountRepo.find_by_owner"
+      },
+      "language": "python",
+      "lines": [
+        {
+          "number": 86,
+          "text": "    def find_by_owner(self, owner):",
+          "truncated": false
+        },
+        {
+          "number": 87,
+          "text": "        cur = self.conn.cursor()",
+          "truncated": false
+        },
+        {
+          "number": 88,
+          "text": "        cur.execute(\"SELECT * FROM accounts WHERE owner = '\" + owner + \"'\")",
+          "truncated": false
+        },
+        {
+          "number": 89,
+          "text": "        return cur.fetchall()",
+          "truncated": false
+        }
+      ],
+      "highlights": [
+        {
+          "line": 88,
+          "start_col": 9,
+          "end_col": 76
+        }
+      ],
+      "role": "primary",
+      "caption": null,
+      "masked": false,
+      "clipped": false
+    }
+  ],
+  "impact": {
+    "level": 4,
+    "narrative": "An attacker can read every account row."
+  },
+  "likelihood": {
+    "level": 4,
+    "rationale": "The owner parameter comes from a request."
+  },
+  "remediation": "Use a parameterised query.",
+  "references": [
+    {
+      "title": "CWE-89",
+      "url": "https://cwe.mitre.org/data/definitions/89.html"
+    }
+  ],
+  "status": "open",
+  "provenance": {
+    "origin": "deterministic",
+    "scan_id": "scan_01ARYZ6S410000000000000000",
+    "candidate_ids": [
+      "cand_01ARYZ6S410000000000000001"
+    ],
+    "engines": [
+      {
+        "engine": "codekavach-rules",
+        "rule_id": "python.sqli.string-concat",
+        "engine_version": null
+      }
+    ],
+    "llm_reviews": [
+      {
+        "provider": "mock",
+        "model": "mock-1",
+        "task": "triage",
+        "prompt_version": null,
+        "level": "L3",
+        "ledger_seq": 0,
+        "is_vulnerable": true,
+        "confidence": "high",
+        "reasoning": "owner flows into cur.execute through string concatenation."
+      }
+    ],
+    "codekavach_version": "0.1.0.dev0"
+  },
+  "fingerprint": "ckfp1:58d192700c1c56f2f97f4e2ae1ec20ee",
+  "correlation_key": "ckck1:53fd354cc11c0db1b4ba659bb73d4189",
+  "confidence": "high",
+  "description": "The query string is built by concatenating the owner parameter.",
+  "cvss4_score": 9.3,
+  "taxonomy": [],
+  "taint_path": {
+    "steps": [
+      {
+        "location": {
+          "path": "src/bank/views.py",
+          "start_line": 12,
+          "end_line": 12,
+          "start_col": null,
+          "end_col": null,
+          "symbol": "statement"
+        },
+        "role": "source",
+        "note": null
+      },
+      {
+        "location": {
+          "path": "src/bank/accounts.py",
+          "start_line": 88,
+          "end_line": 88,
+          "start_col": null,
+          "end_col": null,
+          "symbol": "AccountRepo.find_by_owner"
+        },
+        "role": "sink",
+        "note": null
+      }
+    ]
+  },
+  "kind": "vulnerability",
+  "language": "python",
+  "status_history": [],
+  "created_at": "2026-10-05T04:30:00.000000Z",
+  "first_seen_scan_id": null
+}

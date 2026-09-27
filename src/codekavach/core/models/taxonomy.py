@@ -5,9 +5,11 @@ form (``CWE-89``), which the before-validator accepts.
 """
 
 import re
-from typing import Annotated
+from typing import Annotated, ClassVar
 
-from pydantic import BeforeValidator, Field
+from pydantic import BeforeValidator, Field, field_validator
+
+from codekavach.core.models.base import DataClassification, KavachModel
 
 _CWE = re.compile(r"^(?:cwe[-_ ])?([0-9]+)$", re.IGNORECASE)
 _MAX_CWE = 99999
@@ -41,3 +43,42 @@ def format_cwe(cwe: int) -> str:
 
 
 CweId = Annotated[int, BeforeValidator(parse_cwe), Field(ge=1, le=_MAX_CWE)]
+
+
+_SCHEME = re.compile(r"^[a-z0-9][a-z0-9.-]{1,31}$")
+
+
+class TaxonomyRef(KavachModel):
+    """A reference into a taxonomy or compliance framework, for example OWASP Top 10 A03."""
+
+    DATA_CLASSIFICATION: ClassVar[DataClassification] = DataClassification.METADATA
+
+    scheme: str = Field(
+        description="Lower-case slug such as owasp-top10, owasp-asvs, capec, pci-dss, nist-ssdf."
+    )
+    id: str = Field(min_length=1, max_length=64)
+    title: str | None = Field(default=None, max_length=300)
+    version: str | None = Field(default=None, max_length=32)
+
+    @field_validator("scheme")
+    @classmethod
+    def _check_scheme(cls, value: str) -> str:
+        if not _SCHEME.match(value):
+            raise ValueError("scheme must be a lower-case slug of 2 to 32 characters")
+        return value
+
+
+class Reference(KavachModel):
+    """An external reference shown with a finding."""
+
+    DATA_CLASSIFICATION: ClassVar[DataClassification] = DataClassification.METADATA
+
+    title: str = Field(min_length=1, max_length=300)
+    url: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("url")
+    @classmethod
+    def _check_url(cls, value: str | None) -> str | None:
+        if value is not None and not value.lower().startswith(("https://", "http://")):
+            raise ValueError("reference URLs must use http or https")
+        return value

@@ -321,3 +321,10 @@ class ActorKind(StrEnum):
     SYSTEM = "system"
     HUMAN = "human"
     POLICY = "policy"
+
+
+class DetectionOrigin(StrEnum):
+    """Whether a finding was first detected by deterministic analysis or by a model."""
+
+    DETERMINISTIC = "deterministic"
+    LLM = "llm"
