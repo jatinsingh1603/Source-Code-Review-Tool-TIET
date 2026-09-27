@@ -25,7 +25,7 @@ from rich.table import Table
 from codekavach.cli.backends import load_backend
 from codekavach.cli.context import CliContext, with_overrides, with_target
 from codekavach.cli.errors import InternalError, PrivacyBlockError, UsageError
-from codekavach.cli.output import Output, get_output, severity_style
+from codekavach.cli.output import TABLE_BOX, Output, get_output, severity_style
 
 if TYPE_CHECKING:
     from codekavach.core.models.summary import ScanSummary
@@ -211,7 +211,9 @@ def _renderer(
 ) -> Callable[[Console], None]:
     def render(console: Console) -> None:
         counts = _counts(result.summary)
-        table = Table(title=f"Scan {result.scan_id}", show_header=True, header_style="bold")
+        table = Table(
+            title=f"Scan {result.scan_id}", show_header=True, header_style="bold", box=TABLE_BOX
+        )
         table.add_column("Severity")
         table.add_column("Findings", justify="right")
         for severity in SEVERITIES:

@@ -24,6 +24,7 @@ from pathlib import PurePath
 from typing import Any, Literal
 
 from pydantic import BaseModel, JsonValue
+from rich import box
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
@@ -47,6 +48,9 @@ _SEVERITY_STYLES = {
     "low": "cyan",
     "info": "dim",
 }
+# One explicit border style: Rich would otherwise pick a different default on legacy Windows
+# consoles, and output would differ between platforms.
+TABLE_BOX = box.SQUARE
 _STATUS_STYLES = {"pass": "green", "warn": "yellow", "fail": "red", "skip": "dim"}
 
 
@@ -315,7 +319,7 @@ def kv_table(title: str | None, rows: Iterable[tuple[str, str]]) -> Table:
 
 def simple_table(columns: Sequence[str], rows: Iterable[Sequence[str]]) -> Table:
     """A table with a header row; long values fold instead of being truncated."""
-    table = Table(show_header=True, header_style="bold", pad_edge=False)
+    table = Table(show_header=True, header_style="bold", pad_edge=False, box=TABLE_BOX)
     for column in columns:
         table.add_column(column, overflow="fold")
     for row in rows:

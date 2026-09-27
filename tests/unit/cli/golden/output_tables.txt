@@ -1,9 +1,9 @@
      Settings      
 privacy.level  L3  
 llm.provider   mock
-┏━━━━━━━━━━━━━━━┳━━━━━━━┓
-┃Check          ┃ Status┃
-┡━━━━━━━━━━━━━━━╇━━━━━━━┩
+┌───────────────┬───────┐
+│Check          │ Status│
+├───────────────┼───────┤
 │grammar:python │ PASS  │
 └───────────────┴───────┘
 FAIL
