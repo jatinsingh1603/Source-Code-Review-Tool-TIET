@@ -1,0 +1,115 @@
+# Import contracts: static enforcement of the privacy invariants (docs/ARCHITECTURE.md 6.3).
+#
+# i1-single-egress         I1: only codekavach.privacy.egress.transport may import network client
+#                          libraries or vendor SDKs. Governed by ADR-0003 (single egress).
+#                          Standard-library network modules (urllib.request, http.client, socket,
+#                          ssl, ...) and namespace-package SDKs (google.*, azure) cannot be told
+#                          apart by import-linter, which squashes external packages to their top
+#                          level, so they are banned with ruff TID251 in pyproject.toml instead.
+# i2-llm-no-raw-code       I2: the LLM layer never imports packages that handle raw client code.
+#                          Indirect imports are allowed on purpose: codekavach.llm may import
+#                          egress types, and the egress guard imports the vault.
+# i3-vault-locality        I3: the vault is not importable from analysis, LLM, risk, report or
+#                          integrations.
+# core-models-independent  core.models is the bottom of the dependency graph.
+#
+# Rule: never widen a contract (a new ignore_imports line, a removed forbidden module, a new
+# source exemption) without an ADR. ADR-0003 describes the exception procedure for I1.
+#
+# Not covered by static analysis: importlib.import_module, __import__, native extensions and
+# child processes. The runtime controls are the socket block in tests (E01-08) and the egress
+# ticket check in the transport (E12).
+
+[importlinter]
+root_package = codekavach
+include_external_packages = True
+
+[importlinter:contract:i1-single-egress]
+name = I1 only privacy.egress.transport may import network client libraries (ADR-0003)
+type = forbidden
+source_modules =
+    codekavach
+forbidden_modules =
+    httpx
+    httpcore
+    h2
+    requests
+    urllib3
+    aiohttp
+    websockets
+    websocket
+    grpc
+    pycurl
+    litellm
+    anthropic
+    openai
+    boto3
+    botocore
+    ollama
+    mistralai
+    cohere
+    groq
+    vertexai
+    huggingface_hub
+    httplib2
+    tornado
+    paramiko
+ignore_imports =
+    codekavach.privacy.egress.transport -> httpx
+    codekavach.privacy.egress.transport -> httpcore
+unmatched_ignore_imports_alerting = none
+
+[importlinter:contract:i2-llm-no-raw-code]
+name = I2 the LLM layer never imports raw-code packages
+type = forbidden
+source_modules =
+    codekavach.llm
+forbidden_modules =
+    codekavach.ingest
+    codekavach.parsing
+    codekavach.analysis
+    codekavach.privacy.slicing
+    codekavach.privacy.detect
+    codekavach.privacy.redact
+    codekavach.privacy.pseudonymise
+    codekavach.privacy.ir
+    codekavach.privacy.restore
+    codekavach.privacy.vault
+allow_indirect_imports = True
+
+[importlinter:contract:i3-vault-locality]
+name = I3 the vault is not importable from analysis, LLM, risk, report or integrations
+type = forbidden
+source_modules =
+    codekavach.ingest
+    codekavach.parsing
+    codekavach.analysis
+    codekavach.llm
+    codekavach.risk
+    codekavach.report
+    codekavach.integrations
+forbidden_modules =
+    codekavach.privacy.vault
+allow_indirect_imports = True
+
+[importlinter:contract:core-models-independent]
+name = core.models depends on nothing else in codekavach
+type = forbidden
+source_modules =
+    codekavach.core.models
+forbidden_modules =
+    codekavach.cli
+    codekavach.config
+    codekavach.core.pipeline
+    codekavach.core.plugins
+    codekavach.core.store
+    codekavach.ingest
+    codekavach.parsing
+    codekavach.analysis
+    codekavach.privacy
+    codekavach.llm
+    codekavach.risk
+    codekavach.report
+    codekavach.integrations
+    codekavach.server
+    codekavach.eval

@@ -38,7 +38,7 @@ eval = []        # E36/E37: dataset and metrics tooling
 codekavach = "codekavach.cli.app:main"
 
 [dependency-groups]
-lint = ["ruff>=0.16"]
+lint = ["ruff>=0.16", "import-linter"]
 typecheck = ["mypy>=2.3"]
 test = ["pytest>=9.1", "hypothesis", "pytest-cov", "coverage[toml]", "pytest-xdist", "pytest-randomly", "pytest-timeout"]
 dev = [{ include-group = "lint" }, { include-group = "typecheck" }, { include-group = "test" }]
@@ -169,10 +169,29 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S105", "S106", "S108", "D", "PLR2004", "N802"]
+"tests/**" = ["S101", "S105", "S106", "S108", "D", "PLR2004", "N802", "TID251"]
 "tools/**" = ["T20", "D"]            # project tooling (ARCHITECTURE section 3): stand-alone scripts may print
 "src/codekavach/cli/**" = ["B008"]   # Typer uses function calls as argument defaults
 "tests/typing/*" = ["F841", "B018"]  # typing case files hold deliberately unused names and expressions
+"src/codekavach/privacy/egress/transport.py" = ["TID251"]
+"src/codekavach/privacy/egress/transport/**" = ["TID251"]
+
+# I1 (ADR-0003): network modules that import-linter cannot distinguish, because it squashes
+# external packages to their top-level name (urllib.parse must stay allowed). Contracts for
+# third-party client packages live in .importlinter.
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"urllib.request".msg = "I1: network access only in codekavach.privacy.egress.transport (ADR-0003)"
+"http.client".msg = "I1: network access only in codekavach.privacy.egress.transport (ADR-0003)"
+"socket".msg = "I1: network access only in codekavach.privacy.egress.transport (ADR-0003)"
+"ssl".msg = "I1: network access only in codekavach.privacy.egress.transport (ADR-0003)"
+"ftplib".msg = "I1: no outbound connections outside the egress transport (ADR-0003)"
+"smtplib".msg = "I1: no outbound connections outside the egress transport (ADR-0003)"
+"xmlrpc.client".msg = "I1: no outbound connections outside the egress transport (ADR-0003)"
+"google.genai".msg = "I1: vendor SDKs only behind the egress transport (ADR-0003)"
+"google.generativeai".msg = "I1: vendor SDKs only behind the egress transport (ADR-0003)"
+"google.cloud".msg = "I1: vendor SDKs only behind the egress transport (ADR-0003)"
+"azure".msg = "I1: vendor SDKs only behind the egress transport (ADR-0003)"
+"asyncio.open_connection".msg = "I1: network access only in codekavach.privacy.egress.transport (ADR-0003)"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
