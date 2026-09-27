@@ -298,3 +298,14 @@ class ContextKind(StrEnum):
     TYPE_DEFINITION = "type_definition"
     CONFIG_VALUE = "config_value"
     OTHER = "other"
+
+
+class EvidenceRole(StrEnum):
+    """What an evidence snippet shows."""
+
+    PRIMARY = "primary"
+    SOURCE = "source"
+    PROPAGATOR = "propagator"
+    SANITISER = "sanitiser"
+    SINK = "sink"
+    CONTEXT = "context"

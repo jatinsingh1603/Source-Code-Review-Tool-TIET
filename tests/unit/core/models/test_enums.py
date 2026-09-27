@@ -21,6 +21,7 @@ from codekavach.core.models import (
 )
 from codekavach.core.models.enums import (
     ContextKind,
+    EvidenceRole,
     PlaceholderKind,
     SegmentRole,
     StubReason,
@@ -77,6 +78,7 @@ GOLDEN: dict[type[StrEnum], list[str]] = {
     StubReason: ["out_of_slice_callee", "token_budget", "external_library"],
     PlaceholderKind: ["SECRET", "PII", "TERM"],
     ContextKind: ["callee_body", "caller", "type_definition", "config_value", "other"],
+    EvidenceRole: ["primary", "source", "propagator", "sanitiser", "sink", "context"],
 }
 
 
