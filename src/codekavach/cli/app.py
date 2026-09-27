@@ -1,15 +1,24 @@
-"""The root Typer application and the process entry point.
+"""The root Typer application, the process entry point and the top-level error handler.
 
 Owning epic: E05.
 
 ``main()`` is the console-script target: it performs the process-wide set-up first and then hands
 the argument list to ``run()``, which executes the Click command with ``standalone_mode=False`` so
-that one function decides the exit code (a public contract, E05-04). Importing this module reads
-no configuration, touches no keyring and imports no pipeline code, so ``--help`` and ``--version``
-are safe in any directory, including an untrusted repository.
+that one function turns every outcome into exactly one documented exit code (``exit_codes``).
+Importing this module reads no configuration, touches no keyring and imports no pipeline code, so
+``--help`` and ``--version`` are safe in any directory, including an untrusted repository.
+
+Error rendering is conservative: messages of CodeKavach's own errors are printed; any other
+exception is reported by its type only, because messages and tracebacks can quote client code,
+paths or credentials. Tracebacks go to stderr only with ``--debug``, ``-vv`` or
+``CODEKAVACH_DEBUG=1``. Nothing but the JSON envelope is ever written to stdout here.
 """
 
+import contextlib
+import errno
+import os
 import sys
+import traceback
 from collections.abc import Sequence
 from typing import Annotated
 
@@ -18,20 +27,24 @@ from typer import _click as click  # Typer >= 0.27 ships its own copy of Click
 from typer._click.exceptions import NoArgsIsHelpError
 
 from codekavach.cli._version import get_version
+from codekavach.cli.console import get_err_console
+from codekavach.cli.errors import CliError, error_line, render_error
+from codekavach.cli.exit_codes import EXIT_CODE_HELP, ExitCode
 from codekavach.core.log import configure_logging
 
 # Typer 0.27 vendors Click as ``typer._click``; command objects and ``ClickException`` come from
 # there, while ``Exit`` and ``Abort`` are ``typer.Exit`` and ``typer.Abort``.
 
 HELP = "Privacy-preserving, LLM-assisted secure source code review."
-EPILOG = ""  # E05-04 fills this with the exit-code table.
+EPILOG = EXIT_CODE_HELP
+DEBUG_ENV = "CODEKAVACH_DEBUG"
 
 # pretty_exceptions_enable must stay False: Rich tracebacks with locals would print client code,
 # secrets or vault entries to the terminal on a crash.
 app = typer.Typer(
     name="codekavach",
     help=HELP,
-    epilog=EPILOG or None,
+    epilog=EPILOG,
     no_args_is_help=True,
     add_completion=False,
     rich_markup_mode="rich",
@@ -77,22 +90,98 @@ def build_cli() -> click.Command:
     return typer.main.get_command(app)
 
 
+def _flags(argv: Sequence[str]) -> tuple[bool, int, bool]:
+    """``(debug, verbosity, json_mode)`` read from ``argv`` and the environment."""
+    verbosity = 0
+    for arg in argv:
+        if arg == "--verbose":
+            verbosity += 1
+        elif arg.startswith("-") and not arg.startswith("--") and set(arg[1:]) == {"v"}:
+            verbosity += len(arg) - 1
+    debug = "--debug" in argv or verbosity >= 2 or os.environ.get(DEBUG_ENV) == "1"
+    return debug, verbosity, "--json" in argv
+
+
+def _traceback(error: BaseException, debug: bool) -> None:
+    if debug:
+        text = "".join(traceback.format_exception(error))
+        get_err_console().print(text, markup=False, highlight=False, end="")
+
+
+def _optional_class(module: str, name: str) -> type[BaseException] | None:
+    try:
+        imported = __import__(module, fromlist=[name])
+    except ImportError:
+        return None
+    found = getattr(imported, name, None)
+    return found if isinstance(found, type) and issubclass(found, BaseException) else None
+
+
+def _quiet_stdout() -> None:
+    """After a broken pipe, point stdout at the null device so that nothing more fails."""
+    with contextlib.suppress(OSError, ValueError, AttributeError):
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+
+
+def _handle(error: BaseException, argv: Sequence[str]) -> int:  # noqa: PLR0911
+    """Map an exception raised by a command to its exit code, rendering it once."""
+    debug, verbosity, json_mode = _flags(argv)
+    cancelled = _optional_class("codekavach.core.pipeline.cancel", "ScanCancelledError")
+    config_error = _optional_class("codekavach.config.errors", "ConfigError")
+    egress_blocked = _optional_class("codekavach.privacy.egress.guard", "EgressBlocked")
+    if isinstance(error, typer.Exit):
+        return int(error.exit_code or 0)
+    if isinstance(error, NoArgsIsHelpError):
+        return ExitCode.OK  # Typer has already printed the help
+    if isinstance(error, click.ClickException):
+        error.show()
+        return ExitCode.USAGE
+    if isinstance(error, typer.Abort | KeyboardInterrupt) or (
+        cancelled is not None and isinstance(error, cancelled)
+    ):
+        get_err_console().print("cancelled", markup=False)
+        return ExitCode.CANCELLED
+    if isinstance(error, BrokenPipeError):
+        _quiet_stdout()
+        return ExitCode.OK
+    if isinstance(error, CliError):
+        render_error(error, verbosity=verbosity, json_mode=json_mode)
+        _traceback(error, debug)
+        return int(error.exit_code)
+    if config_error is not None and isinstance(error, config_error):
+        get_err_console().print(error_line("config_invalid", str(error)), markup=False)
+        _traceback(error, debug)
+        return ExitCode.USAGE
+    if egress_blocked is not None and isinstance(error, egress_blocked):
+        block = getattr(error, "block_code", "unknown")
+        message = f"egress guard refused the request ({block})"
+        get_err_console().print(error_line("egress_blocked", message), markup=False)
+        return ExitCode.PRIVACY_BLOCK
+    if isinstance(error, Exception):
+        render_error(error, verbosity=verbosity, json_mode=json_mode)
+        _traceback(error, debug)
+        return ExitCode.INTERNAL
+    raise error
+
+
 def run(command: click.Command, argv: Sequence[str]) -> int:
     """Execute ``command`` with ``argv`` and return the process exit code."""
     try:
         result = command.main(args=list(argv), prog_name="codekavach", standalone_mode=False)
-    except typer.Exit as exit_:
-        return int(exit_.exit_code or 0)
-    except NoArgsIsHelpError as help_request:
-        # ``no_args_is_help``: Typer has already printed the help; exit 0 as for ``--help``.
-        del help_request
-        return 0
-    except click.ClickException as error:
-        error.show()
-        return 2
-    except typer.Abort:
-        return 130
-    return int(result) if isinstance(result, int) else 0
+    except SystemExit as exit_:
+        # Typer turns a broken pipe (EPIPE) into sys.exit(1); a closed pipe is not an error.
+        context = exit_.__context__
+        if isinstance(context, OSError) and context.errno == errno.EPIPE:
+            _quiet_stdout()
+            return ExitCode.OK
+        raise
+    except (Exception, KeyboardInterrupt) as error:  # noqa: BLE001 - the single top-level handler
+        return _handle(error, argv)
+    code = int(result) if isinstance(result, int) else ExitCode.OK
+    if code == ExitCode.CANCELLED:  # Typer returns 130 for KeyboardInterrupt
+        get_err_console().print("cancelled", markup=False)
+    return code
 
 
 def main(argv: Sequence[str] | None = None) -> int:

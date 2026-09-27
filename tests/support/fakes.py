@@ -2,7 +2,7 @@
 
 ``StubOrchestrator`` has the keyword signature of ``run_scan()`` (E04-16): it records every call,
 publishes a scripted list of events on the bus it is given, and returns a scripted outcome or
-raises a scripted exception. ``fake_backend`` replaces an object at a dotted path for one test.
+raises a scripted exception. ``fake_backend`` registers a fake for ``load_backend`` for one test.
 """
 
 from collections.abc import Sequence
@@ -12,6 +12,7 @@ from typing import Any
 
 import pytest
 
+from codekavach.cli import backends
 from codekavach.core.pipeline.events import Event, EventBus
 
 
@@ -45,5 +46,6 @@ class StubOrchestrator:
 
 
 def fake_backend(monkeypatch: pytest.MonkeyPatch, dotted_path: str, obj: object) -> None:
-    """Replace the object at ``dotted_path`` (``package.module.name``) for one test."""
-    monkeypatch.setattr(dotted_path, obj)
+    """Make ``load_backend`` return ``obj`` for ``dotted_path`` (``package.module.name``)."""
+    module, _, attr = dotted_path.rpartition(".")
+    monkeypatch.setitem(backends._OVERRIDES, (module, attr), obj)

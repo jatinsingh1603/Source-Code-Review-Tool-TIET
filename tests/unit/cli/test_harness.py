@@ -8,6 +8,7 @@ import typer
 
 from codekavach.cli._version import get_version
 from codekavach.cli.app import app
+from codekavach.cli.backends import load_backend
 from codekavach.core.pipeline.events import InMemoryEventBus, ScanCancelled, WarningRaised
 from tests.support.cli import CLI_TEST_WIDTH, CliResult, assert_no_ansi, run_cli, strip_ansi
 from tests.support.fakes import StubOrchestrator, fake_backend
@@ -131,7 +132,6 @@ def test_stub_orchestrator() -> None:
 
 
 def test_fake_backend(monkeypatch: pytest.MonkeyPatch) -> None:
-    fake_backend(monkeypatch, "codekavach.cli._version.UNKNOWN_VERSION", "fake")
-    from codekavach.cli import _version  # noqa: PLC0415 - read the patched attribute
-
-    assert _version.UNKNOWN_VERSION == "fake"
+    fake = object()
+    fake_backend(monkeypatch, "codekavach.ledger.store.Ledger", fake)
+    assert load_backend("codekavach.ledger.store", "Ledger", feature="ledger", epic="E12") is fake
