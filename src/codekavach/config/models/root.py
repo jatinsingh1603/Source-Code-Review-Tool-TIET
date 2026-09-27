@@ -13,6 +13,7 @@ from codekavach.config.models.log import LoggingSettings
 from codekavach.config.models.plugins import PluginsSettings
 from codekavach.config.models.privacy import PrivacySettings
 from codekavach.config.models.project import ProjectSettings
+from codekavach.config.models.reporting import ReportingSettings
 from codekavach.config.models.scan import ScanSettings
 
 
@@ -49,6 +50,9 @@ class Settings(BaseSettings):
     )
     llm: LLMSettings = Field(
         default_factory=LLMSettings, description="Language models and their providers."
+    )
+    reporting: ReportingSettings = Field(
+        default_factory=ReportingSettings, description="Which reports are written and how."
     )
     plugins: PluginsSettings = Field(
         default_factory=PluginsSettings, description="Which installed plugins may load."
