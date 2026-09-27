@@ -12,6 +12,8 @@
 # i3-vault-locality        I3: the vault is not importable from analysis, LLM, risk, report or
 #                          integrations.
 # core-models-independent  core.models is the bottom of the dependency graph.
+# config-is-a-leaf         codekavach.config may import only core.models and core.log, so
+#                          configuration code cannot become a route around I1 and I2.
 #
 # Rule: never widen a contract (a new ignore_imports line, a removed forbidden module, a new
 # source exemption) without an ADR. ADR-0003 describes the exception procedure for I1.
@@ -114,3 +116,24 @@ forbidden_modules =
     codekavach.integrations
     codekavach.server
     codekavach.eval
+
+[importlinter:contract:config-is-a-leaf]
+name = config is a leaf package (only core.models and core.log below it)
+type = forbidden
+source_modules =
+    codekavach.config
+forbidden_modules =
+    codekavach.privacy
+    codekavach.llm
+    codekavach.analysis
+    codekavach.cli
+    codekavach.server
+    codekavach.integrations
+    codekavach.report
+    codekavach.ingest
+    codekavach.parsing
+    codekavach.risk
+    codekavach.eval
+    codekavach.core.pipeline
+    codekavach.core.plugins
+    codekavach.core.store

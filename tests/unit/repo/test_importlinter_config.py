@@ -12,6 +12,7 @@ CONTRACTS = (
     "i2-llm-no-raw-code",
     "i3-vault-locality",
     "core-models-independent",
+    "config-is-a-leaf",
 )
 
 
@@ -25,7 +26,7 @@ def _lines(value: str) -> list[str]:
     return [line.strip() for line in value.splitlines() if line.strip()]
 
 
-def test_four_contracts_exist() -> None:
+def test_contracts_exist() -> None:
     config = _config()
     for name in CONTRACTS:
         assert config.has_section(f"importlinter:contract:{name}"), name
