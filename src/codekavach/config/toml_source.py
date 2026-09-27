@@ -247,6 +247,7 @@ class _Locator:
             key = tuple(tokens)
             index = self.arrays.get(key, -1) + 1
             self.arrays[key] = index
+            self._record(key, number)
             tokens.append(index)
         self.table = tuple(tokens)
         self._record(self.table, number)

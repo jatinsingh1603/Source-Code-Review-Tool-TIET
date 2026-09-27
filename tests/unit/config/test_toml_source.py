@@ -198,7 +198,7 @@ level = "L4"
         ("llm.providers.lab", 18),
         ("privacy.paths[0].pattern", 22),
         ("privacy.paths[1].level", 25),
-        ("privacy.paths[2].level", None),
+        ("privacy.paths[2].level", 21),  # falls back to the first [[privacy.paths]] header
         ("exclude", None),
     ],
 )
