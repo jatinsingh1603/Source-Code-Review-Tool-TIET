@@ -15,3 +15,44 @@ class StageDeclarationError(PipelineError):
         self.stage = stage
         self.problem = problem
         super().__init__(f"stage {stage!r}: {problem}")
+
+
+class GraphError(PipelineError):
+    """The stages of a plan cannot be ordered."""
+
+
+class DuplicateStageError(GraphError):
+    """Two stages share a name."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        super().__init__(f"stage {name!r} appears more than once")
+
+
+class DuplicateProviderError(GraphError):
+    """A single-provider artefact key has more than one provider."""
+
+    def __init__(self, key: str, stages: tuple[str, ...]) -> None:
+        self.key = key
+        self.stages = stages
+        super().__init__(
+            f"artefact {key!r} is provided by more than one stage: {', '.join(stages)}"
+        )
+
+
+class UnsatisfiedRequirementError(GraphError):
+    """A stage requires a key that nothing provides."""
+
+    def __init__(self, stage: str, key: str) -> None:
+        self.stage = stage
+        self.key = key
+        super().__init__(f"stage {stage!r} requires {key!r}, which no stage in the plan provides")
+
+
+class StageCycleError(GraphError):
+    """Stages depend on each other in a cycle; ``cycle`` lists them in dependency order."""
+
+    def __init__(self, cycle: tuple[str, ...], detail: str = "") -> None:
+        self.cycle = cycle
+        message = f"dependency cycle: {' -> '.join(cycle)}"
+        super().__init__(f"{message} ({detail})" if detail else message)
