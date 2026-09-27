@@ -27,6 +27,8 @@ REQUIRED_TARGETS = (
     "build",
     "adr",
     "clean",
+    "hooks",
+    "hooks-update",
 )
 
 needs_make = pytest.mark.skipif(MAKE is None, reason="make is not on PATH")

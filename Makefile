@@ -8,21 +8,21 @@
 # Rules: stay compatible with GNU make 3.81 (no .ONESHELL, no grouped targets, no $(file ...));
 # every recipe goes through uv run; logic belongs in tools/dev/ where it can be tested; check never
 # rewrites files; clean deletes only named build and cache artefacts and never touches .venv/,
-# .codekavach/, vaults or ledgers. Later issues add: hooks (E01-17), changelog-draft (E01-22),
+# .codekavach/, vaults or ledgers. Later issues add: changelog-draft (E01-22),
 # docs-check (E01-23), licences (E01-30), telemetry-check (E01-31).
 
 .DEFAULT_GOAL := help
 PYTEST_ARGS ?=
 
 .PHONY: help setup fmt fmt-check lint type contracts test test-unit test-integration test-e2e \
-	test-privacy cov check lock-check build adr clean
+	test-privacy cov check lock-check build adr clean hooks hooks-update
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "} {printf "  %-18s %s\n", $$1, $$2}'
 
 setup: ## Create the development environment and install git hooks
 	uv sync --all-extras
-	@if uv run pre-commit --version >/dev/null 2>&1; then uv run pre-commit install; else echo "pre-commit is not installed yet (E01-17)"; fi
+	uv run pre-commit install
 
 fmt: ## Format code and apply safe lint fixes
 	uv run ruff format .
@@ -59,6 +59,12 @@ cov: ## Run the tests with branch coverage (terminal, XML and HTML reports)
 	uv run pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html $(PYTEST_ARGS)
 
 check: fmt-check lint type contracts test ## Run every gate CI runs, stopping at the first failure
+
+hooks: ## Run every pre-commit hook on all files
+	uv run pre-commit run --all-files --show-diff-on-failure
+
+hooks-update: ## Update pre-commit hook revisions to their latest tags
+	uv run pre-commit autoupdate
 
 lock-check: ## Check that uv.lock matches pyproject.toml
 	uv lock --check

@@ -1,0 +1,73 @@
+# Local last line of defence before a commit reaches main; CI runs the same hooks (E01-18).
+# Never bypass them with --no-verify. Third-party hooks are pinned to release tags.
+minimum_pre_commit_version: "3.5.0"
+default_install_hook_types: [pre-commit, commit-msg]
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/)
+      - id: trailing-whitespace
+        # Issue templates keep "- [ ] " and "Blocked by: " as fill-in prompts.
+        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/|\.github/ISSUE_TEMPLATE/)
+      - id: mixed-line-ending
+        args: [--fix=lf]
+        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/)
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: [--maxkb=512]
+      - id: check-executables-have-shebangs
+      - id: detect-private-key
+        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/)
+      - id: debug-statements
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.9
+    hooks:
+      - id: ruff-check
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.12.19
+    hooks:
+      - id: uv-lock
+
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.38.2
+    hooks:
+      - id: check-github-workflows
+      - id: check-dependabot
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: ^uv\.lock$
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (strict, project environment)
+        entry: uv run mypy
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: import-contracts
+        name: import contracts (lint-imports)
+        entry: uv run lint-imports
+        language: system
+        pass_filenames: false
+        files: ^(src/|\.importlinter$)
+      - id: forbid-runtime-artefacts
+        name: forbid runtime artefacts and local secrets
+        entry: uv run python tools/dev/forbid_runtime_artefacts.py
+        language: system

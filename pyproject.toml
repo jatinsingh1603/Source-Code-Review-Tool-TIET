@@ -39,9 +39,15 @@ codekavach = "codekavach.cli.app:main"
 
 [dependency-groups]
 lint = ["ruff>=0.16", "import-linter"]
-typecheck = ["mypy>=2.3"]
-test = ["pytest>=9.1", "hypothesis", "pytest-cov", "coverage[toml]", "pytest-xdist", "pytest-randomly", "pytest-timeout"]
-dev = [{ include-group = "lint" }, { include-group = "typecheck" }, { include-group = "test" }]
+typecheck = ["mypy>=2.3", "types-PyYAML"]
+test = ["pytest>=9.1", "hypothesis", "pyyaml", "pytest-cov", "coverage[toml]", "pytest-xdist", "pytest-randomly", "pytest-timeout"]
+hooks = ["pre-commit", "detect-secrets"]
+dev = [
+  { include-group = "lint" },
+  { include-group = "typecheck" },
+  { include-group = "test" },
+  { include-group = "hooks" },
+]
 
 [tool.uv]
 required-version = ">=0.5"

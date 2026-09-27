@@ -73,6 +73,13 @@ Tests hold synthetic values only, never a real credential, not even an expired o
 
 Do not paste a token-shaped string into a test; add a kind to `SECRET_SHAPES` instead. Small static inputs shared by several tests go in `tests/fixtures/`.
 
+The `detect-secrets` pre-commit hook compares every commit against the audited `.secrets.baseline` and fails on anything new. If a literal fake secret is truly unavoidable:
+
+1. prefer an inline marker on that line: `# pragma: allowlist secret`; or
+2. update the baseline with `uv run detect-secrets scan --baseline .secrets.baseline`, review it with `uv run detect-secrets audit .secrets.baseline` (mark each new entry as not a secret only after checking it), and say so in the commit body.
+
+Never exclude `tests/` or `fixtures/` from the scanner: a real key pasted into a fixture is exactly the accident the hook exists for. The baseline should stay close to empty; a growing baseline is a review signal.
+
 ## Golden files
 
 Expected outputs live in a `golden/` directory next to the test that uses them and are compared byte for byte with `tests.support.golden.assert_matches_golden(actual, path)`. Text differences are shown as a unified diff, binary ones by the offset of the first differing byte. To create or update expectations, run the test with `CODEKAVACH_UPDATE_GOLDEN=1` and review the diff before committing. The update is refused when `CI` is set, so a pipeline can never rewrite its own expectations.
