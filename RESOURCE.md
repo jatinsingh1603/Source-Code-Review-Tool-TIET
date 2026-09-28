@@ -32,7 +32,7 @@ An entry carries at most two tags. In the paper tables of section 1 the tag is t
 |---|---------|---------|
 | 1 | [Research papers](#1-research-papers) | 354 |
 | 2 | [Datasets and benchmarks](#2-datasets-and-benchmarks) | 55 |
-| 3 | [Open-source tools and libraries](#3-open-source-tools-and-libraries) | 277 |
+| 3 | [Open-source tools and libraries](#3-open-source-tools-and-libraries) | 278 |
 | 4 | [LLM provider and open-model documentation](#4-llm-provider-and-open-model-documentation) | 32 |
 | 5 | [Platform integration documentation](#5-platform-integration-documentation) | 39 |
 | 6 | [Competitor and adjacent product landscape](#6-competitor-and-adjacent-product-landscape) | 51 |
@@ -1173,6 +1173,7 @@ Runtime dependencies of the `codekavach` package itself (`[project.dependencies]
 | Rich | MIT | [GitHub: Textualize/rich](https://github.com/Textualize/rich); [rich.readthedocs.io](https://rich.readthedocs.io/) | [integrated] | Terminal rendering for the CLI. Added by E01-01. |
 | Pydantic v2 | MIT | [GitHub: pydantic/pydantic](https://github.com/pydantic/pydantic); [docs.pydantic.dev](https://docs.pydantic.dev/) | [integrated] | Data models, validation and JSON Schema export for the core domain model. Added by E01-05. |
 | pydantic-settings | MIT | [GitHub: pydantic/pydantic-settings](https://github.com/pydantic/pydantic-settings); [docs.pydantic.dev](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) | [integrated] | Root `Settings` model of the configuration. Only the constructor source is enabled; the loader layers files, environment and flags itself (ADR decision D9). Added by E03-03. |
+| keyring | MIT | [GitHub: jaraco/keyring](https://github.com/jaraco/keyring); [PyPI: keyring](https://pypi.org/project/keyring/) | [integrated] | Reads provider keys from the OS keyring for `keyring:` secret references. Imported lazily only when such a reference is resolved; plaintext backends (`keyrings.alt`) are refused. Added by E03-18. |
 | structlog | MIT or Apache-2.0 (dual) | [GitHub: hynek/structlog](https://github.com/hynek/structlog); [structlog.org](https://www.structlog.org/) | [integrated] | Structured logging with a processor chain in which redaction is a fixed step (ADR-0005). Added by E01-20. |
 | platformdirs | MIT | [GitHub: tox-dev/platformdirs](https://github.com/tox-dev/platformdirs); [platformdirs.readthedocs.io](https://platformdirs.readthedocs.io/) | [integrated] | Per-platform location of the user configuration directory when neither `CODEKAVACH_HOME` nor `XDG_CONFIG_HOME` is set. Added by E03-12. |
 
