@@ -1,0 +1,161 @@
+# CodeKavach effective configuration; profile: team (selected by /repo/codekavach.toml:1)
+# organisation policy: none
+# project trust: not-needed
+config_version = 1        # default
+profile = "team"          # project: /repo/codekavach.toml:1
+
+[project]
+state_dir = ".codekavach"  # default
+languages = []            # default
+
+[scan]
+include = [
+    "**/*",
+]  # default
+exclude = [
+    ".git/**",
+    ".codekavach/**",
+    "node_modules/**",
+    ".venv/**",
+    "venv/**",
+    "__pycache__/**",
+    "dist/**",
+    "build/**",
+    "target/**",
+    "vendor/**",
+]  # default
+respect_gitignore = true  # default
+follow_symlinks = false   # default
+max_file_size_kb = 1024   # default
+max_files = 50000         # default
+max_total_size_mb = 2048  # default
+jobs = 2                  # project: /repo/codekavach.toml:7
+timeout_seconds = 3600    # default
+skip_stages = []          # default
+fail_on = "high"          # default
+cache = true              # default
+stage_timeout_seconds = 1800  # default
+cache_max_size_mb = 2048  # default
+cache_keep_scans = 5      # default
+
+[scan.stage_timeouts]
+
+[privacy]
+level = "L4"              # user: /home/u/config.toml:2
+min_level = "L1"          # default
+paths = []                # default
+never_send = [
+    "**/.env",
+    "**/.env.*",
+    "**/*.pem",
+    "**/*.key",
+    "**/*.p12",
+    "**/*.pfx",
+    "**/*.jks",
+    "**/id_rsa*",
+    "**/id_ed25519*",
+]  # default
+domain_terms = [
+    "<2 hidden>",
+]  # project: /repo/codekavach.toml:4
+public_allowlist_extra = []  # default
+
+[privacy.provider_tier_levels]
+local = "L1"              # default
+private = "L2"            # default
+public = "L3"             # default
+
+[privacy.vault]
+key_source = "keyring"    # default
+
+[llm]
+enabled = true            # default
+default_provider = "auto"  # default
+allow_remote = true       # default
+tasks = [
+    "triage",
+    "explain",
+    "remediate",
+    "summarise",
+]  # default
+temperature = 0.0         # default
+max_output_tokens = 2048  # default
+timeout_seconds = 120     # default
+max_retries = 2           # default
+consensus = 1             # default
+cache = true              # default
+
+[llm.budget]
+
+[llm.providers.mock]
+kind = "mock"             # default
+enabled = true            # default
+allow_insecure_http = false  # default
+
+[llm.providers.mock.options]
+
+[reporting]
+formats = [
+    "html",
+    "sarif",
+    "json",
+]  # default
+output_dir = "codekavach-report"  # default
+classification = "Internal"  # profile: /home/u/config.toml#profiles.team
+min_severity = "info"     # default
+snippet_context_lines = 3  # default
+include_privacy_attestation = true  # default
+compliance = [
+    "owasp-top10",
+    "cwe-top25",
+    "pci-dss",
+    "iso27001",
+    "nist-ssdf",
+]  # default
+
+[engines]
+enabled = []              # default
+disabled = []             # default
+timeout_seconds = 600     # default
+rule_packs = [
+    "default",
+]  # default
+rule_paths = []           # default
+
+[engines.native]
+rules = true              # default
+taint = true              # default
+secrets = true            # default
+sca = true                # default
+iac = true                # default
+
+[engines.options]
+
+[integrations.github]
+enabled = false           # default
+api_url = "https://api.github.com/"  # default
+dry_run = true            # default
+issue_sync = false        # default
+close_resolved = true     # default
+min_severity_for_issues = "medium"  # default
+max_issues_per_run = 50   # default
+labels_prefix = "codekavach"  # default
+sarif_upload = false      # default
+checks = false            # default
+
+[integrations.mcp]
+enabled = false           # default
+transport = "stdio"       # default
+bind = "127.0.0.1:8765"   # default
+allow_non_loopback = false  # default
+
+[plugins]
+allow_distributions = []  # default
+disable = []              # default
+
+[logging]
+level = "info"            # default
+format = "console"        # default
+
+[profiles.team.reporting]
+classification = "Internal"  # default

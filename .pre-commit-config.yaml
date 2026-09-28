@@ -52,8 +52,10 @@ repos:
       - id: detect-secrets
         args: [--baseline, .secrets.baseline]
         # docs/schemas/index.json holds generated SHA-256 digests of the schema files; it is
-        # verified byte for byte by the schema drift check instead.
-        exclude: ^(uv\.lock|docs/schemas/index\.json)$
+        # verified byte for byte by the schema drift check instead. The config show goldens are
+        # byte-exact masked renderer output whose engine switch "secrets = true" trips the keyword
+        # detector; tests/unit/cli/test_config_show.py asserts that no secret is ever rendered.
+        exclude: ^(uv\.lock|docs/schemas/index\.json|tests/golden/config/show_effective(_origin)?\.toml)$
 
   - repo: local
     hooks:

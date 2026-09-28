@@ -1,4 +1,4 @@
-"""``codekavach config``: project trust (E03-27) and OS keyring entries (E03-33).
+"""``codekavach config``: show (E03-34), project trust (E03-27) and keyring entries (E03-33).
 
 Owning epic: E03.
 
@@ -21,14 +21,16 @@ import sys
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
 
 from codekavach.cli.console import get_console, get_err_console
 from codekavach.cli.errors import UsageError
+from codekavach.cli.exit_codes import ExitCode
 from codekavach.cli.output import simple_table
 from codekavach.config.constants import KEYRING_SERVICE
+from codekavach.config.diagnostics import format_issues
 from codekavach.config.errors import ConfigError, ConfigIssue, SecretResolutionError
 from codekavach.config.keys import (
     KEYRING_UNAVAILABLE_HINT,
@@ -38,10 +40,16 @@ from codekavach.config.keys import (
     secret_status,
 )
 from codekavach.config.loader import load_settings
+from codekavach.config.models.root import Settings
+from codekavach.config.overrides import parse_set_options
 from codekavach.config.paths import find_project_config, project_root_for, user_config_file
 from codekavach.config.provenance import Layer
+from codekavach.config.render import UnknownSectionError, render_json, render_layer, render_toml
 from codekavach.config.toml_source import read_toml
 from codekavach.config.trust import TrustStore, project_violations, store_path
+
+if TYPE_CHECKING:
+    from codekavach.config.loader import LoadedConfig
 
 config_app = typer.Typer(help="Inspect and manage configuration.", no_args_is_help=True)
 
@@ -304,8 +312,7 @@ def _row(group: str, name: str, kind: str, ref: str, state: str) -> dict[str, st
     return {"group": group, "name": name, "kind": kind, "ref": ref, "state": state}
 
 
-def _status_rows(target: Path) -> list[dict[str, str]]:
-    loaded = load_settings(target=target)
+def _status_rows(loaded: "LoadedConfig") -> list[dict[str, str]]:
     root = loaded.project_root
     rows: list[dict[str, str]] = []
     for provider_id, provider in loaded.settings.llm.providers.items():
@@ -334,7 +341,7 @@ def key_status(
     ] = ListFormat.text,
 ) -> None:
     """Show which references each enabled provider and integration would try, and their state."""
-    rows = _status_rows(Path.cwd())
+    rows = _status_rows(load_settings(target=Path.cwd()))
     if output_format is ListFormat.json:
         sys.stdout.write(json.dumps({"entries": rows}, indent=2) + "\n")
         return
@@ -352,3 +359,137 @@ def key_status(
         for row in rows
     ]
     get_console().print(simple_table(("", "name", "kind", "reference", "state"), table))
+
+
+# --- config show (E03-34) ----------------------------------------------------------------------
+
+LAYER_NAMES = ("default", "user", "project", "profile", "env", "cli")
+REVEAL_WARNING = (
+    "warning: --reveal-domain-terms is set; this output contains client vocabulary "
+    "(privacy.domain_terms). Do not paste it into third-party systems."
+)
+
+
+class ShowFormat(StrEnum):
+    """Output formats of ``config show``."""
+
+    toml = "toml"
+    json = "json"
+
+
+def _load_for_show(
+    target: Path | None,
+    *,
+    config_file: Path | None,
+    profile: str | None,
+    use_user_config: bool,
+    set_values: Sequence[str],
+    trust_project_config: bool,
+) -> "LoadedConfig":
+    try:
+        return load_settings(
+            target=target,
+            config_file=config_file,
+            profile=profile,
+            cli_overrides=parse_set_options(list(set_values)) if set_values else None,
+            use_user_config=use_user_config,
+            trust_project_config=trust_project_config,
+        )
+    except ConfigError as error:
+        sys.stderr.write(format_issues(error.issues) + "\n")
+        raise typer.Exit(ExitCode.USAGE) from None
+
+
+def _layer_text(loaded: "LoadedConfig", name: str, fmt: ShowFormat) -> str:
+    if name == "default":
+        layer = Layer(name="default", source="defaults", data=Settings().model_dump(mode="json"))
+    else:
+        found = [layer for layer in loaded.layers if layer.name == name]
+        if not found:
+            sys.stderr.write(f"note: the {name} layer contributes nothing to this run\n")
+            return "{}\n" if fmt is ShowFormat.json else ""
+        layer = found[-1]
+    return render_layer(layer, fmt=fmt.value)
+
+
+@config_app.command("show")
+def show(  # noqa: PLR0917 - the documented option set of the command
+    target: Annotated[
+        Path | None, typer.Argument(help="Project directory (default: here).")
+    ] = None,
+    effective: Annotated[
+        bool, typer.Option("--effective", help="Show the effective configuration (default).")
+    ] = True,
+    layer: Annotated[
+        str | None,
+        typer.Option("--layer", help="Show one layer: default, user, project, profile, env, cli."),
+    ] = None,
+    output_format: Annotated[
+        ShowFormat, typer.Option("--format", help="Output format.")
+    ] = ShowFormat.toml,
+    origin: Annotated[
+        bool, typer.Option("--origin", help="Annotate every key with where its value came from.")
+    ] = False,
+    section: Annotated[
+        str | None, typer.Option("--section", help="Show one top-level table only.")
+    ] = None,
+    check_secrets: Annotated[
+        bool, typer.Option("--check-secrets", help="Report whether each key reference resolves.")
+    ] = False,
+    reveal_domain_terms: Annotated[
+        bool,
+        typer.Option("--reveal-domain-terms", help="Print privacy.domain_terms in clear."),
+    ] = False,
+    config_file: Annotated[
+        Path | None, typer.Option("--config", help="Explicit project configuration file.")
+    ] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help="Profile to apply.")] = None,
+    no_user_config: Annotated[
+        bool, typer.Option("--no-user-config", help="Ignore the user configuration file.")
+    ] = False,
+    set_values: Annotated[
+        list[str] | None, typer.Option("--set", help="Override one key: KEY=VALUE (TOML).")
+    ] = None,
+    trust_project_config: Annotated[
+        bool,
+        typer.Option("--trust-project-config", help="Trust restricted project keys this run."),
+    ] = False,
+) -> None:
+    """Print the configuration in force, masked, optionally with the origin of every key."""
+    del effective  # the default mode; accepted so that the documented spelling works
+    if layer is not None and layer not in LAYER_NAMES:
+        raise UsageError(
+            f"unknown layer; choose one of: {', '.join(LAYER_NAMES)}", code="unknown_layer"
+        )
+    loaded = _load_for_show(
+        target,
+        config_file=config_file,
+        profile=profile,
+        use_user_config=not no_user_config,
+        set_values=set_values or [],
+        trust_project_config=trust_project_config,
+    )
+    if layer is not None:
+        sys.stdout.write(_layer_text(loaded, layer, output_format))
+        return
+    secrets = _status_rows(loaded) if check_secrets else None
+    if reveal_domain_terms:
+        sys.stderr.write(REVEAL_WARNING + "\n")
+    try:
+        if output_format is ShowFormat.json:
+            text = render_json(
+                loaded, section=section, reveal_domain_terms=reveal_domain_terms, secrets=secrets
+            )
+        else:
+            text = render_toml(
+                loaded,
+                origins=origin,
+                section=section,
+                reveal_domain_terms=reveal_domain_terms,
+                secrets=secrets,
+            )
+    except UnknownSectionError:
+        raise UsageError(
+            "--section names no top-level table of the settings", code="unknown_section"
+        ) from None
+    sys.stdout.write(text)

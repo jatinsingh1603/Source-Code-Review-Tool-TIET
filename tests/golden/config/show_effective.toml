@@ -1,0 +1,158 @@
+config_version = 1
+profile = "team"
+
+[project]
+state_dir = ".codekavach"
+languages = []
+
+[scan]
+include = [
+    "**/*",
+]
+exclude = [
+    ".git/**",
+    ".codekavach/**",
+    "node_modules/**",
+    ".venv/**",
+    "venv/**",
+    "__pycache__/**",
+    "dist/**",
+    "build/**",
+    "target/**",
+    "vendor/**",
+]
+respect_gitignore = true
+follow_symlinks = false
+max_file_size_kb = 1024
+max_files = 50000
+max_total_size_mb = 2048
+jobs = 2
+timeout_seconds = 3600
+skip_stages = []
+fail_on = "high"
+cache = true
+stage_timeout_seconds = 1800
+cache_max_size_mb = 2048
+cache_keep_scans = 5
+
+[scan.stage_timeouts]
+
+[privacy]
+level = "L4"
+min_level = "L1"
+paths = []
+never_send = [
+    "**/.env",
+    "**/.env.*",
+    "**/*.pem",
+    "**/*.key",
+    "**/*.p12",
+    "**/*.pfx",
+    "**/*.jks",
+    "**/id_rsa*",
+    "**/id_ed25519*",
+]
+domain_terms = [
+    "<2 hidden>",
+]
+public_allowlist_extra = []
+
+[privacy.provider_tier_levels]
+local = "L1"
+private = "L2"
+public = "L3"
+
+[privacy.vault]
+key_source = "keyring"
+
+[llm]
+enabled = true
+default_provider = "auto"
+allow_remote = true
+tasks = [
+    "triage",
+    "explain",
+    "remediate",
+    "summarise",
+]
+temperature = 0.0
+max_output_tokens = 2048
+timeout_seconds = 120
+max_retries = 2
+consensus = 1
+cache = true
+
+[llm.budget]
+
+[llm.providers.mock]
+kind = "mock"
+enabled = true
+allow_insecure_http = false
+
+[llm.providers.mock.options]
+
+[reporting]
+formats = [
+    "html",
+    "sarif",
+    "json",
+]
+output_dir = "codekavach-report"
+classification = "Internal"
+min_severity = "info"
+snippet_context_lines = 3
+include_privacy_attestation = true
+compliance = [
+    "owasp-top10",
+    "cwe-top25",
+    "pci-dss",
+    "iso27001",
+    "nist-ssdf",
+]
+
+[engines]
+enabled = []
+disabled = []
+timeout_seconds = 600
+rule_packs = [
+    "default",
+]
+rule_paths = []
+
+[engines.native]
+rules = true
+taint = true
+secrets = true
+sca = true
+iac = true
+
+[engines.options]
+
+[integrations.github]
+enabled = false
+api_url = "https://api.github.com/"
+dry_run = true
+issue_sync = false
+close_resolved = true
+min_severity_for_issues = "medium"
+max_issues_per_run = 50
+labels_prefix = "codekavach"
+sarif_upload = false
+checks = false
+
+[integrations.mcp]
+enabled = false
+transport = "stdio"
+bind = "127.0.0.1:8765"
+allow_non_loopback = false
+
+[plugins]
+allow_distributions = []
+disable = []
+
+[logging]
+level = "info"
+format = "console"
+
+[profiles.team.reporting]
+classification = "Internal"
