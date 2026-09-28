@@ -16,6 +16,7 @@ from codekavach.core.models import ScanStatus, StageStatus
 from codekavach.core.models.scan import StageResult
 
 if TYPE_CHECKING:
+    from codekavach.core.pipeline.items import ItemFailure
     from codekavach.core.pipeline.plan import ExcludedStage
 
 FALLBACK_ERROR_CODES = {"failed": "stage_failed", "timed_out": "timeout"}
@@ -108,6 +109,7 @@ class PipelineResult:
     excluded: tuple["ExcludedStage", ...]
     egress_locked: bool = False
     abandoned_threads: int = 0
+    item_failures: tuple["ItemFailure", ...] = ()
     started_at: datetime | None = None
     finished_at: datetime | None = None
 

@@ -52,6 +52,8 @@ VERDICTS_RAW: Final = "verdicts.raw"
 VERDICTS_RESTORED: Final = "verdicts.restored"
 FINDINGS: Final = "findings"
 SCAN_SUMMARY: Final = "scan.summary"
+# Written by the orchestrator, never by a stage (E04-20); consumers use optional_requires.
+ITEM_FAILURES: Final = "scan.item_failures"
 REPORT_OUTPUTS: Final = "report.outputs"
 SYNC_RESULT: Final = "sync.result"
 MANIFEST: Final = "scan.manifest"

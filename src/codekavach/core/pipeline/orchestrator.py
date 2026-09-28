@@ -43,7 +43,7 @@ from codekavach.core.pipeline.events import (
     WarningRaised,
 )
 from codekavach.core.pipeline.execution import resolve_timeout, run_with_deadline
-from codekavach.core.pipeline.keys import is_multi_provider
+from codekavach.core.pipeline.keys import ITEM_FAILURES, is_multi_provider
 from codekavach.core.pipeline.plan import RunPlan
 from codekavach.core.pipeline.policy import (
     LOCKED_CATEGORIES,
@@ -130,6 +130,8 @@ class Orchestrator:
         self._monotonic = monotonic
         self._abandoned: list[tuple[str, threading.Thread]] = []
         self._abandoned_lock = threading.Lock()
+        self._items_lock = threading.Lock()
+        self._items_written = 0
 
     def _execute_stage(self, stage: Stage, info: StageInfo, stage_ctx: RunContext) -> None:
         """Run one stage on its scoped view (E04-17), under its effective timeout (E04-18).
@@ -375,6 +377,7 @@ class Orchestrator:
         user_cancelled = False
         with self._abandoned_lock:
             self._abandoned = []
+        self._write_item_failures(ctx, force=True)
         workers = max_workers(ctx)
         for wave in plan.waves:
             if self._stop_before(ctx, state, wave[0]):
@@ -482,6 +485,7 @@ class Orchestrator:
             stage=plan.stage_by_name(name),
             index=plan.order.index(name),
         )
+        self._write_item_failures(scope.ctx)
         failed = run.outcome in {StageOutcome.FAILED, StageOutcome.TIMED_OUT}
         with wave.lock:
             wave.runs[name] = run
@@ -509,6 +513,18 @@ class Orchestrator:
             run.outcome is StageOutcome.CANCELLED for run in wave.runs.values()
         )
         return _WaveOutcome(user_cancelled=user_cancelled or self._user_cancelled(ctx, state))
+
+    def _write_item_failures(self, ctx: RunContext, *, force: bool = False) -> None:
+        """Refresh ``scan.item_failures`` in the inner store when stages added failures (E04-20).
+
+        The orchestrator owns the key, so it is outside every stage's ``provides``; a consumer
+        that lists it in ``optional_requires`` sees the failures of every earlier stage.
+        """
+        with self._items_lock:
+            count = len(ctx.item_failures)
+            if force or count != self._items_written:
+                ctx.artefacts.put(ITEM_FAILURES, ctx.item_failures.to_json())
+                self._items_written = count
 
     def _settle_abandoned(self, state: RunState) -> None:
         """Give abandoned stage threads a moment to end; warn about those still running."""
@@ -559,6 +575,7 @@ class Orchestrator:
             excluded=plan.excluded,
             egress_locked=state.egress_locked,
             abandoned_threads=len(state.abandoned),
+            item_failures=ctx.item_failures.snapshot(),
             started_at=started_at,
             finished_at=self._clock(),
         )

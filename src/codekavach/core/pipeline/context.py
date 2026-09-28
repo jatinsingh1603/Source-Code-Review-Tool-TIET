@@ -15,7 +15,13 @@ from typing import Literal
 from codekavach.config import Settings
 from codekavach.core.pipeline.budget import Budget
 from codekavach.core.pipeline.cancel import CancellationToken, ScanCancelledError
-from codekavach.core.pipeline.events import EventBus, StageProgress, WarningRaised
+from codekavach.core.pipeline.events import (
+    EventBus,
+    ItemFailed,
+    StageProgress,
+    WarningRaised,
+)
+from codekavach.core.pipeline.items import ItemFailureLog
 from codekavach.core.pipeline.result import RunLog, StageRun
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.store.base import ArtefactStore
@@ -47,6 +53,7 @@ class RunContext:
     project_root: Path
     state_dir: Path | None = None
     run_log: RunLog = field(default_factory=RunLog)
+    item_failures: ItemFailureLog = field(default_factory=ItemFailureLog)
     stage: str | None = None
     consent: ConsentDecision | None = None
 
@@ -63,6 +70,25 @@ class RunContext:
             stage=stage,
             artefacts=artefacts if artefacts is not None else self.artefacts,
             cancellation=cancellation if cancellation is not None else self.cancellation,
+        )
+
+    def fail_item(self, item_id: str, error_code: str) -> None:
+        """Record that one item of this stage failed, and publish ``ItemFailed`` (E04-20).
+
+        Raises:
+            RuntimeError: the context is not bound to a stage.
+            ValueError: ``item_id`` or ``error_code`` is malformed (the value is not echoed).
+        """
+        if self.stage is None:
+            raise RuntimeError("fail_item needs a stage context")
+        failure = self.item_failures.add(self.stage, item_id, error_code)
+        self.events.publish(
+            ItemFailed(
+                scan_id=self.scan_id,
+                stage=failure.stage,
+                item_id=failure.item_id,
+                error_code=failure.error_code,
+            )
         )
 
     def check_cancelled(self) -> None:
