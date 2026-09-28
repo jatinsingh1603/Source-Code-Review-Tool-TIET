@@ -8,7 +8,9 @@ from typing import Any, Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
+from codekavach.config.models.base import restricted
 from codekavach.config.models.engines import EnginesSettings
+from codekavach.config.models.integrations import IntegrationsSettings
 from codekavach.config.models.llm import LLMSettings
 from codekavach.config.models.log import LoggingSettings
 from codekavach.config.models.plugins import PluginsSettings
@@ -57,6 +59,11 @@ class Settings(BaseSettings):
     )
     engines: EnginesSettings = Field(
         default_factory=EnginesSettings, description="Which analysers run and how."
+    )
+    integrations: IntegrationsSettings = Field(
+        default_factory=IntegrationsSettings,
+        description="External systems that receive findings.",
+        json_schema_extra=restricted(),
     )
     plugins: PluginsSettings = Field(
         default_factory=PluginsSettings, description="Which installed plugins may load."

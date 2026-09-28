@@ -90,6 +90,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.config.overrides",
         "codekavach.config.models.base",
         "codekavach.config.models.engines",
+        "codekavach.config.models.integrations",
         "codekavach.config.models.llm",
         "codekavach.config.models.log",
         "codekavach.config.models.plugins",

@@ -17,6 +17,30 @@
     "rule_paths": [],
     "timeout_seconds": 600
   },
+  "integrations": {
+    "github": {
+      "api_url": "https://api.github.com/",
+      "checks": false,
+      "close_resolved": true,
+      "dry_run": true,
+      "enabled": false,
+      "issue_sync": false,
+      "labels_prefix": "codekavach",
+      "max_issues_per_run": 50,
+      "min_severity_for_issues": "medium",
+      "project_number": null,
+      "project_owner": null,
+      "repository": null,
+      "sarif_upload": false,
+      "token": null
+    },
+    "mcp": {
+      "allow_non_loopback": false,
+      "bind": "127.0.0.1:8765",
+      "enabled": false,
+      "transport": "stdio"
+    }
+  },
   "llm": {
     "allow_remote": true,
     "budget": {
