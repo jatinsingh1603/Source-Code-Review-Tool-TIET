@@ -126,6 +126,8 @@ class Stage(Protocol):
 
 Default stage order: `ingest`, `parse`, `analyse` (engines, rules, taint, secrets, SCA, IaC run concurrently), `aggregate`, `privacy-prepare`, `llm-review`, `restore`, `rate`, `report`, `sync`.
 
+Optional stage metadata, the failure policy, caching and the threading model are specified in docs/adr/0007-pipeline-contracts.md.
+
 ## 5. Core data model (summary)
 
 | Model | Purpose | Key fields |
