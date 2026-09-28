@@ -65,7 +65,15 @@ from codekavach.config.profiles import (
 )
 from codekavach.config.provenance import Layer, Origin, compute_origins, origin_in
 from codekavach.config.toml_source import locate_key, read_toml
-from codekavach.config.trust import check_restricted, check_tighten_only, is_project_trusted
+from codekavach.config.trust import (
+    TrustStore,
+    baseline_origin,
+    baseline_settings,
+    check_tighten_only,
+    is_project_trusted,
+    project_violations,
+    store_path,
+)
 from codekavach.config.validate import semantic_checks
 
 ProjectTrust = Literal["not-needed", "flag", "env", "store", "external-config"]
@@ -354,28 +362,6 @@ def _refuse_plaintext(
         raise PlaintextSecretError(issues)
 
 
-def _baseline(raw_user: Layer | None) -> dict[str, Any]:
-    """Everything below the project layer: the defaults merged with the user layer."""
-    baseline: dict[str, Any] = Settings().model_dump(mode="json")
-    if raw_user is not None:
-        data = {k: v for k, v in raw_user.data.items() if k not in {"profile", "profiles"}}
-        baseline = deep_merge(baseline, data, union_keys=union_keys_of(Settings))
-    return baseline
-
-
-def _baseline_origin(raw_user: Layer | None) -> Callable[[str], str]:
-    flat = flatten_leaves(raw_user.data) if raw_user is not None else {}
-
-    def origin(key: str) -> str:
-        base = key.split("[", maxsplit=1)[0]
-        if raw_user is None or base not in flat:
-            return "the built-in defaults"
-        line = locate_key(raw_user.text, base) if raw_user.text is not None else None
-        return raw_user.source if line is None else f"{raw_user.source}:{line}"
-
-    return origin
-
-
 def _loosening_issues(
     layers: Sequence[Layer],
     *,
@@ -384,33 +370,36 @@ def _loosening_issues(
     profile_name: str | None,
     profile_origin: Origin | None,
 ) -> list[ConfigIssue]:
-    """Code 041 for the project layer, its profile tables and a profile it selects (E03-26)."""
-    baseline = _baseline(raw_user)
-    origin_of = _baseline_origin(raw_user)
-    common: dict[str, Any] = {"source": raw_project.source, "baseline_origin": origin_of}
-    data = {k: v for k, v in raw_project.data.items() if k not in {"profile", "profiles"}}
-    issues = check_tighten_only(data, baseline, text=raw_project.text, **common)
-    profiles = raw_project.data.get("profiles")
-    for name, table in profiles.items() if isinstance(profiles, Mapping) else ():
-        if isinstance(table, Mapping):
-            issues += check_tighten_only(
-                table, baseline, text=raw_project.text, prefix=f"profiles.{name}.", **common
-            )
+    """Code 041 for a profile the project selects, whoever defined it (E03-26)."""
     selected = next((layer for layer in layers if layer.name == "profile"), None)
-    if selected is not None and profile_origin is not None and profile_origin.layer == "project":
-        issues += check_tighten_only(
-            selected.data,
-            baseline,
-            text=None,
-            subject=f"profile '{profile_name}', selected by the project configuration,",
-            line=profile_origin.line,
-            hint=(
-                f"select the profile yourself (--profile {profile_name} or "
-                f"CODEKAVACH_PROFILE={profile_name}), or trust this project."
-            ),
-            **common,
-        )
-    return issues
+    if selected is None or profile_origin is None or profile_origin.layer != "project":
+        return []
+    return check_tighten_only(
+        selected.data,
+        baseline_settings(raw_user),
+        source=raw_project.source,
+        text=None,
+        subject=f"profile '{profile_name}', selected by the project configuration,",
+        line=profile_origin.line,
+        baseline_origin=baseline_origin(raw_user),
+        hint=(
+            f"select the profile yourself (--profile {profile_name} or "
+            f"CODEKAVACH_PROFILE={profile_name}), or trust this project."
+        ),
+    )
+
+
+def _trust_store(
+    env: Mapping[str, str], project_root: Path
+) -> tuple[TrustStore | None, list[ConfigIssue]]:
+    """The user's trust store, or ``None`` with warning 042 when it cannot be used (E03-27)."""
+    path = store_path(env)
+    if path.resolve().is_relative_to(project_root.resolve()):
+        return None, []  # never read from inside the project being scanned
+    try:
+        return TrustStore.load(path), []
+    except ConfigError as error:
+        return None, [replace(issue, severity="warning") for issue in error.issues]
 
 
 def _check_layers(
@@ -440,7 +429,9 @@ def _check_layers(
     """
     if raw_project is None:
         return (), project_trust
-    issues = check_restricted(raw_project, project_root=project_root, user_config=user_config)
+    issues = project_violations(
+        raw_project, project_root=project_root, user=raw_user, user_config=user_config
+    )
     issues += _loosening_issues(
         layers,
         raw_project=raw_project,
@@ -453,9 +444,20 @@ def _check_layers(
     trusted, reason = is_project_trusted(
         flag=trust_project_config, env=env, loaded_external=project_trust == "external-config"
     )
+    warnings: list[ConfigIssue] = []
+    if not trusted:
+        store, warnings = _trust_store(env, project_root)
+        trusted, reason = is_project_trusted(
+            flag=False,
+            env={},
+            loaded_external=False,
+            store=store,
+            root=project_root,
+            sha256=raw_project.sha256,
+        )
     if not trusted or reason == "untrusted":
-        raise ProjectTrustError(issues)
-    return (), reason
+        raise ProjectTrustError([*issues, *warnings])
+    return tuple(warnings), reason
 
 
 def _apply_org_policy(

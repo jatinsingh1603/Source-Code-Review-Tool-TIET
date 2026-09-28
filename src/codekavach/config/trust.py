@@ -18,17 +18,27 @@ pipeline that scans pull requests from forks must not.
 Consent for remote egress is deliberately not a setting (E05-13), so no file can grant it.
 """
 
+import contextlib
+import hmac
+import json
+import os
 import re
+import tempfile
 from collections.abc import Callable, Iterator, Mapping
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from types import MappingProxyType
 from typing import Any, Literal
 
-from codekavach.config.errors import DEFAULT_SEVERITY, ConfigErrorCode, ConfigIssue
+from codekavach.config.constants import TRUST_STORE_FILE_NAME
+from codekavach.config.errors import DEFAULT_SEVERITY, ConfigError, ConfigErrorCode, ConfigIssue
 from codekavach.config.introspect import flatten_leaves, keys_with_marker
+from codekavach.config.merge import deep_merge
 from codekavach.config.models.base import split_csv
 from codekavach.config.models.root import Settings
+from codekavach.config.paths import user_config_dir
 from codekavach.config.provenance import Layer
 from codekavach.config.toml_source import locate_key
 from codekavach.core.models import PrivacyLevel
@@ -56,7 +66,7 @@ CONTAINED_PATH_KEYS: tuple[str, ...] = (
     "engines.rule_paths[*]",
 )
 
-TrustReason = Literal["flag", "env", "external-config", "untrusted"]
+TrustReason = Literal["flag", "env", "external-config", "store", "untrusted"]
 
 
 def _segment_match(pattern: list[str], parts: list[str]) -> bool:
@@ -87,15 +97,27 @@ def is_restricted(dotted_key: str) -> bool:
 
 
 def is_project_trusted(
-    *, flag: bool, env: Mapping[str, str], loaded_external: bool
+    *,
+    flag: bool,
+    env: Mapping[str, str],
+    loaded_external: bool,
+    store: "TrustStore | None" = None,
+    root: Path | None = None,
+    sha256: str | None = None,
 ) -> tuple[bool, TrustReason]:
-    """Whether the project configuration is trusted for this run, and why."""
+    """Whether the project configuration is trusted for this run, and why.
+
+    A store grant counts only for the exact bytes of the configuration file (``sha256`` of the
+    same read that the loader parsed, CWE-367).
+    """
     if flag:
         return True, "flag"
     if env.get(TRUST_ENV, "").strip().lower() in _TRUE:
         return True, "env"
     if loaded_external:
         return True, "external-config"
+    if store is not None and root is not None and sha256 and store.is_trusted(root, sha256):
+        return True, "store"
     return False, "untrusted"
 
 
@@ -345,3 +367,178 @@ def check_tighten_only(
             )
         )
     return issues
+
+
+# --- violations of one project file (shared by the loader and ``config trust``) --------------
+
+
+def baseline_settings(user: Layer | None) -> dict[str, Any]:
+    """Everything below the project layer: the defaults merged with the user layer."""
+    baseline: dict[str, Any] = Settings().model_dump(mode="json")
+    if user is not None:
+        data = {k: v for k, v in user.data.items() if k not in {"profile", "profiles"}}
+        baseline = deep_merge(baseline, data, union_keys=keys_with_marker(Settings, "union"))
+    return baseline
+
+
+def baseline_origin(user: Layer | None) -> Callable[[str], str]:
+    """Where the baseline value of a key comes from: the user file and line, or the defaults."""
+    flat = flatten_leaves(user.data) if user is not None else {}
+
+    def origin(key: str) -> str:
+        base = key.split("[", maxsplit=1)[0]
+        if user is None or base not in flat:
+            return "the built-in defaults"
+        line = locate_key(user.text, base) if user.text is not None else None
+        return user.source if line is None else f"{user.source}:{line}"
+
+    return origin
+
+
+def project_violations(
+    project: Layer, *, project_root: Path, user: Layer | None, user_config: Path | None = None
+) -> list[ConfigIssue]:
+    """Codes 040 and 041 for the raw project layer and every profile table it defines."""
+    issues = check_restricted(project, project_root=project_root, user_config=user_config)
+    baseline = baseline_settings(user)
+    common: dict[str, Any] = {"source": project.source, "baseline_origin": baseline_origin(user)}
+    data = {k: v for k, v in project.data.items() if k not in {"profile", "profiles"}}
+    issues += check_tighten_only(data, baseline, text=project.text, **common)
+    profiles = project.data.get("profiles")
+    for name, table in profiles.items() if isinstance(profiles, Mapping) else ():
+        if isinstance(table, Mapping):
+            issues += check_tighten_only(
+                table, baseline, text=project.text, prefix=f"profiles.{name}.", **common
+            )
+    return issues
+
+
+# --- persistent trust store (E03-27) -----------------------------------------------------------
+
+STORE_VERSION = 1
+_SHA256 = re.compile(r"[0-9a-f]{64}")
+
+
+@dataclass(frozen=True, slots=True)
+class TrustEntry:
+    """One trusted project: its root, the SHA-256 of its configuration file and when."""
+
+    root: str
+    sha256: str
+    trusted_at: str
+
+
+def store_path(env: Mapping[str, str]) -> Path:
+    """``<user_config_dir>/trusted-projects.json``."""
+    return user_config_dir(env) / TRUST_STORE_FILE_NAME
+
+
+def _store_key(root: Path) -> str:
+    return os.path.normcase(str(root.resolve()))
+
+
+def _corrupt(path: Path, reason: str) -> ConfigError:
+    return ConfigError.single(
+        ConfigErrorCode.CK_CFG_042,
+        f"trust store is unreadable or corrupt: {reason}",
+        source=str(path),
+        hint="delete the file and trust your projects again with codekavach config trust",
+    )
+
+
+def _parse_store(path: Path, raw: bytes) -> dict[str, dict[str, str]]:
+    try:
+        document = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise _corrupt(path, "not valid JSON") from None
+    if not isinstance(document, dict) or document.get("version") != STORE_VERSION:
+        raise _corrupt(path, f"expected an object with version {STORE_VERSION}")
+    projects = document.get("projects")
+    if not isinstance(projects, dict):
+        raise _corrupt(path, "projects must be an object")
+    parsed: dict[str, dict[str, str]] = {}
+    for root, entry in projects.items():
+        if (
+            not isinstance(entry, dict)
+            or not isinstance(entry.get("sha256"), str)
+            or not _SHA256.fullmatch(entry["sha256"])
+            or not isinstance(entry.get("trusted_at", ""), str)
+        ):
+            raise _corrupt(path, "an entry is malformed")
+        parsed[str(root)] = {"sha256": entry["sha256"], "trusted_at": entry.get("trusted_at", "")}
+    return parsed
+
+
+class TrustStore:
+    """Projects the user trusts, each bound to the exact bytes of its configuration file.
+
+    Stored as JSON at ``<user_config_dir>/trusted-projects.json`` (directory ``0o700``, file
+    ``0o600``), written atomically; holds paths and hashes only. Any edit of a trusted file,
+    whitespace included, changes its hash and lapses the grant (direnv-style).
+    """
+
+    def __init__(self, path: Path, projects: Mapping[str, Mapping[str, str]] | None = None) -> None:
+        self.path = path
+        self._projects: dict[str, dict[str, str]] = {
+            root: dict(entry) for root, entry in (projects or {}).items()
+        }
+
+    @classmethod
+    def load(cls, path: Path) -> "TrustStore":
+        """Read the store; a missing file is an empty store.
+
+        Raises:
+            ConfigError: CK-CFG-042 when the file cannot be read or is not a valid store.
+        """
+        try:
+            raw = path.read_bytes()
+        except FileNotFoundError:
+            return cls(path)
+        except OSError:
+            raise _corrupt(path, "the file cannot be read") from None
+        return cls(path, _parse_store(path, raw))
+
+    def is_trusted(self, root: Path, sha256: str) -> bool:
+        """True when ``root`` is trusted for exactly this configuration content."""
+        entry = self._projects.get(_store_key(root))
+        return entry is not None and hmac.compare_digest(entry["sha256"], sha256)
+
+    def grant(self, root: Path, sha256: str) -> None:
+        """Trust ``root`` for this content and save."""
+        now = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        self._projects[_store_key(root)] = {"sha256": sha256, "trusted_at": now}
+        self.save()
+
+    def revoke(self, root: Path) -> bool:
+        """Forget ``root`` and save; False when it was not trusted."""
+        if self._projects.pop(_store_key(root), None) is None:
+            return False
+        self.save()
+        return True
+
+    def entries(self) -> list[TrustEntry]:
+        """Every trusted project, sorted by root."""
+        return [
+            TrustEntry(root, entry["sha256"], entry.get("trusted_at", ""))
+            for root, entry in sorted(self._projects.items())
+        ]
+
+    def save(self) -> None:
+        """Write atomically: a temporary file in the same directory, then ``os.replace``."""
+        directory = self.path.parent
+        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        document = {"version": STORE_VERSION, "projects": self._projects}
+        data = (json.dumps(document, indent=2, sort_keys=True) + "\n").encode("utf-8")
+        descriptor, name = tempfile.mkstemp(dir=directory, prefix=".trusted-", suffix=".tmp")
+        temporary = Path(name)
+        try:
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(data)
+                handle.flush()
+                os.fsync(handle.fileno())
+            temporary.chmod(0o600)
+            temporary.replace(self.path)
+        except BaseException:
+            with contextlib.suppress(OSError):
+                temporary.unlink()
+            raise

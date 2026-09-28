@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 import typer.rich_utils
+from typer import _click as click  # the Click copy that Typer's commands use
 
 from codekavach.cli.app import build_cli, run
 from codekavach.cli.console import reset_consoles
@@ -122,8 +123,13 @@ def run_cli(
     cwd: Path | None = None,
     tty: bool = False,
     home: Path | None = None,
+    command: click.Command | None = None,
 ) -> CliResult:
-    """Run ``codekavach <args>`` in-process and capture its outputs and exit code."""
+    """Run ``codekavach <args>`` in-process and capture its outputs and exit code.
+
+    ``command`` runs a sub-application that is not mounted yet (for example ``config_app``
+    before E05-19) through the same ``run`` and exit-code mapping.
+    """
     home = home or Path(tempfile.mkdtemp(prefix="ck-cli-")) / "home"
     home.mkdir(parents=True, exist_ok=True)
     stdout, stderr = _Stream(tty=tty), _Stream(tty=tty)
@@ -140,7 +146,7 @@ def run_cli(
         sys.stdin = stdin
         reset_consoles()
         try:
-            code = run(build_cli(), list(args))
+            code = run(command or build_cli(), list(args))
         finally:
             sys.stdin = saved_stdin
             typer.rich_utils.FORCE_TERMINAL = saved_force
