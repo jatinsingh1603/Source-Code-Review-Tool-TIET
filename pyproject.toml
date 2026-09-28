@@ -24,11 +24,11 @@ classifiers = [
   "Operating System :: MacOS",
   "Typing :: Typed",
 ]
-dependencies = ["typer>=0.27", "rich>=15.0", "pydantic>=2.9,<3", "pydantic-settings>=2.3", "structlog>=24.4", "platformdirs>=4.2", "keyring>=25", "tomli-w>=1.0"]
+dependencies = ["typer>=0.27", "rich>=15.0", "pydantic>=2.9,<3", "pydantic-settings>=2.3", "structlog>=24.4", "platformdirs>=4.2", "keyring>=25", "tomli-w>=1.0", "sqlalchemy>=2.0.30,<3"]
 
 [project.optional-dependencies]
 # Reserved names. Later epics fill them; do not invent other extra names without an ADR.
-server = []      # E32: fastapi, uvicorn, sqlalchemy, alembic, postgres driver
+server = []      # E32: fastapi, uvicorn, postgres driver (SQLAlchemy is a core dependency)
 reports = []     # E31: weasyprint, docxtpl, xlsxwriter
 providers = []   # E22: provider SDKs and LiteLLM
 pii = []         # E08: PII detection models
