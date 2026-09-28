@@ -226,3 +226,38 @@ def layer_sets(draw: st.DrawFn) -> tuple[dict[str, Any], dict[str, Any]]:
     chosen = draw(st.sets(st.sampled_from(_PROJECT_LAYER_SECTIONS)))
     project = {name: draw(section_dicts(name)) for name in sorted(chosen)}
     return user, project
+
+
+@st.composite
+def org_policies(draw: st.DrawFn) -> dict[str, Any]:
+    """A valid organisation policy dictionary (E03-28), for E03-29 and E03-30."""
+    data: dict[str, Any] = {
+        "policy_version": 1,
+        "organisation": draw(_WORD).title() + " Ltd",
+        "enforcement": draw(st.sampled_from(["reject", "clamp"])),
+    }
+    privacy: dict[str, Any] = {}
+    if draw(st.booleans()):
+        privacy["min_level"] = draw(privacy_levels()).value
+    if draw(st.booleans()):
+        privacy["min_level_by_tier"] = {
+            tier.value: draw(privacy_levels()).value for tier in draw(st.sets(trust_tiers()))
+        }
+    if draw(st.booleans()):
+        privacy["never_send"] = draw(st.lists(globs(), max_size=2))
+    if draw(st.booleans()):
+        privacy["forbid_allowlist_extra"] = draw(st.booleans())
+    if privacy:
+        data["privacy"] = privacy
+    if draw(st.booleans()):
+        data["llm"] = {
+            "allow_remote": draw(st.booleans()),
+            "allowed_kinds": draw(
+                st.lists(st.sampled_from([k.value for k in ProviderKind]), unique=True)
+            ),
+        }
+    if draw(st.booleans()):
+        data["project_config"] = {"allow_trust": draw(st.booleans())}
+    if draw(st.booleans()):
+        data["lock"] = {"reporting.include_privacy_attestation": draw(st.booleans())}
+    return data

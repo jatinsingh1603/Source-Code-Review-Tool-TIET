@@ -1,0 +1,33 @@
+# Minimal organisation policy (E03-28). Install it where the scanned repository cannot write:
+#   Linux: /etc/codekavach/policy.toml   macOS: /Library/Application Support/CodeKavach/policy.toml
+#   Windows: %PROGRAMDATA%\CodeKavach\policy.toml   or point CODEKAVACH_ORG_POLICY at it.
+# Owned by root or the running user, not writable by group or others. Every rule is optional.
+
+policy_version = 1                  # format version; only 1 exists
+organisation = "Example Bank Ltd"   # shown in reports and diagnostics
+enforcement = "reject"              # "reject" stops a violating run; "clamp" tightens and warns
+issued = 2026-10-01
+expires = 2027-03-31                # after this date the policy no longer loads (code 056)
+
+[privacy]
+min_level = "L3"                    # nothing weaker than L3 leaves, whatever any layer says
+min_level_by_tier = { public = "L4" }   # public providers receive abstract facts only
+never_send = ["**/hsm/**"]          # added to privacy.never_send in every run
+forbid_allowlist_extra = true       # privacy.public_allowlist_extra may not be used
+
+[llm]
+allow_remote = true                 # false forbids every remote provider
+allowed_kinds = ["azure-openai", "ollama", "openai-compatible", "mock", "replay"]
+allowed_providers = []              # provider ids; empty means any id
+allowed_base_url_hosts = ["llm.internal.examplebank.example"]
+
+[integrations]
+allow_github = true
+allowed_github_api_hosts = ["api.github.com"]
+
+[project_config]
+allow_trust = false                 # restricted keys in project files are never accepted
+
+[lock]                              # settings pinned to a value in every run
+"reporting.include_privacy_attestation" = true
+"privacy.vault.key_source" = "keyring"

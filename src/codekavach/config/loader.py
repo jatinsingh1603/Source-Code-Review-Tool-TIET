@@ -49,6 +49,7 @@ from codekavach.config.introspect import flatten_leaves, keys_with_marker, loc_t
 from codekavach.config.merge import deep_merge
 from codekavach.config.models.base import split_csv
 from codekavach.config.models.root import Settings
+from codekavach.config.orgpolicy.discovery import LoadedOrgPolicy, discover_org_policies
 from codekavach.config.overrides import CliOverrides, cli_layer
 from codekavach.config.paths import (
     check_discovered_project_file,
@@ -98,7 +99,7 @@ class LoadedConfig:
     profile: str | None = None
     profile_origin: Origin | None = None
     project_trust: ProjectTrust = "not-needed"
-    org_policies: tuple[Any, ...] = ()
+    org_policies: tuple[LoadedOrgPolicy, ...] = ()
     locked_keys: frozenset[str] = field(default_factory=frozenset)
 
     def resolve_path(self, path: Path) -> Path:
@@ -173,9 +174,16 @@ def _origin_lookup(layers: Sequence[Layer]) -> Callable[[str], Origin]:
 # Extension points, called in pipeline order. Each is a no-op until its issue lands.
 
 
-def _discover_org_policies(*, env: Mapping[str, str], project_root: Path) -> tuple[Any, ...]:
-    """Find and verify organisation policies (E03-28)."""
-    return ()
+def _discover_org_policies(
+    *, env: Mapping[str, str], project_root: Path
+) -> tuple[LoadedOrgPolicy, ...]:
+    """Find and verify organisation policies (E03-28); enforcement is E03-29.
+
+    Raises:
+        OrgPolicyError: a configured policy is missing, unsafe, invalid, pinned to another
+            hash or expired (codes 050 to 053, 056).
+    """
+    return discover_org_policies(env, project_root=project_root)
 
 
 def _strip_profile_keys(layer: Layer) -> Layer:
@@ -461,7 +469,7 @@ def _check_layers(
 
 
 def _apply_org_policy(
-    settings: Settings, merged: Mapping[str, Any], org_policies: tuple[Any, ...]
+    settings: Settings, merged: Mapping[str, Any], org_policies: tuple[LoadedOrgPolicy, ...]
 ) -> tuple[Settings, frozenset[str], tuple[ConfigIssue, ...]]:
     """Enforce organisation policy locks and floors (E03-29, E03-30)."""
     return settings, frozenset(), ()
