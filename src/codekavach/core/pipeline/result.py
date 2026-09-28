@@ -7,7 +7,8 @@ E02 rule that stage results must not store it.
 """
 
 import threading
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
@@ -112,6 +113,7 @@ class PipelineResult:
     item_failures: tuple["ItemFailure", ...] = ()
     cache_hits: int = 0
     cache_misses: int = 0
+    tool_versions: Mapping[str, Mapping[str, str]] = field(default_factory=dict)
     started_at: datetime | None = None
     finished_at: datetime | None = None
 

@@ -13,18 +13,20 @@ before anything is written; ``Scan`` records carry no exception text. The runner
 connection (I1). Consent for remote egress is passed through unchanged; ``None`` means none.
 """
 
-import hashlib
+import dataclasses
 import importlib.metadata
 import json
-from collections.abc import Callable, Collection
+import sys
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlsplit
 
 from codekavach.config import LoadedConfig, Settings
-from codekavach.config.introspect import flatten_leaves, has_marker
 from codekavach.config.paths import resolve_state_dir
+from codekavach.config.snapshot import build_snapshot, settings_fingerprint
 from codekavach.core.log import get_logger
 from codekavach.core.models import Language, ScanStatus
 from codekavach.core.models.finding import Finding
@@ -44,14 +46,20 @@ from codekavach.core.pipeline.cache import StageCache
 from codekavach.core.pipeline.cancel import CancellationToken
 from codekavach.core.pipeline.context import ConsentDecision, RunContext
 from codekavach.core.pipeline.events import EventBus, NullEventBus
+from codekavach.core.pipeline.manifest import (
+    ConsentSource,
+    ManifestCounters,
+    ScanManifest,
+    build_manifest,
+)
 from codekavach.core.pipeline.orchestrator import Orchestrator
-from codekavach.core.pipeline.plan import PlanError, build_plan
-from codekavach.core.pipeline.result import PipelineResult
+from codekavach.core.pipeline.plan import PlanError, RunPlan, build_plan
+from codekavach.core.pipeline.result import PipelineResult, StageRun
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.plugins.registry import PluginRegistry, registry_from_environment
 from codekavach.core.store.artefacts import OnDiskArtefactStore
 from codekavach.core.store.base import ArtefactError, ArtefactStore
-from codekavach.core.store.layout import StateLayout
+from codekavach.core.store.layout import StateLayout, atomic_write_bytes
 
 CREDENTIALS_IN_TARGET = (
     "target must not contain credentials; configure them through a secret reference"
@@ -67,6 +75,7 @@ class ScanOutcome:
     result: PipelineResult
     scan: Scan
     state_dir: Path
+    manifest_path: Path | None = None
 
 
 def check_target(target: str) -> str:
@@ -97,16 +106,8 @@ def build_budget(settings: Settings) -> Budget:
 
 
 def config_hash(settings: Settings) -> str:
-    """SHA-256 of the canonical effective settings without volatile keys.
-
-    Interim implementation until the settings fingerprint of E03-39 is available.
-    """
-    flat = flatten_leaves(settings.model_dump(mode="json"))
-    stable = {
-        key: value for key, value in flat.items() if not has_marker(Settings, key, "volatile")
-    }
-    text = json.dumps(stable, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    """The settings fingerprint of E03-39 (``ck-fp-v1``): volatile settings do not count."""
+    return settings_fingerprint(settings)
 
 
 def codekavach_version() -> str:
@@ -269,9 +270,111 @@ def run_scan(
         refresh=refresh,
         version=codekavach_version(),
     )
-    result = orchestrator.run(plan, ctx)
+    started_at = clock()
+    write_bytes = atomic_write_bytes
+    snapshot = build_snapshot(loaded, codekavach_version=codekavach_version(), now=started_at)
+    snapshot_text = json.dumps(snapshot.model_dump(mode="json"), indent=2, sort_keys=True) + "\n"
+    write_bytes(layout.snapshot_path(scan_id), snapshot_text.encode("utf-8"))
+    manifest_inputs = _ManifestInputs(
+        scan_id=scan_id,
+        plan=plan,
+        registry_rows=_registry_rows(registry),
+        settings_fp=settings_fingerprint(settings),
+        salt_fp=salt.fingerprint(),
+        profile=loaded.profile,
+        consent_source=consent.source if consent is not None else "none",
+        started_at=started_at,
+    )
+    ctx = dataclasses.replace(
+        ctx,
+        manifest_provider=lambda: manifest_inputs.build(
+            ctx.run_log.snapshot(), status="running", finished_at=None, result=None,
+            tool_versions=orchestrator.tool_versions(),
+        ),
+    )  # fmt: skip
+    result: PipelineResult | None = None
+    manifest_path = layout.manifest_path(scan_id)
+    try:
+        result = orchestrator.run(plan, ctx)
+    finally:
+        failure = sys.exc_info()[1]
+        status = result.status.value if result is not None else _status_after(failure, ctx)
+        manifest = manifest_inputs.build(
+            result.stage_runs if result is not None else ctx.run_log.snapshot(),
+            status=status,
+            finished_at=clock(),
+            result=result,
+            tool_versions=orchestrator.tool_versions(),
+        )
+        try:
+            write_bytes(manifest_path, manifest.to_json().encode("utf-8"))
+            artefacts.put(keys.MANIFEST, manifest)
+        except (OSError, ArtefactError):
+            _log.warning("manifest_write_failed", scan_id=scan_id)
     scan = assemble_scan(
         result=result, store=artefacts, settings=settings, project=project, clock=clock
     )
     artefacts.put(keys.SCAN_RECORD, scan)
-    return ScanOutcome(result=result, scan=scan, state_dir=layout.root)
+    return ScanOutcome(result=result, scan=scan, state_dir=layout.root, manifest_path=manifest_path)
+
+
+def _registry_rows(registry: PluginRegistry | None) -> list[Any]:
+    if registry is None:
+        return []
+    try:
+        return list(registry.rows())
+    except Exception:  # noqa: BLE001 - a plugin listing must not break the manifest
+        return []
+
+
+def _status_after(failure: BaseException | None, ctx: RunContext) -> str:
+    """The status of a run whose orchestrator raised instead of returning a result."""
+    if isinstance(failure, KeyboardInterrupt) or ctx.cancellation.is_cancelled:
+        return ScanStatus.CANCELLED.value
+    return ScanStatus.FAILED.value
+
+
+@dataclass(frozen=True, slots=True)
+class _ManifestInputs:
+    """Everything the manifest needs that is fixed before the orchestrator runs."""
+
+    scan_id: str
+    plan: RunPlan
+    registry_rows: list[Any]
+    settings_fp: str
+    salt_fp: str
+    profile: str | None
+    consent_source: ConsentSource
+    started_at: datetime
+
+    def build(
+        self,
+        stage_runs: Sequence[StageRun],
+        *,
+        status: str,
+        finished_at: datetime | None,
+        result: PipelineResult | None,
+        tool_versions: Mapping[str, Mapping[str, str]],
+    ) -> ScanManifest:
+        counters = ManifestCounters(
+            cache_hits=result.cache_hits if result else 0,
+            cache_misses=result.cache_misses if result else 0,
+            item_failures=len(result.item_failures) if result else 0,
+            abandoned_threads=result.abandoned_threads if result else 0,
+            egress_locked=result.egress_locked if result else False,
+        )
+        return build_manifest(
+            scan_id=self.scan_id,
+            plan=self.plan,
+            stage_runs=stage_runs,
+            registry_rows=self.registry_rows,
+            settings_fp=self.settings_fp,
+            salt_fp=self.salt_fp,
+            started_at=self.started_at,
+            finished_at=finished_at,
+            status=status,
+            counters=counters,
+            profile=self.profile,
+            tool_versions=tool_versions,
+            consent_source=self.consent_source,
+        )

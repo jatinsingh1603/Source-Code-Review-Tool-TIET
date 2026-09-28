@@ -8,9 +8,10 @@ orchestrator derives one per stage with ``for_stage``.
 """
 
 import dataclasses
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from codekavach.config import Settings
 from codekavach.core.pipeline.budget import Budget
@@ -25,6 +26,9 @@ from codekavach.core.pipeline.items import ItemFailureLog
 from codekavach.core.pipeline.result import RunLog, StageRun
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.store.base import ArtefactStore
+
+if TYPE_CHECKING:
+    from codekavach.core.pipeline.manifest import ScanManifest
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +58,7 @@ class RunContext:
     state_dir: Path | None = None
     run_log: RunLog = field(default_factory=RunLog)
     item_failures: ItemFailureLog = field(default_factory=ItemFailureLog)
+    manifest_provider: "Callable[[], ScanManifest] | None" = None
     stage: str | None = None
     consent: ConsentDecision | None = None
 
@@ -90,6 +95,16 @@ class RunContext:
                 error_code=failure.error_code,
             )
         )
+
+    def partial_manifest(self) -> "ScanManifest":
+        """The manifest of the stages completed so far, with status ``running`` (E04-24).
+
+        Raises:
+            RuntimeError: the runner did not provide one (for example in unit tests).
+        """
+        if self.manifest_provider is None:
+            raise RuntimeError("no manifest provider for this run")
+        return self.manifest_provider()
 
     def check_cancelled(self) -> None:
         """Raise ``ScanCancelledError`` when cancelled or when the wall-clock budget is used up."""

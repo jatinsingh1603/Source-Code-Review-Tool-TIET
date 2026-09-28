@@ -76,3 +76,23 @@ def llm() -> FakeStage:
         provides={"verdicts.raw"},
         category=StageCategory.LLM,
     )
+
+
+PARTIAL_MANIFESTS: list[object] = []
+
+
+class ManifestReadingStage(FakeStage):
+    """A REPORT stage that records the partial manifest of the run so far (E04-24)."""
+
+    def run(self, ctx: RunContext) -> None:
+        PARTIAL_MANIFESTS.append(ctx.partial_manifest())
+        super().run(ctx)
+
+
+def report() -> FakeStage:
+    return ManifestReadingStage(
+        "report",
+        requires={"findings"},
+        provides={"report.outputs"},
+        category=StageCategory.REPORT,
+    )

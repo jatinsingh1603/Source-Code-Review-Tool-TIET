@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+  "status": "completed_with_errors",
+  "started_at": "2026-10-01T09:30:00Z",
+  "finished_at": "2026-10-01T09:31:02Z",
+  "duration_ms": 62000,
+  "codekavach_version": "0.1.0",
+  "python_version": "3.12.6",
+  "python_implementation": "CPython",
+  "os": "linux",
+  "machine": "x86_64",
+  "settings_fingerprint": "9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c",
+  "profile": null,
+  "config_snapshot": "config-snapshot.json",
+  "salt_fingerprint": "abababababababab",
+  "consent_source": "env",
+  "order": [
+    "ingest",
+    "analyse-engines"
+  ],
+  "waves": [
+    [
+      "ingest"
+    ],
+    [
+      "analyse-engines"
+    ]
+  ],
+  "excluded": [],
+  "stages": [
+    {
+      "name": "ingest",
+      "category": "ingest",
+      "version": "1",
+      "origin": null,
+      "outcome": "succeeded",
+      "duration_ms": 120,
+      "error_code": null,
+      "error_type": null,
+      "skip_reason": null,
+      "blocked_by": null,
+      "items_in": null,
+      "items_out": null,
+      "stage_key": null,
+      "tool_versions": {}
+    },
+    {
+      "name": "analyse-engines",
+      "category": "analyse",
+      "version": "3",
+      "origin": null,
+      "outcome": "failed",
+      "duration_ms": 61234,
+      "error_code": "stage_timeout",
+      "error_type": "TimeoutError",
+      "skip_reason": null,
+      "blocked_by": null,
+      "items_in": null,
+      "items_out": null,
+      "stage_key": null,
+      "tool_versions": {
+        "semgrep": "1.90.0"
+      }
+    }
+  ],
+  "plugins": [
+    {
+      "group": "codekavach.stages",
+      "name": "analyse-engines",
+      "dist": "codekavach",
+      "version": "0.1.0",
+      "status": "ok",
+      "error_type": null
+    }
+  ],
+  "counters": {
+    "cache_hits": 1,
+    "cache_misses": 0,
+    "memo_hits": 0,
+    "memo_misses": 0,
+    "item_failures": 2,
+    "abandoned_threads": 0,
+    "egress_locked": false
+  }
+}

@@ -57,6 +57,7 @@ from codekavach.core.pipeline.keys import (
     is_multi_provider,
     matches_stage_selector,
 )
+from codekavach.core.pipeline.manifest import collect_tool_versions
 from codekavach.core.pipeline.plan import RunPlan
 from codekavach.core.pipeline.policy import (
     LOCKED_CATEGORIES,
@@ -155,6 +156,7 @@ class Orchestrator:
         self._fingerprints: ConfigFingerprints | None = None
         self._hits = 0
         self._misses = 0
+        self._tool_versions: dict[str, dict[str, str]] = {}
         self._abandoned: list[tuple[str, threading.Thread]] = []
         self._abandoned_lock = threading.Lock()
         self._items_lock = threading.Lock()
@@ -271,6 +273,7 @@ class Orchestrator:
         timed_out = False
         try:
             self._execute_stage(stage, info, ctx.for_stage(info.name))
+            self._collect_tool_versions(stage, info, ctx)
             if any(not ctx.artefacts.has(key) for key in info.provides):
                 raise _MissingProvidesError
             finished = True
@@ -416,6 +419,7 @@ class Orchestrator:
             self._stage_keys = {}
             self._fingerprints = ConfigFingerprints(ctx.config)
             self._hits = self._misses = 0
+            self._tool_versions = {}
         workers = max_workers(ctx)
         for wave in plan.waves:
             if self._stop_before(ctx, state, wave[0]):
@@ -669,6 +673,21 @@ class Orchestrator:
         except OSError:
             _log.warning("stage_cache_write_failed", stage=info.name)
 
+    def _collect_tool_versions(self, stage: Stage, info: StageInfo, ctx: RunContext) -> None:
+        """Record the stage's ``tool_versions()`` for the manifest (E04-24)."""
+        versions, rejected = collect_tool_versions(stage)
+        with self._cache_lock:
+            self._tool_versions[info.name] = versions
+        if rejected:
+            ctx.events.publish(
+                WarningRaised(scan_id=ctx.scan_id, stage=info.name, code="tool_versions_invalid")
+            )
+
+    def tool_versions(self) -> dict[str, dict[str, str]]:
+        """Tool versions reported by the stages of the current or last run."""
+        with self._cache_lock:
+            return {name: dict(value) for name, value in self._tool_versions.items()}
+
     def _write_item_failures(self, ctx: RunContext, *, force: bool = False) -> None:
         """Refresh ``scan.item_failures`` in the inner store when stages added failures (E04-20).
 
@@ -733,6 +752,7 @@ class Orchestrator:
             item_failures=ctx.item_failures.snapshot(),
             cache_hits=self._hits,
             cache_misses=self._misses,
+            tool_versions=self.tool_versions(),
             started_at=started_at,
             finished_at=self._clock(),
         )
