@@ -1,0 +1,13 @@
+candidate cand_01ARYZ6S410000000000000001 rule python.sqli.string-concat CWE-89  src/bank/accounts.py:88  level L3
+payload 012b6171e423  ~64 tokens  pseudonyms 7  placeholders none  ledger: recorded (mock provider: not transmitted)
+┌───────────────────────────────────────────────────────────────────────────────┬──────────────────────────────────────────────────────────────────────────────┐
+│ Original (stays on this machine)                                              │ Payload (what the provider receives)                                         │
+├───────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ src/bank/accounts.py                                                          │   1 def fn_2(self, param_3):                                                 │
+│   86     def find_by_owner(self, owner):                                      │   2     var_4 = self.field_5.fn_6()                                          │
+│   87         cur = self.conn.cursor()                                         │   3     var_4.execute("SELECT * FROM tbl_7 WHERE col_8 = '" + param_3 + "'") │
+│   88         cur.execute("SELECT * FROM accounts WHERE owner = '" + owner +   │   4     return var_4.fetchall()                                              │
+│      "'")                                                                     │                                                                              │
+│   89         return cur.fetchall()                                            │                                                                              │
+└───────────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────────┘
+

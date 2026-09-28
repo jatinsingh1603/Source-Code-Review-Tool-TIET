@@ -40,7 +40,7 @@ ACTION: dict[str, Any] = {}
 
 @pytest.fixture
 def demo() -> Iterator[None]:
-    """``demo`` and ``privacy ledger verify`` commands that use the output layer."""
+    """``demo`` and ``nested ledger verify`` commands that use the output layer."""
 
     def demo_command(ctx: typer.Context) -> None:
         out = get_output(ctx)
@@ -62,12 +62,12 @@ def demo() -> Iterator[None]:
 
     privacy.add_typer(ledger, name="ledger")
     app.command("demo")(demo_command)
-    app.add_typer(privacy, name="privacy")
+    app.add_typer(privacy, name="nested")
     try:
         yield
     finally:
         app.registered_commands[:] = [c for c in app.registered_commands if c.name != "demo"]
-        app.registered_groups[:] = [g for g in app.registered_groups if g.name != "privacy"]
+        app.registered_groups[:] = [g for g in app.registered_groups if g.name != "nested"]
         ACTION.clear()
 
 
@@ -135,8 +135,8 @@ def test_envelope_written_once(cli: Cli, demo: None) -> None:
 
 
 def test_nested_command_path(cli: Cli, demo: None) -> None:
-    result = cli(["privacy", "ledger", "verify", "--json"])
-    assert result.json["command"] == "privacy ledger verify"
+    result = cli(["nested", "ledger", "verify", "--json"])
+    assert result.json["command"] == "nested ledger verify"
     assert result.json["data"] == {"verified": True}
 
 
