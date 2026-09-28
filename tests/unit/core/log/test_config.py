@@ -259,6 +259,8 @@ def test_context_does_not_leak_between_threads(log_output: io.StringIO) -> None:
         assert event["scan_id"] == event["worker"]
 
 
+# asyncio on Windows builds its self-pipe from a loopback socket pair.
+@pytest.mark.allow_hosts(["127.0.0.1", "::1"])
 def test_context_does_not_leak_between_tasks(log_output: io.StringIO) -> None:
     async def task(scan_id: str) -> None:
         bind_scan_context(scan_id=scan_id)

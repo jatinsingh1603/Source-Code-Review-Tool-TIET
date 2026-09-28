@@ -40,7 +40,7 @@ codekavach = "codekavach.cli.app:main"
 [dependency-groups]
 lint = ["ruff>=0.16", "import-linter"]
 typecheck = ["mypy>=2.3", "types-PyYAML"]
-test = ["pytest>=9.1", "hypothesis", "pyyaml", "pytest-cov", "coverage[toml]", "pytest-xdist", "pytest-randomly", "pytest-timeout"]
+test = ["pytest>=9.1", "hypothesis", "pyyaml", "pytest-cov", "coverage[toml]", "pytest-xdist", "pytest-randomly", "pytest-timeout", "pytest-socket"]
 hooks = ["pre-commit", "detect-secrets"]
 dev = [
   { include-group = "lint" },
@@ -91,10 +91,14 @@ warn_required_dynamic_aliases = true
 minversion = "8.0"
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib", "-m", "not network"]
+addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib", "-m", "not network", "--disable-socket", "--allow-unix-socket"]
 xfail_strict = true
 timeout = 120
-filterwarnings = ["error"]
+filterwarnings = [
+  "error",
+  # pytest-socket warns before raising its blocking error; the error is what tests assert on.
+  "ignore:A test tried to use socket:UserWarning",
+]
 markers = [
   "unit: fast, in-process, no subprocess except the interpreter itself, no network",
   "integration: several modules together, real filesystem, subprocess of our own CLI allowed",

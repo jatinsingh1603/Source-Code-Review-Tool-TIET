@@ -33,13 +33,29 @@ def pytest_configure(config: pytest.Config) -> None:
     settings.load_profile(name)
 
 
+NETWORK_VARIABLE = "CODEKAVACH_TEST_NETWORK"
+
+
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """Mark every test with the tier of the directory it lives in."""
+    """Mark every test with its tier; gate ``network`` tests behind CODEKAVACH_TEST_NETWORK=1.
+
+    A ``-m`` expression on the command line replaces the ``-m "not network"`` of ``addopts``, so
+    deselection alone is not reliable: without the variable a ``network`` test is skipped, and
+    with it the test (and only that test) may open sockets.
+    """
     root = config.rootpath / "tests"
+    network_allowed = os.environ.get(NETWORK_VARIABLE) == "1"
     for item in items:
         tier = tier_of(item.path, root)
         if tier is not None:
             item.add_marker(getattr(pytest.mark, tier))
+        if item.get_closest_marker("network") is not None:
+            if network_allowed:
+                item.add_marker(pytest.mark.enable_socket)
+            else:
+                item.add_marker(
+                    pytest.mark.skip(reason=f"external network test; set {NETWORK_VARIABLE}=1")
+                )
 
 
 @pytest.fixture

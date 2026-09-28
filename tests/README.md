@@ -25,6 +25,22 @@ The tier marker is applied automatically from the directory (`tests/conftest.py`
 
 Markers are strict: a misspelt marker fails collection instead of silently deselecting a test.
 
+## Network
+
+The default run cannot open network sockets (`pytest-socket`, `--disable-socket`); Unix domain
+sockets stay allowed for event loops and subprocess plumbing.
+
+| Tier | Rule | How |
+|------|------|-----|
+| unit, privacy | No sockets at all | default `--disable-socket` |
+| integration, e2e | Loopback only, and only when declared | `@pytest.mark.allow_hosts(["127.0.0.1", "::1"])` on the test |
+| external network | Never in CI; opt-in locally | `@pytest.mark.network`, deselected by `-m "not network"` and skipped unless `CODEKAVACH_TEST_NETWORK=1` |
+
+Limitation: child processes are not covered by `pytest-socket`. `tests/privacy/test_import_purity.py`
+therefore also imports every module in a child interpreter with its own socket guard, and E12 adds
+a process-level egress test. On Windows, asyncio builds its self-pipe from a loopback socket pair,
+so a test that runs an event loop declares `allow_hosts(["127.0.0.1", "::1"])`.
+
 ## Running
 
 ```bash
