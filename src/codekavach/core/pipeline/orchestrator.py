@@ -16,11 +16,13 @@ Default-level logs and events carry exception class names only; exception messag
 and engines often fill with a quoted source line, appear only in a DEBUG record.
 """
 
+import os
+import queue
 import re
 import threading
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from codekavach.core.log import get_logger
@@ -44,19 +46,21 @@ from codekavach.core.pipeline.execution import resolve_timeout, run_with_deadlin
 from codekavach.core.pipeline.keys import is_multi_provider
 from codekavach.core.pipeline.plan import RunPlan
 from codekavach.core.pipeline.policy import (
+    LOCKED_CATEGORIES,
     RunState,
     decide_after_failure,
     partial_inputs,
     skip_reason_for,
 )
 from codekavach.core.pipeline.result import PipelineResult, StageOutcome, StageRun
-from codekavach.core.pipeline.stage import Stage, StageInfo
+from codekavach.core.pipeline.stage import FailurePolicy, Stage, StageInfo
 from codekavach.core.store.scoped import StageScopedStore, UndeclaredAccessError
 
 INITIAL = "<initial>"
 ABORTED = "aborted"
 ERROR_SKIPS = frozenset({"dependency_failed", "egress_locked"})
 ABANDONED_JOIN_SECONDS = 0.2
+MAX_WORKERS = 32
 _TOKEN_UNSAFE = re.compile(r"[^A-Za-z0-9_.:-]")
 _log = get_logger("codekavach.pipeline")
 
@@ -73,6 +77,37 @@ class _MissingProvidesError(Exception):
 
 class _StageTimedOutError(Exception):
     """Internal: a stage did not finish within its effective timeout."""
+
+
+@dataclass
+class _Wave:
+    """What happened while one wave ran; attribution waits until the wave has settled."""
+
+    runs: dict[str, StageRun] = field(default_factory=dict)
+    deferred: list[tuple[str, str]] = field(default_factory=list)
+    abort_observed: bool = False
+    lock_observed: bool = False
+    lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+
+
+@dataclass(frozen=True, slots=True)
+class _WaveOutcome:
+    user_cancelled: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _Scope:
+    """The pieces of one ``Orchestrator.run`` call that every scheduled stage needs."""
+
+    plan: RunPlan
+    ctx: RunContext
+    runs: list[StageRun]
+    state: RunState
+
+
+def max_workers(ctx: RunContext) -> int:
+    """Stages of one wave that may run at once: ``scan.jobs``, or the CPU count, capped at 32."""
+    return max(1, min(MAX_WORKERS, ctx.config.scan.jobs or (os.cpu_count() or 1)))
 
 
 @dataclass(frozen=True, slots=True)
@@ -280,9 +315,6 @@ class Orchestrator:
         self._record(ctx, runs, run)
         with state.lock:
             state.failed[info.name] = run
-        decide_after_failure(info, state)
-        if state.aborted:
-            ctx.cancellation.cancel(ABORTED)
         _log.error("stage_failed", stage=info.name, error_code=code, error_type=error_type)
         _log.debug("stage_failed_detail", stage=info.name, exc_info=error)
         ctx.events.publish(
@@ -328,7 +360,13 @@ class Orchestrator:
         return ctx.cancellation.is_cancelled and not state.aborted
 
     def run(self, plan: RunPlan, ctx: RunContext) -> PipelineResult:
-        """Execute ``plan``; raises only for a missing initial key or ``BaseException``."""
+        """Execute ``plan`` wave by wave; raises only for a missing initial key or BaseException.
+
+        Stages of one wave are independent, so up to ``scan.jobs`` of them run at once (E04-19).
+        Results do not depend on scheduling: skip decisions use the state at wave start, failure
+        policies are applied after the wave has settled in ``plan.order``, and stage runs are
+        reported in ``plan.order``.
+        """
         started_at = self._clock()
         scan_started = self._monotonic()
         self._start(plan, ctx)
@@ -337,24 +375,21 @@ class Orchestrator:
         user_cancelled = False
         with self._abandoned_lock:
             self._abandoned = []
-        for index, stage in enumerate(plan.stages):
-            info = plan.infos[stage.name]
-            if ctx.budget.deadline_exceeded() and not ctx.cancellation.is_cancelled:
-                ctx.cancellation.cancel("deadline")
-                ctx.events.publish(
-                    WarningRaised(scan_id=ctx.scan_id, stage=info.name, code="scan_deadline")
-                )
-            if self._user_cancelled(ctx, state):
+        workers = max_workers(ctx)
+        for wave in plan.waves:
+            if self._stop_before(ctx, state, wave[0]):
                 user_cancelled = True
                 break
-            reason = skip_reason_for(info, ctx.artefacts, state, plan)
-            if reason is not None:
-                self._skip(ctx, runs, state, info, reason)
-                continue
-            run = self._run_one(
-                plan=plan, ctx=ctx, runs=runs, state=state, stage=stage, index=index
-            )
-            if run.outcome is StageOutcome.CANCELLED and not state.aborted:
+            runnable: list[str] = []
+            for name in wave:
+                info = plan.infos[name]
+                reason = skip_reason_for(info, ctx.artefacts, state, plan)
+                if reason is not None:
+                    self._skip(ctx, runs, state, info, reason)
+                else:
+                    runnable.append(name)
+            outcome = self._run_wave(_Scope(plan, ctx, runs, state), runnable, workers)
+            if outcome.user_cancelled:
                 user_cancelled = True
                 break
         self._settle_abandoned(state)
@@ -362,6 +397,8 @@ class Orchestrator:
         for name in plan.order:
             if name not in done:
                 self._record(ctx, runs, StageRun(stage=name, outcome=StageOutcome.CANCELLED))
+        position = {name: index for index, name in enumerate(plan.order)}
+        runs.sort(key=lambda run: position[run.stage])
         return self._finish(
             plan=plan,
             ctx=ctx,
@@ -371,6 +408,107 @@ class Orchestrator:
             started_at=started_at,
             scan_started=scan_started,
         )
+
+    def _stop_before(self, ctx: RunContext, state: RunState, stage: str) -> bool:
+        """True when the run must stop before ``stage``: user cancel or exhausted scan budget."""
+        self._check_deadline(ctx, stage)
+        return self._user_cancelled(ctx, state)
+
+    @staticmethod
+    def _check_deadline(ctx: RunContext, stage: str) -> None:
+        if ctx.budget.deadline_exceeded() and not ctx.cancellation.is_cancelled:
+            ctx.cancellation.cancel("deadline")
+            ctx.events.publish(
+                WarningRaised(scan_id=ctx.scan_id, stage=stage, code="scan_deadline")
+            )
+
+    def _run_wave(self, scope: _Scope, runnable: list[str], workers: int) -> _WaveOutcome:
+        """Run the runnable stages of one wave, at most ``workers`` at a time, then settle it."""
+        wave = _Wave()
+        pending = list(runnable)
+        finished: queue.Queue[str] = queue.Queue()
+        in_flight = 0
+        while pending or in_flight:
+            while pending and in_flight < workers:
+                name = pending.pop(0)
+                if not self._may_start(scope, wave, name):
+                    continue
+                if workers == 1 or len(runnable) == 1:
+                    self._run_in_wave(scope, wave, name)
+                    continue
+                in_flight += 1
+                threading.Thread(
+                    target=self._run_and_signal,
+                    args=(scope, wave, name, finished),
+                    name=f"ck-wave-{name}",
+                    daemon=True,
+                ).start()
+            if in_flight:
+                finished.get()
+                in_flight -= 1
+        return self._settle_wave(scope, wave)
+
+    def _may_start(self, scope: _Scope, wave: _Wave, name: str) -> bool:
+        """Whether ``name`` may start now; defers the attribution of refused starts."""
+        ctx = scope.ctx
+        self._check_deadline(ctx, name)
+        with wave.lock:
+            if wave.abort_observed:
+                wave.deferred.append((name, "scan_aborted"))
+                return False
+            if ctx.cancellation.is_cancelled:
+                return False
+            if wave.lock_observed and scope.plan.infos[name].category in LOCKED_CATEGORIES:
+                wave.deferred.append((name, "egress_locked"))
+                return False
+        return True
+
+    def _run_and_signal(
+        self, scope: _Scope, wave: _Wave, name: str, finished: "queue.Queue[str]"
+    ) -> None:
+        try:
+            self._run_in_wave(scope, wave, name)
+        finally:
+            finished.put(name)
+
+    def _run_in_wave(self, scope: _Scope, wave: _Wave, name: str) -> None:
+        plan = scope.plan
+        info = plan.infos[name]
+        run = self._run_one(
+            plan=plan,
+            ctx=scope.ctx,
+            runs=scope.runs,
+            state=scope.state,
+            stage=plan.stage_by_name(name),
+            index=plan.order.index(name),
+        )
+        failed = run.outcome in {StageOutcome.FAILED, StageOutcome.TIMED_OUT}
+        with wave.lock:
+            wave.runs[name] = run
+            if failed and info.failure_policy is FailurePolicy.ABORT_SCAN:
+                wave.abort_observed = True
+            elif failed and info.failure_policy is FailurePolicy.FAIL_CLOSED:
+                wave.lock_observed = True
+        if failed and info.failure_policy is FailurePolicy.ABORT_SCAN:
+            scope.ctx.cancellation.cancel(ABORTED)  # cooperative siblings stop early
+
+    def _settle_wave(self, scope: _Scope, wave: _Wave) -> _WaveOutcome:
+        """Apply the wave's failure policies in plan order, then record deferred skips."""
+        plan, ctx, state = scope.plan, scope.ctx, scope.state
+        for name in plan.order:
+            run = wave.runs.get(name)
+            if run is not None and run.outcome in {StageOutcome.FAILED, StageOutcome.TIMED_OUT}:
+                decide_after_failure(plan.infos[name], state)
+        if state.aborted:
+            ctx.cancellation.cancel(ABORTED)
+        position = {name: index for index, name in enumerate(plan.order)}
+        for name, code in sorted(wave.deferred, key=lambda item: position[item[0]]):
+            cause = state.abort_cause if code == "scan_aborted" else state.lock_cause
+            self._skip(ctx, scope.runs, state, plan.infos[name], (code, cause))
+        user_cancelled = not state.aborted and any(
+            run.outcome is StageOutcome.CANCELLED for run in wave.runs.values()
+        )
+        return _WaveOutcome(user_cancelled=user_cancelled or self._user_cancelled(ctx, state))
 
     def _settle_abandoned(self, state: RunState) -> None:
         """Give abandoned stage threads a moment to end; warn about those still running."""

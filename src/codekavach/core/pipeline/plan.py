@@ -84,6 +84,17 @@ class RunPlan:
     excluded: tuple[ExcludedStage, ...]
     initial_keys: frozenset[str]
 
+    def stage_by_name(self, name: str) -> Stage:
+        """The stage called ``name``.
+
+        Raises:
+            KeyError: no stage of the plan has that name.
+        """
+        for stage in self.stages:
+            if stage.name == name:
+                return stage
+        raise KeyError(name)
+
 
 def check_privacy_structure(
     infos: Collection[StageInfo], *, initial_keys: Collection[str] = (keys.TARGET,)
