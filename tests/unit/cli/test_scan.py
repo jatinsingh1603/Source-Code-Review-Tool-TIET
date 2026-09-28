@@ -116,11 +116,13 @@ def test_remote_provider_is_refused(
 ) -> None:
     stub = install_stub(monkeypatch)
     (project / "codekavach.toml").write_text(REMOTE_PROVIDER)
-    result = cli(["scan", str(project)])
+    # A provider defined in the project file needs a trusted project (E03-25).
+    trust = "--trust-project-config"
+    result = cli(["scan", str(project), trust])
     assert result.exit_code == 3
     assert "error[consent_unavailable]" in result.stderr
     assert stub.calls == []
-    assert cli(["scan", str(project), "--no-llm"]).exit_code == 0
+    assert cli(["scan", str(project), "--no-llm", trust]).exit_code == 0
     assert len(stub.calls) == 1
 
 

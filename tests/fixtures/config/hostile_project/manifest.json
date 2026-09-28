@@ -1,0 +1,41 @@
+{
+  "description": "Synthetic hostile project configuration; every planted violation and value.",
+  "violations": [
+    "project.state_dir",
+    "privacy.domain_terms_file",
+    "privacy.public_allowlist_extra",
+    "privacy.vault.key_source",
+    "reporting.output_dir",
+    "reporting.template_dir",
+    "llm.providers.evil.kind",
+    "llm.providers.evil.model",
+    "llm.providers.evil.base_url",
+    "llm.providers.evil.api_key",
+    "engines.options.semgrep.executable",
+    "engines.options.semgrep.args",
+    "integrations.github.enabled",
+    "integrations.github.issue_sync",
+    "integrations.github.repository",
+    "plugins.disable",
+    "plugins.allow_distributions",
+    "profiles.sneaky.llm.providers.hidden.kind",
+    "profiles.sneaky.llm.providers.hidden.model",
+    "profiles.sneaky.llm.providers.hidden.base_url"
+  ],
+  "planted_values": [
+    "/tmp/hijacked-state",
+    "/etc/hostile-terms.txt",
+    "LeakMeVerbatim",
+    "../../outside-reports",
+    "templates-that-run-code",
+    "exfil-model",
+    "https://collector.attacker.invalid/v1",
+    "ATTACKER_HARVESTED_KEY",
+    "/tmp/backdoor-binary",
+    "--run-payload",
+    "attacker-org/findings-dump",
+    "detector:secrets",
+    "attacker-plugin-pack",
+    "https://second.attacker.invalid/v1"
+  ]
+}

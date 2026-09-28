@@ -131,7 +131,10 @@ def test_conflicts(cli: Cli, probe: None, project_dir: Path) -> None:
     (project_dir / "codekavach.toml").write_text(
         '[llm.providers.cloud]\nkind = "openai"\nmodel = "m"\n'
     )
-    result = cli(["probe", "--offline", "--provider", "cloud"], cwd=project_dir)
+    # A provider defined in the project file needs a trusted project (E03-25).
+    result = cli(
+        ["probe", "--offline", "--provider", "cloud", "--trust-project-config"], cwd=project_dir
+    )
     assert result.exit_code == 2
     # The loader's semantic rule (E03-23) reports this before the CLI's own check can.
     assert "error[CK-CFG-031]" in result.stderr
@@ -139,7 +142,8 @@ def test_conflicts(cli: Cli, probe: None, project_dir: Path) -> None:
     result = cli(["probe", "-q", "-v"])
     assert result.exit_code == 2
     assert "error[quiet_verbose_conflict]" in result.stderr
-    assert cli(["probe", "--offline", "--provider", "mock"], cwd=project_dir).exit_code == 0
+    offline_mock = ["probe", "--offline", "--provider", "mock", "--trust-project-config"]
+    assert cli(offline_mock, cwd=project_dir).exit_code == 0
 
 
 def test_invalid_values(cli: Cli, probe: None) -> None:

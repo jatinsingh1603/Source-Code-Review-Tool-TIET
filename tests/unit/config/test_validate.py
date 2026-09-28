@@ -181,7 +181,7 @@ def test_three_rules_in_one_error(config_sandbox: ConfigSandbox) -> None:
         'kind = "anthropic"\nmodel = "m"\n'
     )
     with pytest.raises(ConfigValidationError) as info:
-        config_sandbox.load(use_user_config=False)
+        config_sandbox.load(use_user_config=False, trust_project_config=True)
     found = [(i.code.value, i.key, i.line) for i in info.value.issues]
     assert found == [
         ("CK-CFG-032", "privacy.level", 2),

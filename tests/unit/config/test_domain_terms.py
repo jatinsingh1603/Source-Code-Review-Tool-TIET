@@ -111,8 +111,9 @@ def _project_failure(config_sandbox: ConfigSandbox, value: str) -> ConfigError:
     project = config_sandbox.write_project(
         f'[project]\nname = "demo"\n\n[privacy]\ndomain_terms_file = "{value}"\n'
     )
+    # Trusted, so that the read itself is exercised; untrusted, 040 fires first (E03-25).
     with pytest.raises(ConfigError) as info:
-        config_sandbox.load(use_user_config=False)
+        config_sandbox.load(use_user_config=False, trust_project_config=True)
     issue = info.value.issues[0]
     assert issue.code.value == "CK-CFG-005"
     assert issue.key == TERMS_KEY

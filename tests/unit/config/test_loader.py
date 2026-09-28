@@ -172,7 +172,11 @@ def test_extension_points_called_in_order(
     monkeypatch.setattr(
         loader_module, "_expand_layer", recorder("expand", lambda layer, **_: layer)
     )
-    monkeypatch.setattr(loader_module, "_check_layers", recorder("check", lambda *a, **k: ()))
+    monkeypatch.setattr(
+        loader_module,
+        "_check_layers",
+        recorder("check", lambda *a, **k: ((), k["project_trust"])),
+    )
     monkeypatch.setattr(
         loader_module,
         "_apply_org_policy",
@@ -181,7 +185,7 @@ def test_extension_points_called_in_order(
     monkeypatch.setattr(loader_module, "_semantic_checks", recorder("semantic", lambda *a, **k: ()))
     (repo / "codekavach.toml").write_text("[scan]\njobs = 2\n")
     load_settings(target=repo, env=env_for(home))
-    assert calls == ["org", "profile", "extra", "expand", "check", "policy", "semantic"]
+    assert calls == ["org", "profile", "extra", "check", "expand", "policy", "semantic"]
 
 
 class Entry(BaseModel):

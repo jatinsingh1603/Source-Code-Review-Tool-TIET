@@ -14,7 +14,7 @@ layer checks run before merging so that one run reports every refusal together.
 5. read the project file: explicit or discovered, confined to the project root when inside it,
    then move deprecated keys of both file layers (E03-22, warning 006);
 6. ``_select_profile`` (E03-14); 7. ``_extra_layers`` (E03-16, E03-17);
-8. ``_expand_layer`` (E03-21); 9. ``_check_layers`` (E03-19, E03-25, E03-26);
+8. ``_check_layers`` (E03-25, E03-26), on the raw project layer; 9. ``_expand_layer`` (E03-21);
 10. deep merge from the defaults; 11. validate; 12. ``_apply_org_policy`` (E03-29, E03-30);
 13. compute origins; 14. ``_semantic_checks`` (E03-23), which needs the origins.
 
@@ -43,6 +43,7 @@ from codekavach.config.errors import (
     ConfigValidationError,
     PlaintextSecretError,
     ProfileError,
+    ProjectTrustError,
 )
 from codekavach.config.introspect import flatten_leaves, keys_with_marker, loc_to_key
 from codekavach.config.merge import deep_merge
@@ -64,6 +65,7 @@ from codekavach.config.profiles import (
 )
 from codekavach.config.provenance import Layer, Origin, compute_origins, origin_in
 from codekavach.config.toml_source import locate_key, read_toml
+from codekavach.config.trust import check_restricted, is_project_trusted
 from codekavach.config.validate import semantic_checks
 
 ProjectTrust = Literal["not-needed", "flag", "env", "store", "external-config"]
@@ -353,13 +355,36 @@ def _refuse_plaintext(
 
 
 def _check_layers(
-    layers: Sequence[Layer], *, project_trust: ProjectTrust, trust_project_config: bool
-) -> tuple[ConfigIssue, ...]:
-    """Refuse plaintext secrets, restricted and loosened keys before merging.
+    layers: Sequence[Layer],
+    *,
+    raw_project: Layer | None,
+    project_root: Path,
+    project_trust: ProjectTrust,
+    trust_project_config: bool,
+    env: Mapping[str, str],
+    user_config: Path | None,
+) -> tuple[tuple[ConfigIssue, ...], ProjectTrust]:
+    """Refuse restricted and loosened keys of the project configuration before merging.
 
-    Implemented by E03-19, E03-25 and E03-26; returns warnings and raises for errors.
+    ``raw_project`` is the project layer as read, with every ``[profiles.*]`` table, so that
+    profiles it defines are checked whether or not they are selected. Runs before indirections
+    are expanded, so a path key that escapes the project is reported as such (E03-25). E03-26
+    adds the loosening checks here. Returns the warnings and the effective project trust.
+
+    Raises:
+        ProjectTrustError: CK-CFG-040, one issue per violation.
     """
-    return ()
+    if raw_project is None:
+        return (), project_trust
+    issues = check_restricted(raw_project, project_root=project_root, user_config=user_config)
+    if not issues:
+        return (), project_trust
+    trusted, reason = is_project_trusted(
+        flag=trust_project_config, env=env, loaded_external=project_trust == "external-config"
+    )
+    if not trusted or reason == "untrusted":
+        raise ProjectTrustError(issues)
+    return (), reason
 
 
 def _apply_org_policy(
@@ -460,10 +485,20 @@ def load_settings(
         layers[index], found = apply_deprecations(layer)
         deprecation_warnings.extend(found)
     _refuse_plaintext(layers, env=environment, cli_overrides=cli_overrides)
+    raw_project = next((layer for layer in layers if layer.name == "project"), None)
     layers, profile_name, profile_origin, profiles_table = _select_profile(
         layers, profile=profile, env=environment
     )
     layers, env_warnings = _extra_layers(layers, env=environment, cli_overrides=cli_overrides)
+    check_warnings, project_trust = _check_layers(
+        layers,
+        raw_project=raw_project,
+        project_root=project_root,
+        project_trust=project_trust,
+        trust_project_config=trust_project_config,
+        env=environment,
+        user_config=user_config_file(environment) if use_user_config else None,
+    )
     layers = [
         _expand_layer(
             layer,
@@ -475,9 +510,7 @@ def load_settings(
     warnings = [
         *deprecation_warnings,
         *env_warnings,
-        *_check_layers(
-            layers, project_trust=project_trust, trust_project_config=trust_project_config
-        ),
+        *check_warnings,
     ]
 
     union_keys = union_keys_of(Settings)
