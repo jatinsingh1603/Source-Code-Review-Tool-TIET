@@ -95,6 +95,37 @@ Supports I3: vault contents and other sensitive values are not logged, and a cen
 
 ### Redaction
 
+Implemented by `codekavach.core.log.redaction.RedactionProcessor` (E01-21). It sits in the
+redaction slot of the processor chain, so both structlog events and standard-library records go
+through it, and it builds a new structure without mutating the caller's objects.
+
+- Sensitive keys: after lower-casing and removing `_` and `-`, any key containing `password`,
+  `passwd`, `passphrase`, `secret`, `token`, `apikey`, `authorization`, `cookie`, `credential`,
+  `privatekey`, `vaultkey`, `salt` or `signature` has its string or bytes value replaced by
+  `<redacted>`. Keys ending in `_count(s)`, `_estimate`, `_tokens`, `_len`, `_id` or `_ms` are
+  exempt, and so are numbers, booleans and `None`.
+- Code keys (`code`, `source`, `snippet`, `slice`, `text`, `payload`, `content`, `body`, `prompt`,
+  `response`, `completion`, `original`, `mapping`, `literal`, `identifier`) are reduced to
+  `<code:len=N>` or `<code:items=N>`.
+- Patterns, replaced by `<redacted:NAME>` in every string: `aws_access_key`, `github_token`,
+  `llm_api_key`, `google_api_key`, `slack_token`, `jwt`, `private_key`, `bearer`,
+  `basic_auth_url` and `assignment` (for `password=`, `token:` and similar, the key is kept), plus
+  `validation_input` (Pydantic's `input_value=...`). Other components add patterns with
+  `register_pattern(name, pattern)`.
+- Limits: strings over 2048 characters become `<str:len=N>`, text over 5 lines becomes
+  `<text:lines=N>`, bytes become `<bytes:len=N>`, `SecretStr` and `SecretBytes` become
+  `<redacted>`, and nesting deeper than 8 levels becomes `<nested>`. Tracebacks (`exception`,
+  `stack`, `stack_info`) are exempt from the length and line rules, but they are cut at 32768
+  characters and still scrubbed.
+- Fail closed: if redaction raises, the event is replaced by
+  `{"event": "log_event_suppressed", "reason": "redaction_error", "level": ...}`.
+- Not covered: client names, identifiers and business terms that look like ordinary words.
+  Payload protection belongs to the egress guard (E12), not to this processor.
+- Tests: `tests/unit/core/log/test_redaction.py`,
+  `tests/privacy/test_log_redaction_properties.py` and
+  `tests/unit/core/log/test_redaction_budget.py` (the median cost per event is about 50 µs, and
+  the budget is 0.5 ms).
+
 ### Dependencies and child processes
 
 ## Links

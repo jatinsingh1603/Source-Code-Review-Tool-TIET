@@ -17,6 +17,8 @@ from typing import Literal, TextIO, cast
 import structlog
 from structlog.typing import Processor
 
+from codekavach.core.log.redaction import RedactionProcessor
+
 Format = Literal["console", "json"]
 
 LEVELS = ("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG")
@@ -92,7 +94,7 @@ def _shared_processors(fmt: Format) -> list[Processor]:
 def _formatter_processors(fmt: Format, stream: TextIO) -> list[Processor]:
     return [
         structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-        # REDACTION SLOT: E01-21 inserts RedactionProcessor() on this line
+        RedactionProcessor(),  # the redaction slot (E01-21): after exceptions, before rendering
         _renderer(fmt, stream),
     ]
 
