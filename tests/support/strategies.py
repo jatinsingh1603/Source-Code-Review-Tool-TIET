@@ -162,7 +162,7 @@ def nested_json(leaves: SearchStrategy[object]) -> SearchStrategy[object]:
 FORM_FEED = chr(0x0C)
 LINE_SEPARATOR = chr(0x2028)
 LONG_LINE_LENGTH = 5000
-_CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+_CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"  # pragma: allowlist secret
 _SENTENCES = (
     "",
     "Reviewed by the security team.",
