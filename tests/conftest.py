@@ -12,7 +12,11 @@ from hypothesis import settings
 from codekavach.core.log import configure_logging
 from tests.support.tiers import tier_of
 
-pytest_plugins = ["tests.support.cli_fixtures", "tests.support.pipeline_fixtures"]
+pytest_plugins = [
+    "tests.support.cli_fixtures",
+    "tests.support.pipeline_fixtures",
+    "tests.support.config",
+]
 
 PROFILE_VARIABLE = "HYPOTHESIS_PROFILE"
 PROFILES = ("dev", "ci", "nightly")

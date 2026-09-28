@@ -105,6 +105,7 @@ _add(
 _TAIL = r"(?![A-Za-z0-9_-])"  # keys may end in "-" or "_", where \b would not match
 _add("llm_api_key", r"\bsk-[A-Za-z0-9_-]{20,}" + _TAIL, ("sk-",))
 _add("google_api_key", r"\bAIza[0-9A-Za-z_-]{35}" + _TAIL, ("AIza",))
+_add("xai_api_key", r"\bxai-[A-Za-z0-9]{20,}" + _TAIL, ("xai-",))
 _add("slack_token", r"\bxox[abprs]-[A-Za-z0-9-]{10,}" + _TAIL, ("xox",))
 _add(
     "jwt",

@@ -158,6 +158,9 @@ def near_misses() -> dict[str, str]:
         "private_key": example_secret("private_key").replace("PRIVATE", "PUBLIC"),
         "bearer": "Bearer abc",
         "basic_auth_url": "https://host.invalid/",
+        "anthropic_api_key": "s" + "k-ant-short",  # pragma: allowlist secret
+        "openai_project_key": "s" + "k-proj-short",  # pragma: allowlist secret
+        "xai_api_key": "xa" + "i-" + "a" * 19,  # pragma: allowlist secret
     }
 
 

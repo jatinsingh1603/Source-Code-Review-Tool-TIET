@@ -40,7 +40,7 @@ codekavach = "codekavach.cli.app:main"
 [dependency-groups]
 lint = ["ruff>=0.16", "import-linter"]
 typecheck = ["mypy>=2.3", "types-PyYAML", "types-jsonschema"]
-test = ["pytest>=9.1", "hypothesis", "pyyaml", "pytest-cov", "coverage[toml]", "pytest-xdist", "pytest-randomly", "pytest-timeout", "pytest-socket", "jsonschema"]
+test = ["pytest>=9.1", "hypothesis", "pyyaml", "keyring", "pytest-cov", "coverage[toml]", "pytest-xdist", "pytest-randomly", "pytest-timeout", "pytest-socket", "jsonschema"]
 hooks = ["pre-commit", "detect-secrets"]
 dev = [
   { include-group = "lint" },

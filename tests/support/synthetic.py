@@ -152,6 +152,28 @@ SECRET_SHAPES: dict[str, SecretShape] = {
             body_pattern=_cls(_ALNUM) + "{12}",
             suffix=("@host", ".invalid/"),
         ),
+        # Provider key shapes used by configuration tests (E03-15).
+        SecretShape(
+            kind="anthropic_api_key",
+            prefix=("s", "k-", "an", "t-"),
+            alphabet=_URL_SAFE,
+            length=95,
+            body_pattern=_cls(_URL_SAFE) + "{95}",
+        ),
+        SecretShape(
+            kind="openai_project_key",
+            prefix=("s", "k-", "pr", "oj-"),
+            alphabet=_ALNUM,
+            length=48,
+            body_pattern=_cls(_ALNUM) + "{48}",
+        ),
+        SecretShape(
+            kind="xai_api_key",
+            prefix=("xa", "i-"),
+            alphabet=_ALNUM,
+            length=80,
+            body_pattern=_cls(_ALNUM) + "{80}",
+        ),
     )
 }
 
