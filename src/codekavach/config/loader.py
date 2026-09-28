@@ -41,6 +41,7 @@ from codekavach.config.errors import (
     ConfigErrorCode,
     ConfigIssue,
     ConfigValidationError,
+    OrgPolicyError,
     PlaintextSecretError,
     ProfileError,
     ProjectTrustError,
@@ -50,6 +51,7 @@ from codekavach.config.merge import deep_merge
 from codekavach.config.models.base import split_csv
 from codekavach.config.models.root import Settings
 from codekavach.config.orgpolicy.discovery import LoadedOrgPolicy, discover_org_policies
+from codekavach.config.orgpolicy.enforce import apply_additions, check_policy, locked_keys_of
 from codekavach.config.overrides import CliOverrides, cli_layer
 from codekavach.config.paths import (
     check_discovered_project_file,
@@ -67,6 +69,7 @@ from codekavach.config.profiles import (
 from codekavach.config.provenance import Layer, Origin, compute_origins, origin_in
 from codekavach.config.toml_source import locate_key, read_toml
 from codekavach.config.trust import (
+    POLICY_FORBIDS_TRUST_HINT,
     TrustStore,
     baseline_origin,
     baseline_settings,
@@ -82,6 +85,9 @@ CONFIG_ENV = "CODEKAVACH_CONFIG"
 NO_USER_CONFIG_ENV = "CODEKAVACH_NO_USER_CONFIG"
 _CODE_PREFIX = re.compile(r"^(?:Value error, |Assertion failed, )?\[(CK-CFG-\d{3})\]\s*")
 _TRUE = frozenset({"1", "true", "yes", "on"})
+_GRANTED: Mapping[str, ProjectTrust] = MappingProxyType(
+    {"flag": "flag", "env": "env", "external-config": "external-config", "store": "store"}
+)
 TERMS_FILE_KEY_NAME = TERMS_FILE_KEY.rsplit(".", maxsplit=1)[1]
 
 
@@ -422,6 +428,7 @@ def _check_layers(
     trust_project_config: bool,
     env: Mapping[str, str],
     user_config: Path | None,
+    org_policies: tuple[LoadedOrgPolicy, ...] = (),
 ) -> tuple[tuple[ConfigIssue, ...], ProjectTrust]:
     """Refuse restricted and loosened keys of the project configuration before merging.
 
@@ -449,9 +456,17 @@ def _check_layers(
     )
     if not issues:
         return (), project_trust
+    forbidden = any(p.policy.project_config.allow_trust is False for p in org_policies)
     trusted, reason = is_project_trusted(
-        flag=trust_project_config, env=env, loaded_external=project_trust == "external-config"
+        flag=trust_project_config,
+        env=env,
+        loaded_external=project_trust == "external-config",
+        policy_forbids=forbidden,
     )
+    if forbidden:
+        raise ProjectTrustError(
+            [replace(issue, hint=POLICY_FORBIDS_TRUST_HINT) for issue in issues]
+        )
     warnings: list[ConfigIssue] = []
     if not trusted:
         store, warnings = _trust_store(env, project_root)
@@ -463,16 +478,77 @@ def _check_layers(
             root=project_root,
             sha256=raw_project.sha256,
         )
-    if not trusted or reason == "untrusted":
+    granted = _GRANTED.get(reason)
+    if not trusted or granted is None:
         raise ProjectTrustError([*issues, *warnings])
-    return tuple(warnings), reason
+    return tuple(warnings), granted
 
 
 def _apply_org_policy(
-    settings: Settings, merged: Mapping[str, Any], org_policies: tuple[LoadedOrgPolicy, ...]
-) -> tuple[Settings, frozenset[str], tuple[ConfigIssue, ...]]:
-    """Enforce organisation policy locks and floors (E03-29, E03-30)."""
-    return settings, frozenset(), ()
+    settings: Settings,
+    merged: Mapping[str, Any],
+    org_policies: tuple[LoadedOrgPolicy, ...],
+    *,
+    layers: Sequence[Layer] = (),
+) -> tuple[Settings, frozenset[str], tuple[ConfigIssue, ...], dict[str, Origin]]:
+    """Enforce organisation policy floors, allow-lists and locks (E03-29; clamp mode is E03-30).
+
+    Runs after every layer, so no layer can undo it. The additions (floor, never-send globs) are
+    applied first; the checks run on the result before it is re-validated, so a level below the
+    raised floor is reported as a policy violation (055) with the origin of the offending value.
+    Several policies are applied one after the other, each on the previous result.
+
+    Returns the settings, the locked keys, warnings and the origins of keys the policy changed.
+
+    Raises:
+        OrgPolicyError: CK-CFG-055, one issue per violation of every policy.
+    """
+    if not org_policies:
+        return settings, frozenset(), (), {}
+    data: dict[str, Any] = settings.model_dump(mode="json")
+    origins_of = _origin_lookup(layers)
+    locked: set[str] = set()
+    changed_by: dict[str, Origin] = {}
+    warnings: list[ConfigIssue] = []
+    issues: list[ConfigIssue] = []
+    for loaded in org_policies:
+        policy = loaded.policy
+        if policy.enforcement == "clamp":
+            warnings.append(
+                ConfigIssue(
+                    code=ConfigErrorCode.CK_CFG_055,
+                    severity="warning",
+                    message=(
+                        f"organisation policy '{policy.organisation}' asks for clamp mode, which "
+                        "is not available yet; it is enforced in the stricter reject mode"
+                    ),
+                    source=str(loaded.path),
+                )
+            )
+        data, changed = apply_additions(data, policy)
+        for key in changed:
+            changed_by[key] = Origin(layer="org-policy", source=str(loaded.path))
+        locked |= locked_keys_of(policy)
+        for violation in check_policy(data, policy):
+            origin = origins_of(violation.key)
+            issues.append(
+                ConfigIssue(
+                    code=ConfigErrorCode.CK_CFG_055,
+                    severity="error",
+                    message=violation.message,
+                    key=violation.key,
+                    source=origin.source,
+                    line=origin.line,
+                    hint=f"policy file: {loaded.path}",
+                )
+            )
+    if issues:
+        raise OrgPolicyError(issues)
+    try:
+        settings = Settings.model_validate(data)
+    except ValidationError as exc:
+        raise ConfigValidationError(convert_validation_error(exc, origins_of)) from None
+    return settings, frozenset(locked), tuple(warnings), changed_by
 
 
 def _semantic_checks(
@@ -583,6 +659,7 @@ def load_settings(
         trust_project_config=trust_project_config,
         env=environment,
         user_config=user_config_file(environment) if use_user_config else None,
+        org_policies=org_policies,
     )
     layers = [
         _expand_layer(
@@ -610,11 +687,20 @@ def load_settings(
     except ValidationError as exc:
         raise ConfigValidationError(convert_validation_error(exc, _origin_lookup(layers))) from None
 
-    settings, locked_keys, policy_warnings = _apply_org_policy(settings, merged, org_policies)
+    settings, locked_keys, policy_warnings, policy_origins = _apply_org_policy(
+        settings, merged, org_policies, layers=layers
+    )
     warnings.extend(policy_warnings)
     origins = compute_origins(
         layers, settings.model_dump(mode="json"), union_keys=union_keys, defaults=defaults
     )
+    for key, policy_origin in policy_origins.items():
+        contributors = origins[key].contributors if key in origins else ()
+        origins[key] = (
+            replace(policy_origin, contributors=(*contributors, "org-policy"))
+            if contributors
+            else policy_origin
+        )
     warnings.extend(_semantic_checks(settings, origins, project_root=project_root))
     return LoadedConfig(
         settings=settings,

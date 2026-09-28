@@ -180,7 +180,7 @@ def test_extension_points_called_in_order(
     monkeypatch.setattr(
         loader_module,
         "_apply_org_policy",
-        recorder("policy", lambda settings, *a: (settings, frozenset(), ())),
+        recorder("policy", lambda settings, *a, **k: (settings, frozenset(), (), {})),
     )
     monkeypatch.setattr(loader_module, "_semantic_checks", recorder("semantic", lambda *a, **k: ()))
     (repo / "codekavach.toml").write_text("[scan]\njobs = 2\n")

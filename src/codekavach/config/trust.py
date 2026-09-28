@@ -66,7 +66,11 @@ CONTAINED_PATH_KEYS: tuple[str, ...] = (
     "engines.rule_paths[*]",
 )
 
-TrustReason = Literal["flag", "env", "external-config", "store", "untrusted"]
+TrustReason = Literal["flag", "env", "external-config", "store", "org-policy", "untrusted"]
+POLICY_FORBIDS_TRUST_HINT = (
+    "the organisation policy forbids trusting project files (project_config.allow_trust = "
+    "false); move the setting to your user configuration or remove it from the project file"
+)
 
 
 def _segment_match(pattern: list[str], parts: list[str]) -> bool:
@@ -104,12 +108,16 @@ def is_project_trusted(
     store: "TrustStore | None" = None,
     root: Path | None = None,
     sha256: str | None = None,
+    policy_forbids: bool = False,
 ) -> tuple[bool, TrustReason]:
     """Whether the project configuration is trusted for this run, and why.
 
     A store grant counts only for the exact bytes of the configuration file (``sha256`` of the
-    same read that the loader parsed, CWE-367).
+    same read that the loader parsed, CWE-367). An organisation policy with
+    ``project_config.allow_trust = false`` overrides every source (E03-29).
     """
+    if policy_forbids:
+        return False, "org-policy"
     if flag:
         return True, "flag"
     if env.get(TRUST_ENV, "").strip().lower() in _TRUE:

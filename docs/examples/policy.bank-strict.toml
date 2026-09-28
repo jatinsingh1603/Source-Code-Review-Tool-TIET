@@ -1,0 +1,18 @@
+# Organisation policy equivalent to the built-in "bank-strict" profile, but binding on every
+# layer: no user file, project file, profile, environment variable or flag can relax it.
+# "Example Bank Ltd" is a fictitious organisation.
+
+policy_version = 1
+organisation = "Example Bank Ltd"
+enforcement = "reject"              # a violating configuration stops the run (code 055)
+
+[privacy]
+min_level = "L3"                    # nothing weaker than a pseudonymised slice ever leaves
+min_level_by_tier = { local = "L3", private = "L3", public = "L4" }  # public APIs: abstract facts
+never_send = ["**/secrets/**", "**/keys/**", "**/certs/**", "**/*.keystore", "**/*.der", "**/*.crt"]
+
+[project_config]
+allow_trust = false                 # repositories may never set restricted keys
+
+[lock]
+"reporting.include_privacy_attestation" = true   # every report states what left the machine
