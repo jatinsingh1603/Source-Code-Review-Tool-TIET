@@ -178,7 +178,7 @@ def test_extension_points_called_in_order(
         "_apply_org_policy",
         recorder("policy", lambda settings, *a: (settings, frozenset(), ())),
     )
-    monkeypatch.setattr(loader_module, "_semantic_checks", recorder("semantic", lambda *a: ()))
+    monkeypatch.setattr(loader_module, "_semantic_checks", recorder("semantic", lambda *a, **k: ()))
     (repo / "codekavach.toml").write_text("[scan]\njobs = 2\n")
     load_settings(target=repo, env=env_for(home))
     assert calls == ["org", "profile", "extra", "expand", "check", "policy", "semantic"]

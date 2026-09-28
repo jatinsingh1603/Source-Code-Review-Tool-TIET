@@ -133,7 +133,9 @@ def test_conflicts(cli: Cli, probe: None, project_dir: Path) -> None:
     )
     result = cli(["probe", "--offline", "--provider", "cloud"], cwd=project_dir)
     assert result.exit_code == 2
-    assert "error[offline_remote_conflict]" in result.stderr
+    # The loader's semantic rule (E03-23) reports this before the CLI's own check can.
+    assert "error[CK-CFG-031]" in result.stderr
+    assert "--> --offline" in result.stderr
     result = cli(["probe", "-q", "-v"])
     assert result.exit_code == 2
     assert "error[quiet_verbose_conflict]" in result.stderr

@@ -16,7 +16,7 @@ layer checks run before merging so that one run reports every refusal together.
 6. ``_select_profile`` (E03-14); 7. ``_extra_layers`` (E03-16, E03-17);
 8. ``_expand_layer`` (E03-21); 9. ``_check_layers`` (E03-19, E03-25, E03-26);
 10. deep merge from the defaults; 11. validate; 12. ``_apply_org_policy`` (E03-29, E03-30);
-13. ``_semantic_checks`` (E03-23); 14. compute origins.
+13. compute origins; 14. ``_semantic_checks`` (E03-23), which needs the origins.
 
 Validation errors are converted through ``errors(include_input=False)``; ``str()`` of a Pydantic
 error is never used because it may contain the rejected value (CWE-532).
@@ -64,6 +64,7 @@ from codekavach.config.profiles import (
 )
 from codekavach.config.provenance import Layer, Origin, compute_origins, origin_in
 from codekavach.config.toml_source import locate_key, read_toml
+from codekavach.config.validate import semantic_checks
 
 ProjectTrust = Literal["not-needed", "flag", "env", "store", "external-config"]
 CONFIG_ENV = "CODEKAVACH_CONFIG"
@@ -368,9 +369,18 @@ def _apply_org_policy(
     return settings, frozenset(), ()
 
 
-def _semantic_checks(settings: Settings, layers: Sequence[Layer]) -> tuple[ConfigIssue, ...]:
-    """Cross-section checks (E03-23); returns warnings and raises for errors."""
-    return ()
+def _semantic_checks(
+    settings: Settings, origins: Mapping[str, Origin], *, project_root: Path
+) -> tuple[ConfigIssue, ...]:
+    """Cross-section checks (E03-23); returns warnings and raises for errors.
+
+    Raises:
+        ConfigValidationError: at least one rule failed; carries every issue, warnings included.
+    """
+    issues = semantic_checks(settings, origins, project_root=project_root)
+    if any(issue.severity == "error" for issue in issues):
+        raise ConfigValidationError(issues)
+    return tuple(issues)
 
 
 def _read_layer(name: Literal["user", "project"], path: Path, confine_to: Path | None) -> Layer:
@@ -484,10 +494,10 @@ def load_settings(
 
     settings, locked_keys, policy_warnings = _apply_org_policy(settings, merged, org_policies)
     warnings.extend(policy_warnings)
-    warnings.extend(_semantic_checks(settings, layers))
     origins = compute_origins(
         layers, settings.model_dump(mode="json"), union_keys=union_keys, defaults=defaults
     )
+    warnings.extend(_semantic_checks(settings, origins, project_root=project_root))
     return LoadedConfig(
         settings=settings,
         origins=origins,
