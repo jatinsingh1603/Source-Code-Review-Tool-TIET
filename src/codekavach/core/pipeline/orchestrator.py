@@ -49,6 +49,7 @@ from codekavach.core.pipeline.policy import (
 )
 from codekavach.core.pipeline.result import PipelineResult, StageOutcome, StageRun
 from codekavach.core.pipeline.stage import Stage, StageInfo
+from codekavach.core.store.scoped import StageScopedStore, UndeclaredAccessError
 
 INITIAL = "<initial>"
 ABORTED = "aborted"
@@ -87,8 +88,16 @@ class Orchestrator:
         self._monotonic = monotonic
 
     def _execute_stage(self, stage: Stage, info: StageInfo, stage_ctx: RunContext) -> None:
-        """Run one stage; later issues wrap this with isolation, timeouts and threads."""
-        stage.run(stage_ctx)
+        """Run one stage on its scoped, revocable view of the store (E04-17).
+
+        The view is revoked when the stage ends for any reason, so a stage thread that keeps
+        running (after a timeout) cannot write afterwards. Later issues add timeouts and threads.
+        """
+        scoped = StageScopedStore(stage_ctx.artefacts, info)
+        try:
+            stage.run(stage_ctx.for_stage(info.name, artefacts=scoped))
+        finally:
+            scoped.revoke()
 
     @staticmethod
     def _discard_outputs(info: StageInfo, ctx: RunContext) -> None:
@@ -222,8 +231,12 @@ class Orchestrator:
     ) -> StageRun:
         """Record a failed stage and apply its failure policy (outputs are already discarded)."""
         if code is None:
-            missing = isinstance(error, _MissingProvidesError)
-            code = "missing_provides" if missing else "stage_exception"
+            if isinstance(error, _MissingProvidesError):
+                code = "missing_provides"
+            elif isinstance(error, UndeclaredAccessError):
+                code = "undeclared_access"
+            else:
+                code = "stage_exception"
         error_type = error_type_of(error)
         run = self._timed(info.name, outcome, timing, error_code=code, error_type=error_type)
         self._record(ctx, runs, run)

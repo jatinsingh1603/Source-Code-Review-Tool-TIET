@@ -245,3 +245,86 @@ def test_error_type_is_event_safe() -> None:
 
     assert error_type_of(LocalError()) == "test_error_type_is_event_safe._locals_.LocalError"
     assert error_type_of(ValueError()) == "ValueError"
+
+
+# scoped store (E04-17)
+
+
+class SneakyStage(FakeStage):
+    """Reads a key it did not declare before doing its declared work."""
+
+    def __init__(self, name: str, *, sneak: str, **kwargs: Any) -> None:
+        super().__init__(name, **kwargs)
+        self._sneak = sneak
+
+    def run(self, ctx: RunContext) -> None:
+        ctx.artefacts.get_json(self._sneak)
+        super().run(ctx)
+
+
+def test_undeclared_read_fails_with_code() -> None:
+    sneaky = SneakyStage(
+        "b", sneak="scan.target", requires={"x"}, provides={"y"}, category=C.ANALYSE
+    )
+    plan, ctx = prepared(chain(sneaky))
+    result = orchestrator().run(plan, ctx)
+    run = result.run_of("b")
+    assert run is not None
+    assert (run.outcome, run.error_code) == (StageOutcome.FAILED, "undeclared_access")
+    assert not result.egress_locked
+
+
+def test_undeclared_read_by_llm_stage_locks_egress() -> None:
+    from tests.support.pipeline import default_fake_stages  # noqa: PLC0415
+
+    stages = default_fake_stages()
+    for index, stage in enumerate(stages):
+        if stage.name == "llm-review":
+            stages[index] = SneakyStage(
+                "llm-review",
+                sneak="files",
+                requires=stage.requires,
+                provides=stage.provides,
+                category=C.LLM,
+            )
+    ctx = make_run_context()
+    ctx.artefacts.put("scan.target", {"target": "repo"})
+    result = orchestrator().run(plan_from_stages(stages), ctx)
+    run = result.run_of("llm-review")
+    assert run is not None
+    assert run.error_code == "undeclared_access"
+    assert result.egress_locked
+
+
+def test_late_write_after_stage_end_is_rejected() -> None:
+    import threading  # noqa: PLC0415
+
+    from codekavach.core.store.scoped import StageRevokedError  # noqa: PLC0415
+
+    go = threading.Event()
+    outcome: list[BaseException] = []
+
+    class Lingering(FakeStage):
+        def run(self, ctx: RunContext) -> None:
+            store = ctx.artefacts
+
+            def later() -> None:
+                go.wait(5)
+                try:
+                    store.put("y", {"late": True})
+                except BaseException as error:  # noqa: BLE001 - recorded for the assertion
+                    outcome.append(error)
+
+            self.thread = threading.Thread(target=later)
+            self.thread.start()
+            super().run(ctx)
+
+    lingering = Lingering("b", requires={"x"}, provides={"y"}, category=C.ANALYSE)
+    plan, ctx = prepared(chain(lingering))
+    orchestrator().run(plan, ctx)
+    before = ctx.artefacts.get_json("y")
+    go.set()
+    lingering.thread.join(5)
+    assert len(outcome) == 1
+    assert isinstance(outcome[0], StageRevokedError)
+    assert ctx.artefacts.get_json("y") == before

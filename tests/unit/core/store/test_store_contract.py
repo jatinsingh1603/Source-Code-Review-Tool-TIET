@@ -10,6 +10,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from pydantic import BaseModel
 
+from codekavach.core.pipeline.stage import StageInfo
 from codekavach.core.store.artefacts import OnDiskArtefactStore
 from codekavach.core.store.base import (
     ArtefactForbiddenError,
@@ -23,17 +24,39 @@ from codekavach.core.store.base import (
 )
 from codekavach.core.store.layout import StateLayout
 from codekavach.core.store.memory import InMemoryArtefactStore
+from codekavach.core.store.scoped import StageScopedStore
 from tests.support.strategies import nested_json
 
 Factory = Callable[[], ArtefactStore]
 _counter = itertools.count()
 
 
-@pytest.fixture(params=["memory", "disk"])
+# The scoped view (E04-17) of one stage that declares every key this suite uses.
+SUITE_KEYS = frozenset(
+    {"ast", "candidates", "candidates.raw", "files", "findings", "scan.summary", "scan.target",
+     "symbols", "x.parts"}
+)  # fmt: skip
+SCOPED_INFO = StageInfo(
+    name="analyse-rules",
+    requires=frozenset(),
+    provides=SUITE_KEYS,
+    transient_provides=frozenset({"ast"}),
+)
+
+
+def orchestrator_only(store: ArtefactStore, operation: str) -> None:
+    """Skip for the scoped view, which refuses ``operation`` to a stage by design (E04-17)."""
+    if isinstance(store, StageScopedStore):
+        pytest.skip(f"a stage's scoped view refuses {operation}; only the orchestrator may")
+
+
+@pytest.fixture(params=["memory", "disk", "scoped"])
 def new_store(request: pytest.FixtureRequest, tmp_path: Path) -> Factory:
     """A factory of empty stores of one implementation (each disk store gets its own scan)."""
     if request.param == "memory":
         return InMemoryArtefactStore
+    if request.param == "scoped":
+        return lambda: StageScopedStore(InMemoryArtefactStore(), SCOPED_INFO)
 
     def disk() -> ArtefactStore:
         scan_id = f"scan_{next(_counter):026d}"
@@ -67,6 +90,7 @@ def test_satisfies_protocol(new_store: Factory) -> None:
 
 def test_example(new_store: Factory) -> None:
     store = new_store()
+    orchestrator_only(store, "parts of several stages")
     ref = store.put("files", [record()])
     assert ref.digest is not None
     assert ref.size > 0
@@ -138,6 +162,7 @@ def test_never_persist_everywhere(new_store: Factory, value: object) -> None:
 
 def test_transient_values(new_store: Factory) -> None:
     store = new_store()
+    orchestrator_only(store, "persisting a transient key")
     tree = object()
     ref = store.put("ast", tree, persist=False)
     assert ref == ArtefactRef(key="ast", digest=None, size=0)
@@ -158,6 +183,7 @@ def test_transient_values(new_store: Factory) -> None:
 
 def test_parts_discard_and_has(new_store: Factory) -> None:
     store = new_store()
+    orchestrator_only(store, "parts of several stages")
     store.put_part("candidates.raw", "analyse-rules", [Candidate(rule="a")])
     store.put_part("candidates.raw", "analyse-taint", Candidate(rule="b"))
     ref = store.ref("candidates.raw")
@@ -174,6 +200,7 @@ def test_parts_discard_and_has(new_store: Factory) -> None:
 
 def test_bind(new_store: Factory) -> None:
     store = new_store()
+    orchestrator_only(store, "bind")
     ref = store.put("files", [record()])
     store.bind("candidates", ArtefactRef("candidates", ref.digest, ref.size))
     assert store.get_list("candidates", FileRecord) == [record()]
@@ -217,6 +244,7 @@ def test_property_json_round_trip(new_store: Factory, value: object) -> None:
 
 def test_concurrent_writers(new_store: Factory) -> None:
     store = new_store()
+    orchestrator_only(store, "parts of several stages")
 
     def work(index: int) -> None:
         store.put_part("candidates.raw", f"analyse-{index:02d}", [Candidate(rule=str(index))])
