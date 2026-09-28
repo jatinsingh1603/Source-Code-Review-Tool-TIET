@@ -5,6 +5,7 @@ name = "innocent-looking"
 state_dir = "/tmp/hijacked-state"
 
 [privacy]
+level = "L1"
 domain_terms_file = "/etc/hostile-terms.txt"
 public_allowlist_extra = ["LeakMeVerbatim"]
 

@@ -19,16 +19,19 @@ Consent for remote egress is deliberately not a setting (E05-13), so no file can
 """
 
 import re
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from functools import cache
 from pathlib import Path, PurePosixPath, PureWindowsPath
+from types import MappingProxyType
 from typing import Any, Literal
 
 from codekavach.config.errors import DEFAULT_SEVERITY, ConfigErrorCode, ConfigIssue
 from codekavach.config.introspect import flatten_leaves, keys_with_marker
+from codekavach.config.models.base import split_csv
 from codekavach.config.models.root import Settings
 from codekavach.config.provenance import Layer
 from codekavach.config.toml_source import locate_key
+from codekavach.core.models import PrivacyLevel
 
 TRUST_ENV = "CODEKAVACH_TRUST_PROJECT_CONFIG"
 _TRUE = frozenset({"1", "true"})
@@ -177,4 +180,168 @@ def check_restricted(
         for key, value in _contained_values(data):
             if isinstance(value, str) and _escapes(value, project_root):
                 add(f"{prefix}{key}", f"'{prefix}{key}': path escapes the project")
+    return issues
+
+
+# --- tighten-only keys (E03-26) ----------------------------------------------------------------
+
+Comparator = Callable[[Any, Any], bool]
+PROTECTED_STAGES: tuple[str, ...] = ("privacy-prepare", "restore", "aggregate", "rate")
+_DROPPED_RULE = "drops a stricter path rule from the user configuration"
+
+
+def _level(value: Any) -> PrivacyLevel | None:
+    try:
+        return PrivacyLevel(str(value).upper())
+    except ValueError:
+        return None
+
+
+def _level_looser(candidate: Any, baseline: Any) -> bool:
+    new, old = _level(candidate), _level(baseline)
+    return new is not None and old is not None and not new.at_least(old)
+
+
+def _switched_on(candidate: Any, baseline: Any) -> bool:
+    return candidate is True and baseline is False
+
+
+def _skips_protected(candidate: Any, baseline: Any) -> bool:
+    new = set(split_csv(candidate)) if isinstance(candidate, list | str) else set()
+    old = set(split_csv(baseline)) if isinstance(baseline, list | str) else set()
+    return any(stage in new and stage not in old for stage in PROTECTED_STAGES)
+
+
+TIGHTEN_ONLY: Mapping[str, Comparator] = MappingProxyType(
+    {
+        "privacy.level": _level_looser,
+        "privacy.min_level": _level_looser,
+        "privacy.provider_tier_levels.*": _level_looser,
+        "llm.allow_remote": _switched_on,
+        "llm.enabled": _switched_on,
+        "scan.follow_symlinks": _switched_on,
+        "scan.skip_stages": _skips_protected,
+    }
+)
+
+
+def _get(data: Mapping[str, Any], key: str) -> Any:
+    node: Any = data
+    for part in key.split("."):
+        if not isinstance(node, Mapping) or part not in node:
+            return _MISSING
+        node = node[part]
+    return node
+
+
+_MISSING = object()
+
+
+def _concrete(data: Mapping[str, Any], template: str) -> Iterator[str]:
+    """Concrete keys of ``data`` matching a template with at most one trailing ``*``."""
+    if not template.endswith(".*"):
+        if _get(data, template) is not _MISSING:
+            yield template
+        return
+    parent = template[:-2]
+    table = _get(data, parent)
+    if isinstance(table, Mapping):
+        yield from (f"{parent}.{name}" for name in table)
+
+
+def _show(value: Any) -> str:
+    if isinstance(value, bool):
+        return str(value).lower()
+    if isinstance(value, list):
+        return "[" + ", ".join(str(item) for item in value) + "]"
+    return str(value)
+
+
+def _path_rule_issues(
+    candidate: Mapping[str, Any], baseline: Mapping[str, Any]
+) -> Iterator[tuple[str, str]]:
+    """``(key, message)`` for path rules looser than the baseline level or dropping user rules."""
+    rules = _get(candidate, "privacy.paths")
+    if not isinstance(rules, list):
+        return
+    base_level = _get(baseline, "privacy.level")
+    for index, rule in enumerate(rules):
+        if isinstance(rule, Mapping) and _level_looser(rule.get("level"), base_level):
+            yield (
+                f"privacy.paths[{index}].level",
+                f"privacy.paths[{index}].level {_show(rule['level'])} is weaker than the "
+                f"baseline privacy.level {_show(base_level)}",
+            )
+    project_level = _get(candidate, "privacy.level")
+    if project_level is _MISSING:
+        project_level = base_level
+    by_pattern: dict[Any, Mapping[str, Any]] = {}
+    for rule in rules:
+        if isinstance(rule, Mapping):
+            by_pattern[rule.get("pattern")] = rule  # later rules win
+    base_rules = _get(baseline, "privacy.paths")
+    for rule in base_rules if isinstance(base_rules, list) else []:
+        mine = by_pattern.get(rule.get("pattern"))
+        if rule.get("never_send"):
+            dropped = mine is None or not mine.get("never_send")
+        else:
+            if mine is not None and mine.get("never_send"):
+                continue
+            effective = mine.get("level") if mine is not None and mine.get("level") else None
+            dropped = _level_looser(effective or project_level, rule.get("level"))
+        if dropped:
+            yield "privacy.paths", f"privacy.paths {_DROPPED_RULE}"
+
+
+def check_tighten_only(
+    candidate: Mapping[str, Any],
+    baseline: Mapping[str, Any],
+    *,
+    source: str,
+    text: str | None,
+    prefix: str = "",
+    subject: str = "",
+    line: int | None = None,
+    baseline_origin: Callable[[str], str] | None = None,
+    hint: str | None = None,
+) -> list[ConfigIssue]:
+    """One code-041 issue per tighten-only key that ``candidate`` sets looser than ``baseline``.
+
+    ``prefix`` is prepended to reported keys (``profiles.x.`` for a profile table); ``subject``
+    replaces the default message subject (for a project-selected profile), and ``line`` then
+    replaces the per-key line. Levels, booleans and stage names come from closed sets and are
+    printed; nothing else is.
+    """
+    found: list[tuple[str, str]] = []
+    for template, looser in TIGHTEN_ONLY.items():
+        for key in _concrete(candidate, template):
+            new, old = _get(candidate, key), _get(baseline, key)
+            if old is not _MISSING and looser(new, old):
+                verb = "add a skipped stage to" if key == "scan.skip_stages" else "lower"
+                found.append((key, f"would {verb} {key} from {_show(old)} to {_show(new)}"))
+    found.extend((key, message) for key, message in _path_rule_issues(candidate, baseline))
+    issues = []
+    for key, message in found:
+        origin = f"; baseline from {baseline_origin(key)}" if baseline_origin else ""
+        who = subject or "an untrusted project configuration"
+        text_message = (
+            f"{who} {message}{origin}"
+            if message.startswith("would")
+            else f"{message} ({who}){origin}"
+        )
+        issues.append(
+            ConfigIssue(
+                code=ConfigErrorCode.CK_CFG_041,
+                severity=DEFAULT_SEVERITY[ConfigErrorCode.CK_CFG_041],
+                message=text_message,
+                key=f"{prefix}{key}",
+                source=source,
+                line=line
+                if line is not None
+                else (locate_key(text, f"{prefix}{key}") if text is not None else None),
+                hint=hint
+                or "move the stricter value into your user configuration only if you "
+                "want it everywhere; otherwise remove the looser value, or trust this project.",
+            )
+        )
     return issues

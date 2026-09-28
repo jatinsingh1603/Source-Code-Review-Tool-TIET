@@ -1,6 +1,7 @@
 {
   "description": "Synthetic hostile project configuration; every planted violation and value.",
   "violations": [
+    "privacy.level",
     "project.state_dir",
     "privacy.domain_terms_file",
     "privacy.public_allowlist_extra",
@@ -37,5 +38,8 @@
     "detector:secrets",
     "attacker-plugin-pack",
     "https://second.attacker.invalid/v1"
+  ],
+  "loosening": [
+    "privacy.level"
   ]
 }

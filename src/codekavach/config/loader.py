@@ -65,7 +65,7 @@ from codekavach.config.profiles import (
 )
 from codekavach.config.provenance import Layer, Origin, compute_origins, origin_in
 from codekavach.config.toml_source import locate_key, read_toml
-from codekavach.config.trust import check_restricted, is_project_trusted
+from codekavach.config.trust import check_restricted, check_tighten_only, is_project_trusted
 from codekavach.config.validate import semantic_checks
 
 ProjectTrust = Literal["not-needed", "flag", "env", "store", "external-config"]
@@ -354,10 +354,72 @@ def _refuse_plaintext(
         raise PlaintextSecretError(issues)
 
 
+def _baseline(raw_user: Layer | None) -> dict[str, Any]:
+    """Everything below the project layer: the defaults merged with the user layer."""
+    baseline: dict[str, Any] = Settings().model_dump(mode="json")
+    if raw_user is not None:
+        data = {k: v for k, v in raw_user.data.items() if k not in {"profile", "profiles"}}
+        baseline = deep_merge(baseline, data, union_keys=union_keys_of(Settings))
+    return baseline
+
+
+def _baseline_origin(raw_user: Layer | None) -> Callable[[str], str]:
+    flat = flatten_leaves(raw_user.data) if raw_user is not None else {}
+
+    def origin(key: str) -> str:
+        base = key.split("[", maxsplit=1)[0]
+        if raw_user is None or base not in flat:
+            return "the built-in defaults"
+        line = locate_key(raw_user.text, base) if raw_user.text is not None else None
+        return raw_user.source if line is None else f"{raw_user.source}:{line}"
+
+    return origin
+
+
+def _loosening_issues(
+    layers: Sequence[Layer],
+    *,
+    raw_project: Layer,
+    raw_user: Layer | None,
+    profile_name: str | None,
+    profile_origin: Origin | None,
+) -> list[ConfigIssue]:
+    """Code 041 for the project layer, its profile tables and a profile it selects (E03-26)."""
+    baseline = _baseline(raw_user)
+    origin_of = _baseline_origin(raw_user)
+    common: dict[str, Any] = {"source": raw_project.source, "baseline_origin": origin_of}
+    data = {k: v for k, v in raw_project.data.items() if k not in {"profile", "profiles"}}
+    issues = check_tighten_only(data, baseline, text=raw_project.text, **common)
+    profiles = raw_project.data.get("profiles")
+    for name, table in profiles.items() if isinstance(profiles, Mapping) else ():
+        if isinstance(table, Mapping):
+            issues += check_tighten_only(
+                table, baseline, text=raw_project.text, prefix=f"profiles.{name}.", **common
+            )
+    selected = next((layer for layer in layers if layer.name == "profile"), None)
+    if selected is not None and profile_origin is not None and profile_origin.layer == "project":
+        issues += check_tighten_only(
+            selected.data,
+            baseline,
+            text=None,
+            subject=f"profile '{profile_name}', selected by the project configuration,",
+            line=profile_origin.line,
+            hint=(
+                f"select the profile yourself (--profile {profile_name} or "
+                f"CODEKAVACH_PROFILE={profile_name}), or trust this project."
+            ),
+            **common,
+        )
+    return issues
+
+
 def _check_layers(
     layers: Sequence[Layer],
     *,
     raw_project: Layer | None,
+    raw_user: Layer | None,
+    profile_name: str | None,
+    profile_origin: Origin | None,
     project_root: Path,
     project_trust: ProjectTrust,
     trust_project_config: bool,
@@ -368,15 +430,24 @@ def _check_layers(
 
     ``raw_project`` is the project layer as read, with every ``[profiles.*]`` table, so that
     profiles it defines are checked whether or not they are selected. Runs before indirections
-    are expanded, so a path key that escapes the project is reported as such (E03-25). E03-26
-    adds the loosening checks here. Returns the warnings and the effective project trust.
+    are expanded, so a path key that escapes the project is reported as such (E03-25). A
+    tighten-only key may not be looser than the baseline (defaults merged with the user layer)
+    in the project layer, its profile tables or a profile the project selects (E03-26). Returns
+    the warnings and the effective project trust.
 
     Raises:
-        ProjectTrustError: CK-CFG-040, one issue per violation.
+        ProjectTrustError: codes 040 and 041 together, one issue per violation.
     """
     if raw_project is None:
         return (), project_trust
     issues = check_restricted(raw_project, project_root=project_root, user_config=user_config)
+    issues += _loosening_issues(
+        layers,
+        raw_project=raw_project,
+        raw_user=raw_user,
+        profile_name=profile_name,
+        profile_origin=profile_origin,
+    )
     if not issues:
         return (), project_trust
     trusted, reason = is_project_trusted(
@@ -486,6 +557,7 @@ def load_settings(
         deprecation_warnings.extend(found)
     _refuse_plaintext(layers, env=environment, cli_overrides=cli_overrides)
     raw_project = next((layer for layer in layers if layer.name == "project"), None)
+    raw_user = next((layer for layer in layers if layer.name == "user"), None)
     layers, profile_name, profile_origin, profiles_table = _select_profile(
         layers, profile=profile, env=environment
     )
@@ -493,6 +565,9 @@ def load_settings(
     check_warnings, project_trust = _check_layers(
         layers,
         raw_project=raw_project,
+        raw_user=raw_user,
+        profile_name=profile_name,
+        profile_origin=profile_origin,
         project_root=project_root,
         project_trust=project_trust,
         trust_project_config=trust_project_config,

@@ -191,8 +191,9 @@ def test_three_rules_in_one_error(config_sandbox: ConfigSandbox) -> None:
 
 
 def test_warning_reaches_loaded_config(config_sandbox: ConfigSandbox) -> None:
-    config_sandbox.write_project('[privacy.provider_tier_levels]\npublic = "L2"\n')
-    loaded = config_sandbox.load(use_user_config=False)
+    # A looser tier level is the operator's call, so it lives in the user file (E03-26).
+    config_sandbox.write_user('[privacy.provider_tier_levels]\npublic = "L2"\n')
+    loaded = config_sandbox.load()
     assert [(w.code.value, w.line) for w in loaded.warnings] == [("CK-CFG-038", 2)]
 
 

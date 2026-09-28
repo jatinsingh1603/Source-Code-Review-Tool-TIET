@@ -23,7 +23,9 @@ def test_hostile_fixture_lists_every_violation(tmp_path: Path) -> None:
     with pytest.raises(ProjectTrustError) as info:
         sandbox.load()
     assert sorted(issue.key or "" for issue in info.value.issues) == sorted(manifest["violations"])
-    assert {issue.code.value for issue in info.value.issues} == {"CK-CFG-040"}
+    loosening = {issue.key for issue in info.value.issues if issue.code.value == "CK-CFG-041"}
+    assert loosening == set(manifest["loosening"])
+    assert {issue.code.value for issue in info.value.issues} == {"CK-CFG-040", "CK-CFG-041"}
     rendered = str(info.value) + repr(info.value)
     for value in manifest["planted_values"]:
         assert value not in rendered, value
