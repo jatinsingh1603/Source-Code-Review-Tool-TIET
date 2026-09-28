@@ -41,6 +41,14 @@ therefore also imports every module in a child interpreter with its own socket g
 a process-level egress test. On Windows, asyncio builds its self-pipe from a loopback socket pair,
 so a test that runs an event loop declares `allow_hosts(["127.0.0.1", "::1"])`.
 
+## Import contracts
+
+`tests/privacy/test_import_contracts.py` builds a miniature `codekavach` package
+(`tests/support/fake_tree.py`) and runs the real `.importlinter` against it once per planted
+violation. When you add a contract, add at least one row to `VIOLATIONS` that breaks it (and a row
+to `ALLOWED` for any intended exception); `test_every_contract_has_a_planted_violation` fails until
+you do. When you add a `TID251` ban in `pyproject.toml`, add its import to the ruff matrix.
+
 ## Running
 
 ```bash
