@@ -201,7 +201,9 @@ def check_restricted(
         )
 
     for prefix, data in _roots(layer.data):
-        for key in flatten_leaves(data):
+        for key, value in flatten_leaves(data).items():
+            if isinstance(value, Mapping) and not value:
+                continue  # an empty table such as [integrations.github] sets nothing
             if is_restricted(key):
                 add(
                     f"{prefix}{key}",

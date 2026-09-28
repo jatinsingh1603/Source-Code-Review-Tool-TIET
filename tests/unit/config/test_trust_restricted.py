@@ -251,3 +251,12 @@ def test_consent_is_not_a_setting_in_env_or_cli(config_sandbox: ConfigSandbox) -
     del config_sandbox.env["CODEKAVACH_PRIVACY__EGRESS_ACKNOWLEDGED"]
     with pytest.raises(ConfigError):
         config_sandbox.load(cli_overrides={"privacy": {"egress_acknowledged": True}})
+
+
+def test_empty_restricted_tables_set_nothing(tmp_path: Path) -> None:
+    data: dict[str, Any] = {
+        "integrations": {"github": {}, "mcp": {}},
+        "privacy": {"vault": {}},
+        "plugins": {},
+    }
+    assert keys_of(data, tmp_path) == []

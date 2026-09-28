@@ -1,4 +1,4 @@
-"""``codekavach config``: show, validate, path, profiles, trust and keys (E03-27, E03-33 to 36).
+"""``codekavach config``: init, show, validate, path, profiles, trust, key (E03-27, E03-33 to 37).
 
 Owning epic: E03.
 
@@ -14,11 +14,14 @@ for confirmation unless ``--yes``; without a terminal it refuses instead of wait
 ``config_app`` on the root application as ``config``.
 """
 
+import contextlib
 import hashlib
 import json
 import os
 import re
+import shutil
 import sys
+import tempfile
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
 from pathlib import Path
@@ -27,13 +30,19 @@ from typing import TYPE_CHECKING, Annotated, Any
 import typer
 
 from codekavach.cli.console import get_console, get_err_console
-from codekavach.cli.errors import UsageError
+from codekavach.cli.errors import InternalError, UsageError
 from codekavach.cli.exit_codes import ExitCode
 from codekavach.cli.output import simple_table
 from codekavach.config.check import ValidationReport, report_from_error, validate_configuration
-from codekavach.config.constants import KEYRING_SERVICE
+from codekavach.config.constants import KEYRING_SERVICE, PROJECT_FILE_NAME
 from codekavach.config.diagnostics import format_issues
-from codekavach.config.errors import ConfigError, ConfigIssue, SecretResolutionError
+from codekavach.config.errors import (
+    ConfigError,
+    ConfigErrorCode,
+    ConfigIssue,
+    ProfileError,
+    SecretResolutionError,
+)
 from codekavach.config.keys import (
     KEYRING_UNAVAILABLE_HINT,
     KeyringUnavailableError,
@@ -51,9 +60,10 @@ from codekavach.config.paths import (
     project_root_for,
     user_config_file,
 )
-from codekavach.config.profiles import list_profiles
+from codekavach.config.profiles import BUILTIN_PROFILES, list_profiles
 from codekavach.config.provenance import Layer
 from codekavach.config.render import UnknownSectionError, render_json, render_layer, render_toml
+from codekavach.config.starter import render_starter
 from codekavach.config.toml_source import read_toml
 from codekavach.config.trust import TrustStore, project_violations, store_path
 
@@ -706,3 +716,128 @@ def profiles_command(
     ]
     columns = ("name", "kind", "defined in", "extends", "description")
     get_console().print(simple_table(columns, table))
+
+
+# --- config init (E03-37); E05-19 also registers init_command as the top-level ``init`` ---------
+
+GITIGNORE_ENTRIES = (".codekavach/", "codekavach-report/")
+NEXT_STEPS = (
+    "Next steps:",
+    "  1. Provide a key: export ANTHROPIC_API_KEY=... or codekavach config key set primary",
+    "  2. Check the configuration: codekavach config validate",
+    "  3. Scan: codekavach scan .",
+)
+
+
+def _check_profile(profile: str) -> bool:
+    """Whether ``profile`` is built-in; raise 020 when it is neither built-in nor user-defined."""
+    if profile in BUILTIN_PROFILES:
+        return True
+    user_defined, _, _ = _user_defined_profiles(Path.cwd())
+    if profile in user_defined:
+        return False
+    error = ProfileError.single(
+        ConfigErrorCode.CK_CFG_020,
+        f"unknown profile; available profiles: {', '.join(sorted(BUILTIN_PROFILES))}",
+        key="profile",
+    )
+    sys.stderr.write(format_issues(error.issues) + "\n")
+    raise typer.Exit(ExitCode.USAGE)
+
+
+def _validate_starter(directory: Path, text: str, temporary: Path) -> None:
+    """Load the rendered file as a project file; a failure is a template bug."""
+    temporary.write_text(text, encoding="utf-8", newline="\n")
+    try:
+        load_settings(target=directory, config_file=temporary, use_user_config=False, env={})
+    except ConfigError as error:
+        raise InternalError(
+            "the generated starter file does not validate; please report this bug",
+            hint=error.issues[0].code.value,
+        ) from None
+
+
+def _update_gitignore(directory: Path) -> str:
+    root = project_root_for(directory)
+    if not (root / ".git").exists():
+        return "not a git work tree; .gitignore left unchanged"
+    path = root / ".gitignore"
+    existing = path.read_text(encoding="utf-8") if path.is_file() else ""
+    missing = [entry for entry in GITIGNORE_ENTRIES if entry not in existing.split("\n")]
+    if not missing:
+        return ".gitignore already ignores the state and report directories"
+    prefix = "" if not existing or existing.endswith("\n") else "\n"
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(prefix + "\n".join(missing) + "\n")
+    return f"added to .gitignore: {', '.join(missing)}"
+
+
+def init_command(  # noqa: PLR0917 - the documented option set of the command
+    path: Annotated[
+        Path | None, typer.Argument(help="Directory to write codekavach.toml into.")
+    ] = None,
+    profile: Annotated[
+        str | None, typer.Option("--profile", help="Profile to select in the file.")
+    ] = None,
+    minimal: Annotated[
+        bool, typer.Option("--minimal", help="Only the active settings, without comments.")
+    ] = False,
+    force: Annotated[
+        bool, typer.Option("--force", help="Replace an existing file; keeps a .bak copy.")
+    ] = False,
+    stdout: Annotated[
+        bool, typer.Option("--stdout", help="Print the file instead of writing it.")
+    ] = False,
+    update_gitignore: Annotated[
+        bool,
+        typer.Option("--update-gitignore", help="Add the state and report directories."),
+    ] = False,
+) -> None:
+    """Write a commented starter codekavach.toml rendered from the settings models."""
+    directory = (path or Path.cwd()).resolve()
+    if not directory.is_dir():
+        raise UsageError("PATH is not a directory", code="not_a_directory")
+    builtin_profile = _check_profile(profile) if profile is not None else True
+    text = render_starter(profile=profile, minimal=minimal, project_name=directory.name)
+    if stdout:
+        sys.stdout.write(text)
+        return
+    target = directory / PROJECT_FILE_NAME
+    if target.exists() and not force:
+        raise UsageError(
+            f"{target} already exists", code="config_exists", hint="use --force to replace it"
+        )
+    descriptor, name = tempfile.mkstemp(dir=directory, prefix=".codekavach-", suffix=".toml")
+    os.close(descriptor)
+    temporary = Path(name)
+    try:
+        checked = (
+            text
+            if builtin_profile
+            else render_starter(minimal=minimal, project_name=directory.name)
+        )
+        _validate_starter(directory, checked, temporary)
+        temporary.write_text(text, encoding="utf-8", newline="\n")
+        if sys.platform != "win32":
+            temporary.chmod(0o644)
+        if target.exists():
+            shutil.copy2(target, target.with_name(f"{PROJECT_FILE_NAME}.bak"))
+        temporary.replace(target)
+    finally:
+        with contextlib.suppress(OSError):
+            temporary.unlink()
+    console = get_console()
+    console.print(f"wrote {target}", markup=False)
+    if update_gitignore:
+        console.print(_update_gitignore(directory), markup=False)
+    else:
+        console.print(
+            "recommended: add .codekavach/ and codekavach-report/ to .gitignore "
+            "(or run again with --update-gitignore)",
+            markup=False,
+        )
+    for line in NEXT_STEPS:
+        console.print(line, markup=False)
+
+
+config_app.command("init")(init_command)

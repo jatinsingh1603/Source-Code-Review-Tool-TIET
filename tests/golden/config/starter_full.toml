@@ -1,0 +1,300 @@
+#:schema https://raw.githubusercontent.com/jatinsingh1603/Source-Code-Review-Tool-TIET/main/docs/schemas/codekavach.schema.json
+#~ CodeKavach configuration. Reference: docs/configuration/reference.md
+#~ Precedence: defaults < user config < this file < profile < CODEKAVACH_* env < CLI flags.
+#~ Never put API keys here. Use references: "env:NAME", "keyring:codekavach/NAME" or "file:/path".
+#~ Version of the configuration format; only 1 is supported.
+config_version = 1
+#~ Name of the profile to apply.
+#? profile = ""
+
+#~ Who and what is being reviewed; shown on the report cover.
+#~ Identity of the scanned project.
+[project]
+#~ Project name for reports; when unset, the root directory name is used.
+name = "payments-api"
+#~ Client organisation shown on the report cover.
+#? client = ""
+#~ One-paragraph description for the scope section of the report.
+#? description = ""
+#~ Directory for the vault, ledger, local database and cache.
+# state_dir = ".codekavach"
+#~ Languages to analyse; an empty list means detect them automatically.
+# languages = []
+
+#~ Which files are read and how long a scan may take.
+#~ What to scan and how.
+[scan]
+#~ Glob patterns of files to include, relative to the project root.
+# include = ["**/*"]
+#~ Glob patterns of files to exclude, relative to the project root.
+# exclude = [".git/**", ".codekavach/**", "node_modules/**", ".venv/**", "venv/**", "__pycache__/**", "dist/**", "build/**", "target/**", "vendor/**"]
+#~ Skip files that the repository's .gitignore ignores.
+# respect_gitignore = true
+#~ Follow symbolic links while discovering files.
+# follow_symlinks = false
+#~ Largest file, in kilobytes, that is analysed.
+# max_file_size_kb = 1024
+#~ Largest number of files that is analysed.
+# max_files = 50000
+#~ Largest total size, in megabytes, of the analysed files.
+# max_total_size_mb = 2048
+#~ Number of parallel workers; 0 means the number of CPUs.
+# jobs = 0
+#~ Wall-clock limit of a whole scan, in seconds.
+# timeout_seconds = 3600
+#~ Pipeline stages to skip, by their stage name.
+# skip_stages = []
+#~ Exit non-zero when a finding at or above this severity exists; none disables.
+# fail_on = "high"
+#~ Reuse results of unchanged stages from earlier scans.
+# cache = true
+#~ Default time limit of one pipeline stage, in seconds.
+# stage_timeout_seconds = 1800
+#~ Per-stage or per-group time limits in seconds that override the default.
+# stage_timeouts = {}
+#~ Size budget of the stage cache, in megabytes, used when pruning.
+# cache_max_size_mb = 2048
+#~ Number of most recent scans whose cache entries survive pruning.
+# cache_keep_scans = 5
+
+#~ What may leave the machine. L3 sends a redacted, pseudonymised minimal slice.
+#~ What may leave the machine.
+[privacy]
+#~ Default privacy level for every path.
+level = "L3"
+#~ Floor that no configured level may be weaker than.
+# min_level = "L1"
+#~ Minimum privacy level per provider trust tier.
+# provider_tier_levels = {local = "L1", private = "L2", public = "L3"}
+#~ Globs whose content is never prepared for egress at any level.
+# never_send = ["**/.env", "**/.env.*", "**/*.pem", "**/*.key", "**/*.p12", "**/*.pfx", "**/*.jks", "**/id_rsa*", "**/id_ed25519*"]
+#~ Business words that must not appear verbatim in any payload.
+# domain_terms = []
+#~ File with one domain term per line; lines starting with # are comments.
+#? domain_terms_file = ""
+#~ Extra identifiers kept un-pseudonymised; every entry weakens privacy.
+# public_allowlist_extra = []
+
+#~ example: privacy.paths
+#~ Per-path rules; later rules win on overlap.
+#~ pattern: Glob relative to the project root.
+#~ level: Privacy level for matching files.
+#~ never_send: Never prepare matching files for egress at any level.
+# [[privacy.paths]]
+# pattern = "src/payments/**"
+# level = "L4"
+#
+# [[privacy.paths]]
+# pattern = "config/hsm/**"
+# never_send = true
+#~ end of example
+
+#~ Where the vault key comes from.
+[privacy.vault]
+#~ Source of the vault key: OS keyring, passphrase or key-management service.
+# key_source = "keyring"
+#~ Secret reference to the passphrase; required when key_source is passphrase.
+#? passphrase = "env:CODEKAVACH_VAULT_PASSPHRASE"
+
+#~ Language models. Keys are references, never values.
+#~ Language models and their providers.
+[llm]
+#~ False runs deterministic engines only; nothing leaves.
+# enabled = true
+#~ A provider id, or auto to pick the first usable one.
+# default_provider = "auto"
+#~ Overrides the model of the selected provider for this run.
+#? model = ""
+#~ False forbids every provider that is remote.
+# allow_remote = true
+#~ LLM tasks to run.
+# tasks = ["triage", "explain", "remediate", "summarise"]
+#~ Sampling temperature, 0.0 to 2.0.
+# temperature = 0.0
+#~ Maximum output tokens per request.
+# max_output_tokens = 2048
+#~ Timeout of one request in seconds.
+# timeout_seconds = 120
+#~ Retries of a failed request.
+# max_retries = 2
+#~ Models or samples asked per candidate.
+# consensus = 1
+#~ Cache responses keyed on the payload hash.
+# cache = true
+
+#~ example: llm.providers
+#~ Named providers; mock is always present.
+#~ kind: Adapter kind.
+#~ enabled: Whether the provider may be selected.
+#~ model: Model identifier sent to the provider.
+#~ base_url: Endpoint URL; where payloads and the API key are sent.
+#~ allow_insecure_http: Accept plain http to a host outside the machine or private network.
+#~ api_key: Secret reference to the API key.
+#~ trust_tier: Trust tier; derived from the kind and host when unset.
+#~ region: Cloud region (bedrock).
+#~ aws_profile: AWS profile name (bedrock).
+#~ azure_deployment: Deployment name (azure-openai).
+#~ api_version: API version (azure-openai).
+#~ cassette_dir: Directory of recorded responses (replay).
+#~ command: Command line of the local CLI to run (cli-bridge).
+#~ options: Adapter-specific options.
+# [llm.providers.primary]
+# kind = "anthropic"
+# model = "claude-sonnet-5"
+# api_key = "env:ANTHROPIC_API_KEY"
+#
+# [llm.providers.local]
+# kind = "ollama"
+# model = "llama3.1"
+# base_url = "http://127.0.0.1:11434"
+#~ end of example
+
+#~ Limits for one scan.
+[llm.budget]
+#~ Maximum LLM requests.
+#? max_requests = 0
+#~ Maximum input tokens across all requests.
+#? max_total_input_tokens = 0
+#~ Maximum output tokens across all requests.
+#? max_total_output_tokens = 0
+#~ Maximum estimated cost in US dollars.
+#? max_cost_usd = 0.0
+
+#~ Report formats, destination and cover details.
+#~ Which reports are written and how.
+[reporting]
+#~ Report formats to write.
+# formats = ["html", "sarif", "json"]
+#~ Directory for reports, relative to the project root.
+# output_dir = "codekavach-report"
+#~ Report title; defaults to 'Secure Source Code Review: <project name>'.
+#? title = ""
+#~ Classification printed in header and footer.
+# classification = "Confidential"
+#~ Reviewing person or firm, for document control.
+#? auditor = ""
+#~ PNG or SVG image for the cover.
+#? logo = ""
+#~ Override directory for report templates.
+#? template_dir = ""
+#~ Findings below this are summarised, not detailed.
+# min_severity = "info"
+#~ Lines shown around each evidence line.
+# snippet_context_lines = 3
+#~ Include the section showing what left the environment.
+# include_privacy_attestation = true
+#~ Compliance frameworks findings are mapped to.
+# compliance = ["owasp-top10", "cwe-top25", "pci-dss", "iso27001", "nist-ssdf"]
+
+#~ Deterministic analysers and their options.
+#~ Which analysers run and how.
+[engines]
+#~ External engine ids to run; empty means every installed engine applicable to the detected languages.
+# enabled = []
+#~ External engine ids that are not run.
+# disabled = []
+#~ Time limit per engine in seconds.
+# timeout_seconds = 600
+#~ Native rule packs from rules/.
+# rule_packs = ["default"]
+#~ Extra directories of native YAML rules.
+# rule_paths = []
+
+#~ example: engines.options
+#~ Per-engine overrides keyed by engine id.
+#~ enabled: Force the engine on or off; beats the section lists.
+#~ executable: Path of the engine executable instead of the one found on PATH.
+#~ args: Extra command-line arguments passed to the engine.
+#~ env_passthrough: Names of environment variables the sandboxed engine may see.
+#~ timeout_seconds: Time limit for this engine in seconds.
+#~ options: Engine-specific options passed to its adapter.
+# [engines.options.semgrep]
+# timeout_seconds = 900
+# args = ["--metrics=off"]
+#~ end of example
+
+#~ Built-in analysers.
+[engines.native]
+#~ Native pattern rules.
+# rules = true
+#~ Native taint analysis.
+# taint = true
+#~ Native secret detection.
+# secrets = true
+#~ Native software composition analysis.
+# sca = true
+#~ Native infrastructure-as-code checks.
+# iac = true
+
+#~ External systems that receive findings; all are off by default.
+#~ External systems that receive findings.
+[integrations]
+
+#~ GitHub issue, board, SARIF and check sync.
+[integrations.github]
+#~ Master switch of the GitHub integration.
+# enabled = false
+#~ Target repository written as owner/name.
+#? repository = ""
+#~ API base URL; GitHub Enterprise Server is allowed, https only.
+# api_url = "https://api.github.com/"
+#~ Secret reference to the token; env:GITHUB_TOKEN or env:GH_TOKEN when unset.
+#? token = "env:GITHUB_TOKEN"
+#~ Log intended writes without performing them.
+# dry_run = true
+#~ Raise one issue per finding.
+# issue_sync = false
+#~ Close issues whose finding no longer appears.
+# close_resolved = true
+#~ Lowest severity for which an issue is raised.
+# min_severity_for_issues = "medium"
+#~ Largest number of issues created or updated in one run.
+# max_issues_per_run = 50
+#~ Prefix of the labels the integration applies.
+# labels_prefix = "codekavach"
+#~ Organisation or user that owns the Projects v2 board.
+#? project_owner = ""
+#~ Number of the Projects v2 board.
+#? project_number = 0
+#~ Upload SARIF to code scanning.
+# sarif_upload = false
+#~ Create check runs and annotations.
+# checks = false
+
+#~ The MCP server.
+[integrations.mcp]
+#~ Start the MCP server.
+# enabled = false
+#~ Transport of the MCP server.
+# transport = "stdio"
+#~ Host and port the HTTP transport listens on.
+# bind = "127.0.0.1:8765"
+#~ Allow the HTTP transport to listen on a non-loopback address.
+# allow_non_loopback = false
+
+#~ Which installed plugins may load.
+#~ Which installed plugins may load.
+[plugins]
+#~ Distributions whose plugins may load; empty allows all, and codekavach itself is always allowed.
+# allow_distributions = []
+#~ Plugins to disable, written as kind:name, for example engine:semgrep.
+# disable = []
+
+#~ Diagnostics on stderr; never contains client code.
+#~ Diagnostic logging on stderr.
+[logging]
+#~ Lowest level of events that are written.
+# level = "info"
+#~ Human-readable console text or one JSON object per line.
+# format = "console"
+
+#~ Named overlays selected with --profile or the profile key above.
+#~ example: profiles
+#~ Named profile overlays, interpreted by the profile layer.
+# [profiles.nightly]
+# extends = "ci"
+# description = "Nightly pipeline run"
+#
+# [profiles.nightly.scan]
+# fail_on = "medium"
+#~ end of example

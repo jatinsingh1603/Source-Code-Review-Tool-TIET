@@ -1,0 +1,11 @@
+#:schema https://raw.githubusercontent.com/jatinsingh1603/Source-Code-Review-Tool-TIET/main/docs/schemas/codekavach.schema.json
+#~ CodeKavach configuration. Reference: docs/configuration/reference.md
+#~ Precedence: defaults < user config < this file < profile < CODEKAVACH_* env < CLI flags.
+#~ Never put API keys here. Use references: "env:NAME", "keyring:codekavach/NAME" or "file:/path".
+config_version = 1
+
+[project]
+name = "payments-api"
+
+[privacy]
+level = "L3"
