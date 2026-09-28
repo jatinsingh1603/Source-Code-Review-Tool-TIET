@@ -6,7 +6,8 @@
 #                          ssl, ...) and namespace-package SDKs (google.*, azure) cannot be told
 #                          apart by import-linter, which squashes external packages to their top
 #                          level, so they are banned with ruff TID251 in pyproject.toml instead.
-# i2-llm-no-raw-code       I2: the LLM layer never imports packages that handle raw client code.
+# i2-llm-no-raw-code       I2: the LLM layer never imports packages that handle raw client code,
+#                          nor the raw-data model modules of core.models (E02-28).
 #                          Indirect imports are allowed on purpose: codekavach.llm may import
 #                          egress types, and the egress guard imports the vault.
 # i3-vault-locality        I3: the vault is not importable from analysis, LLM, risk, report or
@@ -77,6 +78,19 @@ forbidden_modules =
     codekavach.privacy.ir
     codekavach.privacy.restore
     codekavach.privacy.vault
+    codekavach.core.models.slice
+    codekavach.core.models.evidence
+    codekavach.core.models.candidate
+    codekavach.core.models.finding
+    codekavach.core.models.location
+    codekavach.core.models.taint
+    codekavach.core.models.scan
+    codekavach.core.models.fingerprint
+# allow_indirect_imports is required (E02-28): the LLM layer legitimately imports
+# codekavach.core.models (whose sanitised submodules import location and friends) and
+# codekavach.privacy.egress (for the EgressTicket, I1), which reaches the vault indirectly.
+# This contract therefore covers direct imports only; the AST guard in
+# tests/privacy/test_i2_static_guard.py covers names (rules R1 and R1b).
 allow_indirect_imports = True
 
 [importlinter:contract:i3-vault-locality]

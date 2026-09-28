@@ -46,6 +46,13 @@ VIOLATIONS = {
         },
         "i2-llm-no-raw-code",
     ),
+    "i2-llm-imports-slice-model": (
+        {
+            "codekavach/llm/tasks/bad.py": "from codekavach.core.models.slice import CodeSlice\n",
+            "codekavach/core/models/slice.py": "CodeSlice = 1\n",
+        },
+        "i2-llm-no-raw-code",
+    ),
     "i1-report-httpx": ({"codekavach/report/render/bad.py": "import httpx\n"}, "i1-single-egress"),
     "i1-sca-requests": (
         {"codekavach/analysis/sca/bad.py": "import requests\n"},

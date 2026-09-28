@@ -47,3 +47,34 @@ Example budgets come from the profiles registered in `tests/conftest.py` and sel
 | `nightly` | 2000 | |
 
 An unknown profile name stops the run with a usage error. `tests/unit/support/test_model_strategies.py` checks every strategy with 200 examples and all health checks active.
+
+## How I2 is enforced
+
+Invariant I2 (`docs/ARCHITECTURE.md` section 6.3) says that `codekavach.llm` accepts `SanitisedPayload` only, never raw code. It is enforced at three levels.
+
+1. **Types (E02-06).** Raw and sanitised text are different wrapper types (`RawCode` and `SanitisedText`). Neither is a `str`.
+2. **Import contract (E02-28).** The import-linter contract `i2-llm-no-raw-code` in `.importlinter` forbids direct imports from `codekavach.llm` of:
+   - the raw-code packages;
+   - the vault;
+   - the raw-data model modules (`slice`, `evidence`, `candidate`, `finding`, `location`, `taint`, `scan`, `fingerprint`).
+
+   Indirect imports are allowed on purpose, because `codekavach.core.models` and the egress guard legitimately reach those modules.
+3. **Static AST guard (E02-28).** `tests/privacy/test_i2_static_guard.py`, with the rules in `tests/privacy/_i2_guard.py`, parses every file under `src/` and fails the build with `path:line: I2 violation: <rule>` when one of these rules is broken:
+
+| Rule | What it forbids |
+|------|-----------------|
+| R1 | A name from `codekavach.core.models` used in `codekavach.llm` that is not on the allow-list. This includes aliased imports, attributes of module aliases, star imports and imports under `TYPE_CHECKING`. |
+| R1b | Any identifier in `codekavach.llm` that equals a raw model name, wherever it was imported from. String annotations are parsed and count too. |
+| R2 | `SanitisedText(...)` constructed outside `codekavach.privacy`, `core/models/text.py` and `tests/`. |
+| R3 | A call to `.expose()` in `codekavach.llm`. |
+| R4 | A call to `open()`, `.read_text()` or `.read_bytes()` in `codekavach.llm`, except in files listed in `LLM_FILE_IO_ALLOWLIST`, which starts empty. |
+
+The allow-list is derived, not hand-written. It contains:
+
+- every model whose `DATA_CLASSIFICATION` is `sanitised` or `untrusted`;
+- every enum;
+- the neutral names in `LLM_NEUTRAL_ALLOWLIST`, each with a reason.
+
+Because `DATA_CLASSIFICATION` defaults to `raw`, a new model is forbidden in the LLM layer until someone classifies it (fail closed).
+
+**Limits.** The guard checks names and imports statically. It does not prove that a string passed around at run time is clean; that is the job of the egress guard (E12). It cannot see `importlib.import_module` or `__import__`. Relaxing a rule or extending an allow-list is a privacy-relevant change: explain it in the closing comment of the issue that makes it (AGENTS.md section 4).
