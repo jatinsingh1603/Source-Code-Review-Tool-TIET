@@ -1,0 +1,7 @@
+   seq  timestamp             outcome                      provider/model  level  task  candidate  payload  tokens (prompt/completion)
+     1  2026-10-05T04:30:00Z  sent (no response recorded)  mock/mock-1  L3  triage  cand_01ARYZ6S410000000000000001  payload 564f164d9b91  tokens 120/-
+     2  2026-10-05T04:30:01Z  sent (no response recorded)  mock/mock-1  L3  triage  cand_01ARYZ6S410000000000000001  payload 564f164d9b91  tokens 120/-
+     3  2026-10-05T04:30:02Z  sent (no response recorded)  mock/mock-1  L3  triage  cand_01ARYZ6S410000000000000001  payload 564f164d9b91  tokens 120/-
+outcomes: sent 3
+providers: mock 3
+these payloads were recorded but not transmitted (mock or replay provider)

@@ -29,6 +29,7 @@ from rich.text import Text
 from codekavach.cli.backends import load_backend
 from codekavach.cli.context import get_context, with_target
 from codekavach.cli.errors import PrivacyBlockError, UsageError
+from codekavach.cli.ledger import ledger_app
 from codekavach.cli.output import TABLE_BOX, get_output, simple_table, to_jsonable
 
 if TYPE_CHECKING:
@@ -47,6 +48,7 @@ privacy_app = typer.Typer(
     help="Inspect what is prepared for, and recorded as sent to, LLM providers.",
     no_args_is_help=True,
 )
+privacy_app.add_typer(ledger_app, name="ledger")
 
 
 class PayloadSource(Protocol):
