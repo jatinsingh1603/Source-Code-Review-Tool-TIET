@@ -111,6 +111,9 @@ class ArtefactStore(Protocol):
     def bind(self, key: str, ref: ArtefactRef) -> None:
         """Point ``key`` at content that is already stored (a cache hit)."""
 
+    def bind_part(self, key: str, part: str, digest: str) -> None:
+        """Point one part of a multi-provider key at stored content; other parts are kept."""
+
     def discard(self, key: str, *, part: str | None = None) -> None:
         """Remove ``key`` or one of its parts; idempotent."""
 

@@ -16,18 +16,27 @@ Default-level logs and events carry exception class names only; exception messag
 and engines often fill with a quoted source line, appear only in a DEBUG record.
 """
 
+import dataclasses
 import os
 import queue
 import re
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from codekavach.core.log import get_logger
 from codekavach.core.models import ScanStatus
 from codekavach.core.models.timeutil import utc_now
+from codekavach.core.pipeline.cache import (
+    ConfigFingerprints,
+    StageCache,
+    StageCacheRecord,
+    compute_stage_key,
+    input_digests,
+)
 from codekavach.core.pipeline.cancel import ScanCancelledError
 from codekavach.core.pipeline.context import RunContext
 from codekavach.core.pipeline.errors import UnsatisfiedRequirementError
@@ -43,7 +52,11 @@ from codekavach.core.pipeline.events import (
     WarningRaised,
 )
 from codekavach.core.pipeline.execution import resolve_timeout, run_with_deadline
-from codekavach.core.pipeline.keys import ITEM_FAILURES, is_multi_provider
+from codekavach.core.pipeline.keys import (
+    ITEM_FAILURES,
+    is_multi_provider,
+    matches_stage_selector,
+)
 from codekavach.core.pipeline.plan import RunPlan
 from codekavach.core.pipeline.policy import (
     LOCKED_CATEGORIES,
@@ -54,6 +67,7 @@ from codekavach.core.pipeline.policy import (
 )
 from codekavach.core.pipeline.result import PipelineResult, StageOutcome, StageRun
 from codekavach.core.pipeline.stage import FailurePolicy, Stage, StageInfo
+from codekavach.core.store.base import ArtefactError, ArtefactRef
 from codekavach.core.store.scoped import StageScopedStore, UndeclaredAccessError
 
 INITIAL = "<initial>"
@@ -125,9 +139,22 @@ class Orchestrator:
         *,
         clock: Callable[[], datetime] = utc_now,
         monotonic: Callable[[], float] = time.monotonic,
+        cache: StageCache | None = None,
+        use_cache: bool = True,
+        refresh: Collection[str] = (),
+        version: str = "0",
     ) -> None:
         self._clock = clock
         self._monotonic = monotonic
+        self._cache = cache
+        self._use_cache = use_cache
+        self._refresh = tuple(refresh)
+        self._version = version
+        self._cache_lock = threading.Lock()
+        self._stage_keys: dict[str, str] = {}
+        self._fingerprints: ConfigFingerprints | None = None
+        self._hits = 0
+        self._misses = 0
         self._abandoned: list[tuple[str, threading.Thread]] = []
         self._abandoned_lock = threading.Lock()
         self._items_lock = threading.Lock()
@@ -230,6 +257,9 @@ class Orchestrator:
                 WarningRaised(scan_id=ctx.scan_id, stage=info.name, code="partial_input")
             )
             break
+        stage_key, cached = self._try_cache(plan, info, ctx, runs)
+        if cached is not None:
+            return cached
         ctx.events.publish(
             StageStarted(scan_id=ctx.scan_id, stage=info.name, index=index, total=len(plan.order))
         )
@@ -277,8 +307,12 @@ class Orchestrator:
             return self._failed(
                 ctx=ctx, runs=runs, state=state, info=info, error=error, timing=timing
             )
-        run = self._timed(info.name, StageOutcome.SUCCEEDED, timing)
+        run = dataclasses.replace(
+            self._timed(info.name, StageOutcome.SUCCEEDED, timing), stage_key=stage_key
+        )
         self._record(ctx, runs, run)
+        if stage_key is not None and self._cache_writable(info):
+            self._write_record(info, stage_key, ctx, timing.duration_ms)
         _log.info(
             "stage_finished", stage=info.name, outcome="succeeded", duration_ms=timing.duration_ms
         )
@@ -378,6 +412,10 @@ class Orchestrator:
         with self._abandoned_lock:
             self._abandoned = []
         self._write_item_failures(ctx, force=True)
+        with self._cache_lock:
+            self._stage_keys = {}
+            self._fingerprints = ConfigFingerprints(ctx.config)
+            self._hits = self._misses = 0
         workers = max_workers(ctx)
         for wave in plan.waves:
             if self._stop_before(ctx, state, wave[0]):
@@ -514,6 +552,123 @@ class Orchestrator:
         )
         return _WaveOutcome(user_cancelled=user_cancelled or self._user_cancelled(ctx, state))
 
+    # stage cache (E04-21)
+
+    def _stage_key(self, plan: RunPlan, info: StageInfo, ctx: RunContext) -> str | None:
+        """Compute and remember the key of ``info`` (also for stages that are not cacheable)."""
+        if self._cache is None:
+            return None
+        producers = {
+            key: name for name, other in plan.infos.items() for key in other.transient_provides
+        }
+        with self._cache_lock:
+            known = dict(self._stage_keys)
+            fingerprints = self._fingerprints
+        digests = input_digests(
+            info, ctx.artefacts, transient_producers=producers, stage_keys=known
+        )
+        if digests is None or fingerprints is None:
+            return None
+        key = compute_stage_key(
+            info,
+            config_fp=fingerprints.of(info.config_sections),
+            salt_fp=ctx.scan_salt.fingerprint() if info.salt_dependent else None,
+            input_digests=digests,
+        )
+        with self._cache_lock:
+            self._stage_keys[info.name] = key
+        return key
+
+    def _try_cache(
+        self, plan: RunPlan, info: StageInfo, ctx: RunContext, runs: list[StageRun]
+    ) -> tuple[str | None, StageRun | None]:
+        """The stage key, and the ``cached`` run when the stage was served from the cache."""
+        stage_key = self._stage_key(plan, info, ctx)
+        if stage_key is None or not self._cache_eligible(info):
+            return stage_key, None
+        return stage_key, self._serve_from_cache(info, stage_key, ctx, runs)
+
+    def _cache_writable(self, info: StageInfo) -> bool:
+        return self._cache is not None and info.cacheable and not info.transient_provides
+
+    def _cache_eligible(self, info: StageInfo) -> bool:
+        refreshed = any(matches_stage_selector(info, selector) for selector in self._refresh)
+        eligible = self._cache_writable(info) and self._use_cache and not refreshed
+        if self._cache_writable(info) and not eligible:
+            with self._cache_lock:
+                self._misses += 1
+        return eligible
+
+    def _serve_from_cache(
+        self, info: StageInfo, stage_key: str, ctx: RunContext, runs: list[StageRun]
+    ) -> StageRun | None:
+        """Bind the recorded outputs and record a ``cached`` run, or ``None`` on a miss."""
+        assert self._cache is not None  # noqa: S101 - _cache_eligible checked it
+        record = self._cache.lookup(stage_key)
+        if record is None or set(record.outputs) != set(info.provides):
+            with self._cache_lock:
+                self._misses += 1
+            return None
+        try:
+            for key, output in sorted(record.outputs.items()):
+                parts = output.get("parts") or []
+                if parts:
+                    for part, digest in parts:
+                        ctx.artefacts.bind_part(key, str(part), str(digest))
+                else:
+                    ref = ArtefactRef(key, str(output["digest"]), int(output["size"]))
+                    ctx.artefacts.bind(key, ref)
+        except (ArtefactError, KeyError, TypeError, ValueError):
+            _log.warning("stage_cache_stale", stage=info.name)
+            self._discard_outputs(info, ctx)
+            self._cache.invalidate(stage_key)
+            with self._cache_lock:
+                self._misses += 1
+            return None
+        run = StageRun(
+            stage=info.name, outcome=StageOutcome.CACHED, duration_ms=0, stage_key=stage_key
+        )
+        self._record(ctx, runs, run)
+        with self._cache_lock:
+            self._hits += 1
+        _log.info("stage_finished", stage=info.name, outcome="cached", duration_ms=0)
+        ctx.events.publish(
+            StageFinished(scan_id=ctx.scan_id, stage=info.name, outcome="cached", duration_ms=0)
+        )
+        return run
+
+    def _write_record(
+        self, info: StageInfo, stage_key: str, ctx: RunContext, duration_ms: int
+    ) -> None:
+        """Record what a successful cacheable stage produced (digests, sizes, its own parts)."""
+        assert self._cache is not None  # noqa: S101 - _cache_writable checked it
+        outputs: dict[str, dict[str, Any]] = {}
+        for key in sorted(info.provides):
+            ref = ctx.artefacts.ref(key)
+            if ref is None:
+                return
+            if is_multi_provider(key):
+                own = [[part, digest] for part, digest in ref.parts if part == info.name]
+                if not own:
+                    return
+                outputs[key] = {"digest": None, "size": None, "parts": own}
+            elif ref.digest is None:
+                return  # transient output: never cached
+            else:
+                outputs[key] = {"digest": ref.digest, "size": ref.size, "parts": []}
+        record = StageCacheRecord(
+            stage=info.name,
+            stage_key=stage_key,
+            outputs=outputs,
+            created_at=self._clock().isoformat(),
+            codekavach_version=self._version,
+            duration_ms=duration_ms,
+        )
+        try:
+            self._cache.store(record)
+        except OSError:
+            _log.warning("stage_cache_write_failed", stage=info.name)
+
     def _write_item_failures(self, ctx: RunContext, *, force: bool = False) -> None:
         """Refresh ``scan.item_failures`` in the inner store when stages added failures (E04-20).
 
@@ -561,7 +716,7 @@ class Orchestrator:
             {
                 key
                 for run in runs
-                if run.outcome is StageOutcome.SUCCEEDED
+                if run.outcome in {StageOutcome.SUCCEEDED, StageOutcome.CACHED}
                 for key in plan.infos[run.stage].provides
             }
         )
@@ -576,6 +731,8 @@ class Orchestrator:
             egress_locked=state.egress_locked,
             abandoned_threads=len(state.abandoned),
             item_failures=ctx.item_failures.snapshot(),
+            cache_hits=self._hits,
+            cache_misses=self._misses,
             started_at=started_at,
             finished_at=self._clock(),
         )

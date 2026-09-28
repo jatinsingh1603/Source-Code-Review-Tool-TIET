@@ -7,7 +7,7 @@ Every stage gets a ``StageScopedStore`` instead of the shared store:
 - reads are limited to ``requires | optional_requires | provides``;
 - writes are limited to ``provides``, a multi-provider part is always named after the stage, and
   a transient key must be written with ``persist=False`` (any other key with ``persist=True``);
-- ``bind`` (serving a cache hit) is reserved for the orchestrator;
+- ``bind`` and ``bind_part`` (serving a cache hit) are reserved for the orchestrator;
 - after ``revoke()`` every call raises ``StageRevokedError``. The revocation check and the
   delegated call happen under one lock, so no write lands after ``revoke()`` has returned.
 
@@ -128,6 +128,12 @@ class StageScopedStore:
         with self._lock:
             self._check_open()
             raise UndeclaredAccessError(self._info.name, key, "bind")
+
+    def bind_part(self, key: str, part: str, digest: str) -> None:
+        """Not available to stages: only the orchestrator serves cache hits."""
+        with self._lock:
+            self._check_open()
+            raise UndeclaredAccessError(self._info.name, f"{key}[{part}]", "bind")
 
     # reads
 

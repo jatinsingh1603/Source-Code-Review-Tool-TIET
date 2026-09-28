@@ -40,11 +40,12 @@ from codekavach.core.pipeline.budget import (
     LLM_REQUESTS,
     Budget,
 )
+from codekavach.core.pipeline.cache import StageCache
 from codekavach.core.pipeline.cancel import CancellationToken
 from codekavach.core.pipeline.context import ConsentDecision, RunContext
 from codekavach.core.pipeline.events import EventBus, NullEventBus
 from codekavach.core.pipeline.orchestrator import Orchestrator
-from codekavach.core.pipeline.plan import build_plan
+from codekavach.core.pipeline.plan import PlanError, build_plan
 from codekavach.core.pipeline.result import PipelineResult
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.plugins.registry import PluginRegistry, registry_from_environment
@@ -216,16 +217,27 @@ def run_scan(
     store: ArtefactStore | None = None,
     clock: Callable[[], datetime] = utc_now,
     consent: ConsentDecision | None = None,
+    use_cache: bool | None = None,
+    refresh: Collection[str] = (),
 ) -> ScanOutcome:
     """Run one scan of ``target`` with the loaded configuration.
 
+    ``use_cache`` (default ``scan.cache``) lets unchanged cacheable stages be served from the
+    stage cache (E04-21); ``refresh`` names stages or groups that must run anyway. Records are
+    written even with ``use_cache=False``. The cache is used only with the default on-disk store,
+    whose blobs the records point at.
+
     Raises:
         ValueError: ``target`` carries credentials (nothing is written).
-        PlanError, GraphError: the plan cannot be built (nothing has run).
+        PlanError, GraphError: the plan cannot be built, or a ``refresh`` selector matches no
+            stage (``unknown_stage_selector``); nothing has run.
     """
     check_target(target)
     settings = loaded.settings
     plan = build_plan(registry or registry_from_environment(), settings, skip=skip, until=until)
+    for selector in sorted(refresh):
+        if not any(keys.matches_stage_selector(info, selector) for info in plan.infos.values()):
+            raise PlanError("unknown_stage_selector", repr(selector))
     layout = _prepare_state(loaded)
     scan_id = scan_id or new_scan_id()
     artefacts = store if store is not None else OnDiskArtefactStore(layout, scan_id)
@@ -249,7 +261,15 @@ def run_scan(
         state_dir=layout.root,
         consent=consent,
     )
-    result = Orchestrator(clock=clock).run(plan, ctx)
+    cache = StageCache(layout) if store is None else None
+    orchestrator = Orchestrator(
+        clock=clock,
+        cache=cache,
+        use_cache=settings.scan.cache if use_cache is None else use_cache,
+        refresh=refresh,
+        version=codekavach_version(),
+    )
+    result = orchestrator.run(plan, ctx)
     scan = assemble_scan(
         result=result, store=artefacts, settings=settings, project=project, clock=clock
     )

@@ -173,6 +173,15 @@ class InMemoryArtefactStore:
             size = sum(len(self._content[digest].data) for _, digest in parts)
             return ArtefactRef(key=key, digest=parts_digest(parts), size=size, parts=parts)
 
+    def bind_part(self, key: str, part: str, digest: str) -> None:
+        """Point one part of ``key`` at stored content; the other parts are kept."""
+        multi_key(key)
+        check_part(part)
+        with self._lock:
+            if digest not in self._content:
+                raise ArtefactMissingError(f"no stored content for part {part!r}")
+            self._parts.setdefault(key, {})[part] = digest
+
     def bind(self, key: str, ref: ArtefactRef) -> None:
         """Point ``key`` at stored content named by ``ref`` (digest or parts)."""
         check_key(key)

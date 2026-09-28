@@ -110,6 +110,8 @@ class PipelineResult:
     egress_locked: bool = False
     abandoned_threads: int = 0
     item_failures: tuple["ItemFailure", ...] = ()
+    cache_hits: int = 0
+    cache_misses: int = 0
     started_at: datetime | None = None
     finished_at: datetime | None = None
 

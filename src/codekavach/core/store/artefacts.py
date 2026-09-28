@@ -274,6 +274,16 @@ class OnDiskArtefactStore:
             return None
         return self._multi_ref(key, binding)
 
+    def bind_part(self, key: str, part: str, digest: str) -> None:
+        """Point one part of ``key`` at an existing blob; the other parts are kept."""
+        multi_key(key)
+        check_part(part)
+        size = self._blob_size(key, digest)
+        with self._key_lock(key):
+            binding = self._read_binding(key) or {"v": BINDING_VERSION, "key": key, "parts": {}}
+            binding["parts"][part] = {"digest": digest, "size": size}
+            self._write_binding(key, binding)
+
     def bind(self, key: str, ref: ArtefactRef) -> None:
         """Point ``key`` at blobs that already exist, without rewriting them."""
         check_key(key)

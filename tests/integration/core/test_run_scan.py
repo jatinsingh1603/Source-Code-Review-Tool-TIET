@@ -108,3 +108,31 @@ def test_credentials_in_target_write_nothing(repo: Path) -> None:
     with pytest.raises(ValueError, match="credentials"):
         run_scan(loaded(repo), target, salt=ScanSalt.generate(), registry=PluginRegistry([]))
     assert not (repo / ".codekavach").exists()
+
+
+def test_second_run_scan_is_served_from_the_stage_cache(fake_site: Path, repo: Path) -> None:
+    config = loaded(repo)
+    salt = ScanSalt.from_hex(SALT_HEX)
+    first = run_scan(config, str(repo), salt=salt, registry=registry(fake_site))
+    second = run_scan(config, str(repo), salt=salt, registry=registry(fake_site))
+    assert first.result.cache_hits == 0
+    assert second.result.cache_hits >= 2
+    outcomes = {run.stage: run.outcome for run in second.result.stage_runs}
+    assert outcomes["analyse-fake"] is StageOutcome.CACHED
+    assert outcomes["ingest"] is StageOutcome.SUCCEEDED
+    uncached = run_scan(config, str(repo), salt=salt, registry=registry(fake_site), use_cache=False)
+    assert uncached.result.cache_hits == 0
+
+
+def test_unknown_refresh_selector(fake_site: Path, repo: Path) -> None:
+    from codekavach.core.pipeline.plan import PlanError  # noqa: PLC0415
+
+    with pytest.raises(PlanError) as info:
+        run_scan(
+            loaded(repo),
+            str(repo),
+            salt=ScanSalt.from_hex(SALT_HEX),
+            registry=registry(fake_site),
+            refresh=["nope"],
+        )
+    assert info.value.code == "unknown_stage_selector"
