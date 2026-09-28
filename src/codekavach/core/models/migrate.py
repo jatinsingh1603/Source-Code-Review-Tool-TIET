@@ -151,7 +151,8 @@ def check_migration_completeness(models: Iterable[type[VersionedModel]]) -> list
         if not model.MIGRATABLE:
             continue
         problems.extend(
-            f"{model.__module__}.{model.__qualname__}: no migration from version {version}"
+            f"{model.__module__}.{model.__qualname__}: missing migration step "
+            f"{version} -> {version + 1}"
             for version in range(1, model.SCHEMA_VERSION)
             if (model, version) not in _REGISTRY
         )

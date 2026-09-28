@@ -15,7 +15,7 @@
 PYTEST_ARGS ?=
 
 .PHONY: help setup fmt fmt-check lint type contracts test test-unit test-integration test-e2e \
-	test-privacy cov check lock-check build adr clean hooks hooks-update
+	test-privacy cov check lock-check build adr clean hooks hooks-update schemas schemas-check
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "} {printf "  %-18s %s\n", $$1, $$2}'
@@ -65,6 +65,12 @@ hooks: ## Run every pre-commit hook on all files
 
 hooks-update: ## Update pre-commit hook revisions to their latest tags
 	uv run pre-commit autoupdate
+
+schemas: ## Re-export the JSON Schemas of the core models into docs/schemas
+	uv run python -m codekavach.core.models.export
+
+schemas-check: ## Check docs/schemas for drift and the models for missing migration steps
+	uv run python -m codekavach.core.models.export --check --check-migrations
 
 lock-check: ## Check that uv.lock matches pyproject.toml
 	uv lock --check

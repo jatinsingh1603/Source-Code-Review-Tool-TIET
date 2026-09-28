@@ -1,9 +1,10 @@
 import json
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
-from codekavach.core.models import export
+from codekavach.core.models import VersionedModel, export
 from codekavach.core.models.export import (
     EXPORTED_MODELS,
     HINT,
@@ -14,6 +15,8 @@ from codekavach.core.models.export import (
     main,
     snake_name,
 )
+from codekavach.core.models.location import Location
+from codekavach.core.models.migrate import register_migration, temporary_registry
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 FORBIDDEN_PAYLOAD_NAMES = {"path", "original", "value"}
@@ -131,3 +134,74 @@ def test_export_is_idempotent(tmp_path: Path) -> None:
 def test_repository_schemas_are_up_to_date() -> None:
     problems = check_schemas(REPO_ROOT / "docs" / "schemas")
     assert problems == [], f"{problems}; {export.HINT}"
+
+
+# drift and migration checks (E02-23)
+
+
+class LocationWithExtra(Location):
+    extra_note: str | None = None
+
+
+class Bumped(VersionedModel):
+    SCHEMA_VERSION: ClassVar[int] = 2
+
+
+def _swap_location(monkeypatch: pytest.MonkeyPatch) -> None:
+    models = tuple(LocationWithExtra if m is Location else m for m in EXPORTED_MODELS)
+    LocationWithExtra.__name__ = "Location"
+    monkeypatch.setattr(export, "EXPORTED_MODELS", models)
+
+
+def test_drift_with_extra_location_field(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    _swap_location(monkeypatch)
+    assert main(["--check", "--out", str(REPO_ROOT / "docs" / "schemas")]) == 1
+    output = capsys.readouterr().out
+    assert "stale: location.schema.json" in output
+    assert HINT in output
+    assert "::error" not in output
+
+
+def test_check_migrations_exit_codes(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    assert main(["--check-migrations"]) == 0
+    monkeypatch.setattr(export, "EXPORTED_MODELS", (*EXPORTED_MODELS, Bumped))
+    assert main(["--check-migrations"]) == 1
+    output = capsys.readouterr().out
+    assert "Bumped: missing migration step 1 -> 2" in output
+    with temporary_registry():
+        register_migration(Bumped, 1)(lambda data: data)
+        assert main(["--check-migrations"]) == 0
+
+
+def test_both_checks_report_both_problems(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    _swap_location(monkeypatch)
+    monkeypatch.setattr(export, "EXPORTED_MODELS", (*export.EXPORTED_MODELS, Bumped))
+    out = str(REPO_ROOT / "docs" / "schemas")
+    assert main(["--check", "--check-migrations", "--out", out]) == 1
+    output = capsys.readouterr().out
+    assert "location.schema.json" in output
+    assert "1 -> 2" in output
+
+
+def test_github_annotations(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setattr(export, "EXPORTED_MODELS", (*EXPORTED_MODELS, Bumped))
+    main(["--out", str(tmp_path)])
+    capsys.readouterr()
+    (tmp_path / "location.schema.json").write_text("{}\n", encoding="utf-8")
+    assert main(["--check", "--check-migrations", "--out", str(tmp_path)]) == 1
+    lines = capsys.readouterr().out.splitlines()
+    location = f"::error file={(tmp_path / 'location.schema.json').as_posix()}::schema is stale"
+    assert any(line.startswith(location) for line in lines)
+    assert any(line.startswith("::error::") and "1 -> 2" in line for line in lines)

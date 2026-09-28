@@ -63,6 +63,12 @@ _segment = st.text(
 _parts = st.lists(st.one_of(_segment, st.sampled_from([".", "", ".."])), min_size=1, max_size=6)
 
 
+@pytest.mark.parametrize("value", ["./A:", "./C:/x.py", ".//d:x"])
+def test_dot_prefix_does_not_hide_a_drive(value: str) -> None:
+    with pytest.raises(ValueError, match="drive letter"):
+        normalise_repo_path(value)
+
+
 @given(_parts, st.booleans())
 def test_normalisation_is_idempotent_and_clean(parts: list[str], backslash: bool) -> None:
     raw = ("\\" if backslash else "/").join(parts)

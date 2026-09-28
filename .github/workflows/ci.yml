@@ -37,6 +37,10 @@ jobs:
       - run: make lock-check fmt-check lint
         env:
           UV_NO_SYNC: "1"
+      - name: Schema drift check
+        run: uv run python -m codekavach.core.models.export --check --check-migrations
+        env:
+          UV_NO_SYNC: "1"
 
   typecheck:
     runs-on: ubuntu-latest

@@ -69,6 +69,12 @@ repos:
         language: system
         pass_filenames: false
         files: ^(src/|\.importlinter$)
+      - id: codekavach-schema-drift
+        name: schema drift and migration completeness (E02-23)
+        entry: uv run python -m codekavach.core.models.export --check --check-migrations
+        language: system
+        pass_filenames: false
+        files: ^(src/codekavach/core/models/|docs/schemas/)
       - id: forbid-runtime-artefacts
         name: forbid runtime artefacts and local secrets
         entry: uv run python tools/dev/forbid_runtime_artefacts.py

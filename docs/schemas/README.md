@@ -11,6 +11,14 @@ uv run python -m codekavach.core.models.export --check  # report drift, exit 1 i
 
 The test suite runs the check too, so a plain `uv run pytest` catches a stale schema.
 
+**After changing a model, run the export and commit the schema files in the same commit.** Three gates check this before and after a push:
+
+- the `codekavach-schema-drift` pre-commit hook, which runs when files under `src/codekavach/core/models/` or `docs/schemas/` are staged;
+- the "Schema drift check" step of the CI lint job;
+- `make schemas-check`.
+
+All three run `--check --check-migrations`. The second flag reports any versioned model whose `SCHEMA_VERSION` was raised without registering the upgrade step (see `docs/reference/model-versioning.md`). The hook never rewrites files; fix the drift with `make schemas` (or the command above) and stage the result.
+
 ## Files
 
 | File | Contents |

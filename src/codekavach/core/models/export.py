@@ -3,16 +3,20 @@
 Owning epic: E02. ADR decision D8: the export is a module entry point, not a CLI command.
 
 Usage:
-    python -m codekavach.core.models.export [--out DIR] [--check]
+    python -m codekavach.core.models.export [--out DIR] [--check] [--check-migrations]
 
 Each file stands alone (``$defs`` inlined per file) and is written deterministically: sorted keys,
 two-space indent, UTF-8, LF line endings and no timestamps, tool versions or absolute paths.
 ``--check`` compares the files on disk with a fresh build byte for byte and never writes.
+``--check-migrations`` reports migratable models with a missing upgrade step (E02-21). Both
+checks exit 1 on a problem; under GitHub Actions they also print ``::error`` annotations. CI and
+the ``codekavach-schema-drift`` pre-commit hook run them (E02-23).
 """
 
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 from collections.abc import Sequence
@@ -25,6 +29,7 @@ from codekavach.core.models.egress import EgressRecord
 from codekavach.core.models.evidence import Evidence
 from codekavach.core.models.finding import Finding
 from codekavach.core.models.location import CodeRegion, Location
+from codekavach.core.models.migrate import check_migration_completeness
 from codekavach.core.models.payload import SanitisedPayload
 from codekavach.core.models.scan import Project, Scan
 from codekavach.core.models.slice import CodeSlice
@@ -52,6 +57,7 @@ INDEX_FILE = "index.json"
 OUTPUT_SCHEMA_FILE = "llm_verdict.output.schema.json"
 OUTPUT_SCHEMA_NAME = "LLMVerdictOutput"
 HINT = "run: uv run python -m codekavach.core.models.export"
+MIGRATION_HINT = "register the missing steps; see docs/reference/model-versioning.md"
 
 
 def snake_name(class_name: str) -> str:
@@ -136,20 +142,51 @@ def check_schemas(out_dir: Path) -> list[str]:
     return problems
 
 
+def _annotate(message: str, file: str | None = None) -> None:
+    """Print a GitHub Actions error annotation when running under GitHub Actions."""
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        where = f" file={file}" if file else ""
+        sys.stdout.write(f"::error{where}::{message}\n")
+
+
+def _drift(out_dir: Path) -> bool:
+    problems = check_schemas(out_dir)
+    for problem in problems:
+        sys.stdout.write(problem + "\n")
+        kind, name = problem.split(": ", 1)
+        _annotate(f"schema is {kind}, run the export", (out_dir / name).as_posix())
+    if problems:
+        sys.stdout.write(HINT + "\n")
+    return bool(problems)
+
+
+def _missing_migrations() -> bool:
+    versioned = [model for model in EXPORTED_MODELS if issubclass(model, VersionedModel)]
+    problems = check_migration_completeness(versioned)
+    for problem in problems:
+        sys.stdout.write(problem + "\n")
+        _annotate(problem)
+    if problems:
+        sys.stdout.write(MIGRATION_HINT + "\n")
+    return bool(problems)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Command line entry point."""
     parser = argparse.ArgumentParser(description="Export the JSON Schemas of the core models.")
     parser.add_argument("--out", type=Path, default=Path("docs/schemas"), help="target directory")
     parser.add_argument("--check", action="store_true", help="report drift and exit 1; no writes")
+    parser.add_argument(
+        "--check-migrations",
+        action="store_true",
+        help="report missing migration steps and exit 1; no writes",
+    )
     args = parser.parse_args(argv)
-    if args.check:
-        problems = check_schemas(args.out)
-        for problem in problems:
-            sys.stdout.write(problem + "\n")
-        if problems:
-            sys.stdout.write(HINT + "\n")
-            return 1
-        return 0
+    if args.check or args.check_migrations:
+        failed = _drift(args.out) if args.check else False
+        if args.check_migrations:
+            failed = _missing_migrations() or failed
+        return 1 if failed else 0
     for path in export_schemas(args.out):
         sys.stdout.write(f"{path}\n")
     return 0

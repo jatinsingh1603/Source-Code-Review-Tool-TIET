@@ -183,7 +183,7 @@ def test_completeness_check() -> None:
     register_migration(Incomplete, 2)(lambda data: data)
     problems = check_migration_completeness([Widget, Gadget, Frozen, Incomplete])
     assert len(problems) == 1
-    assert problems[0].endswith("Incomplete: no migration from version 1")
+    assert problems[0].endswith("Incomplete: missing migration step 1 -> 2")
 
 
 def test_real_models_are_complete() -> None:

@@ -43,6 +43,8 @@ def normalise_repo_path(value: str) -> str:
     if not segments:
         raise ValueError("repository path must name a file")
     result = "/".join(segments)
+    if _DRIVE.match(result):  # "./C:" loses its prefix and would become drive-relative
+        raise ValueError("repository path must not start with a drive letter")
     if len(result) > MAX_PATH_LENGTH:
         raise ValueError("repository path is longer than 1024 characters")
     return result
