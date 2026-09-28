@@ -56,7 +56,8 @@ repos:
         # goldens are byte-exact renderer output: the engine switch "secrets = true" and the
         # reference placeholders (api_key = "env:...") trip the keyword detector, and
         # test_config_show.py and test_starter.py assert that no secret value is ever rendered.
-        exclude: ^(uv\.lock|docs/schemas/index\.json|tests/golden/config/(show_effective(_origin)?|starter_full|starter_profile_demo)\.toml)$
+        # snapshot_demo.json holds the settings fingerprint, a SHA-256 in hex by design.
+        exclude: ^(uv\.lock|docs/schemas/index\.json|tests/golden/config/(show_effective(_origin)?|starter_full|starter_profile_demo)\.toml|tests/golden/config/snapshot_demo\.json)$
 
   - repo: local
     hooks:

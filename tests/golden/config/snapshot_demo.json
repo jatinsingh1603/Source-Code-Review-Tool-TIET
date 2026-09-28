@@ -1,0 +1,833 @@
+{
+  "codekavach_version": "0.0.0-test",
+  "created_at": "2026-10-01T09:30:00Z",
+  "fingerprint": "a14cb50b666948179666d99b0f6906c307142a2c3f648b4a652b2ac7a716847a",
+  "org_policies": [],
+  "origins": {
+    "config_version": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.disabled": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.enabled": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.native.iac": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.native.rules": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.native.sca": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.native.secrets": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.native.taint": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.options": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.rule_packs": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.rule_paths": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.timeout_seconds": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.api_url": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.checks": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.close_resolved": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.dry_run": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.enabled": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.issue_sync": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.labels_prefix": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.max_issues_per_run": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.min_severity_for_issues": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.project_number": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.project_owner": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.repository": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.github.sarif_upload": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.mcp.allow_non_loopback": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.mcp.bind": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.mcp.enabled": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "integrations.mcp.transport": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.allow_remote": {
+      "contributors": [],
+      "layer": "profile",
+      "line": null,
+      "source": "builtin:demo"
+    },
+    "llm.budget.max_cost_usd": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.budget.max_requests": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.budget.max_total_input_tokens": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.budget.max_total_output_tokens": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.cache": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.consensus": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.default_provider": {
+      "contributors": [],
+      "layer": "profile",
+      "line": null,
+      "source": "builtin:demo"
+    },
+    "llm.enabled": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.max_output_tokens": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.max_retries": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.model": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.allow_insecure_http": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.api_version": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.aws_profile": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.azure_deployment": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.base_url": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.cassette_dir": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.command": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.enabled": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.kind": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.model": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.options": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.region": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.trust_tier": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.tasks": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.temperature": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.timeout_seconds": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "logging.format": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "logging.level": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "plugins.allow_distributions": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "plugins.disable": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.domain_terms": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.domain_terms_file": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.level": {
+      "contributors": [],
+      "layer": "profile",
+      "line": null,
+      "source": "builtin:demo"
+    },
+    "privacy.min_level": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.never_send": {
+      "contributors": [
+        "default"
+      ],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.paths": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.provider_tier_levels.local": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.provider_tier_levels.private": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.provider_tier_levels.public": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.public_allowlist_extra": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.vault.key_source": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "profile": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "profiles": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "project.client": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "project.description": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "project.languages": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "project.name": {
+      "contributors": [],
+      "layer": "project",
+      "line": 2,
+      "source": "/repo/codekavach.toml"
+    },
+    "project.state_dir": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "reporting.auditor": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "reporting.classification": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "reporting.compliance": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "reporting.formats": {
+      "contributors": [],
+      "layer": "profile",
+      "line": null,
+      "source": "builtin:demo"
+    },
+    "reporting.include_privacy_attestation": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "reporting.logo": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "reporting.min_severity": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "reporting.output_dir": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "reporting.snippet_context_lines": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "reporting.template_dir": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "reporting.title": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.cache": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.cache_keep_scans": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.cache_max_size_mb": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.exclude": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.fail_on": {
+      "contributors": [],
+      "layer": "profile",
+      "line": null,
+      "source": "builtin:demo"
+    },
+    "scan.follow_symlinks": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.include": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.jobs": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.max_file_size_kb": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.max_files": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.max_total_size_mb": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.respect_gitignore": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.skip_stages": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.stage_timeout_seconds": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.stage_timeouts": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "scan.timeout_seconds": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    }
+  },
+  "profile": "demo",
+  "project_trust": "not-needed",
+  "schema_version": 1,
+  "settings": {
+    "config_version": 1,
+    "engines": {
+      "disabled": [],
+      "enabled": [],
+      "native": {
+        "iac": true,
+        "rules": true,
+        "sca": true,
+        "secrets": true,
+        "taint": true
+      },
+      "options": {},
+      "rule_packs": [
+        "default"
+      ],
+      "rule_paths": [],
+      "timeout_seconds": 600
+    },
+    "integrations": {
+      "github": {
+        "api_url": "https://api.github.com/",
+        "checks": false,
+        "close_resolved": true,
+        "dry_run": true,
+        "enabled": false,
+        "issue_sync": false,
+        "labels_prefix": "codekavach",
+        "max_issues_per_run": 50,
+        "min_severity_for_issues": "medium",
+        "project_number": null,
+        "project_owner": null,
+        "repository": null,
+        "sarif_upload": false
+      },
+      "mcp": {
+        "allow_non_loopback": false,
+        "bind": "127.0.0.1:8765",
+        "enabled": false,
+        "transport": "stdio"
+      }
+    },
+    "llm": {
+      "allow_remote": false,
+      "budget": {
+        "max_cost_usd": null,
+        "max_requests": null,
+        "max_total_input_tokens": null,
+        "max_total_output_tokens": null
+      },
+      "cache": true,
+      "consensus": 1,
+      "default_provider": "mock",
+      "enabled": true,
+      "max_output_tokens": 2048,
+      "max_retries": 2,
+      "model": null,
+      "providers": {
+        "mock": {
+          "allow_insecure_http": false,
+          "api_version": null,
+          "aws_profile": null,
+          "azure_deployment": null,
+          "base_url": null,
+          "cassette_dir": null,
+          "command": null,
+          "enabled": true,
+          "kind": "mock",
+          "model": null,
+          "options": {},
+          "region": null,
+          "trust_tier": null
+        }
+      },
+      "tasks": [
+        "triage",
+        "explain",
+        "remediate",
+        "summarise"
+      ],
+      "temperature": 0.0,
+      "timeout_seconds": 120
+    },
+    "logging": {
+      "format": "console",
+      "level": "info"
+    },
+    "plugins": {
+      "allow_distributions": [],
+      "disable": []
+    },
+    "privacy": {
+      "domain_terms": [],
+      "domain_terms_file": null,
+      "level": "L3",
+      "min_level": "L1",
+      "never_send": [
+        "**/.env",
+        "**/.env.*",
+        "**/*.pem",
+        "**/*.key",
+        "**/*.p12",
+        "**/*.pfx",
+        "**/*.jks",
+        "**/id_rsa*",
+        "**/id_ed25519*"
+      ],
+      "paths": [],
+      "provider_tier_levels": {
+        "local": "L1",
+        "private": "L2",
+        "public": "L3"
+      },
+      "public_allowlist_extra": [],
+      "vault": {
+        "key_source": "keyring"
+      }
+    },
+    "profile": "demo",
+    "profiles": {},
+    "project": {
+      "client": null,
+      "description": null,
+      "languages": [],
+      "name": "demo-project",
+      "state_dir": ".codekavach"
+    },
+    "reporting": {
+      "auditor": null,
+      "classification": "Confidential",
+      "compliance": [
+        "owasp-top10",
+        "cwe-top25",
+        "pci-dss",
+        "iso27001",
+        "nist-ssdf"
+      ],
+      "formats": [
+        "html",
+        "pdf",
+        "sarif",
+        "json"
+      ],
+      "include_privacy_attestation": true,
+      "logo": null,
+      "min_severity": "info",
+      "output_dir": "codekavach-report",
+      "snippet_context_lines": 3,
+      "template_dir": null,
+      "title": null
+    },
+    "scan": {
+      "cache": true,
+      "cache_keep_scans": 5,
+      "cache_max_size_mb": 2048,
+      "exclude": [
+        ".git/**",
+        ".codekavach/**",
+        "node_modules/**",
+        ".venv/**",
+        "venv/**",
+        "__pycache__/**",
+        "dist/**",
+        "build/**",
+        "target/**",
+        "vendor/**"
+      ],
+      "fail_on": "none",
+      "follow_symlinks": false,
+      "include": [
+        "**/*"
+      ],
+      "jobs": 0,
+      "max_file_size_kb": 1024,
+      "max_files": 50000,
+      "max_total_size_mb": 2048,
+      "respect_gitignore": true,
+      "skip_stages": [],
+      "stage_timeout_seconds": 1800,
+      "stage_timeouts": {},
+      "timeout_seconds": 3600
+    }
+  },
+  "warnings": []
+}
