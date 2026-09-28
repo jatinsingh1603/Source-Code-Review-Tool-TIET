@@ -17,12 +17,14 @@ Owning epic: E03.
 import os
 import stat
 import sys
+import tomllib
 from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 
 import platformdirs
 
-from codekavach.config.constants import PROJECT_FILE_NAME, USER_FILE_NAME
+from codekavach.config.constants import PROJECT_FILE_NAME, TRUST_STORE_FILE_NAME, USER_FILE_NAME
 from codekavach.config.errors import ConfigError, ConfigErrorCode
 
 APP_NAME = "codekavach"
@@ -205,3 +207,106 @@ def system_policy_paths() -> tuple[Path, ...]:
             Path("/etc/codekavach/policy.toml"),
         )
     return (Path("/etc/codekavach/policy.toml"),)
+
+
+# --- what ``codekavach config path`` shows (E03-36) --------------------------------------------
+
+ORG_POLICY_ENV = "CODEKAVACH_ORG_POLICY"
+ORG_POLICY_PUBKEY_ENV = "CODEKAVACH_ORG_POLICY_PUBKEY"
+DEFAULT_STATE_DIR = ".codekavach"
+
+
+@dataclass(frozen=True, slots=True)
+class PathEntry:
+    """One location the loader considers."""
+
+    label: str
+    path: Path | None
+    exists: bool
+    note: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigPaths:
+    """Every location the loader considers for one target, without creating anything."""
+
+    user_config: PathEntry
+    project_root: PathEntry
+    project_config: PathEntry
+    state_dir: PathEntry
+    database: PathEntry
+    system_policies: tuple[PathEntry, ...]
+    org_policy: PathEntry
+    policy_public_key: PathEntry
+    trust_store: PathEntry
+
+    def entries(self) -> list[PathEntry]:
+        """All entries in display order."""
+        return [
+            self.user_config,
+            self.project_root,
+            self.project_config,
+            self.state_dir,
+            self.database,
+            *self.system_policies,
+            self.org_policy,
+            self.policy_public_key,
+            self.trust_store,
+        ]
+
+
+def _entry(label: str, path: Path | None, note: str | None = None) -> PathEntry:
+    return PathEntry(label, path, path is not None and path.exists(), note)
+
+
+def _raw_state_dir(project_file: Path | None) -> tuple[str | None, bool]:
+    """``project.state_dir`` from the raw project file, and whether the file parsed."""
+    if project_file is None:
+        return None, True
+    try:
+        data = tomllib.loads(project_file.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        return None, False
+    project = data.get("project")
+    value = project.get("state_dir") if isinstance(project, Mapping) else None
+    return (value if isinstance(value, str) and value else None), True
+
+
+def collect_paths(target: Path, env: Mapping[str, str]) -> ConfigPaths:
+    """Every location the loader would consider for ``target``; reads, never creates.
+
+    Works when the configuration would not validate: of the project file only the one key
+    ``project.state_dir`` is read, and a file that does not parse is reported, not raised.
+    """
+    root = project_root_for(target)
+    project_file = find_project_config(target)
+    state_value, parsed = _raw_state_dir(project_file)
+    project_note = None if project_file is None or parsed else "does not parse"
+    state = resolve_state_dir(root, Path(state_value or DEFAULT_STATE_DIR))
+    policy = env.get(ORG_POLICY_ENV, "").strip()
+    pubkey = env.get(ORG_POLICY_PUBKEY_ENV, "").strip()
+    return ConfigPaths(
+        user_config=_entry("user config", user_config_file(env)),
+        project_root=_entry("project root", root),
+        project_config=_entry(
+            "project config", project_file, project_note if project_file else "none found"
+        ),
+        state_dir=_entry(
+            "state directory", state, None if state.exists() else "created on first scan"
+        ),
+        database=_entry("database", default_database_path(state)),
+        system_policies=tuple(
+            _entry("organisation policy", path) for path in system_policy_paths()
+        ),
+        org_policy=_entry(
+            "policy (variable)",
+            Path(policy).expanduser() if policy else None,
+            None if policy else f"{ORG_POLICY_ENV} is not set",
+        ),
+        policy_public_key=_entry(
+            "policy public key",
+            Path(pubkey).expanduser() if pubkey else None,
+            None if pubkey else f"{ORG_POLICY_PUBKEY_ENV} is not set",
+        ),
+        trust_store=_entry("trust store", user_config_dir(env) / TRUST_STORE_FILE_NAME),
+    )

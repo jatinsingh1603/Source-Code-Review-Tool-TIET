@@ -1,4 +1,4 @@
-"""``codekavach config``: show, validate, trust and keyring entries (E03-27, E03-33 to 35).
+"""``codekavach config``: show, validate, path, profiles, trust and keys (E03-27, E03-33 to 36).
 
 Owning epic: E03.
 
@@ -14,11 +14,12 @@ for confirmation unless ``--yes``; without a terminal it refuses instead of wait
 ``config_app`` on the root application as ``config``.
 """
 
+import hashlib
 import json
 import os
 import re
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
@@ -43,7 +44,14 @@ from codekavach.config.keys import (
 from codekavach.config.loader import load_settings
 from codekavach.config.models.root import Settings
 from codekavach.config.overrides import parse_set_options
-from codekavach.config.paths import find_project_config, project_root_for, user_config_file
+from codekavach.config.paths import (
+    ConfigPaths,
+    collect_paths,
+    find_project_config,
+    project_root_for,
+    user_config_file,
+)
+from codekavach.config.profiles import list_profiles
 from codekavach.config.provenance import Layer
 from codekavach.config.render import UnknownSectionError, render_json, render_layer, render_toml
 from codekavach.config.toml_source import read_toml
@@ -577,3 +585,124 @@ def validate(  # noqa: PLR0917 - the documented option set of the command
         raise typer.Exit(ExitCode.USAGE)
     if strict and report.warnings:
         raise typer.Exit(ExitCode.FINDINGS)
+
+
+# --- config path and config profiles (E03-36) --------------------------------------------------
+
+
+def _trust_note(paths: ConfigPaths) -> str | None:
+    """``this project: trusted`` or ``untrusted`` for an existing store; never raises."""
+    store_entry, project_entry = paths.trust_store, paths.project_config
+    if not store_entry.exists or store_entry.path is None:
+        return None
+    try:
+        store = TrustStore.load(store_entry.path)
+    except ConfigError:
+        return "unreadable"
+    if not project_entry.exists or project_entry.path is None or project_entry.note:
+        return None
+    root = paths.project_root.path or Path.cwd()
+    sha256 = hashlib.sha256(project_entry.path.read_bytes()).hexdigest()
+    return "this project: trusted" if store.is_trusted(root, sha256) else "this project: untrusted"
+
+
+def _path_rows(paths: ConfigPaths) -> list[dict[str, Any]]:
+    trust_note = _trust_note(paths)
+    rows = []
+    for entry in paths.entries():
+        note = trust_note if entry is paths.trust_store else entry.note
+        rows.append(
+            {
+                "label": entry.label,
+                "path": str(entry.path) if entry.path is not None else None,
+                "exists": entry.exists,
+                "note": note,
+            }
+        )
+    return rows
+
+
+def _status(row: Mapping[str, Any]) -> str:
+    if row["label"] == "project root":
+        return ""
+    if row["path"] is None:
+        return row["note"] or ""
+    status = "found" if row["exists"] else "missing"
+    return f"{status} ({row['note']})" if row["note"] else status
+
+
+@config_app.command("path")
+def path_command(
+    target: Annotated[
+        Path | None, typer.Argument(help="Project directory (default: here).")
+    ] = None,
+    output_format: Annotated[
+        ListFormat, typer.Option("--format", help="Output format.")
+    ] = ListFormat.text,
+) -> None:
+    """List every location CodeKavach reads, and whether it exists; creates nothing."""
+    rows = _path_rows(collect_paths((target or Path.cwd()).resolve(), os.environ))
+    if output_format is ListFormat.json:
+        sys.stdout.write(json.dumps({"paths": rows}, indent=2) + "\n")
+        return
+    lines = [f"{row['label']:<20} {row['path'] or '-':<50} {_status(row)}".rstrip() for row in rows]
+    sys.stdout.write("\n".join(lines) + "\n")
+
+
+def _user_defined_profiles(
+    target: Path,
+) -> tuple[dict[str, Mapping[str, Any]], dict[str, str], list[str]]:
+    """Raw ``[profiles.*]`` tables of the user and project files; unparsable files are noted."""
+    tables: dict[str, Mapping[str, Any]] = {}
+    sources: dict[str, str] = {}
+    notes: list[str] = []
+    candidates = [user_config_file(os.environ), find_project_config(target)]
+    for path in candidates:
+        if path is None or not path.is_file():
+            continue
+        try:
+            data = read_toml(path).data
+        except ConfigError:
+            notes.append(f"note: {path} does not parse; its profiles are skipped")
+            continue
+        profiles = data.get("profiles")
+        for name, table in profiles.items() if isinstance(profiles, Mapping) else ():
+            if isinstance(table, Mapping):
+                tables[str(name)] = table
+                sources[str(name)] = str(path)
+    return tables, sources, notes
+
+
+@config_app.command("profiles")
+def profiles_command(
+    target: Annotated[
+        Path | None, typer.Argument(help="Project directory (default: here).")
+    ] = None,
+    output_format: Annotated[
+        ListFormat, typer.Option("--format", help="Output format.")
+    ] = ListFormat.text,
+) -> None:
+    """List the built-in and user-defined profiles."""
+    tables, sources, notes = _user_defined_profiles((target or Path.cwd()).resolve())
+    for note in notes:
+        sys.stderr.write(note + "\n")
+    infos = list_profiles(tables, sources=sources)
+    rows = [
+        {
+            "name": info.name,
+            "kind": info.kind,
+            "defined_in": info.defined_in,
+            "extends": info.extends,
+            "description": info.description,
+        }
+        for info in infos
+    ]
+    if output_format is ListFormat.json:
+        sys.stdout.write(json.dumps(rows, indent=2) + "\n")
+        return
+    table = [
+        (info.name, info.kind, info.defined_in, info.extends or "-", info.description or "")
+        for info in infos
+    ]
+    columns = ("name", "kind", "defined in", "extends", "description")
+    get_console().print(simple_table(columns, table))

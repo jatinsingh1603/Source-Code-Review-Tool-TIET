@@ -199,7 +199,11 @@ def test_settings_dicts_validate(value: dict[str, Any]) -> None:
 
 
 @given(layer_sets())
-@settings(max_examples=30, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(
+    max_examples=30,
+    deadline=None,  # file I/O and the full loader; a cold first example can exceed 500 ms
+    suppress_health_check=[HealthCheck.function_scoped_fixture],
+)
 def test_layer_sets_load(tmp_path_factory: pytest.TempPathFactory, layers: Any) -> None:
     user, project = layers
     sandbox = ConfigSandbox(tmp_path_factory.mktemp("layers"))
