@@ -1,0 +1,15 @@
+# Built-in profile "airgapped": nothing leaves the machine; no remote provider or integration.
+[privacy]
+level = "L0"
+min_level = "L0"
+
+[llm]
+allow_remote = false
+default_provider = "auto"
+cache = true
+
+[integrations.github]
+enabled = false
+
+[integrations.mcp]
+enabled = false

@@ -17,13 +17,24 @@ import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass
 from importlib.resources import files
+from types import MappingProxyType
 from typing import Any, Literal
 
 from codekavach.config.errors import ConfigErrorCode, ProfileError
 from codekavach.config.merge import deep_merge
 from codekavach.config.provenance import Layer, Origin
 
-BUILTIN_PROFILES: tuple[str, ...] = ("ci", "demo")
+BUILTIN_PROFILES: tuple[str, ...] = ("airgapped", "bank-strict", "ci", "demo")
+PROFILE_DESCRIPTIONS: Mapping[str, str] = MappingProxyType(
+    {
+        "demo": "Offline demonstration on the mock provider; HTML and PDF reports.",
+        "ci": "Non-interactive pipeline run; SARIF and JSON; fails on high severity.",
+        "airgapped": "Nothing leaves the machine; remote providers and integrations are disabled.",
+        "bank-strict": (
+            "Regulated financial client: L3 floor, L4 for public providers, full compliance annex."
+        ),
+    }
+)
 PROFILE_ENV = "CODEKAVACH_PROFILE"
 META_KEYS = frozenset({"extends", "description"})
 FORBIDDEN_KEYS = frozenset({"profile", "profiles", "config_version"})
@@ -187,7 +198,10 @@ def list_profiles(
     user_defined: Mapping[str, Mapping[str, Any]], *, sources: Mapping[str, str] | None = None
 ) -> list[ProfileInfo]:
     """Built-in profiles, then user-defined ones, sorted by name within each group."""
-    infos = [ProfileInfo(name, "built-in", f"builtin:{name}") for name in sorted(BUILTIN_PROFILES)]
+    infos = [
+        ProfileInfo(name, "built-in", f"builtin:{name}", description=PROFILE_DESCRIPTIONS.get(name))
+        for name in sorted(BUILTIN_PROFILES)
+    ]
     for name in sorted(user_defined):
         table = user_defined[name]
         infos.append(

@@ -1,0 +1,193 @@
+{
+  "config_version": 1,
+  "engines": {
+    "disabled": [],
+    "enabled": [],
+    "native": {
+      "iac": true,
+      "rules": true,
+      "sca": true,
+      "secrets": true,
+      "taint": true
+    },
+    "options": {},
+    "rule_packs": [
+      "default"
+    ],
+    "rule_paths": [],
+    "timeout_seconds": 600
+  },
+  "integrations": {
+    "github": {
+      "api_url": "https://api.github.com/",
+      "checks": false,
+      "close_resolved": true,
+      "dry_run": true,
+      "enabled": false,
+      "issue_sync": false,
+      "labels_prefix": "codekavach",
+      "max_issues_per_run": 50,
+      "min_severity_for_issues": "medium",
+      "project_number": null,
+      "project_owner": null,
+      "repository": null,
+      "sarif_upload": false,
+      "token": null
+    },
+    "mcp": {
+      "allow_non_loopback": false,
+      "bind": "127.0.0.1:8765",
+      "enabled": false,
+      "transport": "stdio"
+    }
+  },
+  "llm": {
+    "allow_remote": true,
+    "budget": {
+      "max_cost_usd": null,
+      "max_requests": null,
+      "max_total_input_tokens": null,
+      "max_total_output_tokens": null
+    },
+    "cache": true,
+    "consensus": 1,
+    "default_provider": "auto",
+    "enabled": true,
+    "max_output_tokens": 2048,
+    "max_retries": 1,
+    "model": null,
+    "providers": {
+      "mock": {
+        "allow_insecure_http": false,
+        "api_key": null,
+        "api_version": null,
+        "aws_profile": null,
+        "azure_deployment": null,
+        "base_url": null,
+        "cassette_dir": null,
+        "command": null,
+        "enabled": true,
+        "kind": "mock",
+        "model": null,
+        "options": {},
+        "region": null,
+        "trust_tier": null
+      }
+    },
+    "tasks": [
+      "triage",
+      "explain",
+      "remediate",
+      "summarise"
+    ],
+    "temperature": 0.0,
+    "timeout_seconds": 120
+  },
+  "logging": {
+    "format": "console",
+    "level": "info"
+  },
+  "plugins": {
+    "allow_distributions": [],
+    "disable": []
+  },
+  "privacy": {
+    "domain_terms": [],
+    "domain_terms_file": null,
+    "level": "L3",
+    "min_level": "L3",
+    "never_send": [
+      "**/.env",
+      "**/.env.*",
+      "**/*.pem",
+      "**/*.key",
+      "**/*.p12",
+      "**/*.pfx",
+      "**/*.jks",
+      "**/id_rsa*",
+      "**/id_ed25519*",
+      "**/secrets/**",
+      "**/keys/**",
+      "**/certs/**",
+      "**/*.keystore",
+      "**/*.der",
+      "**/*.crt"
+    ],
+    "paths": [],
+    "provider_tier_levels": {
+      "local": "L3",
+      "private": "L3",
+      "public": "L4"
+    },
+    "public_allowlist_extra": [],
+    "vault": {
+      "key_source": "keyring",
+      "passphrase": null
+    }
+  },
+  "profile": "bank-strict",
+  "profiles": {},
+  "project": {
+    "client": null,
+    "description": null,
+    "languages": [],
+    "name": null
+  },
+  "reporting": {
+    "auditor": null,
+    "classification": "Strictly Confidential",
+    "compliance": [
+      "owasp-top10",
+      "owasp-asvs",
+      "cwe-top25",
+      "pci-dss",
+      "iso27001",
+      "nist-ssdf",
+      "rbi",
+      "sebi"
+    ],
+    "formats": [
+      "html",
+      "sarif",
+      "json"
+    ],
+    "include_privacy_attestation": true,
+    "logo": null,
+    "min_severity": "info",
+    "output_dir": "codekavach-report",
+    "snippet_context_lines": 3,
+    "template_dir": null,
+    "title": null
+  },
+  "scan": {
+    "cache": true,
+    "cache_keep_scans": 5,
+    "cache_max_size_mb": 2048,
+    "exclude": [
+      ".git/**",
+      ".codekavach/**",
+      "node_modules/**",
+      ".venv/**",
+      "venv/**",
+      "__pycache__/**",
+      "dist/**",
+      "build/**",
+      "target/**",
+      "vendor/**"
+    ],
+    "fail_on": "high",
+    "follow_symlinks": false,
+    "include": [
+      "**/*"
+    ],
+    "jobs": 0,
+    "max_file_size_kb": 1024,
+    "max_files": 50000,
+    "max_total_size_mb": 2048,
+    "respect_gitignore": true,
+    "skip_stages": [],
+    "stage_timeout_seconds": 1800,
+    "stage_timeouts": {},
+    "timeout_seconds": 3600
+  }
+}

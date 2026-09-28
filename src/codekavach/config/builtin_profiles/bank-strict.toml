@@ -1,0 +1,18 @@
+# Built-in profile "bank-strict": regulated financial client; L3 floor, L4 for public providers.
+[privacy]
+level = "L3"
+min_level = "L3"
+provider_tier_levels = { local = "L3", private = "L3", public = "L4" }
+never_send = ["**/secrets/**", "**/keys/**", "**/certs/**", "**/*.keystore", "**/*.der", "**/*.crt"]
+
+[llm]
+temperature = 0.0
+max_retries = 1
+
+[reporting]
+classification = "Strictly Confidential"
+include_privacy_attestation = true
+compliance = ["owasp-top10", "owasp-asvs", "cwe-top25", "pci-dss", "iso27001", "nist-ssdf", "rbi", "sebi"]
+
+[integrations.github]
+dry_run = true

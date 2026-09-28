@@ -12,6 +12,7 @@ from codekavach.config.merge import deep_merge
 from codekavach.config.models.reporting import ReportFormat
 from codekavach.config.profiles import (
     BUILTIN_PROFILES,
+    PROFILE_DESCRIPTIONS,
     ProfileInfo,
     build_profile_layer,
     list_profiles,
@@ -52,7 +53,7 @@ def test_golden_effective_settings(name: str, tmp_path: Path, home: Path) -> Non
     loaded = load_settings(target=tmp_path, profile=name, env=env_for(home))
     dumped = loaded.settings.model_dump(mode="json", exclude={"project": {"state_dir"}})
     text = json.dumps(dumped, indent=2, sort_keys=True) + "\n"
-    assert_matches_golden(text, GOLDEN / f"profile_{name}.json")
+    assert_matches_golden(text, GOLDEN / f"profile_{name.replace('-', '_')}.json")
 
 
 def test_demo_profile(tmp_path: Path, home: Path) -> None:
@@ -211,7 +212,11 @@ def test_profiles_table_is_combined_and_reported(tmp_path: Path, home: Path) -> 
 
 def test_list_profiles() -> None:
     infos = list_profiles(USER_DEFINED, sources={"weekly": "/u/config.toml"})
-    assert infos[0] == ProfileInfo("ci", "built-in", "builtin:ci")
+    assert [info.name for info in infos[:4]] == ["airgapped", "bank-strict", "ci", "demo"]
+    assert infos[2] == ProfileInfo(
+        "ci", "built-in", "builtin:ci", description=PROFILE_DESCRIPTIONS["ci"]
+    )
+    assert all(info.description for info in infos[:4])
     weekly = next(info for info in infos if info.name == "weekly")
     assert weekly == ProfileInfo(
         "weekly", "user-defined", "/u/config.toml", "nightly", "Weekly run"
