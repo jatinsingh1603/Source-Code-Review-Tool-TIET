@@ -30,6 +30,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ValidationError
 
+from codekavach.config.env_source import env_layer
 from codekavach.config.errors import (
     DEFAULT_SEVERITY,
     ConfigError,
@@ -231,13 +232,16 @@ def _extra_layers(
     *,
     env: Mapping[str, str],
     cli_overrides: CliOverrides | Mapping[str, Any] | None,
-) -> list[Layer]:
+) -> tuple[list[Layer], list[ConfigIssue]]:
     """Append the environment layer (E03-16) and the CLI layer (E03-17), in that order."""
+    environment, warnings = env_layer(env)
+    if environment is not None:
+        layers = [*layers, environment]
     if cli_overrides is not None and (
         cli_overrides.data if isinstance(cli_overrides, CliOverrides) else cli_overrides
     ):
         layers = [*layers, cli_layer(cli_overrides)]
-    return layers
+    return layers, warnings
 
 
 def _expand_layer(layer: Layer) -> Layer:
@@ -342,13 +346,14 @@ def load_settings(
     layers, profile_name, profile_origin, profiles_table = _select_profile(
         layers, profile=profile, env=environment
     )
-    layers = _extra_layers(layers, env=environment, cli_overrides=cli_overrides)
+    layers, env_warnings = _extra_layers(layers, env=environment, cli_overrides=cli_overrides)
     layers = [_expand_layer(layer) for layer in layers]
-    warnings = list(
-        _check_layers(
+    warnings = [
+        *env_warnings,
+        *_check_layers(
             layers, project_trust=project_trust, trust_project_config=trust_project_config
-        )
-    )
+        ),
+    ]
 
     union_keys = union_keys_of(Settings)
     defaults = Settings().model_dump(mode="json")

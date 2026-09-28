@@ -167,7 +167,7 @@ def test_extension_points_called_in_order(
         recorder("profile", lambda layers, **kwargs: (layers, None, None, {})),
     )
     monkeypatch.setattr(
-        loader_module, "_extra_layers", recorder("extra", lambda layers, **_: layers)
+        loader_module, "_extra_layers", recorder("extra", lambda layers, **_: (layers, []))
     )
     monkeypatch.setattr(loader_module, "_expand_layer", recorder("expand", lambda layer: layer))
     monkeypatch.setattr(loader_module, "_check_layers", recorder("check", lambda *a, **k: ()))

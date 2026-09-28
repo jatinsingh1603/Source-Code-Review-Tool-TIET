@@ -78,6 +78,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.llm.cache",
         "codekavach.llm.consensus",
         "codekavach.config.constants",
+        "codekavach.config.env_source",
         "codekavach.config.errors",
         "codekavach.config.introspect",
         "codekavach.config.keys",
