@@ -78,6 +78,8 @@ class VersionedModel(KavachModel):
     model_config = ConfigDict(json_schema_extra=_add_schema_version)
 
     SCHEMA_VERSION: ClassVar[int] = 1
+    # False for hash-bearing documents, which are never rewritten (see models.migrate).
+    MIGRATABLE: ClassVar[bool] = True
 
     # The default only makes the keyword optional for type checkers; the validator below
     # always fills in the subclass's SCHEMA_VERSION when the key is absent.
