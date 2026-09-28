@@ -1,8 +1,9 @@
 """Hypothesis strategies for configuration: sections, whole settings and layers (E03-15).
 
 Every strategy produces valid input by construction; ``settings_dicts()`` always satisfies
-``Settings.model_validate``. Text comes from a small vocabulary of lower-case words so that
-failing examples are readable. E03-28 adds ``org_policies()`` here.
+``Settings.model_validate`` and the semantic rules of E03-23 that concern the LLM. Text comes
+from a small vocabulary of lower-case words so that failing examples are readable. E03-28 adds
+``org_policies()`` here.
 """
 
 from typing import Any
@@ -143,6 +144,8 @@ def _llm(draw: st.DrawFn) -> dict[str, Any]:
     }
     if draw(st.booleans()):
         data["allow_remote"] = draw(st.booleans())
+        if not data["allow_remote"]:
+            data["default_provider"] = "auto"  # a named remote default would fail rule 031
     return data
 
 
@@ -205,7 +208,11 @@ def section_dicts(name: str) -> SearchStrategy[dict[str, Any]]:
 def settings_dicts(draw: st.DrawFn) -> dict[str, Any]:
     """A valid nested settings dictionary; ``Settings.model_validate(d)`` always succeeds."""
     chosen = draw(st.sets(st.sampled_from(SECTIONS)))
-    return {name: draw(section_dicts(name)) for name in sorted(chosen)}
+    data = {name: draw(section_dicts(name)) for name in sorted(chosen)}
+    # Semantic rule 032 (E03-23): L0 with a named default provider could point at a remote one.
+    if data.get("privacy", {}).get("level") == "L0" and "llm" in data:
+        data["llm"]["default_provider"] = "auto"
+    return data
 
 
 # Sections a project file may set without hitting restricted keys (E03-25).
