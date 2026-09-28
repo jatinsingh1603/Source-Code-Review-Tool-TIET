@@ -1176,6 +1176,12 @@ Runtime dependencies of the `codekavach` package itself (`[project.dependencies]
 | structlog | MIT or Apache-2.0 (dual) | [GitHub: hynek/structlog](https://github.com/hynek/structlog); [structlog.org](https://www.structlog.org/) | [integrated] | Structured logging with a processor chain in which redaction is a fixed step (ADR-0005). Added by E01-20. |
 | platformdirs | MIT | [GitHub: tox-dev/platformdirs](https://github.com/tox-dev/platformdirs); [platformdirs.readthedocs.io](https://platformdirs.readthedocs.io/) | [integrated] | Per-platform location of the user configuration directory when neither `CODEKAVACH_HOME` nor `XDG_CONFIG_HOME` is set. Added by E03-12. |
 
+Development-only libraries are not shipped in the wheel. The following one is recorded here because its issue asked for it:
+
+| Library | Licence | Link | Role tag | Notes |
+|---|---|---|---|---|
+| jsonschema | MIT | [GitHub: python-jsonschema/jsonschema](https://github.com/python-jsonschema/jsonschema); [python-jsonschema.readthedocs.io](https://python-jsonschema.readthedocs.io/) | [integrated] | `test` dependency group only. It checks that model dumps conform to their JSON Schema (property P5 of `tests/support/model_properties.py`). Its stubs (`types-jsonschema`) are in the `typecheck` group. Added by E02-27. |
+
 ## 4. LLM provider and open-model documentation
 
 API references for every provider adapter, the data-retention terms a client's legal team will ask about, and the open-weight models that can run inside the trusted boundary. Retention terms change; the Notes column records what each page said on the verification date, and the privacy layer is designed so that its measured properties do not depend on these terms.
