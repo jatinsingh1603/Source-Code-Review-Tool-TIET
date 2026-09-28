@@ -110,6 +110,27 @@ def _syntax_error(path: Path, error: tomllib.TOMLDecodeError) -> ConfigSyntaxErr
     )
 
 
+def read_bounded_text(
+    path: Path, *, max_bytes: int = MAX_CONFIG_BYTES, confine_to: Path | None = None
+) -> tuple[str, bytes]:
+    """Read one UTF-8 file once, bounded and optionally confined; a byte-order mark is dropped.
+
+    Returns the decoded text and the raw bytes.
+
+    Raises:
+        ConfigError: code CK-CFG-005 when the file is missing, not a regular file, larger than
+            ``max_bytes``, not UTF-8, or resolves outside ``confine_to``.
+    """
+    if confine_to is not None:
+        _check_confined(path, confine_to)
+    raw = _read_bytes(path, max_bytes)
+    try:
+        text = raw.removeprefix(codecs.BOM_UTF8).decode("utf-8")
+    except UnicodeDecodeError:
+        raise _refuse(path, "file is not valid UTF-8") from None
+    return text, raw
+
+
 def read_toml(
     path: Path, *, max_bytes: int = MAX_CONFIG_BYTES, confine_to: Path | None = None
 ) -> TomlDocument:
@@ -120,14 +141,7 @@ def read_toml(
             ``max_bytes``, not UTF-8, or resolves outside ``confine_to``.
         ConfigSyntaxError: code CK-CFG-001 when the file is not valid TOML.
     """
-    if confine_to is not None:
-        _check_confined(path, confine_to)
-    raw = _read_bytes(path, max_bytes)
-    body = raw.removeprefix(codecs.BOM_UTF8)
-    try:
-        text = body.decode("utf-8")
-    except UnicodeDecodeError:
-        raise _refuse(path, "file is not valid UTF-8") from None
+    text, raw = read_bounded_text(path, max_bytes=max_bytes, confine_to=confine_to)
     try:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as error:

@@ -26,10 +26,12 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any, Literal
 
 from pydantic import BaseModel, ValidationError
 
+from codekavach.config.domain_terms import TERMS_FILE_KEY, read_terms_file
 from codekavach.config.env_source import env_layer
 from codekavach.config.errors import (
     DEFAULT_SEVERITY,
@@ -42,6 +44,7 @@ from codekavach.config.errors import (
 )
 from codekavach.config.introspect import flatten_leaves, keys_with_marker, loc_to_key
 from codekavach.config.merge import deep_merge
+from codekavach.config.models.base import split_csv
 from codekavach.config.models.root import Settings
 from codekavach.config.overrides import CliOverrides, cli_layer
 from codekavach.config.paths import (
@@ -58,13 +61,14 @@ from codekavach.config.profiles import (
     select_profile_name,
 )
 from codekavach.config.provenance import Layer, Origin, compute_origins, origin_in
-from codekavach.config.toml_source import read_toml
+from codekavach.config.toml_source import locate_key, read_toml
 
 ProjectTrust = Literal["not-needed", "flag", "env", "store", "external-config"]
 CONFIG_ENV = "CODEKAVACH_CONFIG"
 NO_USER_CONFIG_ENV = "CODEKAVACH_NO_USER_CONFIG"
 _CODE_PREFIX = re.compile(r"^(?:Value error, |Assertion failed, )?\[(CK-CFG-\d{3})\]\s*")
 _TRUE = frozenset({"1", "true", "yes", "on"})
+TERMS_FILE_KEY_NAME = TERMS_FILE_KEY.rsplit(".", maxsplit=1)[1]
 
 
 @dataclass(frozen=True, slots=True)
@@ -246,9 +250,68 @@ def _extra_layers(
     return layers, warnings
 
 
-def _expand_layer(layer: Layer) -> Layer:
-    """Expand indirections such as ``privacy.domain_terms_file`` (E03-21)."""
-    return layer
+def _confined(layer: Layer, project_source: str | None) -> bool:
+    """Project configuration, including profiles it defines, may not leave the repository."""
+    if layer.name == "project":
+        return True
+    return (
+        layer.name == "profile"
+        and project_source is not None
+        and layer.source.startswith(f"{project_source}#")
+    )
+
+
+def _terms_error(error: ConfigError, layer: Layer, path: Path) -> ConfigError:
+    source = layer.key_sources.get(TERMS_FILE_KEY, layer.source)
+    line = locate_key(layer.text, TERMS_FILE_KEY) if layer.text is not None else None
+    return ConfigError(
+        [
+            replace(
+                issue,
+                message=f"domain terms file cannot be used: {issue.message}",
+                key=TERMS_FILE_KEY,
+                source=source,
+                line=line,
+                hint=f"file named: {path}",
+            )
+            if issue.code is ConfigErrorCode.CK_CFG_005
+            else issue
+            for issue in error.issues
+        ]
+    )
+
+
+def _expand_layer(layer: Layer, *, project_root: Path, project_source: str | None) -> Layer:
+    """Add the terms of ``privacy.domain_terms_file`` to the layer's domain terms (E03-21).
+
+    A relative path is relative to the project root in every layer. The project layer and the
+    profiles it defines are confined to the project root; every failure stops the run.
+
+    Raises:
+        ConfigError: CK-CFG-005 naming the key, the defining source and line when the file
+            cannot be read; CK-CFG-003 with the terms file's line for an invalid term.
+    """
+    privacy = layer.data.get("privacy")
+    if not isinstance(privacy, Mapping) or not isinstance(privacy.get(TERMS_FILE_KEY_NAME), str):
+        return layer
+    inline_value = privacy.get("domain_terms", [])
+    inline = split_csv(inline_value) if isinstance(inline_value, str) else inline_value
+    if not isinstance(inline, list):
+        return layer  # validation reports the malformed inline value
+    path = Path(privacy[TERMS_FILE_KEY_NAME]).expanduser()
+    if not path.is_absolute():
+        path = project_root / path
+    confine_to = project_root.resolve() if _confined(layer, project_source) else None
+    try:
+        terms = read_terms_file(path, confine_to=confine_to)
+    except ConfigError as error:
+        raise _terms_error(error, layer, path) from None
+    if not terms:
+        return layer
+    combined = list(dict.fromkeys([*inline, *terms]))
+    data = {**layer.data, "privacy": {**privacy, "domain_terms": combined}}
+    expanded = {**layer.expanded, "privacy.domain_terms": bool(inline)}
+    return replace(layer, data=data, expanded=MappingProxyType(expanded))
 
 
 def _refuse_plaintext(
@@ -382,7 +445,14 @@ def load_settings(
         layers, profile=profile, env=environment
     )
     layers, env_warnings = _extra_layers(layers, env=environment, cli_overrides=cli_overrides)
-    layers = [_expand_layer(layer) for layer in layers]
+    layers = [
+        _expand_layer(
+            layer,
+            project_root=project_root,
+            project_source=project.source if project is not None else None,
+        )
+        for layer in layers
+    ]
     warnings = [
         *env_warnings,
         *_check_layers(

@@ -5,7 +5,8 @@ Owning epic: E03.
 Every leaf key of the validated settings has an ``Origin``: the highest layer whose data contains
 the key or a parent table of it, the file or source that layer came from, and the line of the key
 when the layer has text. Keys set by no layer come from the built-in defaults. For union-merged
-keys, ``contributors`` lists every layer that added elements, in order.
+keys, ``contributors`` lists every layer that added elements, in order, with ``"<layer>:file"``
+for elements read from a file such as ``privacy.domain_terms_file``.
 """
 
 from collections.abc import Mapping, Sequence
@@ -40,6 +41,9 @@ class Layer:
     text: str | None = None
     sha256: str | None = None
     key_sources: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
+    # Keys extended from a file (``privacy.domain_terms_file``), mapped to whether the layer also
+    # set them inline; the file shows up as the contributor ``"<layer>:file"``.
+    expanded: Mapping[str, bool] = field(default_factory=lambda: MappingProxyType({}))
 
 
 def _prefixes(key: str) -> list[str]:
@@ -63,6 +67,13 @@ def origin_in(layer: Layer, key: str, matched: str | None = None) -> Origin:
     return Origin(layer=layer.name, source=source, line=line)
 
 
+def _contributors(layer: Layer, key: str) -> tuple[str, ...]:
+    if key not in layer.expanded:
+        return (layer.name,)
+    inline = (layer.name,) if layer.expanded[key] else ()
+    return (*inline, f"{layer.name}:file")
+
+
 def compute_origins(
     layers: Sequence[Layer],
     final: Mapping[str, Any],
@@ -83,7 +94,10 @@ def compute_origins(
                 break
         if is_union_key(key, union_keys):
             contributors = tuple(
-                layer.name for layer, flat in zip(layers, flats, strict=True) if flat.get(key)
+                name
+                for layer, flat in zip(layers, flats, strict=True)
+                if flat.get(key)
+                for name in _contributors(layer, key)
             )
             if default_flat.get(key):
                 contributors = ("default", *contributors)
