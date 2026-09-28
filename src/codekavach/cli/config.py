@@ -1,4 +1,4 @@
-"""``codekavach config``: show (E03-34), project trust (E03-27) and keyring entries (E03-33).
+"""``codekavach config``: show, validate, trust and keyring entries (E03-27, E03-33 to 35).
 
 Owning epic: E03.
 
@@ -29,6 +29,7 @@ from codekavach.cli.console import get_console, get_err_console
 from codekavach.cli.errors import UsageError
 from codekavach.cli.exit_codes import ExitCode
 from codekavach.cli.output import simple_table
+from codekavach.config.check import ValidationReport, report_from_error, validate_configuration
 from codekavach.config.constants import KEYRING_SERVICE
 from codekavach.config.diagnostics import format_issues
 from codekavach.config.errors import ConfigError, ConfigIssue, SecretResolutionError
@@ -493,3 +494,86 @@ def show(  # noqa: PLR0917 - the documented option set of the command
             "--section names no top-level table of the settings", code="unknown_section"
         ) from None
     sys.stdout.write(text)
+
+
+# --- config validate (E03-35) ------------------------------------------------------------------
+
+
+def _summary(report: ValidationReport) -> str:
+    def plural(count: int, word: str) -> str:
+        return f"{count} {word}" if count == 1 else f"{count} {word}s"
+
+    if report.valid:
+        details = [f"profile: {report.profile or 'none'}"]
+        if report.warnings:
+            details.append(plural(len(report.warnings), "warning"))
+        return f"configuration is valid ({', '.join(details)})"
+    return (
+        f"configuration is invalid: {plural(len(report.errors), 'error')}, "
+        f"{plural(len(report.warnings), 'warning')}"
+    )
+
+
+@config_app.command(
+    "validate",
+    epilog=(
+        "Exit codes: 0 valid; 2 invalid; 1 only with --strict, meaning warnings are present. "
+        "Refusals of whole layers (plaintext secrets, project trust) are reported first and on "
+        "their own; issues of one validation stage are reported together. "
+        "Pre-commit: codekavach config validate --strict --no-user-config"
+    ),
+)
+def validate(  # noqa: PLR0917 - the documented option set of the command
+    target: Annotated[
+        Path | None, typer.Argument(help="Project directory (default: here).")
+    ] = None,
+    output_format: Annotated[
+        ListFormat, typer.Option("--format", help="Output format.")
+    ] = ListFormat.text,
+    strict: Annotated[
+        bool, typer.Option("--strict", help="Exit 1 when warnings are present.")
+    ] = False,
+    check_secrets: Annotated[
+        bool, typer.Option("--check-secrets", help="Resolve the keys that a scan would use.")
+    ] = False,
+    config_file: Annotated[
+        Path | None, typer.Option("--config", help="Explicit project configuration file.")
+    ] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help="Profile to apply.")] = None,
+    no_user_config: Annotated[
+        bool, typer.Option("--no-user-config", help="Ignore the user configuration file.")
+    ] = False,
+    set_values: Annotated[
+        list[str] | None, typer.Option("--set", help="Override one key: KEY=VALUE (TOML).")
+    ] = None,
+    trust_project_config: Annotated[
+        bool,
+        typer.Option("--trust-project-config", help="Trust restricted project keys this run."),
+    ] = False,
+) -> None:
+    """Check the configuration a scan would use, without scanning anything."""
+    loader_kwargs: dict[str, Any] = {
+        "target": target,
+        "config_file": config_file,
+        "profile": profile,
+        "use_user_config": not no_user_config,
+        "trust_project_config": trust_project_config,
+    }
+    try:
+        if set_values:
+            loader_kwargs["cli_overrides"] = parse_set_options(list(set_values))
+    except ConfigError as error:
+        report = report_from_error(error, **loader_kwargs)
+    else:
+        report = validate_configuration(check_secrets=check_secrets, **loader_kwargs)
+    if output_format is ListFormat.json:
+        sys.stdout.write(json.dumps(report.to_dict(), indent=2) + "\n")
+    else:
+        issues = [*report.errors, *report.warnings]
+        if issues:
+            sys.stderr.write(format_issues(issues) + "\n")
+        sys.stdout.write(_summary(report) + "\n")
+    if not report.valid:
+        raise typer.Exit(ExitCode.USAGE)
+    if strict and report.warnings:
+        raise typer.Exit(ExitCode.FINDINGS)
