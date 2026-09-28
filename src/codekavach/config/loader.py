@@ -11,7 +11,8 @@ layer checks run before merging so that one run reports every refusal together.
 2. derive the project root from the scan target (never from an explicit ``--config``);
 3. ``_discover_org_policies`` (E03-28);
 4. read the user file (ownership and mode checked first);
-5. read the project file: explicit or discovered, confined to the project root when inside it;
+5. read the project file: explicit or discovered, confined to the project root when inside it,
+   then move deprecated keys of both file layers (E03-22, warning 006);
 6. ``_select_profile`` (E03-14); 7. ``_extra_layers`` (E03-16, E03-17);
 8. ``_expand_layer`` (E03-21); 9. ``_check_layers`` (E03-19, E03-25, E03-26);
 10. deep merge from the defaults; 11. validate; 12. ``_apply_org_policy`` (E03-29, E03-30);
@@ -31,6 +32,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ValidationError
 
+from codekavach.config.diagnostics import apply_deprecations, unknown_key_hint
 from codekavach.config.domain_terms import TERMS_FILE_KEY, read_terms_file
 from codekavach.config.env_source import env_layer
 from codekavach.config.errors import (
@@ -115,8 +117,10 @@ def convert_validation_error(
         key = loc_to_key(_clean_loc(error["loc"])) or None
         message = str(error["msg"])
         match = _CODE_PREFIX.match(message)
+        hint = None
         if error["type"] == "extra_forbidden":
-            code, message = ConfigErrorCode.CK_CFG_002, "unknown key"
+            code, message = ConfigErrorCode.CK_CFG_002, f"unknown key '{key}'"
+            hint = unknown_key_hint(key, Settings) if key else None
         elif error["loc"] and error["loc"][0] == "config_version":
             code, message = ConfigErrorCode.CK_CFG_004, "unsupported config_version (expected 1)"
         elif match is not None and match.group(1) in ConfigErrorCode._value2member_map_:
@@ -133,6 +137,7 @@ def convert_validation_error(
                 key=key,
                 source=origin.source,
                 line=origin.line,
+                hint=hint,
             )
         )
     return tuple(issues)
@@ -440,6 +445,10 @@ def load_settings(
     if project is not None:
         layers.append(project)
 
+    deprecation_warnings: list[ConfigIssue] = []
+    for index, layer in enumerate(layers):
+        layers[index], found = apply_deprecations(layer)
+        deprecation_warnings.extend(found)
     _refuse_plaintext(layers, env=environment, cli_overrides=cli_overrides)
     layers, profile_name, profile_origin, profiles_table = _select_profile(
         layers, profile=profile, env=environment
@@ -454,6 +463,7 @@ def load_settings(
         for layer in layers
     ]
     warnings = [
+        *deprecation_warnings,
         *env_warnings,
         *_check_layers(
             layers, project_trust=project_trust, trust_project_config=trust_project_config

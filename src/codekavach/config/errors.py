@@ -135,7 +135,10 @@ class ConfigError(Exception):
         return self.issues[0].code
 
     def __str__(self) -> str:
-        return render_issues_plain(self.issues)
+        # Imported at call time: ``diagnostics`` imports this module.
+        from codekavach.config.diagnostics import format_issues  # noqa: PLC0415
+
+        return format_issues(self.issues)
 
     @classmethod
     def single(

@@ -5,6 +5,7 @@ import re
 import pytest
 
 from codekavach.config import ConfigError, ConfigErrorCode, ConfigIssue
+from codekavach.config.diagnostics import format_issues
 from codekavach.config.errors import (
     DEFAULT_SEVERITY,
     ConfigSyntaxError,
@@ -14,6 +15,7 @@ from codekavach.config.errors import (
     ProfileError,
     ProjectTrustError,
     SecretResolutionError,
+    render_issues_plain,
 )
 
 GOLDEN_CODES = [
@@ -138,10 +140,11 @@ def test_plain_rendering() -> None:
             ),
         ]
     )
-    assert str(error) == (
+    assert render_issues_plain(error.issues) == (
         "CK-CFG-003 scan.jobs: must be between 0 and 256 (/repo/codekavach.toml:12)\n"
         "CK-CFG-060 unknown variable (CODEKAVACH_SCAN__JOBZ)"
     )
+    assert str(error) == format_issues(error.issues)
 
 
 def test_issue_to_dict() -> None:

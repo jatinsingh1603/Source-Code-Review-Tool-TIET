@@ -1,0 +1,8 @@
+error[CK-CFG-002]: unknown key 'privacy.levle'
+  --> /repo/codekavach.toml:14
+  hint: did you mean 'privacy.level'?
+
+warning[CK-CFG-038]: public providers are configured below L3 (privacy.provider_tier_levels.public)
+  --> /home/u/.config/codekavach/config.toml:9
+
+2 problems (1 error, 1 warning)
