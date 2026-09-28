@@ -48,3 +48,4 @@ If the title matches a `Reserved` row, the helper uses that number and changes t
 | [0003](0003-single-egress.md) | Single egress | Accepted | 2026-09-27 | | #23 (E01-12) |
 | 0004 | Changelog and versioning | Reserved | | | #33 (E01-22) |
 | [0005](0005-logging-and-no-telemetry.md) | Logging and no-telemetry | Accepted | 2026-09-27 | | #24 (E01-13) |
+| [0006](0006-configuration-layering-secrets-and-trust.md) | Configuration layering, secrets and trust | Accepted | 2026-09-28 | | #81 (E03-01) |

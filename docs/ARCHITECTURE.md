@@ -220,3 +220,20 @@ The GitHub Action wraps the CLI in a container. The GitHub App adds webhooks, in
 
 - **Detection harness:** OWASP Benchmark, Juliet, CVE-derived datasets; precision, recall and F1 per CWE, per language, per privacy level, per model; baselines are engines only, and the LLM on raw code.
 - **Leakage harness:** canary secrets and PII (must be zero), identifier-recovery attacks, business-logic summarisation attacks scored against ground truth, slice re-assembly attacks, stylometric re-identification. Output is a privacy score per level that also appears in the report's privacy attestation.
+
+## 11. Configuration
+
+Decided in [ADR-0006](adr/0006-configuration-layering-secrets-and-trust.md); `codekavach.config` implements it (E03).
+
+Configuration is TOML 1.0: the project file `codekavach.toml`, the user file `config.toml` and the organisation policy `policy.toml`. Precedence, lowest to highest:
+
+```
+defaults < user config < project config < profile < CODEKAVACH_* env < CLI flags     then: organisation policy (reject or clamp)
+```
+
+- **Secrets are references.** A setting names a secret as `env:NAME`, `keyring:SERVICE/USERNAME` or `file:/absolute/path`. Plaintext values are refused in every layer (E03-19), and resolution is lazy, returning `SecretStr` (E03-18).
+- **Strictness order.** Floors and "the stricter wins" use `L1 < L2 < L3 < L4 < L0`. The order is by strictness, not by the digit in the name; `PrivacyLevel` implements it (E02-04, E03-04).
+- **Project configuration may tighten but not loosen.** It is semi-trusted, because in CI it is written by the change under review. Unless the project is explicitly trusted, it cannot lower privacy settings or set endpoints, execution paths, secret references, providers, plugin allow-lists or integration targets (E03-25, E03-26).
+- **Organisation policy** is a constraint set applied after merging. It can reject or clamp but not loosen. Several policies apply cumulatively, and a policy that cannot be read or verified aborts the run (E03-28 to E03-31).
+- **No off switches.** No key disables the egress guard, the ledger or redaction. Consent to remote egress is a per-user state, not a setting (E05-13).
+- **Offline.** Loading configuration opens no connection and reads no `.env` file (E03-44).
