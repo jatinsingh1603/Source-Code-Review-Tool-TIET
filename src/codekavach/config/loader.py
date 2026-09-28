@@ -37,6 +37,7 @@ from codekavach.config.errors import (
     ConfigErrorCode,
     ConfigIssue,
     ConfigValidationError,
+    PlaintextSecretError,
     ProfileError,
 )
 from codekavach.config.introspect import flatten_leaves, keys_with_marker, loc_to_key
@@ -50,6 +51,7 @@ from codekavach.config.paths import (
     project_root_for,
     user_config_file,
 )
+from codekavach.config.plaintext import find_plaintext_secrets
 from codekavach.config.profiles import (
     build_profile_layer,
     check_user_defined,
@@ -249,6 +251,38 @@ def _expand_layer(layer: Layer) -> Layer:
     return layer
 
 
+def _refuse_plaintext(
+    file_layers: Sequence[Layer],
+    *,
+    env: Mapping[str, str],
+    cli_overrides: CliOverrides | Mapping[str, Any] | None,
+) -> None:
+    """Refuse plaintext secrets in every layer before anything else looks at values (E03-19).
+
+    Runs before profile selection so that every ``[profiles.*]`` table is scanned, selected or
+    not, and so that typed validation cannot report a pasted key under another code first. All
+    hits of all layers are raised together.
+
+    Raises:
+        PlaintextSecretError: CK-CFG-010, one issue per hit.
+    """
+    scanned = list(file_layers)
+    environment, _ = env_layer(env)
+    if environment is not None:
+        scanned.append(environment)
+    if cli_overrides is not None:
+        scanned.append(cli_layer(cli_overrides))
+    issues = [
+        issue
+        for layer in scanned
+        for issue in find_plaintext_secrets(
+            layer.data, source=layer.source, text=layer.text, key_sources=layer.key_sources
+        )
+    ]
+    if issues:
+        raise PlaintextSecretError(issues)
+
+
 def _check_layers(
     layers: Sequence[Layer], *, project_trust: ProjectTrust, trust_project_config: bool
 ) -> tuple[ConfigIssue, ...]:
@@ -343,6 +377,7 @@ def load_settings(
     if project is not None:
         layers.append(project)
 
+    _refuse_plaintext(layers, env=environment, cli_overrides=cli_overrides)
     layers, profile_name, profile_origin, profiles_table = _select_profile(
         layers, profile=profile, env=environment
     )

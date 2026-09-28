@@ -86,6 +86,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.config.merge",
         "codekavach.config.toml_source",
         "codekavach.config.paths",
+        "codekavach.config.plaintext",
         "codekavach.config.profiles",
         "codekavach.config.provenance",
         "codekavach.config.overrides",
