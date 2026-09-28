@@ -150,14 +150,22 @@ def test_missing_provides() -> None:
 
 
 class CancellingStage(FakeStage):
+    """Simulates a user cancel arriving while the stage runs (on the scan's root token).
+
+    A stage's own ``ctx.cancellation`` is a child token (E04-18), so it cannot cancel the scan.
+    """
+
+    root: Any = None
+
     def run(self, ctx: RunContext) -> None:
         super().run(ctx)
-        ctx.cancellation.cancel()
+        self.root.cancel()
 
 
 def test_cancellation_between_stages() -> None:
     first = CancellingStage("a", requires={"scan.target"}, provides={"x"}, category=C.ANALYSE)
     plan, ctx = prepared([first, *chain()[1:]])
+    first.root = ctx.cancellation
     result = orchestrator().run(plan, ctx)
     assert result.status is ScanStatus.CANCELLED
     assert [run.outcome for run in result.stage_runs] == [

@@ -34,6 +34,7 @@ class RunState:
     lock_cause: str | None = None
     aborted: bool = False
     abort_cause: str | None = None
+    abandoned: list[str] = field(default_factory=list)
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
 

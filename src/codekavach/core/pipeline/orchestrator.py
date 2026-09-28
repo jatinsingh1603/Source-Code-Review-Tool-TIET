@@ -17,6 +17,7 @@ and engines often fill with a quoted source line, appear only in a DEBUG record.
 """
 
 import re
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -39,6 +40,7 @@ from codekavach.core.pipeline.events import (
     StageStarted,
     WarningRaised,
 )
+from codekavach.core.pipeline.execution import resolve_timeout, run_with_deadline
 from codekavach.core.pipeline.keys import is_multi_provider
 from codekavach.core.pipeline.plan import RunPlan
 from codekavach.core.pipeline.policy import (
@@ -54,6 +56,7 @@ from codekavach.core.store.scoped import StageScopedStore, UndeclaredAccessError
 INITIAL = "<initial>"
 ABORTED = "aborted"
 ERROR_SKIPS = frozenset({"dependency_failed", "egress_locked"})
+ABANDONED_JOIN_SECONDS = 0.2
 _TOKEN_UNSAFE = re.compile(r"[^A-Za-z0-9_.:-]")
 _log = get_logger("codekavach.pipeline")
 
@@ -66,6 +69,10 @@ def error_type_of(error: BaseException) -> str:
 
 class _MissingProvidesError(Exception):
     """Internal: a stage returned without writing one of its declared outputs."""
+
+
+class _StageTimedOutError(Exception):
+    """Internal: a stage did not finish within its effective timeout."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,16 +93,33 @@ class Orchestrator:
     ) -> None:
         self._clock = clock
         self._monotonic = monotonic
+        self._abandoned: list[tuple[str, threading.Thread]] = []
+        self._abandoned_lock = threading.Lock()
 
     def _execute_stage(self, stage: Stage, info: StageInfo, stage_ctx: RunContext) -> None:
-        """Run one stage on its scoped, revocable view of the store (E04-17).
+        """Run one stage on its scoped view (E04-17), under its effective timeout (E04-18).
 
-        The view is revoked when the stage ends for any reason, so a stage thread that keeps
-        running (after a timeout) cannot write afterwards. Later issues add timeouts and threads.
+        The stage runs in a dedicated daemon thread with a child cancellation token. On timeout
+        the token is cancelled with reason ``timeout``, the view is revoked and the thread is
+        abandoned; ``_StageTimedOut`` then lets ``_run_one`` record the stage as ``timed_out``.
+        The view is revoked when the stage ends for any reason, so a lingering thread cannot write.
         """
         scoped = StageScopedStore(stage_ctx.artefacts, info)
+        token = stage_ctx.cancellation.child()
+        run_ctx = stage_ctx.for_stage(info.name, artefacts=scoped, cancellation=token)
+        timeout = resolve_timeout(info, stage_ctx.config.scan, stage_ctx.remaining_seconds())
         try:
-            stage.run(stage_ctx.for_stage(info.name, artefacts=scoped))
+            result = run_with_deadline(
+                lambda: stage.run(run_ctx), timeout, thread_name=f"ck-stage-{info.name}"
+            )
+            if result.outcome == "timed_out":
+                token.cancel("timeout")
+                scoped.revoke()
+                with self._abandoned_lock:
+                    self._abandoned.append((info.name, result.thread))
+                raise _StageTimedOutError
+            if result.error is not None:
+                raise result.error
         finally:
             scoped.revoke()
 
@@ -177,11 +201,14 @@ class Orchestrator:
         error: Exception | None = None
         cancelled = False
         finished = False
+        timed_out = False
         try:
             self._execute_stage(stage, info, ctx.for_stage(info.name))
             if any(not ctx.artefacts.has(key) for key in info.provides):
                 raise _MissingProvidesError
             finished = True
+        except _StageTimedOutError:
+            timed_out = True
         except ScanCancelledError:
             cancelled = True
         except Exception as caught:  # noqa: BLE001 - every stage failure is recorded
@@ -194,6 +221,17 @@ class Orchestrator:
             finished_at=self._clock(),
             duration_ms=max(0, int((self._monotonic() - clock_start) * 1000)),
         )
+        if timed_out:
+            return self._failed(
+                ctx=ctx,
+                runs=runs,
+                state=state,
+                info=info,
+                error=TimeoutError(),
+                timing=timing,
+                outcome=StageOutcome.TIMED_OUT,
+                code="stage_timeout",
+            )
         if cancelled:
             run = self._timed(info.name, StageOutcome.CANCELLED, timing)
             self._record(ctx, runs, run)
@@ -297,8 +335,15 @@ class Orchestrator:
         runs: list[StageRun] = []
         state = RunState()
         user_cancelled = False
+        with self._abandoned_lock:
+            self._abandoned = []
         for index, stage in enumerate(plan.stages):
             info = plan.infos[stage.name]
+            if ctx.budget.deadline_exceeded() and not ctx.cancellation.is_cancelled:
+                ctx.cancellation.cancel("deadline")
+                ctx.events.publish(
+                    WarningRaised(scan_id=ctx.scan_id, stage=info.name, code="scan_deadline")
+                )
             if self._user_cancelled(ctx, state):
                 user_cancelled = True
                 break
@@ -312,6 +357,7 @@ class Orchestrator:
             if run.outcome is StageOutcome.CANCELLED and not state.aborted:
                 user_cancelled = True
                 break
+        self._settle_abandoned(state)
         done = {run.stage for run in runs}
         for name in plan.order:
             if name not in done:
@@ -325,6 +371,17 @@ class Orchestrator:
             started_at=started_at,
             scan_started=scan_started,
         )
+
+    def _settle_abandoned(self, state: RunState) -> None:
+        """Give abandoned stage threads a moment to end; warn about those still running."""
+        with self._abandoned_lock:
+            abandoned = list(self._abandoned)
+        state.abandoned = [name for name, _ in abandoned]
+        for _, thread in abandoned:
+            thread.join(ABANDONED_JOIN_SECONDS)
+        alive = sorted(name for name, thread in abandoned if thread.is_alive())
+        if alive:
+            _log.warning("stage_threads_still_running", stages=alive, count=len(alive))
 
     def _finish(
         self,
@@ -363,6 +420,7 @@ class Orchestrator:
             produced_keys=tuple(produced),
             excluded=plan.excluded,
             egress_locked=state.egress_locked,
+            abandoned_threads=len(state.abandoned),
             started_at=started_at,
             finished_at=self._clock(),
         )

@@ -107,6 +107,7 @@ class PipelineResult:
     produced_keys: tuple[str, ...]
     excluded: tuple["ExcludedStage", ...]
     egress_locked: bool = False
+    abandoned_threads: int = 0
     started_at: datetime | None = None
     finished_at: datetime | None = None
 
