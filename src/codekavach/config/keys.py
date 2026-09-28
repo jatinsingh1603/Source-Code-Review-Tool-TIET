@@ -25,7 +25,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from pydantic import AfterValidator, SecretStr, WithJsonSchema
 
@@ -148,7 +148,7 @@ class SecretStatus:
     detail: str | None = None
 
 
-class _BackendUnavailableError(Exception):
+class KeyringUnavailableError(Exception):
     """No usable OS keyring in this session."""
 
 
@@ -164,13 +164,20 @@ def _from_env(locator: str, env: Mapping[str, str]) -> str | None:
     return env.get(locator) or None
 
 
-def _from_keyring(ref: str, service: str, username: str) -> str | None:
+def open_keyring(ref: str = "keyring") -> Any:
+    """The ``keyring`` module, once its active backend is known to be usable and not plaintext.
+
+    Imported lazily so that loading configuration never imports ``keyring``.
+
+    Raises:
+        KeyringUnavailableError: no backend can be initialised in this session.
+        SecretResolutionError: CK-CFG-014 for a plaintext or failing backend.
+    """
     try:
         keyring = importlib.import_module("keyring")
-        errors = importlib.import_module("keyring.errors")
         backend = keyring.get_keyring()
     except Exception as exc:
-        raise _BackendUnavailableError from exc
+        raise KeyringUnavailableError from exc
     backend_type = type(backend)
     if backend_type.__module__.startswith("keyrings.alt") or (
         backend_type.__module__ == "keyring.backends.fail" and backend_type.__name__ == "Keyring"
@@ -181,10 +188,16 @@ def _from_keyring(ref: str, service: str, username: str) -> str | None:
             hint=KEYRING_UNAVAILABLE_HINT,
             code=ConfigErrorCode.CK_CFG_014,
         )
+    return keyring
+
+
+def _from_keyring(ref: str, service: str, username: str) -> str | None:
+    keyring = open_keyring(ref)
+    errors = importlib.import_module("keyring.errors")
     try:
         value: str | None = keyring.get_password(service, username)
     except errors.KeyringError as exc:
-        raise _BackendUnavailableError from exc
+        raise KeyringUnavailableError from exc
     return value or None
 
 
@@ -271,7 +284,7 @@ def resolve_secret(
     """
     try:
         value = _lookup(ref, env, project_root, warnings)
-    except _BackendUnavailableError:
+    except KeyringUnavailableError:
         raise _unavailable(ref) from None
     if value is None:
         raise _error(ref, "the secret reference is not set")
@@ -304,7 +317,7 @@ def resolve_provider_key(
     for ref in refs:
         try:
             value = _lookup(ref, env, project_root, warnings)
-        except _BackendUnavailableError:
+        except KeyringUnavailableError:
             raise _unavailable(ref) from None
         if value is not None:
             return SecretStr(value)
@@ -326,7 +339,7 @@ def secret_status(
     """Report whether ``ref`` resolves, without revealing anything about the value."""
     try:
         value = _lookup(ref, env, project_root, None)
-    except _BackendUnavailableError:
+    except KeyringUnavailableError:
         return SecretStatus(ref, "backend-unavailable", KEYRING_UNAVAILABLE_HINT)
     except SecretResolutionError as exc:
         return SecretStatus(ref, "error", exc.issues[0].message)
