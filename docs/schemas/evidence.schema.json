@@ -159,7 +159,7 @@
   "$id": "urn:codekavach:schema:evidence:0",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "A snippet of client code with context lines and highlights for one location.",
+  "description": "A snippet of client code with context lines and highlights for one location.\n\n``render_text()`` is the named exit from the ``RawCode`` wrapper for report, CLI and\nintegration code: it returns the snippet as plain text, which must never reach\n``codekavach.llm`` (I2).",
   "properties": {
     "caption": {
       "anyOf": [

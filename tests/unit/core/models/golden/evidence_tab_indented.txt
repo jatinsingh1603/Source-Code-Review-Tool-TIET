@@ -1,0 +1,4 @@
+    1 | def f():
+    2 | 	if x:
+>   3 | 		return eval(x)
+      | 		       ^^^^

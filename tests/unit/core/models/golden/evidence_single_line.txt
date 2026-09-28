@@ -1,0 +1,5 @@
+   86 |     def find_by_owner(self, owner):
+   87 |         cur = self.conn.cursor()
+>  88 |         cur.execute("SELECT * FROM accounts WHERE owner = '" + owner + "'")
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   89 |         return cur.fetchall()

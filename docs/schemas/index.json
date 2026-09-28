@@ -28,13 +28,13 @@
       "file": "evidence.schema.json",
       "name": "Evidence",
       "schema_version": 0,
-      "sha256": "d12f8001d4424103b7a1e424755c4316c7eb1f4087a778be93097690684c4a2f"
+      "sha256": "b61ff13dbbcb7287dcdf6385fa497be540c4d81b3460f89b9c5da35c69607041"
     },
     {
       "file": "finding.schema.json",
       "name": "Finding",
       "schema_version": 1,
-      "sha256": "9c4893f70779e9f53f4c8ef621499e51bd09cdb5ecf4010ca44c2505694e55df"
+      "sha256": "1017ec8fdb83aebd11e302b189958ad591f3e509567d6b71e836a81a6b1af16f"
     },
     {
       "file": "llm_verdict.schema.json",

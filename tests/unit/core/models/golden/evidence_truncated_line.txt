@@ -1,0 +1,4 @@
+    1 | a = 1
+>   2 | query = 'qqqqqqqqqqqqqqqqqqqqq ...
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 | b = 2

@@ -11,6 +11,7 @@ Columns are 1-based code points with an exclusive end, as in ``Location``. A tab
 code point; renderers decide on tab expansion.
 """
 
+import unicodedata
 from typing import ClassVar, Self
 
 from pydantic import Field, field_validator, model_validator
@@ -83,8 +84,43 @@ def _line_ranges(location: Location, number: int, text: str) -> tuple[int, int] 
     return start, end
 
 
+MIN_GUTTER_WIDTH = 4
+_REPLACEMENT = chr(0xFFFD)
+_TAB = "\t"
+# Bidirectional overrides and isolates can reorder what a terminal shows (Trojan Source).
+_BIDI_CONTROLS = frozenset(map(chr, (*range(0x202A, 0x202F), *range(0x2066, 0x206A))))
+
+
+def _neutralise(text: str) -> str:
+    """Replace control characters other than tab, and bidi controls, by U+FFFD."""
+    return "".join(
+        _REPLACEMENT
+        if (char != _TAB and unicodedata.category(char) == "Cc") or char in _BIDI_CONTROLS
+        else char
+        for char in text
+    )
+
+
+def _carets(text: str, ranges: list[HighlightRange]) -> str:
+    """Caret marks up to the last highlighted visible code point (trailing blanks are skipped)."""
+    end = min(max(highlight.end_col for highlight in ranges) - 1, len(text.rstrip()))
+    marks = []
+    for index in range(end):
+        column = index + 1
+        if any(h.start_col <= column < h.end_col for h in ranges):
+            marks.append("^")
+        else:
+            marks.append(_TAB if index < len(text) and text[index] == _TAB else " ")
+    return "".join(marks)
+
+
 class Evidence(KavachModel):
-    """A snippet of client code with context lines and highlights for one location."""
+    """A snippet of client code with context lines and highlights for one location.
+
+    ``render_text()`` is the named exit from the ``RawCode`` wrapper for report, CLI and
+    integration code: it returns the snippet as plain text, which must never reach
+    ``codekavach.llm`` (I2).
+    """
 
     DATA_CLASSIFICATION: ClassVar[DataClassification] = DataClassification.RAW
 
@@ -180,3 +216,33 @@ class Evidence(KavachModel):
             caption=caption,
             clipped=clipped,
         )
+
+    def render_text(self, *, marker: str = ">", show_carets: bool = True) -> str:
+        """The snippet as plain text with a line-number gutter, markers and caret underlines.
+
+        Control characters other than tab (and bidi controls) are shown as U+FFFD so that a
+        crafted line cannot repaint a terminal; the model keeps the original text.
+
+        Raises:
+            ValueError: ``marker`` is not exactly one printable, non-whitespace character.
+        """
+        if len(marker) != 1 or not marker.isprintable() or marker.isspace():
+            raise ValueError("marker must be exactly one printable, non-whitespace character")
+        width = max(MIN_GUTTER_WIDTH, len(str(self.lines[-1].number)))
+        blank = " " * (width + 1) + " |"
+        by_line: dict[int, list[HighlightRange]] = {}
+        for highlight in self.highlights:
+            by_line.setdefault(highlight.line, []).append(highlight)
+        out: list[str] = []
+        for line in self.lines:
+            text = line.text.expose()
+            ranges = by_line.get(line.number, [])
+            shown = _neutralise(text) + (" ..." if line.truncated else "")
+            prefix = marker if ranges else " "
+            out.append(f"{prefix}{line.number:>{width}} | {shown}".rstrip())
+            carets = _carets(text, ranges) if ranges and show_carets else ""
+            if "^" in carets:
+                out.append(f"{blank} {carets}".rstrip())
+        if self.clipped:
+            out.append(f"{blank} ...")
+        return "\n".join(out) + "\n"
