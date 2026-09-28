@@ -11,8 +11,9 @@ are kept. A failure means an entry was altered, removed or inserted after it was
 file is corrupt; the tool cannot tell which, and says so without speaking of an attack. Neither
 command opens the vault or de-pseudonymises anything (I3); failures exit 3.
 
-``verify`` is a list of ``VerifyStep`` callables (``chain``, ``payloads``) so that later issues can
-append a step (E05-18: ``--check-terms``) without rewriting the command.
+``verify`` is a list of ``VerifyStep`` callables: ``chain``, ``payloads`` and, with
+``--check-terms``, ``terms`` (E05-18), which searches stored payloads for listed sensitive terms
+without ever printing them. All steps run; the first failing step decides the error code.
 """
 
 import hashlib
@@ -31,6 +32,7 @@ from codekavach.cli.backends import load_backend
 from codekavach.cli.context import get_context, with_target
 from codekavach.cli.errors import PrivacyBlockError, UsageError
 from codekavach.cli.output import Output, get_output, to_jsonable
+from codekavach.cli.term_check import Term, load_terms, search_payloads
 
 if TYPE_CHECKING:
     from codekavach.core.models.egress import EgressRecord
@@ -38,6 +40,7 @@ if TYPE_CHECKING:
     from codekavach.core.store.layout import StateLayout
 
 LOCAL_KINDS = frozenset({"mock", "replay"})
+NEWLINE = chr(10)
 MOCK_SENTENCE = "these payloads were recorded but not transmitted (mock or replay provider)"
 
 ledger_app = typer.Typer(help="Audit the egress ledger.", no_args_is_help=True)
@@ -70,6 +73,8 @@ class VerifyContext:
     require_payloads: bool = False
     options: dict[str, Any] = field(default_factory=dict)
     payload_hashes: set[str] = field(default_factory=set)
+    sent_hashes: set[str] = field(default_factory=set)
+    seqs_by_hash: dict[str, list[int]] = field(default_factory=dict)
     records: int = 0
 
 
@@ -153,6 +158,9 @@ def chain_step(context: VerifyContext) -> StepResult:
         seen[record.seq] = record.payload_hash
         if record.outcome.value in {"sent", "blocked"}:
             context.payload_hashes.add(record.payload_hash)
+            context.seqs_by_hash.setdefault(record.payload_hash, []).append(record.seq)
+            if record.outcome.value == "sent":
+                context.sent_hashes.add(record.payload_hash)
         prev = record
     return StepResult(
         name="chain",
@@ -207,17 +215,95 @@ def payloads_step(context: VerifyContext) -> StepResult:
     )
 
 
-VERIFY_STEPS: list[VerifyStep] = [chain_step, payloads_step]
+def _stored_payloads(context: VerifyContext) -> list[tuple[str, str]]:
+    stored: list[tuple[str, str]] = []
+    for payload_hash in sorted(context.payload_hashes):
+        try:
+            text = context.reader.payload_text(payload_hash)
+        except Exception:  # noqa: BLE001, S112 - reported by the payload step
+            continue
+        if text is not None:
+            stored.append((payload_hash, text.expose()))
+    return stored
+
+
+def terms_step(context: VerifyContext) -> StepResult:
+    """Search every stored payload for the listed terms (runs only with ``--check-terms``)."""
+    files: list[Path] = context.options.get("terms_files", [])
+    terms: list[Term] = []
+    short: list[str] = []
+    for path in files:
+        loaded = load_terms(path)
+        terms.extend(loaded.terms)
+        short.extend(f"{path}:{line}" for line in loaded.short_lines)
+    hits = search_payloads(
+        terms, _stored_payloads(context), ignore_case=bool(context.options.get("ignore_case"))
+    )
+    include_blocked = bool(context.options.get("include_blocked"))
+    lines: list[str] = []
+    failing = 0
+    for hit in hits:
+        blocked = hit.payload_hash not in context.sent_hashes
+        seqs = ", ".join(str(seq) for seq in context.seqs_by_hash.get(hit.payload_hash, []))
+        suffix = " (blocked, not sent)" if blocked else ""
+        lines.append(
+            f"  {hit.terms_file}:{hit.line} found in seq {seqs} "
+            f"(payload {hit.payload_hash[:12]}){suffix}"
+        )
+        if not blocked or include_blocked:
+            failing += 1
+    data = {
+        "checked": len(terms),
+        "skipped_short": len(short),
+        "hits": [
+            {
+                "terms_file": hit.terms_file,
+                "line": hit.line,
+                "seq": context.seqs_by_hash.get(hit.payload_hash, []),
+                "payload_hash": hit.payload_hash,
+            }
+            for hit in hits
+        ],
+    }
+    warnings = []
+    if short:
+        skipped = ", ".join(short)
+        warnings.append(
+            (
+                "terms_too_short",
+                f"{len(short)} term(s) shorter than 4 characters skipped: {skipped}",
+            )
+        )
+    summary_lines = [
+        f"terms: {len(terms)} checked, {len(short)} skipped (too short), {len(hits)} occurrence(s)",
+        *lines,
+    ]
+    if failing:
+        summary = NEWLINE.join(summary_lines)
+        return StepResult(
+            "terms",
+            ok=False,
+            error_code="ledger_term_found",
+            message="a listed term occurs verbatim in the egress ledger",
+            data=data,
+            warnings=warnings,
+            summary=summary,
+        )
+    summary = NEWLINE.join([*summary_lines, VERBATIM_CAVEAT])
+    return StepResult("terms", ok=True, data=data, warnings=warnings, summary=summary)
+
+
+VERBATIM_CAVEAT = "verbatim check only; structural leakage is measured by 'codekavach eval leakage'"
+VERIFY_STEPS: list[VerifyStep] = [chain_step, payloads_step, terms_step]
 
 
 def run_verify(context: VerifyContext, steps: Iterable[VerifyStep]) -> list[StepResult]:
-    """Run the steps in order; after a chain failure the later steps are not run."""
+    """Run the steps in order; the terms step runs only when terms files are given."""
     results: list[StepResult] = []
     for step in steps:
-        result = step(context)
-        results.append(result)
-        if not result.ok and result.name == "chain":
-            break
+        if step is terms_step and not context.options.get("terms_files"):
+            continue
+        results.append(step(context))
     return results
 
 
@@ -251,7 +337,7 @@ def _finish_verify(out: Output, context: VerifyContext, results: list[StepResult
             return
         for result in results:
             if result.summary:
-                console.print(result.summary, markup=False)
+                console.print(result.summary, markup=False, soft_wrap=True)
 
     out.result(verify_data(context, results), human=render)
     for result in results:
@@ -260,17 +346,47 @@ def _finish_verify(out: Output, context: VerifyContext, results: list[StepResult
 
 
 @ledger_app.command("verify")
-def verify_command(
+def verify_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     ctx: typer.Context,
     target: Annotated[str, typer.Argument(help="Project directory.")] = ".",
     require_payloads: Annotated[
         bool,
         typer.Option("--require-payloads", help="Fail when a payload is missing or unreadable."),
     ] = False,
+    check_terms: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--check-terms",
+            help=(
+                "File of sensitive terms (one per line, 4+ characters) that must not occur "
+                "verbatim in any stored payload; repeatable. Avoid generic words: a term equal "
+                "to a placeholder subtype such as email matches the placeholders."
+            ),
+        ),
+    ] = None,
+    ignore_case: Annotated[
+        bool, typer.Option("--ignore-case", help="Also match terms case-insensitively.")
+    ] = False,
+    include_blocked: Annotated[
+        bool,
+        typer.Option("--include-blocked", help="Hits in blocked payloads also fail the check."),
+    ] = False,
 ) -> None:
     """Recompute the hash chain and check stored payloads against their hashes."""
+    files = list(check_terms or [])
+    for path in files:
+        if not path.is_file():
+            raise UsageError(f"terms file cannot be read: {path}", code="terms_file_unreadable")
     reader = _open_reader(_layout(ctx, target))
-    context = VerifyContext(reader=reader, require_payloads=require_payloads)
+    context = VerifyContext(
+        reader=reader,
+        require_payloads=require_payloads,
+        options={
+            "terms_files": files,
+            "ignore_case": ignore_case,
+            "include_blocked": include_blocked,
+        },
+    )
     _finish_verify(get_output(ctx), context, run_verify(context, VERIFY_STEPS))
 
 
