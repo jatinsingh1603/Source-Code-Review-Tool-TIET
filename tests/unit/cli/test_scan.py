@@ -71,10 +71,22 @@ def test_flags_reach_the_loader(cli: Cli, project: Path, monkeypatch: pytest.Mon
     assert loaded.origins["scan.jobs"].source == "--jobs"
 
 
-def test_engine_flags_need_the_engines_section(cli: Cli, project: Path) -> None:
-    result = cli(["scan", str(project), "--engine", "semgrep"])
+def test_engine_flags_reach_the_engines_section(
+    cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stub = install_stub(monkeypatch)
+    result = cli(["scan", str(project), "--engine", "semgrep", "--skip-engine", "bandit"])
+    assert result.exit_code == 0, result.stderr
+    loaded = stub.calls[0]["loaded"]
+    assert loaded.settings.engines.enabled == ["semgrep"]
+    assert loaded.settings.engines.disabled == ["bandit"]
+    assert loaded.origins["engines.enabled"].source == "--engine"
+
+
+def test_invalid_engine_id_is_a_usage_error(cli: Cli, project: Path) -> None:
+    result = cli(["scan", str(project), "--engine", "Not Valid"])
     assert result.exit_code == 2
-    assert "not available in this build" in result.stderr
+    assert "Not Valid" not in result.stderr
 
 
 def test_project_config_is_discovered_from_the_target(

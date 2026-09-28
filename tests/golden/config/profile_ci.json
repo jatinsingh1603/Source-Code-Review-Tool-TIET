@@ -1,5 +1,22 @@
 {
   "config_version": 1,
+  "engines": {
+    "disabled": [],
+    "enabled": [],
+    "native": {
+      "iac": true,
+      "rules": true,
+      "sca": true,
+      "secrets": true,
+      "taint": true
+    },
+    "options": {},
+    "rule_packs": [
+      "default"
+    ],
+    "rule_paths": [],
+    "timeout_seconds": 600
+  },
   "llm": {
     "allow_remote": true,
     "budget": {

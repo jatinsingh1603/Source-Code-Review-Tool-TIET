@@ -8,6 +8,7 @@ from typing import Any, Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
+from codekavach.config.models.engines import EnginesSettings
 from codekavach.config.models.llm import LLMSettings
 from codekavach.config.models.log import LoggingSettings
 from codekavach.config.models.plugins import PluginsSettings
@@ -53,6 +54,9 @@ class Settings(BaseSettings):
     )
     reporting: ReportingSettings = Field(
         default_factory=ReportingSettings, description="Which reports are written and how."
+    )
+    engines: EnginesSettings = Field(
+        default_factory=EnginesSettings, description="Which analysers run and how."
     )
     plugins: PluginsSettings = Field(
         default_factory=PluginsSettings, description="Which installed plugins may load."

@@ -5,7 +5,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from codekavach.config import load_settings
+from codekavach.config import load_settings, overrides
 from codekavach.config.errors import ConfigError, ConfigErrorCode
 from codekavach.config.overrides import (
     FLAG_TO_KEY,
@@ -58,10 +58,17 @@ def test_ignored_values() -> None:
     assert overrides_from_flags(no_llm=False, provider=None, include=()).data == {}
 
 
-def test_unknown_keyword_and_unavailable_key() -> None:
+def test_unknown_keyword_and_unavailable_key(monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(TypeError, match="unknown flag"):
         overrides_from_flags(nope=1)
-    assert code(lambda: overrides_from_flags(engine=("semgrep",))) is ConfigErrorCode.CK_CFG_061
+    table = {**overrides.FLAG_TO_KEY, "future": overrides.Flag("--future", ("nosuch.key",))}
+    monkeypatch.setattr(overrides, "FLAG_TO_KEY", table)
+    assert code(lambda: overrides_from_flags(future="x")) is ConfigErrorCode.CK_CFG_061
+
+
+def test_engine_flags_map_to_the_engines_section() -> None:
+    result = overrides_from_flags(engine=("semgrep",), skip_engine=("bandit",))
+    assert result.data == {"engines": {"enabled": ["semgrep"], "disabled": ["bandit"]}}
 
 
 def test_parse_set_options() -> None:
