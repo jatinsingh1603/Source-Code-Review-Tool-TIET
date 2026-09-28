@@ -25,6 +25,7 @@ from tests.support.factories import (
 )
 from tests.support.fakes import fake_backend
 from tests.support.golden import assert_matches_golden
+from tests.support.perf import budget
 
 Cli = Callable[..., CliResult]
 GOLDEN = Path(__file__).parent / "golden"
@@ -237,7 +238,7 @@ def test_large_chain_is_fast() -> None:
     chain = make_egress_chain(100_000)
     started = time.perf_counter()
     assert chain_step(VerifyContext(golden_reader(chain))).ok
-    assert time.perf_counter() - started < 30
+    assert time.perf_counter() - started < budget(30)
 
 
 def test_no_vault_or_restore_imports() -> None:

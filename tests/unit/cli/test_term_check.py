@@ -19,6 +19,7 @@ from codekavach.core.models.text import SanitisedText
 from tests.support.cli import CliResult
 from tests.support.factories import FIXED_NOW, SCAN_ID
 from tests.support.fakes import fake_backend
+from tests.support.perf import budget
 
 Cli = Callable[..., CliResult]
 TERM = "AKIAIOSFODNN7EXAMPLE"  # pragma: allowlist secret
@@ -234,7 +235,7 @@ def test_benchmark() -> None:
     payloads = [(f"h{index}", "y" * 4096) for index in range(5_000)]
     started = time.perf_counter()
     assert search_payloads(terms, payloads, ignore_case=False) == []
-    assert time.perf_counter() - started < 10
+    assert time.perf_counter() - started < budget(10)
 
 
 KAVACHBANK_TERMS = (
