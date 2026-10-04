@@ -27,6 +27,7 @@ from rich.table import Table
 from rich.text import Text
 
 from codekavach.cli.backends import load_backend
+from codekavach.cli.consent import consent_app
 from codekavach.cli.context import get_context, with_target
 from codekavach.cli.errors import PrivacyBlockError, UsageError
 from codekavach.cli.ledger import ledger_app
@@ -50,6 +51,7 @@ privacy_app = typer.Typer(
     no_args_is_help=True,
 )
 privacy_app.add_typer(ledger_app, name="ledger")
+privacy_app.add_typer(consent_app, name="consent")
 
 
 class PayloadSource(Protocol):

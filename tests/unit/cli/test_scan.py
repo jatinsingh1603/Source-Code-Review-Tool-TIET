@@ -107,7 +107,8 @@ def test_everything_goes_through_run_scan(
     cli(["scan", str(project)])
     (call,) = stub.calls
     assert call["target"] == str(project)
-    assert set(call) == {"loaded", "target", "salt", "bus", "cancellation"}
+    assert set(call) == {"loaded", "target", "salt", "bus", "cancellation", "consent"}
+    assert call["consent"] is None  # the mock provider needs no consent
     assert type(call["salt"]).__name__ == "ScanSalt"
 
 
@@ -120,7 +121,7 @@ def test_remote_provider_is_refused(
     trust = "--trust-project-config"
     result = cli(["scan", str(project), trust])
     assert result.exit_code == 3
-    assert "error[consent_unavailable]" in result.stderr
+    assert "error[consent_required]" in result.stderr
     assert stub.calls == []
     assert cli(["scan", str(project), "--no-llm", trust]).exit_code == 0
     assert len(stub.calls) == 1

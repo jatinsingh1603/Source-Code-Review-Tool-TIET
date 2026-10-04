@@ -3,7 +3,7 @@
 Owning epic: E05.
 
 The command does no analysis. It validates the target, lets the E03 loader apply the flags (which
-enforces privacy floors), refuses remote providers until the consent gate exists (E05-13), calls
+enforces privacy floors), passes the consent gate before a remote provider is used (E05-13), calls
 ``run_scan()`` of E04-16, the one function that builds the context, store and plan, and renders a
 summary. It has no route to a provider of its own: it imports neither ``codekavach.llm`` nor
 ``codekavach.privacy.egress`` (I1, I2), and pipeline modules are imported only when a scan runs.
@@ -31,6 +31,7 @@ from rich.console import Console
 from rich.table import Table
 
 from codekavach.cli.backends import load_backend
+from codekavach.cli.consent import EgressConsent, ensure_egress_consent
 from codekavach.cli.context import CliContext, with_overrides, with_target
 from codekavach.cli.errors import (
     CliError,
@@ -228,11 +229,13 @@ def execute_scan(
     *,
     runner: Callable[..., Any] | None = None,
     listen: Callable[[Any], contextlib.AbstractContextManager[None]] | None = None,
+    consent: EgressConsent | None = None,
 ) -> CliScanResult:
     """Run the pipeline through ``run_scan()`` and convert its outcome.
 
     ``listen`` receives the event bus of the scan and returns a context manager that is active
-    while the pipeline runs (the progress display, E05-11).
+    while the pipeline runs (the progress display, E05-11). ``consent`` is the outcome of the
+    consent gate; it reaches the core only as ``run_scan(consent=...)``.
     """
     from codekavach.core.pipeline.cancel import (  # noqa: PLC0415
         CancellationToken,
@@ -255,6 +258,7 @@ def execute_scan(
                 salt=ScanSalt.generate(),
                 bus=bus,
                 cancellation=CancellationToken(),
+                consent=consent.decision() if consent is not None else None,
             )
     except (PlanError, GraphError) as error:
         raise InternalError(
@@ -284,6 +288,7 @@ def scan_data(
     provider: ProviderChoice,
     privacy_level: str,
     threshold: ThresholdResult,
+    consent_source: str = "not-required",
 ) -> dict[str, Any]:
     """The ``data`` object of the JSON envelope (counts and paths only)."""
     return {
@@ -306,6 +311,7 @@ def scan_data(
             "by_severity": _counts(result.summary),
         },
         "egress": {"recorded": result.egress_sent, "blocked": result.egress_blocked},
+        "consent": {"source": consent_source},
         "degraded_stages": list(result.degraded_stages),
         "report_files": [str(path) for path in result.report_files],
         "state_dir": str(result.state_dir),
@@ -419,6 +425,13 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         bool,
         typer.Option("--strict-privacy", help="Exit 3 when the egress guard blocked a payload."),
     ] = False,
+    accept_egress: Annotated[
+        bool,
+        typer.Option(
+            "--accept-egress",
+            help="Approve sending sanitised payloads to the remote provider for this run.",
+        ),
+    ] = False,
     progress: Annotated[
         ProgressMode,
         typer.Option(
@@ -453,18 +466,34 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     out = get_output(ctx)
     provider = resolve_provider(cli_ctx)
     maybe_show_first_run_notice(ctx)
-    if provider.remote:
-        raise PrivacyBlockError(
-            "remote providers require the consent gate, which this build does not include",
-            code="consent_unavailable",
+    consent = EgressConsent("not-required")
+    if provider.id is not None:
+        consent = ensure_egress_consent(
+            ctx,
+            provider_id=provider.id,
+            provider=cli_ctx.settings.llm.providers[provider.id],
+            level=cli_ctx.privacy_level,
+            accept=accept_egress,
         )
-    result = execute_scan(cli_ctx, target, listen=lambda bus: progress_listener(ctx, bus, progress))
+    if consent.source != "not-required":
+        out.info(f"remote egress to {provider.id} accepted via {consent.source}")
+    result = execute_scan(
+        cli_ctx,
+        target,
+        listen=lambda bus: progress_listener(ctx, bus, progress),
+        consent=consent,
+    )
     level = str(cli_ctx.privacy_level.value)
     threshold = evaluate_threshold(result.findings, cli_ctx.settings.scan.fail_on)
     _warnings(out, result)
     out.result(
         scan_data(
-            result, target=target, provider=provider, privacy_level=level, threshold=threshold
+            result,
+            target=target,
+            provider=provider,
+            privacy_level=level,
+            threshold=threshold,
+            consent_source=consent.source,
         ),
         human=_renderer(result, provider, level, threshold),
     )
