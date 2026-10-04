@@ -60,6 +60,11 @@ def outcome(
 def install_stub(monkeypatch: pytest.MonkeyPatch, **kwargs: object) -> StubOrchestrator:
     """Register a ``StubOrchestrator`` as ``run_scan`` for the CLI."""
     error = kwargs.pop("error", None)
-    stub = StubOrchestrator(outcome=outcome(**kwargs), error=error)  # type: ignore[arg-type]
+    events = kwargs.pop("events", ())
+    stub = StubOrchestrator(
+        events=events,  # type: ignore[arg-type]
+        outcome=outcome(**kwargs),  # type: ignore[arg-type]
+        error=error,  # type: ignore[arg-type]
+    )
     fake_backend(monkeypatch, RUN_SCAN, stub)
     return stub

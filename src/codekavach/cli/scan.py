@@ -18,6 +18,7 @@ disagreed (ARCHITECTURE section 7). ``--strict-privacy`` turns a guard refusal i
 refusal itself is fail-closed with or without the flag (I4).
 """
 
+import contextlib
 import re
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
@@ -40,6 +41,7 @@ from codekavach.cli.errors import (
 )
 from codekavach.cli.exit_codes import ExitCode
 from codekavach.cli.output import TABLE_BOX, Output, get_output, severity_style
+from codekavach.cli.progress import ProgressMode, progress_listener
 from codekavach.core.models.enums import FindingStatus, Severity
 
 if TYPE_CHECKING:
@@ -220,9 +222,17 @@ def to_cli_result(outcome: Any) -> CliScanResult:
 
 
 def execute_scan(
-    cli_ctx: CliContext, target: str, *, runner: Callable[..., Any] | None = None
+    cli_ctx: CliContext,
+    target: str,
+    *,
+    runner: Callable[..., Any] | None = None,
+    listen: Callable[[Any], contextlib.AbstractContextManager[None]] | None = None,
 ) -> CliScanResult:
-    """Run the pipeline through ``run_scan()`` and convert its outcome."""
+    """Run the pipeline through ``run_scan()`` and convert its outcome.
+
+    ``listen`` receives the event bus of the scan and returns a context manager that is active
+    while the pipeline runs (the progress display, E05-11).
+    """
     from codekavach.core.pipeline.cancel import (  # noqa: PLC0415
         CancellationToken,
         ScanCancelledError,
@@ -235,14 +245,16 @@ def execute_scan(
     run_scan = runner or load_backend(
         "codekavach.core.pipeline.runner", "run_scan", feature="the scan pipeline", epic="E04"
     )
+    bus = InMemoryEventBus()
     try:
-        outcome = run_scan(
-            cli_ctx.loaded,
-            target,
-            salt=ScanSalt.generate(),
-            bus=InMemoryEventBus(),
-            cancellation=CancellationToken(),
-        )
+        with listen(bus) if listen is not None else contextlib.nullcontext():
+            outcome = run_scan(
+                cli_ctx.loaded,
+                target,
+                salt=ScanSalt.generate(),
+                bus=bus,
+                cancellation=CancellationToken(),
+            )
     except (PlanError, GraphError) as error:
         raise InternalError(
             f"the installed pipeline is invalid: {error}", code="pipeline_invalid"
@@ -406,6 +418,15 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         bool,
         typer.Option("--strict-privacy", help="Exit 3 when the egress guard blocked a payload."),
     ] = False,
+    progress: Annotated[
+        ProgressMode,
+        typer.Option(
+            "--progress",
+            case_sensitive=False,
+            help="Progress on stderr: auto picks bar on a terminal, plain when piped, off "
+            "under --quiet or --json.",
+        ),
+    ] = ProgressMode.auto,
 ) -> None:
     """Scan a code base and print a severity summary."""
     from codekavach.config.overrides import overrides_from_flags  # noqa: PLC0415
@@ -435,7 +456,7 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
             "remote providers require the consent gate, which this build does not include",
             code="consent_unavailable",
         )
-    result = execute_scan(cli_ctx, target)
+    result = execute_scan(cli_ctx, target, listen=lambda bus: progress_listener(ctx, bus, progress))
     level = str(cli_ctx.privacy_level.value)
     threshold = evaluate_threshold(result.findings, cli_ctx.settings.scan.fail_on)
     _warnings(out, result)
