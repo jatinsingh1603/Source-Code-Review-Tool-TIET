@@ -11,6 +11,7 @@ scan_01ARYZ6S4100000000
 │ info     │        0 │
 └──────────┴──────────┘
 findings: 1
+threshold: high; 0 finding(s) at or above it: passing
 LLM provider: mock (local), level L3, payloads recorded: 3, blocked by guard: 0
 provider is local/mock: payloads were recorded but not transmitted
 next: codekavach privacy inspect --scan scan_01ARYZ6S410000000000000000

@@ -31,8 +31,9 @@ def test_json_data(project: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     data = result.json["data"]
     assert set(data) == {
         "scan_id", "target", "privacy_level", "provider", "summary", "egress",
-        "degraded_stages", "report_files", "state_dir",
+        "degraded_stages", "report_files", "state_dir", "threshold",
     }  # fmt: skip
+    assert data["threshold"] == {"fail_on": "high", "exceeded": False, "counted": 0}
     assert data["provider"] == {"id": "mock", "kind": "mock", "remote": False, "model": None}
     assert set(data["summary"]["by_severity"]) == {"critical", "high", "medium", "low", "info"}
     assert data["summary"]["findings_total"] == sum(data["summary"]["by_severity"].values())
