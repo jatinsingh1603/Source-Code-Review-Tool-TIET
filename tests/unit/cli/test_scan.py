@@ -107,7 +107,10 @@ def test_everything_goes_through_run_scan(
     cli(["scan", str(project)])
     (call,) = stub.calls
     assert call["target"] == str(project)
-    assert set(call) == {"loaded", "target", "salt", "bus", "cancellation", "consent"}
+    assert set(call) == {
+        "loaded", "target", "salt", "bus", "cancellation", "consent",
+        "handle_sigint", "resume", "use_cache", "refresh",
+    }  # fmt: skip
     assert call["consent"] is None  # the mock provider needs no consent
     assert type(call["salt"]).__name__ == "ScanSalt"
 

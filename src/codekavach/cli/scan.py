@@ -44,6 +44,7 @@ from codekavach.cli.exit_codes import ExitCode
 from codekavach.cli.onboarding import maybe_show_first_run_notice
 from codekavach.cli.output import TABLE_BOX, Output, get_output, severity_style
 from codekavach.cli.progress import ProgressMode, progress_listener
+from codekavach.cli.signals import report_cancelled, resume_refusal, scan_salt
 from codekavach.core.models.enums import FindingStatus, Severity
 
 if TYPE_CHECKING:
@@ -230,12 +231,20 @@ def execute_scan(
     runner: Callable[..., Any] | None = None,
     listen: Callable[[Any], contextlib.AbstractContextManager[None]] | None = None,
     consent: EgressConsent | None = None,
+    resume: str | None = None,
+    use_cache: bool | None = None,
+    refresh: Sequence[str] = (),
+    out: Output | None = None,
 ) -> CliScanResult:
     """Run the pipeline through ``run_scan()`` and convert its outcome.
 
     ``listen`` receives the event bus of the scan and returns a context manager that is active
     while the pipeline runs (the progress display, E05-11). ``consent`` is the outcome of the
     consent gate; it reaches the core only as ``run_scan(consent=...)``.
+
+    The pipeline handles SIGINT and SIGTERM itself (``handle_sigint=True``, E04-29). ``resume``
+    continues an interrupted scan with its stored salt; a refusal of the pipeline becomes a
+    usage error with a ``resume_*`` code. A cancelled scan ends through ``report_cancelled``.
     """
     from codekavach.core.pipeline.cancel import (  # noqa: PLC0415
         CancellationToken,
@@ -244,29 +253,38 @@ def execute_scan(
     from codekavach.core.pipeline.errors import GraphError  # noqa: PLC0415
     from codekavach.core.pipeline.events import InMemoryEventBus  # noqa: PLC0415
     from codekavach.core.pipeline.plan import PlanError  # noqa: PLC0415
-    from codekavach.core.pipeline.salt import ScanSalt  # noqa: PLC0415
+    from codekavach.core.pipeline.resume import ResumeMismatchError  # noqa: PLC0415
 
     run_scan = runner or load_backend(
         "codekavach.core.pipeline.runner", "run_scan", feature="the scan pipeline", epic="E04"
     )
+    salt = scan_salt(cli_ctx.loaded, resume)
     bus = InMemoryEventBus()
     try:
         with listen(bus) if listen is not None else contextlib.nullcontext():
             outcome = run_scan(
                 cli_ctx.loaded,
                 target,
-                salt=ScanSalt.generate(),
+                salt=salt,
                 bus=bus,
                 cancellation=CancellationToken(),
                 consent=consent.decision() if consent is not None else None,
+                handle_sigint=True,
+                resume=resume,
+                use_cache=use_cache,
+                refresh=tuple(refresh),
             )
+    except ResumeMismatchError as error:
+        raise resume_refusal(error) from None
     except (PlanError, GraphError) as error:
         raise InternalError(
             f"the installed pipeline is invalid: {error}", code="pipeline_invalid"
         ) from None
     status = str(outcome.result.status.value)
     if status == "cancelled":
-        raise ScanCancelledError("cancelled")
+        if out is None:
+            raise ScanCancelledError("cancelled")
+        report_cancelled(out, target, outcome)
     if status == "failed":
         failed = ", ".join(outcome.result.failed_stages()) or "unknown"
         raise InternalError(f"the scan failed in stage {failed}", code="scan_failed")
@@ -425,6 +443,22 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         bool,
         typer.Option("--strict-privacy", help="Exit 3 when the egress guard blocked a payload."),
     ] = False,
+    resume: Annotated[
+        str | None,
+        typer.Option(
+            "--resume",
+            metavar="[SCAN_ID|latest]",
+            help="Continue an interrupted scan (latest when no id is given). Needs the stored "
+            "scan salt of the vault (E10); until then it is refused with resume_salt_changed.",
+        ),
+    ] = None,
+    no_cache: Annotated[
+        bool, typer.Option("--no-cache", help="Run every stage again; use no cached result.")
+    ] = False,
+    refresh_stage: Annotated[
+        list[str] | None,
+        typer.Option("--refresh-stage", help="Stage or group to run again; repeatable."),
+    ] = None,
     accept_egress: Annotated[
         bool,
         typer.Option(
@@ -445,6 +479,11 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     """Scan a code base and print a severity summary."""
     from codekavach.config.overrides import overrides_from_flags  # noqa: PLC0415
 
+    if resume is not None and no_cache:
+        raise UsageError(
+            "--resume relies on the stage cache and cannot be combined with --no-cache",
+            code="resume_no_cache_conflict",
+        )
     local = check_target(target)
     if local is not None:
         with_target(ctx, local if local.is_dir() else local.parent)
@@ -482,6 +521,10 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         target,
         listen=lambda bus: progress_listener(ctx, bus, progress),
         consent=consent,
+        resume=resume,
+        use_cache=False if no_cache else None,
+        refresh=tuple(refresh_stage or ()),
+        out=out,
     )
     level = str(cli_ctx.privacy_level.value)
     threshold = evaluate_threshold(result.findings, cli_ctx.settings.scan.fail_on)

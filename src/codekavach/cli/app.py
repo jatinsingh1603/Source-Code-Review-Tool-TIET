@@ -34,6 +34,7 @@ from codekavach.cli.exit_codes import EXIT_CODE_HELP, ExitCode
 from codekavach.cli.options import attach_global_options
 from codekavach.cli.privacy import privacy_app
 from codekavach.cli.scan import scan_command
+from codekavach.cli.signals import normalise_resume
 from codekavach.core.log import configure_logging
 
 # Typer 0.27 vendors Click as ``typer._click``; command objects and ``ClickException`` come from
@@ -193,6 +194,7 @@ def _command_from_argv(command: click.Command, argv: Sequence[str]) -> str:
 def run(command: click.Command, argv: Sequence[str]) -> int:
     """Execute ``command`` with ``argv``, write the JSON envelope if any, return the exit code."""
     output.begin_invocation()
+    argv = normalise_resume(argv)  # ``--resume`` without a value means the latest scan
     code = _execute(command, argv)
     found = output.current_output()
     if found is None and _flags(argv)[2]:

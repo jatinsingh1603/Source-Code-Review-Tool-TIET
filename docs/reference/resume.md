@@ -47,6 +47,35 @@ With `run_scan(..., handle_sigint=True)` the first SIGINT (Ctrl-C) or SIGTERM ca
 
 How fast the first signal takes effect depends on the running stage: a stage that checks for cancellation stops within one unit of work, and one that does not is abandoned when its timeout expires. SIGTERM is skipped on platforms where it cannot be registered.
 
+## From the command line
+
+`codekavach scan` lets the pipeline handle the signals. After the first Ctrl-C (or SIGTERM) it prints where the scan stopped and how to continue, and exits 130:
+
+```text
+scan scan_01J9Z3K7Q2 cancelled after stage 'parse'
+resume with: codekavach scan . --resume scan_01J9Z3K7Q2
+```
+
+With `--json` the envelope has `exit_code: 130`, one error with code `cancelled` and `data: {"scan_id": "...", "resumable": true}`.
+
+| Option | Effect |
+|---|---|
+| `--resume SCAN_ID` | Continue that scan. `--resume` without a value (written last, or before another option) means the newest interrupted scan |
+| `--no-cache` | Run every stage again; cannot be combined with `--resume` (`resume_no_cache_conflict`) |
+| `--refresh-stage NAME` (repeatable) | Run that stage or group again even if its result is cached |
+
+A refused resume exits 2 with one of these codes:
+
+| Code | Reason |
+|---|---|
+| `resume_not_found` | No such scan, or no interrupted scan |
+| `resume_not_cancelled` | The scan already finished |
+| `resume_config_changed` | The result-affecting configuration or the CodeKavach version changed |
+| `resume_salt_changed` | The scan salt is not the one the scan started with |
+| `resume_target_mismatch` | The scan was started for another target |
+
+A resumed scan needs the salt of its first attempt, which the vault (E10) will store. Until the vault exists the CLI has no stored salt, so `--resume` is refused with `resume_salt_changed` instead of continuing with a fresh salt, which would change the pseudonyms halfway through a scan.
+
 ## Known limit
 
 Until the LLM response cache (E22) exists, a resumed scan can send payloads that the first attempt already sent. The payloads are identical, so nothing new leaves the machine, but the provider is called and billed again.
