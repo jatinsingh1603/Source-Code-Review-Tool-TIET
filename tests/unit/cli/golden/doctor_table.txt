@@ -1,0 +1,8 @@
+PASS  runtime:python          3.12.6
+PASS  config:valid            profile demo, 0 warning(s)
+WARN  secrets:keyring         no keyring backend; passphrase mode will be used
+FAIL  parsing:grammar:python  grammar could not be loaded
+SKIP  storage:artefacts       not available in this build
+hint  secrets:keyring         install a keyring backend or use passphrase mode
+hint  parsing:grammar:python  uv sync --all-extras
+2 passed, 1 warning, 1 failed, 1 skipped

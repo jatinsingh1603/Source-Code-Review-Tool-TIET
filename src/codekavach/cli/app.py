@@ -30,6 +30,7 @@ from typer._click.exceptions import NoArgsIsHelpError
 from codekavach.cli import output
 from codekavach.cli._version import get_version
 from codekavach.cli.console import get_err_console
+from codekavach.cli.doctor import doctor_command
 from codekavach.cli.errors import CliError, error_line, render_error
 from codekavach.cli.exit_codes import EXIT_CODE_HELP, ExitCode
 from codekavach.cli.options import attach_global_options
@@ -94,6 +95,7 @@ def version_command() -> None:
 
 app.command("scan")(scan_command)
 app.command("report")(report_command)
+app.command("doctor")(doctor_command)
 app.add_typer(privacy_app, name="privacy")
 
 

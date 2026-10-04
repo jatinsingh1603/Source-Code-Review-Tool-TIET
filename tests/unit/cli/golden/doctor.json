@@ -1,0 +1,62 @@
+{
+  "checks": [
+    {
+      "category": "runtime",
+      "details": {},
+      "duration_ms": 0,
+      "name": "runtime:python",
+      "remediation": null,
+      "required": true,
+      "status": "pass",
+      "summary": "3.12.6"
+    },
+    {
+      "category": "config",
+      "details": {},
+      "duration_ms": 0,
+      "name": "config:valid",
+      "remediation": null,
+      "required": false,
+      "status": "pass",
+      "summary": "profile demo, 0 warning(s)"
+    },
+    {
+      "category": "secrets",
+      "details": {},
+      "duration_ms": 0,
+      "name": "secrets:keyring",
+      "remediation": "install a keyring backend or use passphrase mode",
+      "required": false,
+      "status": "warn",
+      "summary": "no keyring backend; passphrase mode will be used"
+    },
+    {
+      "category": "parsing",
+      "details": {
+        "language": "python"
+      },
+      "duration_ms": 12,
+      "name": "parsing:grammar:python",
+      "remediation": "uv sync --all-extras",
+      "required": true,
+      "status": "fail",
+      "summary": "grammar could not be loaded"
+    },
+    {
+      "category": "storage",
+      "details": {},
+      "duration_ms": 0,
+      "name": "storage:artefacts",
+      "remediation": null,
+      "required": false,
+      "status": "skip",
+      "summary": "not available in this build"
+    }
+  ],
+  "totals": {
+    "failed": 1,
+    "passed": 2,
+    "skipped": 1,
+    "warnings": 1
+  }
+}
