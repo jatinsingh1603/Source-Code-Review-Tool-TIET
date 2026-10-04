@@ -50,7 +50,7 @@ A local model (Ollama, vLLM) can sit inside the trusted boundary; policy may the
 
 ```
 src/codekavach/
-  cli/                 Typer app: scan, report, privacy, providers, vault, config, doctor, sync, eval
+  cli/                 Typer app: scan, report, privacy, providers, vault, config, init, doctor, plugins, sync, eval, demo, completion (one module per group; conventions in ADR-0008)
   config/              settings models, loader, profiles, key handling
   core/
     models/            Finding, Location, CodeRegion, TaintPath, Evidence, Candidate, Scan, Project ...
@@ -217,6 +217,25 @@ The report model follows the structure used by professional audit firms: cover a
 `integrations.github` offers: SARIF upload to code scanning, check runs and pull-request annotations, **issue sync** (one issue per finding, fingerprint marker for idempotency, labels for severity and CWE, closed automatically when a later scan no longer reports it) and **Projects v2 sync** (add items, set Status, Severity and Sprint fields). Issue creation is rate-limited and resumable. There is no automatic code fixing.
 
 The GitHub Action wraps the CLI in a container. The GitHub App adds webhooks, installation authentication and scheduled scans. The VS Code extension and the MCP server call the same core through the CLI or the REST API.
+
+### 9.1 Command line contract
+
+Integrations that wrap the CLI rely on its exit codes and its JSON output. Both are decided in [ADR-0008](adr/0008-cli-conventions.md); the full table with examples is in [reference/exit-codes.md](reference/exit-codes.md).
+
+| Code | Name | Meaning |
+|---|---|---|
+| 0 | `OK` | Completed; nothing at or above the threshold |
+| 1 | `FINDINGS` | Completed; what the command checks has problems at or above the threshold |
+| 2 | `USAGE` | Cannot be carried out as invoked: usage, configuration, input, or a back end not in this build |
+| 3 | `PRIVACY_BLOCK` | A privacy control refused the operation |
+| 4 | `INTERNAL` | Defect or unexpected failure |
+| 130 | `CANCELLED` | Interrupted by the user |
+
+At the end of a command the most severe code wins: 4 over 3 over 1 over 0.
+
+`--json` yields exactly one versioned envelope on stdout (`schema_version`, `codekavach_version`, `command`, `ok`, `exit_code`, `data`, `warnings`, `errors`); findings and code snippets are not part of it.
+
+`--offline` means that this invocation opens no connection to anything outside the machine; it does not change `privacy.level`.
 
 ## 10. Evaluation
 
