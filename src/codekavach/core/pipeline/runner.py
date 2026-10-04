@@ -79,6 +79,7 @@ from codekavach.core.pipeline.resume import (
     write_checkpoint,
 )
 from codekavach.core.pipeline.salt import ScanSalt
+from codekavach.core.pipeline.signals import cancel_on_signals
 from codekavach.core.plugins.registry import PluginRegistry, registry_from_environment
 from codekavach.core.store.artefacts import OnDiskArtefactStore
 from codekavach.core.store.base import ArtefactError, ArtefactStore
@@ -248,6 +249,7 @@ def run_scan(
     refresh: Collection[str] = (),
     persist: bool = True,
     resume: str | None = None,
+    handle_sigint: bool = False,
 ) -> ScanOutcome:
     """Run one scan of ``target`` with the loaded configuration.
 
@@ -263,6 +265,10 @@ def run_scan(
     database row, stage cache on. Completed cacheable stages are cache hits; INGEST, PRIVACY, LLM
     and RESTORE stages run again, so until the LLM response cache (E22) exists a resumed scan may
     send the same payloads again.
+
+    ``handle_sigint`` makes the first SIGINT or SIGTERM cancel the scan gracefully (status
+    ``cancelled``, manifest and checkpoint written, resumable) and a second one exit the process
+    with status 130; the previous signal handlers are restored afterwards.
 
     Raises:
         ResumeMismatchError: ``resume`` names no resumable scan, or the version, settings, salt
@@ -368,6 +374,7 @@ def run_scan(
             recorder=recorder,
             clock=clock,
             resumed=resumed is not None,
+            handle_sigint=handle_sigint,
         )
     )
     scan = assemble_scan(
@@ -445,6 +452,7 @@ class _Execution:
     recorder: "ScanRecorder | None"
     clock: Callable[[], datetime]
     resumed: bool
+    handle_sigint: bool = False
 
 
 def _execute(run: _Execution) -> PipelineResult:
@@ -453,8 +461,10 @@ def _execute(run: _Execution) -> PipelineResult:
     result: PipelineResult | None = None
     run.checkpointer.write("running", ())
     unsubscribe = ctx.events.subscribe(lambda event: run.checkpointer.on_event(event, ctx))
+    signals = cancel_on_signals(ctx.cancellation) if run.handle_sigint else contextlib.nullcontext()
     try:
-        result = run.orchestrator.run(run.plan, ctx)
+        with signals:
+            result = run.orchestrator.run(run.plan, ctx)
         if run.resumed:
             result = dataclasses.replace(result, resumed_from_checkpoint=True)
     finally:

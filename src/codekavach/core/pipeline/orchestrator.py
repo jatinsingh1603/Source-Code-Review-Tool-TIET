@@ -51,7 +51,11 @@ from codekavach.core.pipeline.events import (
     StageStarted,
     WarningRaised,
 )
-from codekavach.core.pipeline.execution import resolve_timeout, run_with_deadline
+from codekavach.core.pipeline.execution import (
+    WAIT_SLICE_SECONDS,
+    resolve_timeout,
+    run_with_deadline,
+)
 from codekavach.core.pipeline.keys import (
     ITEM_FAILURES,
     is_multi_provider,
@@ -489,7 +493,10 @@ class Orchestrator:
                     daemon=True,
                 ).start()
             if in_flight:
-                finished.get()
+                try:  # a timed wait lets a signal handler run in this thread (E04-29)
+                    finished.get(timeout=WAIT_SLICE_SECONDS)
+                except queue.Empty:
+                    continue
                 in_flight -= 1
         return self._settle_wave(scope, wave)
 

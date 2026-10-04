@@ -41,6 +41,12 @@ A resumed scan keeps its scan id, its database row and the start time of its fir
 - Cacheable stages that completed before the interruption are cache hits.
 - PRIVACY, LLM and RESTORE stages always run again. With the same salt and settings their payloads are byte-identical to the first attempt.
 
+## Interrupting a scan
+
+With `run_scan(..., handle_sigint=True)` the first SIGINT (Ctrl-C) or SIGTERM cancels the scan cooperatively: no new stage starts, the running stage stops at its next cancellation check and its outputs are discarded, and the manifest and the checkpoint are written with status `cancelled`. A second signal exits the process at once with status 130. The checkpoint then stays at `running`, which is resumable; a temporary file may remain inside the state directory. The previous signal handlers are restored when `run_scan` returns.
+
+How fast the first signal takes effect depends on the running stage: a stage that checks for cancellation stops within one unit of work, and one that does not is abandoned when its timeout expires. SIGTERM is skipped on platforms where it cannot be registered.
+
 ## Known limit
 
 Until the LLM response cache (E22) exists, a resumed scan can send payloads that the first attempt already sent. The payloads are identical, so nothing new leaves the machine, but the provider is called and billed again.

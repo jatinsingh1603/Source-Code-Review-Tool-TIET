@@ -16,9 +16,14 @@ Cooperative cancellation contract for stage authors:
 
 A stage that ignores the contract keeps a thread busy after its timeout, but it cannot change
 results: its view is revoked and its token is cancelled.
+
+The orchestrator waits in slices of ``WAIT_SLICE_SECONDS``, never in one long or untimed wait:
+Python runs signal handlers in the main thread between bytecodes, so a blocked main thread would
+delay the reaction to Ctrl-C (E04-29) until the stage ends.
 """
 
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
@@ -27,6 +32,7 @@ from codekavach.config.models.scan import ScanSettings
 from codekavach.core.pipeline.stage import StageInfo
 
 DeadlineOutcome = Literal["completed", "timed_out", "exception"]
+WAIT_SLICE_SECONDS = 0.2
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,8 +90,10 @@ def run_with_deadline(
 
     thread = threading.Thread(target=target, name=thread_name, daemon=True)
     thread.start()
-    if not done.wait(timeout):
-        return DeadlineResult("timed_out", thread)
+    deadline = time.monotonic() + timeout
+    while not done.wait(min(WAIT_SLICE_SECONDS, max(0.0, deadline - time.monotonic()))):
+        if time.monotonic() >= deadline:
+            return DeadlineResult("timed_out", thread)
     if box:
         return DeadlineResult("exception", thread, box[0])
     return DeadlineResult("completed", thread)

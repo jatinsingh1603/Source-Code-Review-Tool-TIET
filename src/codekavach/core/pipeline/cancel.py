@@ -5,6 +5,10 @@ Owning epic: E04.
 Stages call ``ctx.check_cancelled()`` at natural boundaries (per file, per candidate); nothing is
 interrupted forcibly. A child token (one per stage run) is cancelled with its parent, while
 cancelling a child leaves the parent running.
+
+``cancel`` may be called from a signal handler (E04-29), which runs in the main thread between two
+bytecodes, possibly while that thread is inside ``cancel`` or ``child``. The lock is therefore
+re-entrant: a plain lock would deadlock there.
 """
 
 import threading
@@ -25,7 +29,7 @@ class CancellationToken:
 
     def __init__(self) -> None:
         self._event = threading.Event()
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._reason: str | None = None
         self._children: list[CancellationToken] = []
 
