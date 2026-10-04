@@ -15,22 +15,30 @@ never from stage threads. SQLAlchemy is imported only here and in ``orm``, ``mig
 """
 
 import os
+import sqlite3
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session, sessionmaker
+
+if TYPE_CHECKING:
+    from codekavach.core.store.layout import StateLayout
 
 DB_FILE_MODE = 0o600
 SQLITE_PRAGMAS = (
+    "PRAGMA busy_timeout=5000",
     "PRAGMA foreign_keys=ON",
     "PRAGMA journal_mode=WAL",
     "PRAGMA synchronous=NORMAL",
-    "PRAGMA busy_timeout=5000",
 )
+PRAGMA_ATTEMPTS = 100
+PRAGMA_RETRY_SECONDS = 0.05
 _MEMORY = ":memory:"
 
 
@@ -41,11 +49,26 @@ def sqlite_url(path: Path) -> str:
     return f"sqlite+pysqlite:///{path.as_posix()}"
 
 
+def _execute_pragma(cursor: Any, pragma: str) -> None:
+    # Switching a fresh file to WAL needs an exclusive lock and SQLite reports "database is
+    # locked" at once instead of waiting for ``busy_timeout``, so two first connections racing on
+    # a new database are retried here.
+    for attempt in range(PRAGMA_ATTEMPTS):
+        try:
+            cursor.execute(pragma)
+        except sqlite3.OperationalError as error:
+            if "locked" not in str(error) or attempt == PRAGMA_ATTEMPTS - 1:
+                raise
+            time.sleep(PRAGMA_RETRY_SECONDS)
+        else:
+            return
+
+
 def _apply_pragmas(dbapi_connection: Any, _record: Any) -> None:
     cursor = dbapi_connection.cursor()
     try:
         for pragma in SQLITE_PRAGMAS:
-            cursor.execute(pragma)
+            _execute_pragma(cursor, pragma)
     finally:
         cursor.close()
 
@@ -96,3 +119,45 @@ def session_scope(factory: sessionmaker[Session]) -> Iterator[Session]:
         raise
     finally:
         session.close()
+
+
+INIT_ATTEMPTS = 5
+INIT_RETRY_SECONDS = 0.2
+
+
+def init_db(layout: "StateLayout") -> Engine:
+    """Create or upgrade the local database below ``layout`` to the newest revision.
+
+    A second call is a no-op. Two processes initialising a fresh database at the same time are
+    serialised by SQLite's write lock; the one that loses the race finds the revision applied.
+
+    Raises:
+        DatabaseTooNewError: the database was migrated by a newer CodeKavach (nothing changed).
+    """
+    from codekavach.core.store.migrate import (  # noqa: PLC0415 - Alembic is imported lazily
+        check_not_too_new,
+        head_revision,
+        upgrade_to_head,
+    )
+    from codekavach.core.store.migrate import current_revision as revision_of  # noqa: PLC0415
+
+    layout.ensure()
+    engine = create_db_engine(sqlite_url(layout.db_path))
+    try:
+        check_not_too_new(engine)
+        head = head_revision()
+        for attempt in range(INIT_ATTEMPTS):
+            if revision_of(engine) == head:
+                return engine
+            try:
+                upgrade_to_head(engine)
+            except (OperationalError, IntegrityError):
+                if attempt == INIT_ATTEMPTS - 1:
+                    raise
+                time.sleep(INIT_RETRY_SECONDS)  # another process is creating the schema
+            else:
+                return engine
+    except BaseException:
+        engine.dispose()
+        raise
+    return engine

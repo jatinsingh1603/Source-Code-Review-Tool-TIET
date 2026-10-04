@@ -177,6 +177,9 @@ jobs:
           python3 -m zipfile -l dist/*.whl | tee wheel-contents.txt
           if grep -qE '(^|/)tests/' wheel-contents.txt; then echo "wheel contains tests/"; exit 1; fi
           grep -q 'codekavach/py.typed' wheel-contents.txt || { echo "wheel lacks py.typed"; exit 1; }
+          for f in env.py script.py.mako versions/0001_initial.py; do
+            grep -q "codekavach/core/store/migrations/$f" wheel-contents.txt || { echo "wheel lacks migrations/$f"; exit 1; }
+          done
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist
