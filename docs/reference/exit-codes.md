@@ -29,6 +29,27 @@ Precedence at the end of a command: 4 over 3 over 1 over 0; 2 only before work s
 When several conditions hold at the end of a command, the most severe code wins: 4 over 3 over 1
 over 0. Code 2 can only arise before any work starts.
 
+## `codekavach scan`
+
+The scan renders its result first and decides the exit code afterwards, in one place.
+
+| Findings at or above the threshold | Guard blocked a payload | Stage failed, scan continued | Flags | Exit |
+|---|---|---|---|---|
+| no | no | no | | 0 |
+| yes | no | no | | 1 |
+| yes | yes | no | | 1, warning `egress_blocked` |
+| yes | yes | no | `--strict-privacy` | 3 |
+| no | no | yes | | 0, warning `stage_degraded` |
+| no | no | yes | `--strict` | 4 |
+| yes | yes | yes | `--strict --strict-privacy` | 4 |
+| any | any | any | `--fail-on none` | not 1 |
+
+- The threshold is `--fail-on`, else `scan.fail_on` (`high` by default; the `demo` profile sets `none`). Accepted values are `critical`, `high`, `medium`, `low`, `info` and `none`.
+- Only findings with status `open` or `confirmed` count. Findings that are `suppressed`, `accepted_risk`, `false_positive` or `fixed` do not fail the scan; the summary prints how many were not counted.
+- The gate compares the final severity of each finding. An LLM verdict does not lower it: a deterministic finding that a model judged harmless stays `open` until a person or a suppression rule changes its status.
+- The human summary ends with `threshold: high; 5 finding(s) at or above it: failing (exit 1)` (or `passing`); the JSON `data` holds `"threshold": {"fail_on": "high", "exceeded": true, "counted": 5}`.
+- `--strict-privacy` makes a blocked payload exit 3. The guard refuses the payload with or without the flag.
+
 Diagnostics go to stderr as `error[<code>]: <message>`, optionally followed by `hint: ...`.
 Unexpected errors print the exception type only, because exception messages and tracebacks can
 quote client code, file paths or credentials.

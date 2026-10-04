@@ -9,14 +9,21 @@ summary. It has no route to a provider of its own: it imports neither ``codekava
 ``codekavach.privacy.egress`` (I1, I2), and pipeline modules are imported only when a scan runs.
 The JSON result carries counts and paths but no findings or snippets, because CI logs often live
 outside the client's environment; findings belong in report files.
+
+The exit code is decided once, after the result is rendered, by ``final_exit_code`` (E05-10):
+4 over 3 over 1 over 0. The severity gate counts findings whose status is ``open`` or
+``confirmed`` and compares their final severity with ``scan.fail_on``. It reads status and
+severity only, never an LLM verdict: a deterministic finding is not waved through because a model
+disagreed (ARCHITECTURE section 7). ``--strict-privacy`` turns a guard refusal into exit 3; the
+refusal itself is fail-closed with or without the flag (I4).
 """
 
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import typer
 from rich.console import Console
@@ -24,16 +31,26 @@ from rich.table import Table
 
 from codekavach.cli.backends import load_backend
 from codekavach.cli.context import CliContext, with_overrides, with_target
-from codekavach.cli.errors import InternalError, PrivacyBlockError, UsageError
+from codekavach.cli.errors import (
+    CliError,
+    InternalError,
+    PrivacyBlockError,
+    ThresholdExceeded,
+    UsageError,
+)
+from codekavach.cli.exit_codes import ExitCode
 from codekavach.cli.output import TABLE_BOX, Output, get_output, severity_style
+from codekavach.core.models.enums import FindingStatus, Severity
 
 if TYPE_CHECKING:
+    from codekavach.core.models.finding import Finding
     from codekavach.core.models.summary import ScanSummary
 
 REMOTE_TARGET = re.compile(r"^(https://|git@|ssh://)")
 ARCHIVE_SUFFIXES = (".zip", ".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tbz2", ".tar.xz", ".txz")
 SEVERITIES = ("critical", "high", "medium", "low", "info")
 LOCAL_KINDS = frozenset({"mock", "replay"})
+COUNTED_STATUSES = frozenset({FindingStatus.OPEN, FindingStatus.CONFIRMED})
 
 
 class FailOn(StrEnum):
@@ -70,6 +87,55 @@ class CliScanResult:
     egress_blocked: int
     state_dir: Path
     stages_run: int
+    findings: "tuple[Finding, ...]" = ()
+
+
+@dataclass(frozen=True)
+class ThresholdResult:
+    """The severity gate applied to the findings of one scan."""
+
+    exceeded: bool
+    threshold: Severity | Literal["none"]
+    counted_at_or_above: int
+    worst: Severity | None
+    not_counted: int = 0
+
+    @property
+    def fail_on(self) -> str:
+        """The threshold as text (``high``, ``none``)."""
+        return "none" if self.threshold == "none" else self.threshold.value
+
+
+def evaluate_threshold(
+    findings: "Iterable[Finding]", fail_on: Severity | Literal["none"]
+) -> ThresholdResult:
+    """Whether the counted findings reach ``fail_on``.
+
+    Counted findings have status ``open`` or ``confirmed``; ``false_positive``, ``accepted_risk``,
+    ``suppressed`` and ``fixed`` never trigger the gate. ``worst`` is the highest severity among
+    the counted findings. ``none`` disables the gate.
+    """
+    items = list(findings)
+    counted = [finding.severity for finding in items if finding.status in COUNTED_STATUSES]
+    not_counted = len(items) - len(counted)
+    worst = max(counted, default=None)
+    if fail_on == "none":
+        return ThresholdResult(False, "none", 0, worst, not_counted)
+    at_or_above = sum(1 for severity in counted if severity >= fail_on)
+    return ThresholdResult(at_or_above > 0, fail_on, at_or_above, worst, not_counted)
+
+
+def final_exit_code(
+    outcome: CliScanResult, threshold: ThresholdResult, *, strict: bool, strict_privacy: bool
+) -> ExitCode:
+    """The exit code of a rendered scan; the single decision point (4 over 3 over 1 over 0)."""
+    if strict and outcome.degraded_stages:
+        return ExitCode.INTERNAL
+    if strict_privacy and outcome.egress_blocked > 0:
+        return ExitCode.PRIVACY_BLOCK
+    if threshold.exceeded:
+        return ExitCode.FINDINGS
+    return ExitCode.OK
 
 
 def check_target(target: str) -> Path | None:
@@ -118,6 +184,22 @@ def _report_files(outcome: Any) -> tuple[Path, ...]:
     return tuple(Path(str(item)) for item in items) if isinstance(items, list) else ()
 
 
+def _findings(outcome: Any) -> "tuple[Finding, ...]":
+    """The findings of the scan, or none when no stage produced a readable ``findings`` list."""
+    try:
+        from codekavach.core.models.finding import Finding  # noqa: PLC0415
+        from codekavach.core.pipeline.keys import FINDINGS  # noqa: PLC0415
+        from codekavach.core.store.artefacts import OnDiskArtefactStore  # noqa: PLC0415
+        from codekavach.core.store.layout import StateLayout  # noqa: PLC0415
+
+        store = OnDiskArtefactStore.open_existing(StateLayout(outcome.state_dir), outcome.scan.id)
+        if not store.has(FINDINGS):
+            return ()
+        return tuple(store.get_list(FINDINGS, Finding))
+    except Exception:  # noqa: BLE001 - without findings the gate has nothing to count
+        return ()
+
+
 def to_cli_result(outcome: Any) -> CliScanResult:
     """Build the rendered result from a ``ScanOutcome``."""
     result, scan = outcome.result, outcome.scan
@@ -133,6 +215,7 @@ def to_cli_result(outcome: Any) -> CliScanResult:
         egress_blocked=egress.requests_blocked if egress else 0,
         state_dir=Path(outcome.state_dir),
         stages_run=len(result.order),
+        findings=_findings(outcome),
     )
 
 
@@ -182,10 +265,20 @@ def _counts(summary: "ScanSummary | None") -> dict[str, int]:
 
 
 def scan_data(
-    result: CliScanResult, *, target: str, provider: ProviderChoice, privacy_level: str
+    result: CliScanResult,
+    *,
+    target: str,
+    provider: ProviderChoice,
+    privacy_level: str,
+    threshold: ThresholdResult,
 ) -> dict[str, Any]:
     """The ``data`` object of the JSON envelope (counts and paths only)."""
     return {
+        "threshold": {
+            "fail_on": threshold.fail_on,
+            "exceeded": threshold.exceeded,
+            "counted": threshold.counted_at_or_above,
+        },
         "scan_id": result.scan_id,
         "target": target,
         "privacy_level": privacy_level,
@@ -206,8 +299,26 @@ def scan_data(
     }
 
 
+def threshold_lines(threshold: ThresholdResult) -> list[str]:
+    """The lines of the human summary that explain the gate."""
+    if threshold.threshold == "none":
+        lines = ["threshold: none; the severity gate is disabled"]
+    else:
+        verdict = "failing (exit 1)" if threshold.exceeded else "passing"
+        lines = [
+            f"threshold: {threshold.fail_on}; {threshold.counted_at_or_above} finding(s) at or "
+            f"above it: {verdict}"
+        ]
+    if threshold.not_counted:
+        lines.append(
+            f"{threshold.not_counted} finding(s) not counted (suppressed, accepted or false "
+            "positive)"
+        )
+    return lines
+
+
 def _renderer(
-    result: CliScanResult, provider: ProviderChoice, privacy_level: str
+    result: CliScanResult, provider: ProviderChoice, privacy_level: str, threshold: ThresholdResult
 ) -> Callable[[Console], None]:
     def render(console: Console) -> None:
         counts = _counts(result.summary)
@@ -220,6 +331,8 @@ def _renderer(
             table.add_row(severity, str(counts[severity]), style=severity_style(severity))
         console.print(table)
         console.print(f"findings: {sum(counts.values())}", markup=False)
+        for line in threshold_lines(threshold):
+            console.print(line, markup=False, soft_wrap=True)
         where = "remote" if provider.remote else "local"
         name = f"{provider.id} ({where})" if provider.id else "none (LLM disabled)"
         console.print(
@@ -286,6 +399,13 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     skip_engine: Annotated[
         list[str] | None, typer.Option("--skip-engine", help="Engine to disable; repeatable.")
     ] = None,
+    strict: Annotated[
+        bool, typer.Option("--strict", help="Exit 4 when a stage failed and the scan continued.")
+    ] = False,
+    strict_privacy: Annotated[
+        bool,
+        typer.Option("--strict-privacy", help="Exit 3 when the egress guard blocked a payload."),
+    ] = False,
 ) -> None:
     """Scan a code base and print a severity summary."""
     from codekavach.config.overrides import overrides_from_flags  # noqa: PLC0415
@@ -317,8 +437,40 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         )
     result = execute_scan(cli_ctx, target)
     level = str(cli_ctx.privacy_level.value)
+    threshold = evaluate_threshold(result.findings, cli_ctx.settings.scan.fail_on)
     _warnings(out, result)
     out.result(
-        scan_data(result, target=target, provider=provider, privacy_level=level),
-        human=_renderer(result, provider, level),
+        scan_data(
+            result, target=target, provider=provider, privacy_level=level, threshold=threshold
+        ),
+        human=_renderer(result, provider, level, threshold),
     )
+    refusal = exit_error(
+        final_exit_code(result, threshold, strict=strict, strict_privacy=strict_privacy),
+        result,
+        threshold,
+    )
+    if refusal is not None:
+        raise refusal
+
+
+def exit_error(
+    code: ExitCode, result: CliScanResult, threshold: ThresholdResult
+) -> CliError | None:
+    """The error that gives a rendered scan its exit code, or ``None`` for 0."""
+    if code is ExitCode.INTERNAL:
+        stages = ", ".join(result.degraded_stages)
+        return InternalError(
+            f"stage(s) failed and --strict is set: {stages}", code="stage_degraded"
+        )
+    if code is ExitCode.PRIVACY_BLOCK:
+        return PrivacyBlockError(
+            f"the egress guard blocked {result.egress_blocked} payload(s) and --strict-privacy "
+            "is set",
+            code="egress_blocked",
+        )
+    if code is ExitCode.FINDINGS:
+        return ThresholdExceeded(
+            f"{threshold.counted_at_or_above} finding(s) at or above {threshold.fail_on}"
+        )
+    return None
