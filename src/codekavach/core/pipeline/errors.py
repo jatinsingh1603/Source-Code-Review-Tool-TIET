@@ -17,6 +17,15 @@ class StageDeclarationError(PipelineError):
         super().__init__(f"stage {stage!r}: {problem}")
 
 
+class PersistenceError(PipelineError):
+    """The local database could not record a scan; artefacts and manifest are on disk."""
+
+    def __init__(self, step: str, error_type: str) -> None:
+        self.step = step
+        self.error_type = error_type
+        super().__init__(f"could not record the scan in the local database ({step}: {error_type})")
+
+
 class GraphError(PipelineError):
     """The stages of a plan cannot be ordered."""
 

@@ -90,7 +90,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["scan_id"], ["scans.id"], name="fk_findings_scan_id_scans", ondelete="CASCADE"
         ),
-        sa.PrimaryKeyConstraint("id", name="pk_findings"),
+        sa.PrimaryKeyConstraint("id", "scan_id", name="pk_findings"),
         sa.UniqueConstraint("scan_id", "fingerprint", name="uq_findings_scan_id"),
     )
     op.create_index("ix_findings_cwe", "findings", ["cwe"])

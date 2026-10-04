@@ -32,6 +32,7 @@ def test_salt_is_not_written_below_the_state_directory(tmp_path: Path) -> None:
     outcome = run_scan(loaded, str(repo), salt=ScanSalt.from_hex(SALT_HEX), registry=registry)
     files = [path for path in outcome.state_dir.rglob("*") if path.is_file()]
     assert files
+    assert outcome.state_dir / "codekavach.db" in files  # the local database is checked too
     for path in files:
         data = path.read_bytes()
         assert SALT_HEX.encode() not in data

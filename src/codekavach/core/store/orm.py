@@ -106,14 +106,18 @@ class StageRunRow(Base):
 
 
 class FindingRow(Base):
-    """One finding of one scan."""
+    """One finding of one scan.
+
+    The key is (``id``, ``scan_id``): a scan whose ``rate`` stage is served from the stage cache
+    reuses the findings of an earlier scan, ids included, and stores them under its own scan id.
+    """
 
     __tablename__ = "findings"
     __table_args__ = (UniqueConstraint("scan_id", "fingerprint"),)
 
     id: Mapped[str] = mapped_column(String(_ID), primary_key=True)
     scan_id: Mapped[str] = mapped_column(
-        String(_ID), ForeignKey("scans.id", ondelete="CASCADE"), index=True
+        String(_ID), ForeignKey("scans.id", ondelete="CASCADE"), primary_key=True, index=True
     )
     fingerprint: Mapped[str] = mapped_column(String(64), index=True)
     severity: Mapped[str] = mapped_column(String(16), index=True)

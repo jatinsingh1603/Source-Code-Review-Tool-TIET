@@ -11,17 +11,22 @@ context and nowhere else (the runner never generates, derives or stores one; I3,
 directory is prepared through the safe layout helper; a target URL carrying credentials is refused
 before anything is written; ``Scan`` records carry no exception text. The runner opens no network
 connection (I1). Consent for remote egress is passed through unchanged; ``None`` means none.
+
+With ``persist=True`` the scan is also recorded in the local database (E04-27): a ``running`` row
+before the orchestrator starts, the final scan, its stage runs and its findings afterwards. The
+database modules are imported only then, and no transaction stays open while the scan runs.
 """
 
+import contextlib
 import dataclasses
 import importlib.metadata
 import json
 import sys
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
 from codekavach.config import LoadedConfig, Settings
@@ -45,6 +50,7 @@ from codekavach.core.pipeline.budget import (
 from codekavach.core.pipeline.cache import StageCache
 from codekavach.core.pipeline.cancel import CancellationToken
 from codekavach.core.pipeline.context import ConsentDecision, RunContext
+from codekavach.core.pipeline.errors import PersistenceError
 from codekavach.core.pipeline.events import EventBus, NullEventBus
 from codekavach.core.pipeline.manifest import (
     ConsentSource,
@@ -60,6 +66,9 @@ from codekavach.core.plugins.registry import PluginRegistry, registry_from_envir
 from codekavach.core.store.artefacts import OnDiskArtefactStore
 from codekavach.core.store.base import ArtefactError, ArtefactStore
 from codekavach.core.store.layout import StateLayout, atomic_write_bytes
+
+if TYPE_CHECKING:
+    from codekavach.core.store.repositories import ScanRecorder
 
 CREDENTIALS_IN_TARGET = (
     "target must not contain credentials; configure them through a secret reference"
@@ -220,6 +229,7 @@ def run_scan(
     consent: ConsentDecision | None = None,
     use_cache: bool | None = None,
     refresh: Collection[str] = (),
+    persist: bool = True,
 ) -> ScanOutcome:
     """Run one scan of ``target`` with the loaded configuration.
 
@@ -228,10 +238,15 @@ def run_scan(
     written even with ``use_cache=False``. The cache is used only with the default on-disk store,
     whose blobs the records point at.
 
+    ``persist`` records the scan in the local database, under the project found by its root
+    directory; ``persist=False`` leaves no database file behind.
+
     Raises:
         ValueError: ``target`` carries credentials (nothing is written).
         PlanError, GraphError: the plan cannot be built, or a ``refresh`` selector matches no
             stage (``unknown_stage_selector``); nothing has run.
+        PersistenceError: the database could not record the scan; when raised after the
+            orchestrator finished, the artefacts and the manifest are already on disk.
     """
     check_target(target)
     settings = loaded.settings
@@ -243,12 +258,19 @@ def run_scan(
     scan_id = scan_id or new_scan_id()
     artefacts = store if store is not None else OnDiskArtefactStore(layout, scan_id)
     artefacts.put(keys.TARGET, {"target": target})
-    project = project or Project.model_validate(
-        {
-            "id": new_project_id(),
-            "name": settings.project.name or loaded.project_root.name or "project",
-            "created_at": clock(),
-        }
+    recorder = _recorder(layout) if persist else None
+    root = str(loaded.project_root)
+    project = (
+        project
+        or (recorder.project_by_root(root) if recorder is not None else None)
+        or Project.model_validate(
+            {
+                "id": new_project_id(),
+                "name": settings.project.name or loaded.project_root.name or "project",
+                "root": root,
+                "created_at": clock(),
+            }
+        )
     )
     ctx = RunContext(
         scan_id=scan_id,
@@ -292,6 +314,20 @@ def run_scan(
             tool_versions=orchestrator.tool_versions(),
         ),
     )  # fmt: skip
+    if recorder is not None:
+        running = Scan.model_validate(
+            {
+                "id": scan_id,
+                "project_id": project.id,
+                "status": ScanStatus.RUNNING,
+                "started_at": started_at,
+                "codekavach_version": codekavach_version(),
+                "config_hash": config_hash(settings),
+                "privacy_level": settings.privacy.level,
+            }
+        )
+        stale_before = started_at - timedelta(seconds=settings.scan.timeout_seconds)
+        recorder.start(project, running, stale_before=stale_before, now=started_at)
     result: PipelineResult | None = None
     manifest_path = layout.manifest_path(scan_id)
     try:
@@ -311,11 +347,33 @@ def run_scan(
             artefacts.put(keys.MANIFEST, manifest)
         except (OSError, ArtefactError):
             _log.warning("manifest_write_failed", scan_id=scan_id)
+        if result is None and recorder is not None:
+            with contextlib.suppress(PersistenceError):  # logged; the original error propagates
+                recorder.abort(scan_id, ScanStatus(status), clock())
     scan = assemble_scan(
         result=result, store=artefacts, settings=settings, project=project, clock=clock
     )
     artefacts.put(keys.SCAN_RECORD, scan)
+    if recorder is not None:
+        recorder.finish(scan, result.stage_runs, _findings(artefacts))
     return ScanOutcome(result=result, scan=scan, state_dir=layout.root, manifest_path=manifest_path)
+
+
+def _recorder(layout: StateLayout) -> "ScanRecorder":
+    from codekavach.core.store.repositories import ScanRecorder  # noqa: PLC0415 - lazy SQLAlchemy
+
+    return ScanRecorder(layout)
+
+
+def _findings(store: ArtefactStore) -> list[Finding] | None:
+    """The ``findings`` artefact, or ``None`` when no stage produced a readable one."""
+    if not store.has(keys.FINDINGS):
+        return None
+    try:
+        return store.get_list(keys.FINDINGS, Finding)
+    except ArtefactError:
+        _log.warning("findings_unreadable", key=keys.FINDINGS)
+        return None
 
 
 def _registry_rows(registry: PluginRegistry | None) -> list[Any]:
