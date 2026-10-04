@@ -16,6 +16,7 @@ finding text and the engine hides them (``hide_parameters=True``).
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from datetime import datetime
+from pathlib import Path
 
 from pydantic import JsonValue
 from sqlalchemy import delete, func, insert, inspect, select
@@ -344,6 +345,62 @@ class ScanRecorder:
             scan = scans.get(scan_id)
             if scan is not None and scan.finished_at is None:
                 scans.update(scan.finish(status, None, max(at, scan.started_at)))
+
+
+FINISHED_STATUSES = frozenset({ScanStatus.COMPLETED, ScanStatus.COMPLETED_WITH_ERRORS})
+
+
+class StoredScanLookup:
+    """Read-only access to the stored scans of one state directory, for reports (E05-15).
+
+    Nothing is created: without a database every lookup finds nothing. Each call opens the
+    database, reads and closes it again.
+    """
+
+    def __init__(self, layout: StateLayout) -> None:
+        self._layout = layout
+
+    @contextmanager
+    def _session(self) -> Iterator[Session | None]:
+        if not self._layout.db_path.is_file():
+            yield None
+            return
+        engine = init_db(self._layout)
+        try:
+            with session_scope(make_session_factory(engine)) as session:
+                yield session
+        finally:
+            engine.dispose()
+
+    def latest(self, project_root: Path) -> Scan | None:
+        """The newest finished scan of the project at ``project_root``; others are skipped."""
+        with self._session() as session:
+            if session is None:
+                return None
+            project = ProjectRepository(session).get_by_root(str(project_root))
+            if project is None:
+                return None
+            return ScanRepository(session).latest(project.id, statuses=FINISHED_STATUSES)
+
+    def get(self, scan_id: str) -> Scan | None:
+        """The scan with ``scan_id``, or ``None``."""
+        with self._session() as session:
+            return None if session is None else ScanRepository(session).get(scan_id)
+
+    def findings(self, scan_id: str) -> Sequence[Finding] | None:
+        """The findings of a finished scan; ``None`` when the scan is unknown or did not finish."""
+        with self._session() as session:
+            if session is None:
+                return None
+            scan = ScanRepository(session).get(scan_id)
+            if scan is None or scan.status not in FINISHED_STATUSES:
+                return None
+            return FindingRepository(session).for_scan(scan_id)
+
+
+def open_scan_lookup(state_dir: Path) -> StoredScanLookup:
+    """The lookup over the local database below ``state_dir``."""
+    return StoredScanLookup(StateLayout(state_dir))
 
 
 def db_probe(layout: StateLayout) -> dict[str, JsonValue]:
