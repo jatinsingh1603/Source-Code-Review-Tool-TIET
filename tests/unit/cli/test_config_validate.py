@@ -9,9 +9,11 @@ import pytest
 import typer
 
 from codekavach.cli.config import config_app
+from codekavach.cli.options import attach_global_options
 from tests.support.cli import CliResult, assert_no_ansi, run_cli
 
 COMMAND = typer.main.get_command(config_app)
+attach_global_options(COMMAND)  # the loader options are global options (E05-19)
 WARNING_ONLY = '[privacy.provider_tier_levels]\npublic = "L2"\n'  # 038, in the user file
 
 

@@ -36,6 +36,22 @@ Output and loader options:
 | `--no-user-config` | ignore the user configuration file | `CODEKAVACH_NO_USER_CONFIG` (read by the loader) |
 | `--trust-project-config` | trust restricted keys in the project file for this run | `CODEKAVACH_TRUST_PROJECT_CONFIG` (read by the loader) |
 
+## Commands with their own `--format`
+
+The configuration commands (`codekavach config show|validate|path|profiles|key status`) have a `--format` option, because `config show` has more than one document form (`toml`, `json`). The two options do different things:
+
+- `--format` selects the document. `--format json` prints it as raw JSON, meant for redirection into a file or for an editor integration.
+- The global `--json` puts the JSON form of the same document into the envelope as `data`, with `exit_code` mirrored.
+
+```text
+$ codekavach config validate --json | jq '{ok, exit_code, valid: .data.valid}'
+{"ok": true, "exit_code": 0, "valid": true}
+```
+
+`--json` together with another format on the command line (`--json --format toml`) is a usage error (`format_conflict`, exit 2). The document is the masked rendering in both cases: domain terms stay hidden and key references are shown as references.
+
+`codekavach config ...` and `codekavach init` take the loader options (`--config`, `--profile`, `--no-user-config`, `--trust-project-config`, `--set`) from the global options above, before or after the command. `init --profile NAME` is the command's own option: it names the profile written into the new file.
+
 ## Logging
 
 Log events go to stderr; stdout carries only the result of the command.

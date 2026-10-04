@@ -12,6 +12,12 @@ lapses as soon as the file changes (direnv-style). ``trust`` first shows which r
 escaping paths and loosened privacy settings the file contains (keys only, never values) and asks
 for confirmation unless ``--yes``; without a terminal it refuses instead of waiting. E05-19 mounts
 ``config_app`` on the root application as ``config``.
+
+Conventions of the root application (E05-19): the loader options ``--config``, ``--profile``,
+``--no-user-config``, ``--trust-project-config`` and ``--set`` are the global options and are read
+from ``CliContext``. ``--format`` selects the document of a command; the global ``--json`` puts
+the JSON form of that document into the envelope as ``data``. The document is the masked
+rendering of this module either way, never the raw settings object.
 """
 
 import contextlib
@@ -28,11 +34,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
+from typer._click.core import ParameterSource
 
 from codekavach.cli.console import get_console, get_err_console
+from codekavach.cli.context import get_context
 from codekavach.cli.errors import InternalError, UsageError
 from codekavach.cli.exit_codes import ExitCode
-from codekavach.cli.output import simple_table
+from codekavach.cli.options import globals_of
+from codekavach.cli.output import get_output, simple_table
 from codekavach.config.check import ValidationReport, report_from_error, validate_configuration
 from codekavach.config.constants import KEYRING_SERVICE, PROJECT_FILE_NAME
 from codekavach.config.diagnostics import format_issues
@@ -84,6 +93,41 @@ class ListFormat(StrEnum):
 
     text = "text"
     json = "json"
+
+
+def _json_wanted(ctx: typer.Context, output_format: StrEnum) -> bool:
+    """Whether the command produces its JSON document.
+
+    The global ``--json`` selects it too; together with another ``--format`` given on the command
+    line it is a usage error (``format_conflict``).
+    """
+    envelope = bool(globals_of(ctx).get("json_mode", False))
+    explicit = ctx.get_parameter_source("output_format") is ParameterSource.COMMANDLINE
+    if envelope and explicit and output_format.value != "json":
+        raise UsageError(
+            f"--json cannot be combined with --format {output_format.value}",
+            code="format_conflict",
+        )
+    return envelope or output_format.value == "json"
+
+
+def _write_json(ctx: typer.Context, document: Any, text: str | None = None) -> None:
+    """Write the JSON document: raw on stdout, or as ``data`` of the envelope under ``--json``."""
+    if globals_of(ctx).get("json_mode", False):
+        get_output(ctx).result(document)
+        return
+    sys.stdout.write(text if text is not None else json.dumps(document, indent=2) + "\n")
+
+
+def _loader_options(ctx: typer.Context) -> dict[str, Any]:
+    """The global loader options of this invocation, without parsing ``--set``."""
+    values = globals_of(ctx)
+    return {
+        "config_file": values.get("config"),
+        "profile": values.get("profile"),
+        "use_user_config": not values.get("no_user_config", False),
+        "trust_project_config": bool(values.get("trust_project_config", False)),
+    }
 
 
 def _store() -> TrustStore:
@@ -355,14 +399,16 @@ def _status_rows(loaded: "LoadedConfig") -> list[dict[str, str]]:
 
 @key_app.command("status")
 def key_status(
+    ctx: typer.Context,
     output_format: Annotated[
         ListFormat, typer.Option("--format", help="Output format.")
     ] = ListFormat.text,
 ) -> None:
     """Show which references each enabled provider and integration would try, and their state."""
+    as_json = _json_wanted(ctx, output_format)
     rows = _status_rows(load_settings(target=Path.cwd()))
-    if output_format is ListFormat.json:
-        sys.stdout.write(json.dumps({"entries": rows}, indent=2) + "\n")
+    if as_json:
+        _write_json(ctx, {"entries": rows})
         return
     if not rows:
         get_console().print("no enabled provider or integration needs a key", markup=False)
@@ -396,23 +442,13 @@ class ShowFormat(StrEnum):
     json = "json"
 
 
-def _load_for_show(
-    target: Path | None,
-    *,
-    config_file: Path | None,
-    profile: str | None,
-    use_user_config: bool,
-    set_values: Sequence[str],
-    trust_project_config: bool,
-) -> "LoadedConfig":
+def _load_for_show(ctx: typer.Context, target: Path | None) -> "LoadedConfig":
     try:
+        overrides = get_context(ctx).cli_overrides
         return load_settings(
             target=target,
-            config_file=config_file,
-            profile=profile,
-            cli_overrides=parse_set_options(list(set_values)) if set_values else None,
-            use_user_config=use_user_config,
-            trust_project_config=trust_project_config,
+            cli_overrides=overrides if overrides.data else None,
+            **_loader_options(ctx),
         )
     except ConfigError as error:
         sys.stderr.write(format_issues(error.issues) + "\n")
@@ -433,6 +469,7 @@ def _layer_text(loaded: "LoadedConfig", name: str, fmt: ShowFormat) -> str:
 
 @config_app.command("show")
 def show(  # noqa: PLR0917 - the documented option set of the command
+    ctx: typer.Context,
     target: Annotated[
         Path | None, typer.Argument(help="Project directory (default: here).")
     ] = None,
@@ -459,54 +496,39 @@ def show(  # noqa: PLR0917 - the documented option set of the command
         bool,
         typer.Option("--reveal-domain-terms", help="Print privacy.domain_terms in clear."),
     ] = False,
-    config_file: Annotated[
-        Path | None, typer.Option("--config", help="Explicit project configuration file.")
-    ] = None,
-    profile: Annotated[str | None, typer.Option("--profile", help="Profile to apply.")] = None,
-    no_user_config: Annotated[
-        bool, typer.Option("--no-user-config", help="Ignore the user configuration file.")
-    ] = False,
-    set_values: Annotated[
-        list[str] | None, typer.Option("--set", help="Override one key: KEY=VALUE (TOML).")
-    ] = None,
-    trust_project_config: Annotated[
-        bool,
-        typer.Option("--trust-project-config", help="Trust restricted project keys this run."),
-    ] = False,
 ) -> None:
     """Print the configuration in force, masked, optionally with the origin of every key."""
     del effective  # the default mode; accepted so that the documented spelling works
+    as_json = _json_wanted(ctx, output_format)
     if layer is not None and layer not in LAYER_NAMES:
         raise UsageError(
             f"unknown layer; choose one of: {', '.join(LAYER_NAMES)}", code="unknown_layer"
         )
-    loaded = _load_for_show(
-        target,
-        config_file=config_file,
-        profile=profile,
-        use_user_config=not no_user_config,
-        set_values=set_values or [],
-        trust_project_config=trust_project_config,
-    )
+    loaded = _load_for_show(ctx, target)
     if layer is not None:
-        sys.stdout.write(_layer_text(loaded, layer, output_format))
+        text = _layer_text(loaded, layer, ShowFormat.json if as_json else output_format)
+        if as_json:
+            _write_json(ctx, json.loads(text), text)
+        else:
+            sys.stdout.write(text)
         return
     secrets = _status_rows(loaded) if check_secrets else None
     if reveal_domain_terms:
         sys.stderr.write(REVEAL_WARNING + "\n")
     try:
-        if output_format is ShowFormat.json:
+        if as_json:
             text = render_json(
                 loaded, section=section, reveal_domain_terms=reveal_domain_terms, secrets=secrets
             )
-        else:
-            text = render_toml(
-                loaded,
-                origins=origin,
-                section=section,
-                reveal_domain_terms=reveal_domain_terms,
-                secrets=secrets,
-            )
+            _write_json(ctx, json.loads(text), text)
+            return
+        text = render_toml(
+            loaded,
+            origins=origin,
+            section=section,
+            reveal_domain_terms=reveal_domain_terms,
+            secrets=secrets,
+        )
     except UnknownSectionError:
         raise UsageError(
             "--section names no top-level table of the settings", code="unknown_section"
@@ -541,7 +563,8 @@ def _summary(report: ValidationReport) -> str:
         "Pre-commit: codekavach config validate --strict --no-user-config"
     ),
 )
-def validate(  # noqa: PLR0917 - the documented option set of the command
+def validate(
+    ctx: typer.Context,
     target: Annotated[
         Path | None, typer.Argument(help="Project directory (default: here).")
     ] = None,
@@ -554,38 +577,20 @@ def validate(  # noqa: PLR0917 - the documented option set of the command
     check_secrets: Annotated[
         bool, typer.Option("--check-secrets", help="Resolve the keys that a scan would use.")
     ] = False,
-    config_file: Annotated[
-        Path | None, typer.Option("--config", help="Explicit project configuration file.")
-    ] = None,
-    profile: Annotated[str | None, typer.Option("--profile", help="Profile to apply.")] = None,
-    no_user_config: Annotated[
-        bool, typer.Option("--no-user-config", help="Ignore the user configuration file.")
-    ] = False,
-    set_values: Annotated[
-        list[str] | None, typer.Option("--set", help="Override one key: KEY=VALUE (TOML).")
-    ] = None,
-    trust_project_config: Annotated[
-        bool,
-        typer.Option("--trust-project-config", help="Trust restricted project keys this run."),
-    ] = False,
 ) -> None:
     """Check the configuration a scan would use, without scanning anything."""
-    loader_kwargs: dict[str, Any] = {
-        "target": target,
-        "config_file": config_file,
-        "profile": profile,
-        "use_user_config": not no_user_config,
-        "trust_project_config": trust_project_config,
-    }
+    as_json = _json_wanted(ctx, output_format)
+    loader_kwargs: dict[str, Any] = {"target": target, **_loader_options(ctx)}
+    set_values = list(globals_of(ctx).get("set_values", []))
     try:
         if set_values:
-            loader_kwargs["cli_overrides"] = parse_set_options(list(set_values))
+            loader_kwargs["cli_overrides"] = parse_set_options(set_values)
     except ConfigError as error:
         report = report_from_error(error, **loader_kwargs)
     else:
         report = validate_configuration(check_secrets=check_secrets, **loader_kwargs)
-    if output_format is ListFormat.json:
-        sys.stdout.write(json.dumps(report.to_dict(), indent=2) + "\n")
+    if as_json:
+        _write_json(ctx, report.to_dict())
     else:
         issues = [*report.errors, *report.warnings]
         if issues:
@@ -643,6 +648,7 @@ def _status(row: Mapping[str, Any]) -> str:
 
 @config_app.command("path")
 def path_command(
+    ctx: typer.Context,
     target: Annotated[
         Path | None, typer.Argument(help="Project directory (default: here).")
     ] = None,
@@ -651,9 +657,10 @@ def path_command(
     ] = ListFormat.text,
 ) -> None:
     """List every location CodeKavach reads, and whether it exists; creates nothing."""
+    as_json = _json_wanted(ctx, output_format)
     rows = _path_rows(collect_paths((target or Path.cwd()).resolve(), os.environ))
-    if output_format is ListFormat.json:
-        sys.stdout.write(json.dumps({"paths": rows}, indent=2) + "\n")
+    if as_json:
+        _write_json(ctx, {"paths": rows})
         return
     lines = [f"{row['label']:<20} {row['path'] or '-':<50} {_status(row)}".rstrip() for row in rows]
     sys.stdout.write("\n".join(lines) + "\n")
@@ -685,6 +692,7 @@ def _user_defined_profiles(
 
 @config_app.command("profiles")
 def profiles_command(
+    ctx: typer.Context,
     target: Annotated[
         Path | None, typer.Argument(help="Project directory (default: here).")
     ] = None,
@@ -693,6 +701,7 @@ def profiles_command(
     ] = ListFormat.text,
 ) -> None:
     """List the built-in and user-defined profiles."""
+    as_json = _json_wanted(ctx, output_format)
     tables, sources, notes = _user_defined_profiles((target or Path.cwd()).resolve())
     for note in notes:
         sys.stderr.write(note + "\n")
@@ -707,8 +716,8 @@ def profiles_command(
         }
         for info in infos
     ]
-    if output_format is ListFormat.json:
-        sys.stdout.write(json.dumps(rows, indent=2) + "\n")
+    if as_json:
+        _write_json(ctx, rows)
         return
     table = [
         (info.name, info.kind, info.defined_in, info.extends or "-", info.description or "")

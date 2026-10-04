@@ -16,6 +16,7 @@ paths or credentials. Tracebacks go to stderr only with ``--debug``, ``-vv`` or
 
 import contextlib
 import errno
+import importlib
 import os
 import sys
 import traceback
@@ -94,6 +95,34 @@ def version_command() -> None:
 app.command("scan")(scan_command)
 app.command("report")(report_command)
 app.add_typer(privacy_app, name="privacy")
+
+
+def _mount(name: str, dotted: str, attr: str) -> bool:
+    """Register ``dotted.attr`` on the root application as ``name``; skip it when absent.
+
+    A sub-application is added as a group, a function as a command. A module that does not
+    exist (its epic has not landed) or lacks the attribute is skipped without an error, so the
+    group simply does not exist; an ``ImportError`` raised inside an existing module propagates.
+    """
+    try:
+        module = importlib.import_module(dotted)
+    except ModuleNotFoundError as error:
+        if error.name is not None and (dotted == error.name or dotted.startswith(f"{error.name}.")):
+            return False
+        raise
+    target = getattr(module, attr, None)
+    if target is None:
+        return False
+    if isinstance(target, typer.Typer):
+        app.add_typer(target, name=name)
+    else:
+        app.command(name)(target)
+    return True
+
+
+# The configuration commands are owned by E03 (codekavach.cli.config); this is their only mount.
+_mount("config", "codekavach.cli.config", "config_app")
+_mount("init", "codekavach.cli.config", "init_command")
 
 
 def build_cli() -> click.Command:

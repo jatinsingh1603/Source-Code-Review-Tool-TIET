@@ -12,11 +12,13 @@ import pytest
 import typer
 
 from codekavach.cli.config import config_app
+from codekavach.cli.options import attach_global_options
 from codekavach.config import Settings, load_settings
 from tests.support.cli import CliResult, assert_no_ansi, run_cli
 from tests.support.golden import assert_matches_golden
 
 COMMAND = typer.main.get_command(config_app)
+attach_global_options(COMMAND)  # the loader options are global options (E05-19)
 GOLDEN = Path(__file__).resolve().parents[2] / "golden" / "config"
 USER = '[privacy]\nlevel = "L4"\n\n[profiles.team.reporting]\nclassification = "Internal"\n'
 PROJECT = (
