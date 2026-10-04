@@ -32,6 +32,8 @@ from codekavach.core.log import config as log_config
 CLI_TEST_WIDTH = 100
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 _FORCING = ("FORCE_COLOR", "PY_COLORS", "GITHUB_ACTIONS", "TTY_COMPATIBLE")
+# ``CI`` makes a session non-interactive (E05-08); a test that wants it passes it in ``env``.
+_SESSION = ("CI",)
 
 
 @dataclass(frozen=True)
@@ -76,7 +78,7 @@ def _environment(home: Path, env: Mapping[str, str] | None) -> dict[str, str]:
     base = {
         key: value
         for key, value in os.environ.items()
-        if not key.startswith("CODEKAVACH_") and key not in _FORCING
+        if not key.startswith("CODEKAVACH_") and key not in (*_FORCING, *_SESSION)
     }
     base.update(
         {
