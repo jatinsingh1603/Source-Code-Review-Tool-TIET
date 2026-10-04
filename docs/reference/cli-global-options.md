@@ -27,6 +27,7 @@ Output and loader options:
 | `--quiet`, `-q` | only results and errors | `CODEKAVACH_QUIET` |
 | `--verbose`, `-v` (repeatable) | more diagnostics on stderr; `-vv` also prints tracebacks | `CODEKAVACH_VERBOSE` |
 | `--debug` | tracebacks and debug logs on stderr | `CODEKAVACH_DEBUG` |
+| `--no-input` | never prompt; a question that cannot be asked is answered no | none |
 | `--log-level debug\|info\|warning\|error` | lowest level of log events on stderr; wins over `--verbose` and `--quiet` | `CODEKAVACH_LOG_LEVEL` |
 | `--log-format console\|json` | format of log events on stderr | `CODEKAVACH_LOG_FORMAT` |
 | `--log-file PATH` | also write debug logs to this file (mode `0600`), behind the same redaction as stderr | none |
@@ -50,6 +51,14 @@ Log events go to stderr; stdout carries only the result of the command.
 `--log-level` wins over these flags. Without any of them, `logging.level` applies when a configuration source sets it. The format is `--log-format`, else `json` under `--json`, else `logging.format` when configured, else `console`.
 
 Every destination, including `--log-file`, sits behind the redaction processor of `codekavach.core.log`. Redaction catches secret-shaped values and oversized or multi-line fragments; it does not recognise arbitrary identifiers, so it reduces what a log can disclose and does not remove the risk.
+
+## Non-interactive use
+
+Some commands ask for confirmation: the consent gate before remote egress, destructive vault operations and key deletion. Questions are written to stderr and read from stdin.
+
+A session is non-interactive when any of these holds: `--no-input`; `--json`; stdin or stderr is not a terminal; the environment variable `CI` is set to anything but `0` or `false`; the `ci` profile is active. In a non-interactive session no question is asked and the answer is "no": the command fails with `error[confirmation_required]` and a hint that names the pre-approval flag of that command (for example `--yes` or `--accept-egress`).
+
+No environment variable and no configuration key means "yes". Pre-approval is always an explicit flag of the command that needs it.
 
 ## Rules
 

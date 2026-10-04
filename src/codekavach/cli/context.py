@@ -46,6 +46,7 @@ class CliContext:
     log_level: str | None = None
     log_format: Literal["console", "json"] | None = None
     log_file: Path | None = None
+    no_input: bool = False
     offline: bool = False
     config_file: Path | None = None
     profile: str | None = None
@@ -130,6 +131,7 @@ def _build(values: Mapping[str, Any]) -> CliContext:
         log_level=values.get("log_level"),
         log_format=values.get("log_format"),
         log_file=values.get("log_file"),
+        no_input=bool(values.get("no_input", False)),
         offline=bool(values.get("offline", False)),
         config_file=values.get("config"),
         profile=values.get("profile"),

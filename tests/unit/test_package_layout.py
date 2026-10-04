@@ -191,6 +191,7 @@ ALLOWED_EXTRA_MODULES: frozenset[str] = frozenset(
         "codekavach.cli.options",
         "codekavach.cli.output",
         "codekavach.cli.privacy",
+        "codekavach.cli.prompts",
         "codekavach.cli.scan",
         "codekavach.cli.term_check",
     }

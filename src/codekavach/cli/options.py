@@ -172,6 +172,11 @@ def make_global_options() -> tuple[TyperOption, ...]:
             metavar="PATH",
             help="Also write redacted debug logs to this file (created with mode 0600).",
         ),
+        _option(
+            "--no-input",
+            is_flag=True,
+            help="Never prompt; a question that cannot be asked is answered no.",
+        ),
         _option("--no-user-config", is_flag=True, help="Ignore the user configuration file."),
         _option(
             "--trust-project-config",
