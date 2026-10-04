@@ -257,27 +257,36 @@ _secret_text = st.text(
 )
 
 
+_CONTROL_SECRET = "¤control¤" * 3
+
+
 @given(_secret_text)
 @settings(max_examples=60, suppress_health_check=[HealthCheck.function_scoped_fixture])
 def test_value_never_leaks(
     tmp_path_factory: pytest.TempPathFactory, caplog: pytest.LogCaptureFixture, value: str
 ) -> None:
-    root = tmp_path_factory.mktemp("root")
-    inside = write(root / "k.txt", value.encode("utf-8"), 0o644)
-    outside = write(tmp_path_factory.mktemp("out") / "k.txt", value.encode("utf-8"), 0o644)
-    # The paths themselves appear in messages; a value that is part of a path proves nothing.
-    assume(value not in str(inside) and value not in str(outside))
-    texts: list[str] = []
-    with caplog.at_level(logging.DEBUG):
-        try:
-            resolve_secret(f"file:{inside}", project_root=root)
-        except SecretResolutionError as exc:
-            texts += [str(exc), repr(exc)]
-        warnings: list[ConfigIssue] = []
-        resolved = resolve_secret(f"file:{outside}", warnings=warnings)
-        texts += [repr(resolved), str(resolved), *(repr(w) for w in warnings)]
-        texts.append(repr(secret_status(f"file:{outside}")))
-        texts.append(repr(secret_status("env:K", env={"K": value})))
-    texts.append(caplog.text)
-    for text in texts:
+    def observe(secret: str) -> list[str]:
+        """Every text the resolver produces for ``secret``: errors, reprs, warnings and logs."""
+        root = tmp_path_factory.mktemp("root")
+        inside = write(root / "k.txt", secret.encode("utf-8"), 0o644)
+        outside = write(tmp_path_factory.mktemp("out") / "k.txt", secret.encode("utf-8"), 0o644)
+        caplog.clear()
+        texts: list[str] = [str(inside), str(outside)]
+        with caplog.at_level(logging.DEBUG):
+            try:
+                resolve_secret(f"file:{inside}", project_root=root)
+            except SecretResolutionError as exc:
+                texts += [str(exc), repr(exc)]
+            warnings: list[ConfigIssue] = []
+            resolved = resolve_secret(f"file:{outside}", warnings=warnings)
+            texts += [repr(resolved), str(resolved), *(repr(w) for w in warnings)]
+            texts.append(repr(secret_status(f"file:{outside}")))
+            texts.append(repr(secret_status("env:K", env={"K": secret})))
+        texts.append(caplog.text)
+        return texts
+
+    # Paths, field names and words such as ``None`` appear in these texts whatever the secret is;
+    # a value that occurs in the texts of a different secret proves nothing.
+    assume(not any(value in text for text in observe(_CONTROL_SECRET)))
+    for text in observe(value)[2:]:
         assert value not in text
