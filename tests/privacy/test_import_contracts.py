@@ -74,6 +74,14 @@ VIOLATIONS = {
         {"codekavach/core/models/bad.py": "import codekavach.config\n"},
         "core-models-independent",
     ),
+    "core-orchestrator-imports-vault": (
+        {"codekavach/core/pipeline/orchestrator.py": "import codekavach.privacy.vault\n"},
+        "core-is-bottom-layer",
+    ),
+    "core-store-imports-llm": (
+        {"codekavach/core/store/bad.py": "from codekavach.llm import client\n"},
+        "core-is-bottom-layer",
+    ),
 }
 
 ALLOWED = {

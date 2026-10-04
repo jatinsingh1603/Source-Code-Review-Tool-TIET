@@ -15,6 +15,13 @@
 # core-models-independent  core.models is the bottom of the dependency graph.
 # config-is-a-leaf         codekavach.config may import only core.models and core.log, so
 #                          configuration code cannot become a route around I1 and I2.
+# core-is-bottom-layer     core.pipeline, core.plugins and core.store import nothing above them:
+#                          no CLI, stage, privacy, LLM, risk, report, integration, server or
+#                          evaluation package. core.models, core.log and config stay allowed.
+#                          Source: ADR-0007 (pipeline contracts), decision D13. The contract is
+#                          "forbidden" rather than "layers" because config imports core.models and
+#                          core.pipeline imports config, which a layers contract would report as a
+#                          mutual dependency of the packages core and config.
 #
 # Rule: never widen a contract (a new ignore_imports line, a removed forbidden module, a new
 # source exemption) without an ADR. ADR-0003 describes the exception procedure for I1.
@@ -151,3 +158,23 @@ forbidden_modules =
     codekavach.core.pipeline
     codekavach.core.plugins
     codekavach.core.store
+
+[importlinter:contract:core-is-bottom-layer]
+name = core pipeline, plugins and store import nothing above them (ADR-0007 D13)
+type = forbidden
+source_modules =
+    codekavach.core.pipeline
+    codekavach.core.plugins
+    codekavach.core.store
+forbidden_modules =
+    codekavach.cli
+    codekavach.ingest
+    codekavach.parsing
+    codekavach.analysis
+    codekavach.privacy
+    codekavach.llm
+    codekavach.risk
+    codekavach.report
+    codekavach.integrations
+    codekavach.server
+    codekavach.eval
