@@ -1,5 +1,10 @@
-"""Regression guard for I3: the scan salt never reaches the state directory."""
+"""Regression guard for I3: the scan salt never reaches the state directory.
 
+The local database (E04-27) and the resume checkpoint (E04-28) are checked with every other
+file; the checkpoint must not hold the scan target either.
+"""
+
+import json
 from pathlib import Path
 
 from codekavach.config import load_settings
@@ -37,3 +42,8 @@ def test_salt_is_not_written_below_the_state_directory(tmp_path: Path) -> None:
         data = path.read_bytes()
         assert SALT_HEX.encode() not in data
         assert bytes.fromhex(SALT_HEX) not in data
+    checkpoint = outcome.state_dir / "scans" / outcome.scan.id / "checkpoint.json"
+    assert checkpoint in files
+    text = checkpoint.read_text(encoding="utf-8")
+    for target in (str(repo), repo.as_posix(), json.dumps(str(repo))[1:-1], tmp_path.name):
+        assert target not in text

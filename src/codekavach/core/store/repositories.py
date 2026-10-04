@@ -299,20 +299,32 @@ class ScanRecorder:
         with self._session("project") as session:
             return ProjectRepository(session).get_by_root(root)
 
-    def start(self, project: Project, scan: Scan, *, stale_before: datetime, now: datetime) -> None:
-        """Store ``project`` and the running ``scan``.
+    def start(self, project: Project, scan: Scan, *, stale_before: datetime, now: datetime) -> Scan:
+        """Store ``project`` and the running ``scan``; returns the scan as stored.
 
         Scans of the project still ``running`` that started before ``stale_before`` were left
         behind by a process that died; they are marked ``failed``. Younger ones may belong to a
         scan running at the same time and are left alone.
+
+        A scan id that is already stored is a resumed scan (E04-28): its row is updated instead
+        of inserted, and ``started_at`` and the project stay those of the first attempt.
         """
         with self._session("start") as session:
-            ProjectRepository(session).upsert(project)
             scans = ScanRepository(session)
+            earlier = scans.get(scan.id)
+            if earlier is None:
+                ProjectRepository(session).upsert(project)
             for stale in scans.running_before(project.id, stale_before):
+                if stale.id == scan.id:
+                    continue
                 scans.update(stale.finish(ScanStatus.FAILED, None, max(now, stale.started_at)))
                 _log.warning("stale_scan_marked_failed", scan_id=stale.id)
-            scans.add(scan)
+            if earlier is None:
+                scans.add(scan)
+                return scan
+            resumed = scan.evolve(started_at=earlier.started_at, project_id=earlier.project_id)
+            scans.update(resumed)
+            return resumed
 
     def finish(
         self, scan: Scan, runs: Sequence[StageRun], findings: Sequence[Finding] | None

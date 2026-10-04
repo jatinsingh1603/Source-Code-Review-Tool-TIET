@@ -75,6 +75,7 @@ class ManifestCounters(_Frozen):
     item_failures: int = 0
     abandoned_threads: int = 0
     egress_locked: bool = False
+    resumed_from_checkpoint: bool = False
 
 
 class ExcludedEntry(_Frozen):

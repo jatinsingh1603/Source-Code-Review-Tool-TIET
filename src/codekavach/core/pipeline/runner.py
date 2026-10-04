@@ -12,6 +12,11 @@ directory is prepared through the safe layout helper; a target URL carrying cred
 before anything is written; ``Scan`` records carry no exception text. The runner opens no network
 connection (I1). Consent for remote egress is passed through unchanged; ``None`` means none.
 
+The runner keeps the resume checkpoint of the scan up to date (E04-28): before the first stage,
+after every stage and at the end. ``resume`` re-enters an interrupted scan under the same scan id
+after the checkpoint was verified against the version, the settings fingerprint, the salt
+fingerprint and the target; outputs of stages that did not finish are discarded first (I4).
+
 With ``persist=True`` the scan is also recorded in the local database (E04-27): a ``running`` row
 before the orchestrator starts, the final scan, its stage runs and its findings afterwards. The
 database modules are imported only then, and no transaction stays open while the scan runs.
@@ -22,6 +27,7 @@ import dataclasses
 import importlib.metadata
 import json
 import sys
+import threading
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -51,7 +57,7 @@ from codekavach.core.pipeline.cache import StageCache
 from codekavach.core.pipeline.cancel import CancellationToken
 from codekavach.core.pipeline.context import ConsentDecision, RunContext
 from codekavach.core.pipeline.errors import PersistenceError
-from codekavach.core.pipeline.events import EventBus, NullEventBus
+from codekavach.core.pipeline.events import Event, EventBus, InMemoryEventBus
 from codekavach.core.pipeline.manifest import (
     ConsentSource,
     ManifestCounters,
@@ -61,6 +67,17 @@ from codekavach.core.pipeline.manifest import (
 from codekavach.core.pipeline.orchestrator import Orchestrator
 from codekavach.core.pipeline.plan import PlanError, RunPlan, build_plan
 from codekavach.core.pipeline.result import PipelineResult, StageRun
+from codekavach.core.pipeline.resume import (
+    LATEST,
+    Checkpoint,
+    CheckpointStatus,
+    completed_stages,
+    find_resumable,
+    load_checkpoint,
+    target_digest,
+    verify_resume,
+    write_checkpoint,
+)
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.plugins.registry import PluginRegistry, registry_from_environment
 from codekavach.core.store.artefacts import OnDiskArtefactStore
@@ -230,6 +247,7 @@ def run_scan(
     use_cache: bool | None = None,
     refresh: Collection[str] = (),
     persist: bool = True,
+    resume: str | None = None,
 ) -> ScanOutcome:
     """Run one scan of ``target`` with the loaded configuration.
 
@@ -241,7 +259,14 @@ def run_scan(
     ``persist`` records the scan in the local database, under the project found by its root
     directory; ``persist=False`` leaves no database file behind.
 
+    ``resume`` (``"latest"`` or a scan id) continues an interrupted scan: same scan id, same
+    database row, stage cache on. Completed cacheable stages are cache hits; INGEST, PRIVACY, LLM
+    and RESTORE stages run again, so until the LLM response cache (E22) exists a resumed scan may
+    send the same payloads again.
+
     Raises:
+        ResumeMismatchError: ``resume`` names no resumable scan, or the version, settings, salt
+            or target differ from the interrupted scan (no stage has run).
         ValueError: ``target`` carries credentials (nothing is written).
         PlanError, GraphError: the plan cannot be built, or a ``refresh`` selector matches no
             stage (``unknown_stage_selector``); nothing has run.
@@ -250,13 +275,14 @@ def run_scan(
     """
     check_target(target)
     settings = loaded.settings
-    plan = build_plan(registry or registry_from_environment(), settings, skip=skip, until=until)
-    for selector in sorted(refresh):
-        if not any(keys.matches_stage_selector(info, selector) for info in plan.infos.values()):
-            raise PlanError("unknown_stage_selector", repr(selector))
+    plan = _checked_plan(registry, settings, skip, until, refresh)
     layout = _prepare_state(loaded)
-    scan_id = scan_id or new_scan_id()
+    settings_fp = settings_fingerprint(settings)
+    resumed = _resumed_checkpoint(layout, resume, settings_fp, salt, target)
+    scan_id = resumed.scan_id if resumed is not None else scan_id or new_scan_id()
     artefacts = store if store is not None else OnDiskArtefactStore(layout, scan_id)
+    if resumed is not None:
+        _discard_unfinished(plan, artefacts, resumed)
     artefacts.put(keys.TARGET, {"target": target})
     recorder = _recorder(layout) if persist else None
     root = str(loaded.project_root)
@@ -276,7 +302,7 @@ def run_scan(
         scan_id=scan_id,
         config=settings,
         artefacts=artefacts,
-        events=bus if bus is not None else NullEventBus(),
+        events=bus if bus is not None else InMemoryEventBus(),
         cancellation=cancellation or CancellationToken(),
         budget=build_budget(settings),
         scan_salt=salt,
@@ -284,28 +310,40 @@ def run_scan(
         state_dir=layout.root,
         consent=consent,
     )
-    cache = StageCache(layout) if store is None else None
     orchestrator = Orchestrator(
         clock=clock,
-        cache=cache,
-        use_cache=settings.scan.cache if use_cache is None else use_cache,
+        cache=StageCache(layout) if store is None else None,
+        use_cache=resumed is not None or (settings.scan.cache if use_cache is None else use_cache),
         refresh=refresh,
         version=codekavach_version(),
     )
     started_at = clock()
-    write_bytes = atomic_write_bytes
-    snapshot = build_snapshot(loaded, codekavach_version=codekavach_version(), now=started_at)
-    snapshot_text = json.dumps(snapshot.model_dump(mode="json"), indent=2, sort_keys=True) + "\n"
-    write_bytes(layout.snapshot_path(scan_id), snapshot_text.encode("utf-8"))
+    _write_snapshot(layout, scan_id, loaded, started_at)
     manifest_inputs = _ManifestInputs(
         scan_id=scan_id,
         plan=plan,
         registry_rows=_registry_rows(registry),
-        settings_fp=settings_fingerprint(settings),
+        settings_fp=settings_fp,
         salt_fp=salt.fingerprint(),
         profile=loaded.profile,
         consent_source=consent.source if consent is not None else "none",
         started_at=started_at,
+        resumed=resumed is not None,
+    )
+    checkpointer = _Checkpointer(
+        layout=layout,
+        template=Checkpoint(
+            scan_id=scan_id,
+            status="running",
+            codekavach_version=codekavach_version(),
+            settings_fingerprint=settings_fp,
+            salt_fingerprint=salt.fingerprint(),
+            target_digest=target_digest(target),
+            order=list(plan.order),
+            completed=[],
+            updated_at=started_at,
+        ),
+        clock=clock,
     )
     ctx = dataclasses.replace(
         ctx,
@@ -314,49 +352,204 @@ def run_scan(
             tool_versions=orchestrator.tool_versions(),
         ),
     )  # fmt: skip
-    if recorder is not None:
-        running = Scan.model_validate(
-            {
-                "id": scan_id,
-                "project_id": project.id,
-                "status": ScanStatus.RUNNING,
-                "started_at": started_at,
-                "codekavach_version": codekavach_version(),
-                "config_hash": config_hash(settings),
-                "privacy_level": settings.privacy.level,
-            }
+    stored = (
+        _record_start(recorder, project, scan_id, started_at, settings)
+        if recorder is not None
+        else None
+    )
+    result = _execute(
+        _Execution(
+            orchestrator=orchestrator,
+            plan=plan,
+            ctx=ctx,
+            checkpointer=checkpointer,
+            manifest_inputs=manifest_inputs,
+            manifest_path=layout.manifest_path(scan_id),
+            recorder=recorder,
+            clock=clock,
+            resumed=resumed is not None,
         )
-        stale_before = started_at - timedelta(seconds=settings.scan.timeout_seconds)
-        recorder.start(project, running, stale_before=stale_before, now=started_at)
-    result: PipelineResult | None = None
-    manifest_path = layout.manifest_path(scan_id)
-    try:
-        result = orchestrator.run(plan, ctx)
-    finally:
-        failure = sys.exc_info()[1]
-        status = result.status.value if result is not None else _status_after(failure, ctx)
-        manifest = manifest_inputs.build(
-            result.stage_runs if result is not None else ctx.run_log.snapshot(),
-            status=status,
-            finished_at=clock(),
-            result=result,
-            tool_versions=orchestrator.tool_versions(),
-        )
-        try:
-            write_bytes(manifest_path, manifest.to_json().encode("utf-8"))
-            artefacts.put(keys.MANIFEST, manifest)
-        except (OSError, ArtefactError):
-            _log.warning("manifest_write_failed", scan_id=scan_id)
-        if result is None and recorder is not None:
-            with contextlib.suppress(PersistenceError):  # logged; the original error propagates
-                recorder.abort(scan_id, ScanStatus(status), clock())
+    )
     scan = assemble_scan(
         result=result, store=artefacts, settings=settings, project=project, clock=clock
     )
+    if resumed is not None and stored is not None:
+        # A resumed scan keeps the start time and the project of its first attempt.
+        scan = scan.evolve(started_at=stored.started_at, project_id=stored.project_id)
     artefacts.put(keys.SCAN_RECORD, scan)
     if recorder is not None:
         recorder.finish(scan, result.stage_runs, _findings(artefacts))
-    return ScanOutcome(result=result, scan=scan, state_dir=layout.root, manifest_path=manifest_path)
+    return ScanOutcome(
+        result=result,
+        scan=scan,
+        state_dir=layout.root,
+        manifest_path=layout.manifest_path(scan_id),
+    )
+
+
+def _checked_plan(
+    registry: PluginRegistry | None,
+    settings: Settings,
+    skip: Collection[str],
+    until: str | None,
+    refresh: Collection[str],
+) -> RunPlan:
+    plan = build_plan(registry or registry_from_environment(), settings, skip=skip, until=until)
+    for selector in sorted(refresh):
+        if not any(keys.matches_stage_selector(info, selector) for info in plan.infos.values()):
+            raise PlanError("unknown_stage_selector", repr(selector))
+    return plan
+
+
+def _write_snapshot(
+    layout: StateLayout, scan_id: str, loaded: LoadedConfig, started_at: datetime
+) -> None:
+    snapshot = build_snapshot(loaded, codekavach_version=codekavach_version(), now=started_at)
+    text = json.dumps(snapshot.model_dump(mode="json"), indent=2, sort_keys=True) + "\n"
+    atomic_write_bytes(layout.snapshot_path(scan_id), text.encode("utf-8"))
+
+
+def _record_start(
+    recorder: "ScanRecorder",
+    project: Project,
+    scan_id: str,
+    started_at: datetime,
+    settings: Settings,
+) -> Scan:
+    """Record the running scan; the returned scan is the stored one (the earlier row on resume)."""
+    running = Scan.model_validate(
+        {
+            "id": scan_id,
+            "project_id": project.id,
+            "status": ScanStatus.RUNNING,
+            "started_at": started_at,
+            "codekavach_version": codekavach_version(),
+            "config_hash": config_hash(settings),
+            "privacy_level": settings.privacy.level,
+        }
+    )
+    stale_before = started_at - timedelta(seconds=settings.scan.timeout_seconds)
+    return recorder.start(project, running, stale_before=stale_before, now=started_at)
+
+
+@dataclass(frozen=True, slots=True)
+class _Execution:
+    """What the orchestrator run and its closing records need."""
+
+    orchestrator: Orchestrator
+    plan: RunPlan
+    ctx: RunContext
+    checkpointer: "_Checkpointer"
+    manifest_inputs: "_ManifestInputs"
+    manifest_path: Path
+    recorder: "ScanRecorder | None"
+    clock: Callable[[], datetime]
+    resumed: bool
+
+
+def _execute(run: _Execution) -> PipelineResult:
+    """Run the orchestrator; the checkpoint and the manifest are written however it ends."""
+    ctx = run.ctx
+    result: PipelineResult | None = None
+    run.checkpointer.write("running", ())
+    unsubscribe = ctx.events.subscribe(lambda event: run.checkpointer.on_event(event, ctx))
+    try:
+        result = run.orchestrator.run(run.plan, ctx)
+        if run.resumed:
+            result = dataclasses.replace(result, resumed_from_checkpoint=True)
+    finally:
+        unsubscribe()
+        failure = sys.exc_info()[1]
+        status = result.status.value if result is not None else _status_after(failure, ctx)
+        stage_runs = result.stage_runs if result is not None else ctx.run_log.snapshot()
+        run.checkpointer.write(_CHECKPOINT_STATUS[status], stage_runs)
+        manifest = run.manifest_inputs.build(
+            stage_runs,
+            status=status,
+            finished_at=run.clock(),
+            result=result,
+            tool_versions=run.orchestrator.tool_versions(),
+        )
+        try:
+            atomic_write_bytes(run.manifest_path, manifest.to_json().encode("utf-8"))
+            ctx.artefacts.put(keys.MANIFEST, manifest)
+        except (OSError, ArtefactError):
+            _log.warning("manifest_write_failed", scan_id=ctx.scan_id)
+        if result is None and run.recorder is not None:
+            with contextlib.suppress(PersistenceError):  # logged; the original error propagates
+                run.recorder.abort(ctx.scan_id, ScanStatus(status), run.clock())
+    return result
+
+
+_CHECKPOINT_EVENTS = frozenset({"stage.finished", "stage.failed", "stage.skipped"})
+_CHECKPOINT_STATUS: Mapping[str, CheckpointStatus] = {
+    "completed": "completed",
+    "completed_with_errors": "completed_with_errors",
+    "failed": "failed",
+    "cancelled": "cancelled",
+}
+
+
+def _resumed_checkpoint(
+    layout: StateLayout, resume: str | None, settings_fp: str, salt: ScanSalt, target: str
+) -> Checkpoint | None:
+    """The verified checkpoint of the scan to continue, or ``None`` for a new scan."""
+    if resume is None:
+        return None
+    scan_id = find_resumable(layout) if resume == LATEST else resume
+    return verify_resume(
+        load_checkpoint(layout, scan_id) if scan_id is not None else None,
+        scan_id=scan_id or LATEST,
+        codekavach_version=codekavach_version(),
+        settings_fingerprint=settings_fp,
+        salt_fingerprint=salt.fingerprint(),
+        target=target,
+    )
+
+
+@dataclass(slots=True)
+class _Checkpointer:
+    """Writes the checkpoint of the running scan; events arrive from stage threads."""
+
+    layout: StateLayout
+    template: Checkpoint
+    clock: Callable[[], datetime]
+    _lock: threading.Lock = dataclasses.field(default_factory=threading.Lock)
+
+    def write(self, status: CheckpointStatus, runs: Sequence[StageRun]) -> None:
+        with self._lock:
+            checkpoint = self.template.model_copy(
+                update={
+                    "status": status,
+                    "completed": completed_stages(runs),
+                    "updated_at": self.clock(),
+                }
+            )
+            try:
+                write_checkpoint(self.layout, checkpoint)
+            except OSError:
+                _log.warning("checkpoint_write_failed", scan_id=self.template.scan_id)
+
+    def on_event(self, event: Event, ctx: RunContext) -> None:
+        if event.kind in _CHECKPOINT_EVENTS:
+            self.write("running", ctx.stage_runs())
+
+
+def _discard_unfinished(plan: RunPlan, store: ArtefactStore, checkpoint: Checkpoint) -> None:
+    """Drop the outputs of every stage the checkpoint does not list as succeeded or cached.
+
+    A stage interrupted by a hard kill may have written some of its outputs; the orchestrator's
+    discard-on-failure did not run then, so a resumed run must not find them (I4).
+    """
+    reusable = checkpoint.reusable_stages()
+    for info in plan.infos.values():
+        if info.name in reusable:
+            continue
+        for key in sorted(info.provides):
+            if keys.is_multi_provider(key):
+                store.discard(key, part=info.name)
+            else:
+                store.discard(key)
 
 
 def _recorder(layout: StateLayout) -> "ScanRecorder":
@@ -404,6 +597,7 @@ class _ManifestInputs:
     profile: str | None
     consent_source: ConsentSource
     started_at: datetime
+    resumed: bool = False
 
     def build(
         self,
@@ -420,6 +614,7 @@ class _ManifestInputs:
             item_failures=len(result.item_failures) if result else 0,
             abandoned_threads=result.abandoned_threads if result else 0,
             egress_locked=result.egress_locked if result else False,
+            resumed_from_checkpoint=self.resumed,
         )
         return build_manifest(
             scan_id=self.scan_id,

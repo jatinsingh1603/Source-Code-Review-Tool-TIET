@@ -116,6 +116,7 @@ class PipelineResult:
     tool_versions: Mapping[str, Mapping[str, str]] = field(default_factory=dict)
     started_at: datetime | None = None
     finished_at: datetime | None = None
+    resumed_from_checkpoint: bool = False
 
     def run_of(self, stage: str) -> StageRun | None:
         """The run of ``stage``, or ``None``."""

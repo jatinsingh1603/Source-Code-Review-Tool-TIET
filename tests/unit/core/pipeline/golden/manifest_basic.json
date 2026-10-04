@@ -81,6 +81,7 @@
     "memo_misses": 0,
     "item_failures": 2,
     "abandoned_threads": 0,
-    "egress_locked": false
+    "egress_locked": false,
+    "resumed_from_checkpoint": false
   }
 }

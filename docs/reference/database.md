@@ -21,6 +21,7 @@ With `persist=True` (the default) `run_scan` finds or creates the project by its
 - `document_json` (`model_dump_json()` of the E02 model) is authoritative. Models are rebuilt from it with `load_versioned`; the scalar columns are for filtering and sorting only.
 - A finding row is keyed by (`id`, `scan_id`): a scan whose `rate` stage is served from the stage cache reuses the findings of an earlier scan and stores them under its own scan id.
 - A scan of the same project still `running` and older than `scan.timeout_seconds` was left by a process that died; the next `run_scan` marks it `failed`. Younger ones are left alone, because they may belong to a scan running at the same time.
+- A resumed scan (`run_scan(resume=...)`, see [resume.md](resume.md)) updates its existing row instead of inserting a new one; `started_at` stays that of the first attempt.
 - A database error after the orchestrator finished is logged by exception class and raised as `PersistenceError`; the artefacts and the manifest are already on disk.
 
 Findings hold real paths and evidence text, so the database is confidential client data. It holds no scan salt and no vault contents (tested in `tests/privacy/test_pipeline_salt_locality.py`).
