@@ -1,0 +1,15 @@
+╭─ CodeKavach privacy notice ──────────────────────────────────────────────────────────────────────╮
+│ Effective privacy level: L3 (from default). L2 applied to the minimal slice only (default).      │
+│ Path rules and provider trust tiers can make individual files stricter.                          │
+│ LLM provider: mock (kind mock, local: nothing is transmitted)                                    │
+│ Removed before anything is sent: secrets and personal data (typed placeholders), comments and    │
+│ docstrings, internal identifiers and the domain words inside string literals (pseudonymised),    │
+│ and all code outside the minimal slice.                                                          │
+│ Still visible to the provider at this level: the provider is local, so nothing leaves the        │
+│ machine.                                                                                         │
+│ What a payload still discloses is measured by the evaluation harness, not assumed to be zero.    │
+│ Check it yourself:                                                                               │
+│   codekavach privacy inspect         the original next to the exact payload                      │
+│   codekavach privacy ledger show     every payload recorded for sending                          │
+│   codekavach privacy ledger verify   the hash chain of the ledger                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯

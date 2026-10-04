@@ -40,6 +40,7 @@ from codekavach.cli.errors import (
     UsageError,
 )
 from codekavach.cli.exit_codes import ExitCode
+from codekavach.cli.onboarding import maybe_show_first_run_notice
 from codekavach.cli.output import TABLE_BOX, Output, get_output, severity_style
 from codekavach.cli.progress import ProgressMode, progress_listener
 from codekavach.core.models.enums import FindingStatus, Severity
@@ -451,6 +452,7 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     )
     out = get_output(ctx)
     provider = resolve_provider(cli_ctx)
+    maybe_show_first_run_notice(ctx)
     if provider.remote:
         raise PrivacyBlockError(
             "remote providers require the consent gate, which this build does not include",

@@ -1,0 +1,10 @@
+╭─ CodeKavach privacy notice ──────────────────────────────────────────────────────────────────────╮
+│ Effective privacy level: L3 (from default). L2 applied to the minimal slice only (default).      │
+│ Path rules and provider trust tiers can make individual files stricter.                          │
+│ LLM review is disabled; only local engines run                                                   │
+│ Nothing is sent to a model.                                                                      │
+│ Check it yourself:                                                                               │
+│   codekavach privacy inspect         the original next to the exact payload                      │
+│   codekavach privacy ledger show     every payload recorded for sending                          │
+│   codekavach privacy ledger verify   the hash chain of the ledger                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯

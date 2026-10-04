@@ -1,0 +1,13 @@
+╭─ CodeKavach privacy notice ──────────────────────────────────────────────────────────────────────╮
+│ Effective privacy level: L4 (from cli). No code; abstract data-flow facts and questions.         │
+│ Path rules and provider trust tiers can make individual files stricter.                          │
+│ LLM provider: primary (kind anthropic, remote)                                                   │
+│ Removed before anything is sent: all code; only abstract data-flow facts and questions are sent. │
+│ Still visible to the provider at this level: data-flow facts only, no code.                      │
+│ What a payload still discloses is measured by the evaluation harness, not assumed to be zero.    │
+│ Check it yourself:                                                                               │
+│   codekavach privacy inspect         the original next to the exact payload                      │
+│   codekavach privacy ledger show     every payload recorded for sending                          │
+│   codekavach privacy ledger verify   the hash chain of the ledger                                │
+│ You will be asked to confirm before the first payload is sent to a remote provider.              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯

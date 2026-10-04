@@ -30,6 +30,7 @@ from codekavach.cli.backends import load_backend
 from codekavach.cli.context import get_context, with_target
 from codekavach.cli.errors import PrivacyBlockError, UsageError
 from codekavach.cli.ledger import ledger_app
+from codekavach.cli.onboarding import build_notice, notice_facts, notice_lines
 from codekavach.cli.output import TABLE_BOX, get_output, simple_table, to_jsonable
 
 if TYPE_CHECKING:
@@ -356,6 +357,28 @@ def _renderer(
             console.print(f"{hidden} more payload(s); use --limit 0 to show all", markup=False)
 
     return render
+
+
+@privacy_app.command("notice")
+def notice_command(ctx: typer.Context) -> None:
+    """Show the privacy notice for the effective settings; it is not marked as shown."""
+    facts = notice_facts(get_context(ctx))
+    level = facts["level"]
+    data = {
+        "privacy_level": getattr(level, "value", str(level)),
+        "origin": facts["origin"],
+        "llm_enabled": facts["llm_enabled"],
+        "provider": {
+            "id": facts["provider_id"],
+            "kind": facts["provider_kind"],
+            "remote": facts["is_remote"],
+        },
+        "lines": notice_lines(**facts),  # type: ignore[arg-type]
+    }
+    get_output(ctx).result(
+        data,
+        human=lambda console: console.print(build_notice(**facts)),  # type: ignore[arg-type]
+    )
 
 
 @privacy_app.command("inspect")

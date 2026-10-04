@@ -1,0 +1,13 @@
+╭─ CodeKavach privacy notice ──────────────────────────────────────────────────────────────────────╮
+│ Effective privacy level: L0 (from profile). Nothing leaves. Only local engines or a local model. │
+│ Path rules and provider trust tiers can make individual files stricter.                          │
+│ LLM provider: local (kind ollama, local: nothing is transmitted)                                 │
+│ Removed before anything is sent: nothing is sent at this level.                                  │
+│ Still visible to the provider at this level: the provider is local, so nothing leaves the        │
+│ machine.                                                                                         │
+│ What a payload still discloses is measured by the evaluation harness, not assumed to be zero.    │
+│ Check it yourself:                                                                               │
+│   codekavach privacy inspect         the original next to the exact payload                      │
+│   codekavach privacy ledger show     every payload recorded for sending                          │
+│   codekavach privacy ledger verify   the hash chain of the ledger                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
