@@ -186,6 +186,7 @@ ALLOWED_EXTRA_MODULES: frozenset[str] = frozenset(
         "codekavach.cli.context",
         "codekavach.cli.errors",
         "codekavach.cli.exit_codes",
+        "codekavach.cli.logging_setup",
         "codekavach.cli.ledger",
         "codekavach.cli.options",
         "codekavach.cli.output",

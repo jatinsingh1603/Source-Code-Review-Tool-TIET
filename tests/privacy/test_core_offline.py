@@ -18,6 +18,7 @@ from codekavach.core.pipeline.runner import run_scan
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.plugins.discovery import PluginSpec
 from codekavach.core.plugins.registry import PluginRegistry
+from tests.support import fake_stages_module
 
 TARGETS = {
     "ingest": "ingest",
@@ -32,6 +33,8 @@ def refuse(*_args: object, **_kwargs: object) -> NoReturn:
 
 
 def test_fake_scan_starts_no_process(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # The fake stages share a failure switch with other tests; the suite runs in random order.
+    monkeypatch.setattr(fake_stages_module, "FAIL_ANALYSIS", [False])
     monkeypatch.setattr(subprocess, "Popen", refuse)
     monkeypatch.setattr(os, "system", refuse)
     registry = PluginRegistry(

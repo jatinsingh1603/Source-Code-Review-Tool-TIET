@@ -4,12 +4,14 @@
 ``codekavach.cli.app.run`` (the function behind the installed script), so tests see the same
 grammar and the same exit-code mapping as users. Typer's and Click's ``CliRunner`` would bypass
 both. Each invocation gets a temporary home, a fixed width without colour, separate stdout and
-stderr buffers and, optionally, streams that claim to be terminals.
+stderr buffers and, optionally, streams that claim to be terminals. A command configures the
+process-wide logging (E05-06); the state from before the invocation is restored afterwards.
 """
 
 import contextlib
 import io
 import json
+import logging
 import os
 import re
 import sys
@@ -19,11 +21,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import structlog
 import typer.rich_utils
 from typer import _click as click  # the Click copy that Typer's commands use
 
 from codekavach.cli.app import build_cli, run
 from codekavach.cli.console import reset_consoles
+from codekavach.core.log import config as log_config
 
 CLI_TEST_WIDTH = 100
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
@@ -103,6 +107,28 @@ def _patched_environ(values: Mapping[str, str]) -> Iterator[None]:
 
 
 @contextlib.contextmanager
+def preserved_logging() -> Iterator[None]:
+    """Undo the logging configuration made inside the block and close its log file."""
+    root = logging.getLogger()
+    handlers, level = list(root.handlers), root.level
+    structlog_config = structlog.get_config()
+    stderr_handler, file_handler = log_config._handler, log_config._file_handler
+    third_party = {name: logging.getLogger(name).level for name in log_config.THIRD_PARTY_LOGGERS}
+    try:
+        yield
+    finally:
+        opened = log_config._file_handler
+        if opened is not None and opened is not file_handler:
+            opened.close()
+        root.handlers[:] = handlers
+        root.setLevel(level)
+        structlog.configure(**structlog_config)
+        log_config._handler, log_config._file_handler = stderr_handler, file_handler
+        for name, saved in third_party.items():
+            logging.getLogger(name).setLevel(saved)
+
+
+@contextlib.contextmanager
 def _working_directory(path: Path | None) -> Iterator[None]:
     if path is None:
         yield
@@ -141,6 +167,7 @@ def run_cli(
         _working_directory(cwd),
         contextlib.redirect_stdout(stdout),
         contextlib.redirect_stderr(stderr),
+        preserved_logging(),
     ):
         typer.rich_utils.FORCE_TERMINAL = True if tty else None
         sys.stdin = stdin

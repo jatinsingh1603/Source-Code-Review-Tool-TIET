@@ -26,6 +26,8 @@ from typer.core import TyperOption
 GLOBALS_KEY = "codekavach.globals"
 PANEL = "Global options"
 PRIVACY_LEVELS = ("L0", "L1", "L2", "L3", "L4")
+LOG_LEVELS = ("debug", "info", "warning", "error", "critical")
+LOG_FORMATS = ("console", "json")
 _EXPLICIT = frozenset({ParameterSource.COMMANDLINE, ParameterSource.ENVIRONMENT})
 
 Converter = Callable[[Any], Any]
@@ -44,6 +46,27 @@ def _privacy_level(value: Any) -> Any:
     if text not in PRIVACY_LEVELS:
         raise BadParameter(f"must be one of {', '.join(PRIVACY_LEVELS)}")
     return text
+
+
+def _one_of(choices: tuple[str, ...]) -> Converter:
+    def convert(value: Any) -> Any:
+        if value is None:
+            return None
+        text = str(value).strip().lower()
+        if text not in choices:
+            raise BadParameter(f"must be one of {', '.join(choices)}")
+        return text
+
+    return convert
+
+
+def _log_file(value: Any) -> Any:
+    if value is None:
+        return None
+    path = Path(str(value))
+    if path.is_dir() or not path.parent.is_dir():
+        raise BadParameter("must be a file path in an existing directory")
+    return path
 
 
 def _config_file(value: Any) -> Any:
@@ -129,6 +152,26 @@ def make_global_options() -> tuple[TyperOption, ...]:
             help="More diagnostics on stderr; repeat for more.",
         ),
         _option("--debug", is_flag=True, help="Print tracebacks and debug logs on stderr."),
+        _option(
+            "--log-level",
+            convert=_one_of(LOG_LEVELS),
+            metavar="[debug|info|warning|error]",
+            envvar="CODEKAVACH_LOG_LEVEL",
+            help="Lowest level of log events on stderr; wins over --verbose and --quiet.",
+        ),
+        _option(
+            "--log-format",
+            convert=_one_of(LOG_FORMATS),
+            metavar="[console|json]",
+            envvar="CODEKAVACH_LOG_FORMAT",
+            help="Format of log events on stderr.",
+        ),
+        _option(
+            "--log-file",
+            convert=_log_file,
+            metavar="PATH",
+            help="Also write redacted debug logs to this file (created with mode 0600).",
+        ),
         _option("--no-user-config", is_flag=True, help="Ignore the user configuration file."),
         _option(
             "--trust-project-config",

@@ -6,6 +6,9 @@ Owning epic: E05.
 configuration, so ``--help``, ``--version`` and ``completion`` work in an untrusted repository
 without reading its files. Overrides from flags go through the E03 loader, which enforces the
 privacy floors and organisation policy and fails with exit 2 instead of adjusting silently.
+
+``get_context`` also configures logging from the flags (E05-06). The ``[logging]`` settings can
+only apply once the configuration has been read, so ``loaded`` configures logging again.
 """
 
 import dataclasses
@@ -13,11 +16,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from typer import _click as click  # Typer >= 0.27 ships its own copy of Click
 
 from codekavach.cli.errors import UsageError
+from codekavach.cli.logging_setup import configure_cli_logging
 from codekavach.cli.options import globals_of
 from codekavach.config import LoadedConfig, Settings, load_settings
 from codekavach.config.overrides import (
@@ -39,6 +43,9 @@ class CliContext:
     quiet: bool = False
     verbosity: int = 0
     debug: bool = False
+    log_level: str | None = None
+    log_format: Literal["console", "json"] | None = None
+    log_file: Path | None = None
     offline: bool = False
     config_file: Path | None = None
     profile: str | None = None
@@ -62,6 +69,7 @@ class CliContext:
             trust_project_config=self.trust_project_config,
         )
         self._check_selection(loaded.settings)
+        configure_cli_logging(self, loaded)
         return loaded
 
     def _check_selection(self, settings: Settings) -> None:
@@ -119,6 +127,9 @@ def _build(values: Mapping[str, Any]) -> CliContext:
         quiet=quiet,
         verbosity=verbosity,
         debug=bool(values.get("debug", False)),
+        log_level=values.get("log_level"),
+        log_format=values.get("log_format"),
+        log_file=values.get("log_file"),
         offline=bool(values.get("offline", False)),
         config_file=values.get("config"),
         profile=values.get("profile"),
@@ -139,6 +150,7 @@ def get_context(ctx: click.Context) -> CliContext:
         return cached
     context = _build(globals_of(ctx))
     root.meta[CONTEXT_KEY] = context
+    configure_cli_logging(context)
     return context
 
 

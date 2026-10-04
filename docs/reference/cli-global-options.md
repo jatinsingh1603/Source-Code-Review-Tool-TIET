@@ -27,10 +27,29 @@ Output and loader options:
 | `--quiet`, `-q` | only results and errors | `CODEKAVACH_QUIET` |
 | `--verbose`, `-v` (repeatable) | more diagnostics on stderr; `-vv` also prints tracebacks | `CODEKAVACH_VERBOSE` |
 | `--debug` | tracebacks and debug logs on stderr | `CODEKAVACH_DEBUG` |
+| `--log-level debug\|info\|warning\|error` | lowest level of log events on stderr; wins over `--verbose` and `--quiet` | `CODEKAVACH_LOG_LEVEL` |
+| `--log-format console\|json` | format of log events on stderr | `CODEKAVACH_LOG_FORMAT` |
+| `--log-file PATH` | also write debug logs to this file (mode `0600`), behind the same redaction as stderr | none |
 | `--config PATH` | use this configuration file instead of the discovered project file | `CODEKAVACH_CONFIG` (read by the loader) |
 | `--profile NAME` | apply a profile | `CODEKAVACH_PROFILE` (read by the loader) |
 | `--no-user-config` | ignore the user configuration file | `CODEKAVACH_NO_USER_CONFIG` (read by the loader) |
 | `--trust-project-config` | trust restricted keys in the project file for this run | `CODEKAVACH_TRUST_PROJECT_CONFIG` (read by the loader) |
+
+## Logging
+
+Log events go to stderr; stdout carries only the result of the command.
+
+| Flags | Level on stderr |
+|---|---|
+| `--quiet` | `ERROR` |
+| none | `WARNING` |
+| `-v` | `INFO` |
+| `-vv` or `--debug` | `DEBUG` |
+| `-vvv` | `DEBUG`, including third-party loggers |
+
+`--log-level` wins over these flags. Without any of them, `logging.level` applies when a configuration source sets it. The format is `--log-format`, else `json` under `--json`, else `logging.format` when configured, else `console`.
+
+Every destination, including `--log-file`, sits behind the redaction processor of `codekavach.core.log`. Redaction catches secret-shaped values and oversized or multi-line fragments; it does not recognise arbitrary identifiers, so it reduces what a log can disclose and does not remove the risk.
 
 ## Rules
 

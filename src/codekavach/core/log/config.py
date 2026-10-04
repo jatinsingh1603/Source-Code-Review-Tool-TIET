@@ -7,11 +7,16 @@ third-party package, is rendered by one ``ProcessorFormatter`` on the single roo
 processor in the redaction slot sees each event once, after exceptions have become data and
 before anything is written. Output goes to stderr only; stdout is reserved for command results.
 Tracebacks never show local variables.
+
+An optional log file (``log_file``, requested by the CLI's ``--log-file``, E05-06) is a second
+destination at ``DEBUG`` behind the same formatter, so it passes through the same redaction
+processor as stderr. The file is created with mode ``0o600``.
 """
 
 import logging
 import os
 import sys
+from pathlib import Path
 from typing import Literal, TextIO, cast
 
 import structlog
@@ -37,7 +42,10 @@ LEVEL_VARIABLE = "CODEKAVACH_LOG_LEVEL"
 FORMAT_VARIABLE = "CODEKAVACH_LOG_FORMAT"
 THIRD_PARTY_VARIABLE = "CODEKAVACH_LOG_THIRD_PARTY"
 
+LOG_FILE_MODE = 0o600
+
 _handler: logging.Handler | None = None
+_file_handler: logging.Handler | None = None
 
 
 def _resolve_level(level: str | int | None) -> int:
@@ -105,6 +113,8 @@ def configure_logging(
     fmt: Format | None = None,
     stream: TextIO | None = None,
     force: bool = False,
+    log_file: Path | None = None,
+    third_party: bool | None = None,
 ) -> None:
     """Configure structlog and the standard library to write structured events to stderr.
 
@@ -112,10 +122,15 @@ def configure_logging(
     ``CODEKAVACH_LOG_FORMAT``, then the default (``INFO``; ``console`` on a TTY, else ``json``).
     A second call does nothing unless ``force`` is true.
 
+    ``log_file`` adds a file destination at ``DEBUG`` (mode ``0o600``) with the same redaction;
+    stderr keeps its own level. ``third_party`` shows (true) or hides (false) third-party loggers
+    below ``WARNING``; ``None`` reads ``CODEKAVACH_LOG_THIRD_PARTY``.
+
     Raises:
         ValueError: the level or format is not one of the accepted values.
+        OSError: the log file cannot be created.
     """
-    global _handler  # noqa: PLW0603 - one process-wide handler by design
+    global _handler, _file_handler  # noqa: PLW0603 - process-wide handlers by design
     if _handler is not None and not force:
         return
     target = stream if stream is not None else sys.stderr
@@ -139,19 +154,47 @@ def configure_logging(
     )
     handler = logging.StreamHandler(target)
     handler.setFormatter(formatter)
+    handler.setLevel(resolved_level)
 
     root = logging.getLogger()
     if _handler is not None:
         root.removeHandler(_handler)
+    if _file_handler is not None:
+        root.removeHandler(_file_handler)
+        _file_handler.close()
+        _file_handler = None
     root.addHandler(handler)
     root.setLevel(resolved_level)
     _handler = handler
+    if log_file is not None:
+        _file_handler = _open_file_handler(log_file, shared, resolved_fmt)
+        root.addHandler(_file_handler)
+        root.setLevel(logging.DEBUG)
 
-    third_party_debug = os.environ.get(THIRD_PARTY_VARIABLE) == "1"
+    third_party_debug = (
+        third_party if third_party is not None else os.environ.get(THIRD_PARTY_VARIABLE) == "1"
+    )
     for name in THIRD_PARTY_LOGGERS:
         logging.getLogger(name).setLevel(logging.NOTSET if third_party_debug else logging.WARNING)
     if third_party_debug:
         get_logger(__name__).warning("third_party_debug_logging_enabled")
+
+
+def _open_file_handler(path: Path, shared: list[Processor], fmt: Format) -> logging.Handler:
+    """A ``DEBUG`` file handler behind the redaction processor; the file has mode 0o600."""
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, LOG_FILE_MODE)
+    os.close(descriptor)
+    if os.name != "nt":
+        path.chmod(LOG_FILE_MODE)  # an existing file may have been created with a wider mode
+    handler = logging.FileHandler(path, mode="a", encoding="utf-8")
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(
+        structlog.stdlib.ProcessorFormatter(
+            foreign_pre_chain=shared,
+            processors=_formatter_processors(fmt, cast(TextIO, handler.stream)),
+        )
+    )
+    return handler
 
 
 def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
