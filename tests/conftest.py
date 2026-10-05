@@ -16,6 +16,7 @@ pytest_plugins = [
     "tests.support.cli_fixtures",
     "tests.support.pipeline_fixtures",
     "tests.support.config",
+    "tests.support.no_network",
 ]
 
 PROFILE_VARIABLE = "HYPOTHESIS_PROFILE"

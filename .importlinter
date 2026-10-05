@@ -22,6 +22,11 @@
 #                          "forbidden" rather than "layers" because config imports core.models and
 #                          core.pipeline imports config, which a layers contract would report as a
 #                          mutual dependency of the packages core and config.
+# cli-no-direct-egress     I1 at the command layer (E05-32): codekavach.cli does not import the
+#                          egress transport, the provider adapters or the vault. The CLI reaches
+#                          the vault's administrative facade and the provider probe at run time
+#                          through codekavach.cli.backends.load_backend, which this contract does
+#                          not see; tests/privacy/test_cli_no_network.py is the runtime half.
 #
 # Rule: never widen a contract (a new ignore_imports line, a removed forbidden module, a new
 # source exemption) without an ADR. ADR-0003 describes the exception procedure for I1.
@@ -178,3 +183,16 @@ forbidden_modules =
     codekavach.integrations
     codekavach.server
     codekavach.eval
+
+[importlinter:contract:cli-no-direct-egress]
+name = The CLI does not import the egress transport, adapters or the vault
+type = forbidden
+source_modules =
+    codekavach.cli
+forbidden_modules =
+    codekavach.privacy.egress.transport
+    codekavach.llm.providers
+    codekavach.privacy.vault
+# Direct imports only: the CLI imports the egress ledger reader and the consent types, and the
+# egress package reaches the transport and the vault on its own.
+allow_indirect_imports = True

@@ -82,6 +82,24 @@ VIOLATIONS = {
         {"codekavach/core/store/bad.py": "from codekavach.llm import client\n"},
         "core-is-bottom-layer",
     ),
+    "cli-scan-imports-transport": (
+        {"codekavach/cli/scan.py": "from codekavach.privacy.egress import transport\n"},
+        "cli-no-direct-egress",
+    ),
+    "cli-providers-imports-adapter": (
+        {
+            "codekavach/cli/providers.py": "from codekavach.llm.providers.mock import Mock\n",
+            "codekavach/llm/providers/mock.py": "Mock = 1\n",
+        },
+        "cli-no-direct-egress",
+    ),
+    "cli-vault-imports-vault-internals": (
+        {
+            "codekavach/cli/vault.py": "import codekavach.privacy.vault.store\n",
+            "codekavach/privacy/vault/store.py": "",
+        },
+        "cli-no-direct-egress",
+    ),
 }
 
 ALLOWED = {
@@ -89,6 +107,10 @@ ALLOWED = {
     "indirect-vault-chain": {
         "codekavach/llm/ok.py": "import codekavach.privacy.egress.guard\n",
         "codekavach/privacy/egress/guard.py": "import codekavach.privacy.vault\n",
+    },
+    "cli-reads-the-ledger": {
+        "codekavach/cli/privacy.py": "from codekavach.privacy.egress import ledger\n",
+        "codekavach/privacy/egress/ledger.py": "import codekavach.privacy.egress.transport\n",
     },
 }
 
