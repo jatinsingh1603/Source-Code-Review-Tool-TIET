@@ -308,6 +308,18 @@ def test_repository_documents_pass() -> None:
     assert failures == []
 
 
+@pytest.mark.parametrize(
+    "name", ["README.md", "AGENTS.md", "CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md"]
+)
+def test_entry_documents_exist_and_pass(name: str) -> None:
+    """A rename of one of these is noticed here."""
+    pending, _ = docs.load_config(REPO_ROOT)
+    path = REPO_ROOT / name
+    assert path.is_file(), name
+    failures = [p for p in docs.check_file(path, REPO_ROOT, pending) if p.is_failure]
+    assert failures == []
+
+
 def test_readme_web_relative_links_and_devanagari_are_fine() -> None:
     readme = REPO_ROOT / "README.md"
     text = readme.read_text(encoding="utf-8")

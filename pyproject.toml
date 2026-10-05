@@ -55,7 +55,7 @@ dev = [
 # pending list is allowed while the document is not written; once it exists the checker
 # reports the entry as stale (DOC003).
 [tool.codekavach.docs]
-pending = ["docs/THREAT_MODEL.md"]
+pending = ["docs/THREAT_MODEL.md", "CODE_OF_CONDUCT.md"]
 exclude = ["fixtures/**", "tests/**/fixtures/**", "tests/**/golden/**"]
 
 # Changelog from fragments in changelog.d/ (ADR-0004). The six types are the categories of

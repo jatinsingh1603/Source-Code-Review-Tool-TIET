@@ -97,6 +97,10 @@ uv run codekavach --help
 
 Work is planned in one-week sprints on the project board; the rhythm and the rules for moving a card are in [`docs/process/sprint-cadence.md`](docs/process/sprint-cadence.md).
 
+## Contributing
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) takes you from a clone to a first commit and says which document governs what. Coding agents and the core team work from [`AGENTS.md`](AGENTS.md).
+
 ## Security
 
 Please report vulnerabilities privately, as described in [`SECURITY.md`](SECURITY.md). A bypass of a privacy invariant counts as a vulnerability.
