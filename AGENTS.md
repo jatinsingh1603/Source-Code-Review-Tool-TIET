@@ -9,6 +9,7 @@ This file is the operating manual for anyone, human or AI coding agent, who pick
 3. `docs/ARCHITECTURE.md`: **normative** module layout, data model, privacy invariants I1 to I6.
 4. `docs/research/INSIGHTS.md`: what the literature and tool survey tells us to do and to avoid.
 5. `REFERENCE.md` and `RESOURCE.md`: frameworks, papers and tools; cite from these, do not invent sources.
+6. [`docs/process/sprint-cadence.md`](docs/process/sprint-cadence.md): the weekly rhythm, and what a card needs to move between board columns.
 
 ## 2. Choosing an issue
 

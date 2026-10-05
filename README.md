@@ -95,6 +95,8 @@ uv run codekavach --help
 
 `pre-commit` is configured by a later scaffolding issue; the other commands work now. The full quickstart follows in E01-34.
 
+Work is planned in one-week sprints on the project board; the rhythm and the rules for moving a card are in [`docs/process/sprint-cadence.md`](docs/process/sprint-cadence.md).
+
 ## Academic context
 
 CodeKavach is developed at the Thapar Institute of Engineering and Technology as an open-source project and the basis of a research paper on the privacy-utility trade-off in LLM-assisted vulnerability detection.
