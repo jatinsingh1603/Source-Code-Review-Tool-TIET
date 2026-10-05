@@ -1,0 +1,5 @@
+   id       kind       model             enabled  locality  host       tier    min level  credential    adapter
+*  mock     mock       -                 yes      local     -          local   L1         not-required  available
+   primary  anthropic  claude-test       yes      remote    -          public  L3         unchecked     available
+   lab      ollama     qwen2.5-coder:7b  yes      local     127.0.0.1  local   L1         not-required  missing
+default: mock (llm.default_provider = "auto")

@@ -35,6 +35,7 @@ from codekavach.cli.errors import CliError, error_line, render_error
 from codekavach.cli.exit_codes import EXIT_CODE_HELP, ExitCode
 from codekavach.cli.options import attach_global_options
 from codekavach.cli.privacy import privacy_app
+from codekavach.cli.providers import providers_app
 from codekavach.cli.report import report_command
 from codekavach.cli.scan import scan_command
 from codekavach.cli.signals import normalise_resume
@@ -97,6 +98,7 @@ app.command("scan")(scan_command)
 app.command("report")(report_command)
 app.command("doctor")(doctor_command)
 app.add_typer(privacy_app, name="privacy")
+app.add_typer(providers_app, name="providers")
 
 
 def _mount(name: str, dotted: str, attr: str) -> bool:
