@@ -80,4 +80,5 @@ Until E42-09 names people, whoever closes the last issue of the week writes the 
 - Definition of Done: `AGENTS.md` section 7 and `docs/PLAN.md` section 7.
 - Choosing and closing an issue: `AGENTS.md` sections 2 and 6.
 - Board coordinates: `tools/project/README.md`.
+- Status notes: [`docs/status/`](../status/README.md). Demo 1 agenda: [`demo-1-agenda.md`](../status/demo-1-agenda.md).
 - Other process guides: [`testing.md`](testing.md), [`cli-snapshots.md`](cli-snapshots.md).
