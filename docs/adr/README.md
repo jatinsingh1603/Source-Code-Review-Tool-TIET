@@ -43,7 +43,7 @@ If the title matches a `Reserved` row, the helper uses that number and changes t
 
 | Number | Title | Status | Date | Supersedes | Issue |
 |--------|-------|--------|------|------------|-------|
-| 0001 | Technology stack | Reserved | | | #21 (E01-10) |
+| [0001](0001-technology-stack.md) | Technology stack | Accepted | 2026-10-05 | | #21 (E01-10) |
 | 0002 | External engines as subprocesses | Reserved | | | #22 (E01-11) |
 | [0003](0003-single-egress.md) | Single egress | Accepted | 2026-09-27 | | #23 (E01-12) |
 | 0004 | Changelog and versioning | Reserved | | | #33 (E01-22) |
