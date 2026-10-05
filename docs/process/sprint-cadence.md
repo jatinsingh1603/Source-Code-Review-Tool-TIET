@@ -79,6 +79,21 @@ python tools/status_report.py fetch                       # milestone and epic p
 - State is computed: progress is expected to grow evenly from a milestone's start to its due date; a milestone at or above that is ON_TRACK, up to 20 percentage points behind is AT_RISK, further behind is OFF_TRACK. The first milestone starts with Sprint 1 and each later one on the day after the previous due date. Review the column before publishing; the author may know more than the counts.
 - `--replay FILE` answers from a recorded response instead of the API, without a token or a connection; the tests use it.
 
+### Posting the project status update
+
+The board has project-level status updates (a dated post with a status and a short text). The same tool composes one for a sprint (E42-05):
+
+```bash
+python tools/status_report.py post-status --sprint 2          # prints the update; posts nothing
+python tools/status_report.py post-status --sprint 2 --post   # sends it to the project
+```
+
+- Without `--post` the command is a dry run: it prints the status, the target date, the mutation and its variables, and sends nothing.
+- The status is the worst State among the milestones that are not complete (OFF_TRACK is worse than AT_RISK, which is worse than ON_TRACK). The tool does not post COMPLETE or INACTIVE; a person sets those on the board.
+- The start date is the sprint's Monday; the target date is the nearest milestone due date on or after the sprint's Sunday.
+- The text is a headline with the sprint and one line per milestone (counts and State). It contains no issue titles or bodies.
+- `--post` needs a token that may write to the project: a classic token with the `project` scope, or a fine-grained token with read and write access to Projects. The account also needs Write access on the project itself. Without a token the command stops before anything is sent.
+
 ## 5. Roles
 
 | Role | Does | Who |

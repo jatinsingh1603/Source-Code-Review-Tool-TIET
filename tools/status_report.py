@@ -4,11 +4,14 @@ Usage::
 
     python tools/status_report.py fetch [--sprint N] [--replay FILE]
     python tools/status_report.py draft --sprint N [--stdout | --out PATH] [--replay FILE]
+    python tools/status_report.py post-status --sprint N [--post] [--replay FILE]
 
 ``fetch`` prints progress per milestone and per epic as JSON. ``draft`` loads
 ``docs/status/TEMPLATE.md``, fills the regions between the ``milestone:auto`` and ``metrics:auto``
 markers and the facts of the Sprint table, and leaves the prose sections as they are. The format
 of the note is fixed by E42-03 and checked by ``tests/process/test_status_note_format.py``.
+``post-status`` computes the overall state of the project and prints the Projects v2 status
+update it would post; it sends it only with ``--post`` (E42-05).
 
 This is project tooling, not part of the shipped package: it reads CodeKavach's own board and
 depends on no product module. Project coordinates (project id, field and option ids, sprint
@@ -55,6 +58,16 @@ AT_RISK_BAND: Final = 20.0
 EPIC_LABEL: Final = "type:epic"
 SIZE_LABEL_PREFIX: Final = "size:"
 NO_EPIC: Final = "(no epic)"
+# From best to worst; the overall state of the project is the worst open milestone.
+SEVERITY: Final = (ON_TRACK, AT_RISK, OFF_TRACK)
+# Internal state -> ProjectV2StatusUpdateStatus. COMPLETE and INACTIVE are set by people.
+API_STATUS: Final[Mapping[str, str]] = {
+    ON_TRACK: "ON_TRACK",
+    AT_RISK: "AT_RISK",
+    OFF_TRACK: "OFF_TRACK",
+}
+# Our own bound for the body of a status update; nine milestone lines need about 800.
+BODY_LIMIT: Final = 1500
 
 MILESTONE_HEADER: Final = "| Milestone | Due | Open | Closed | Percent | State |"
 MILESTONE_RULE: Final = "|-----------|-----|------|--------|---------|-------|"
@@ -94,6 +107,14 @@ query($projectId: ID!, $cursor: String, $pageSize: Int!) {
         pageInfo { hasNextPage endCursor }
       }
     }
+  }
+}
+"""
+
+STATUS_UPDATE_MUTATION: Final = """
+mutation($input: CreateProjectV2StatusUpdateInput!) {
+  createProjectV2StatusUpdate(input: $input) {
+    statusUpdate { id }
   }
 }
 """
@@ -567,6 +588,65 @@ def sprint_metrics(items: Sequence[Item], board: Board, sprint: Sprint) -> Sprin
     )
 
 
+# the status update of the project (E42-05)
+
+
+def overall_state(rows: Sequence[MilestoneProgress]) -> str:
+    """The worst state among the milestones that are not complete; ON_TRACK when all are."""
+    worst = ON_TRACK
+    for row in rows:
+        complete = row.open == 0 and row.closed > 0
+        if not complete and SEVERITY.index(row.state) > SEVERITY.index(worst):
+            worst = row.state
+    return worst
+
+
+def target_date(milestones: Sequence[Milestone], on: date) -> date:
+    """The nearest milestone due date on or after ``on``; the last due date when all have passed."""
+    upcoming = [milestone.due for milestone in milestones if milestone.due >= on]
+    return min(upcoming) if upcoming else max(milestone.due for milestone in milestones)
+
+
+def status_body(sprint: Sprint, state: str, rows: Sequence[MilestoneProgress]) -> str:
+    """A headline and one line per milestone: counts and states only, no issue content.
+
+    Raises:
+        StatusReportError: The body is longer than ``BODY_LIMIT``.
+    """
+    lines = [
+        f"{sprint.title} ({sprint.start.isoformat()} to {sprint.end.isoformat()}): {state}",
+        "",
+    ]
+    lines += [
+        f"- {row.title}: {row.closed} of {row.open + row.closed} closed ({row.percent}%), "
+        f"due {row.due.isoformat()}, {row.state}"
+        for row in rows
+    ]
+    body = "\n".join(lines)
+    if len(body) > BODY_LIMIT:
+        raise StatusReportError(
+            f"the status update body has {len(body)} characters; limit {BODY_LIMIT}"
+        )
+    return body
+
+
+def status_update_input(
+    board: Board,
+    sprint: Sprint,
+    milestones: Sequence[Milestone],
+    rows: Sequence[MilestoneProgress],
+) -> dict[str, str]:
+    """The ``input`` of ``createProjectV2StatusUpdate`` for the end of ``sprint``."""
+    state = overall_state(rows)
+    return {
+        "projectId": board.project_id,
+        "status": API_STATUS[state],
+        "startDate": sprint.start.isoformat(),
+        "targetDate": target_date(milestones, sprint.end).isoformat(),
+        "body": status_body(sprint, state, rows),
+    }
+
+
 # the note
 
 
@@ -735,6 +815,37 @@ def run_draft(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def run_post_status(arguments: argparse.Namespace) -> int:
+    """Print the status update of a sprint; send it only with ``--post``."""
+    board = load_board()
+    sprint = board.sprint(arguments.sprint)
+    # Resolved before anything else: --post without a token stops here, before any request.
+    token = resolve_token() if arguments.post else None
+    if arguments.replay is not None:
+        graph = replay_graph(Path(arguments.replay))
+    else:
+        graph = live_graph(token if token is not None else resolve_token())
+    items = fetch_items(graph, board)
+    milestones = load_milestones(board.sprints[0].start)
+    variables = {
+        "input": status_update_input(
+            board, sprint, milestones, milestone_progress(items, milestones, sprint.end)
+        )
+    }
+    print(f"status={variables['input']['status']} targetDate={variables['input']['targetDate']}")
+    print(STATUS_UPDATE_MUTATION.strip())
+    print(json.dumps(variables, indent=2))
+    if token is None:
+        print("dry run: nothing was posted; pass --post to send this status update")
+        return 0
+    answer = _graphql(STATUS_UPDATE_MUTATION, variables, token=token)
+    update = (answer.get("createProjectV2StatusUpdate") or {}).get("statusUpdate") or {}
+    if not update.get("id"):
+        raise StatusReportError("the GitHub API did not confirm the status update")
+    print("posted the status update")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """The command line of the tool."""
     parser = argparse.ArgumentParser(
@@ -756,7 +867,17 @@ def build_parser() -> argparse.ArgumentParser:
     target.add_argument("--out", metavar="PATH", help="write the note to PATH")
     draft.add_argument("--force", action="store_true", help="replace an existing note")
     draft.set_defaults(run=run_draft)
-    for command in (fetch, draft):
+    post = commands.add_parser(
+        "post-status", help="print the project status update of a sprint; send it with --post"
+    )
+    post.add_argument("--sprint", type=int, required=True, help="sprint number")
+    mode = post.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--dry-run", action="store_true", help="print the update and send nothing (the default)"
+    )
+    mode.add_argument("--post", action="store_true", help="send the update to the project")
+    post.set_defaults(run=run_post_status)
+    for command in (fetch, draft, post):
         command.add_argument(
             "--replay",
             metavar="FILE",

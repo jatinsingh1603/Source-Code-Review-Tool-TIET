@@ -1,0 +1,16 @@
+status=OFF_TRACK targetDate=2026-09-27
+mutation($input: CreateProjectV2StatusUpdateInput!) {
+  createProjectV2StatusUpdate(input: $input) {
+    statusUpdate { id }
+  }
+}
+{
+  "input": {
+    "projectId": "<project id>",
+    "status": "OFF_TRACK",
+    "startDate": "2026-09-21",
+    "targetDate": "2026-09-27",
+    "body": "Sprint 1 (2026-09-21 to 2026-09-27): OFF_TRACK\n\n- M0 Foundations: 4 of 7 closed (57%), due 2026-09-27, OFF_TRACK\n- M1 Privacy layer MVP + Demo 1: 0 of 2 closed (0%), due 2026-10-05, ON_TRACK\n- M2 Detection engine: 0 of 1 closed (0%), due 2026-10-26, ON_TRACK\n- M3 LLM reasoning: 0 of 0 closed (0%), due 2026-11-02, ON_TRACK\n- M4 Privacy hardening: 0 of 0 closed (0%), due 2026-11-09, ON_TRACK\n- M5 Audit reporting: 0 of 0 closed (0%), due 2026-11-23, ON_TRACK\n- M6 Platforms: 0 of 0 closed (0%), due 2026-12-07, ON_TRACK\n- M7 Evaluation and paper: 0 of 0 closed (0%), due 2026-12-14, ON_TRACK\n- M8 Hardening and release: 0 of 0 closed (0%), due 2026-12-21, ON_TRACK"
+  }
+}
+dry run: nothing was posted; pass --post to send this status update
