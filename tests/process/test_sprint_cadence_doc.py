@@ -84,9 +84,8 @@ def test_entry_pages_link_to_the_guide(page: str) -> None:
 
 
 def test_relative_links_of_the_guide_resolve(guide: str) -> None:
-    pending = {"definition-of-ready.md"}  # written by E42-02; the guide links forward to it
     for target in LINK.findall(guide):
-        if target.startswith(("http://", "https://")) or target in pending:
+        if target.startswith(("http://", "https://")):
             continue
         assert (GUIDE.parent / target).exists(), target
 

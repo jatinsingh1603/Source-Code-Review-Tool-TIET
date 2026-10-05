@@ -71,6 +71,8 @@ Tick the acceptance-criteria checkboxes in the issue body. Close the issue with 
 - [ ] No privacy invariant weakened; new outbound calls go through the egress guard
 - [ ] Board card moved, closing comment written
 
+The counterpart for starting work is the Definition of Ready: [`docs/process/definition-of-ready.md`](docs/process/definition-of-ready.md).
+
 ## 8. Local setup
 
 ```bash
