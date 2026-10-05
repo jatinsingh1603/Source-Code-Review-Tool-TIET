@@ -97,6 +97,23 @@ jobs:
         env:
           UV_NO_SYNC: "1"
 
+  commits:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # Event data reaches the script through the environment, not through the command line.
+      - name: Commit message convention (AGENTS.md section 5)
+        run: python3 tools/dev/check_commit_msg.py --ci
+        env:
+          COMMIT_CHECK_EVENT: ${{ github.event_name }}
+          COMMIT_CHECK_BEFORE: ${{ github.event.before }}
+          COMMIT_CHECK_SHA: ${{ github.sha }}
+          COMMIT_CHECK_BASE_REF: ${{ github.base_ref }}
+
   test:
     name: test (${{ matrix.os }}, ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
@@ -188,7 +205,7 @@ jobs:
 
   ci-ok:
     if: always()
-    needs: [lint, typecheck, contracts, hooks, test, build]
+    needs: [lint, typecheck, contracts, hooks, commits, test, build]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

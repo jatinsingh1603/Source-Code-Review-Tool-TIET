@@ -79,6 +79,11 @@ repos:
         language: system
         pass_filenames: false
         files: ^(src/codekavach/core/models/|docs/schemas/)
+      - id: commit-msg-format
+        name: commit message convention (AGENTS.md section 5)
+        entry: uv run python tools/dev/check_commit_msg.py
+        language: system
+        stages: [commit-msg]
       - id: forbid-runtime-artefacts
         name: forbid runtime artefacts and local secrets
         entry: uv run python tools/dev/forbid_runtime_artefacts.py
