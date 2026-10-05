@@ -1,0 +1,52 @@
+# Dependabot version updates (E01-28). Grouped, weekly pull requests for Python dependencies and
+# GitHub Actions. The commit prefix "infra" makes the subjects pass the commit message check
+# (tools/dev/check_commit_msg.py). How these pull requests are handled: CONTRIBUTING.md,
+# section 9.
+#
+# Major version updates are deliberately not grouped: each arrives as its own pull request and
+# deserves a read of the upstream changelog.
+#
+# Ecosystems to add later, each by the epic that creates the manifest (Dependabot reports an
+# error for a directory without a manifest):
+#   - npm           for /ui                  (E33)
+#   - npm           for /extensions/vscode   (E35)
+#   - docker        for /deploy              (E39)
+#   - devcontainers for /.devcontainer       (E01-29)
+#
+# Security updates additionally need Dependabot alerts to be enabled in the repository settings
+# (E01-33). Pre-commit hook revisions are not covered here; run "make hooks-update" by hand.
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "infra"
+    labels: ["type:infra", "area:packaging"]
+    groups:
+      dev-tools:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      runtime-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "infra"
+    labels: ["type:infra"]
+    groups:
+      actions:
+        patterns: ["*"]

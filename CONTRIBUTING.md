@@ -113,6 +113,14 @@ Do not paste client code, real secrets, or vault or ledger content into an issue
 
 The reasons are in [ADR-0001](docs/adr/0001-technology-stack.md), "Dependency policy".
 
+Dependabot opens grouped pull requests every Monday for Python dependencies and GitHub Actions (`.github/dependabot.yml`). They are the exception to direct-to-main work:
+
+- CI has to be green.
+- For a runtime dependency, read the upstream changelog first.
+- An update can add a transitive dependency, so look at the licence and telemetry checks in the CI result.
+- Merge with a merge or squash commit whose subject keeps the `infra:` prefix.
+- Do not enable auto-merge for runtime dependencies.
+
 ## 10. Changelog and ADRs
 
 A change that a user, operator or integrator can observe adds a fragment under `changelog.d/`, named `<issue>.<type>.md`. The types and the style are in [`changelog.d/README.md`](changelog.d/README.md).
