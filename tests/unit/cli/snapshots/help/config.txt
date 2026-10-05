@@ -1,0 +1,53 @@
+
+ Usage: codekavach config [OPTIONS] COMMAND [ARGS]...
+
+ Inspect and manage configuration.
+
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮
+│ --config                        PATH                        Configuration file to use instead of │
+│                                                             the discovered project file.         │
+│ --profile                       <str>                       Profile to apply (for example demo   │
+│                                                             or ci).                              │
+│ --privacy-level                 [L0|L1|L2|L3|L4]            Privacy level for this run; cannot   │
+│                                                             go below the configured floor.       │
+│ --provider                      <str>                       LLM provider id to use.              │
+│ --model                         <str>                       Model of the selected provider.      │
+│ --offline                                                   Open no connection outside this      │
+│                                                             machine (no remote provider or       │
+│                                                             integration).                        │
+│ --json                                                      Write machine-readable JSON to       │
+│                                                             stdout.                              │
+│ --quiet                 -q                                  Print only results and errors.       │
+│ --verbose               -v      <int range>                 More diagnostics on stderr; repeat   │
+│                                                             for more.                            │
+│ --debug                                                     Print tracebacks and debug logs on   │
+│                                                             stderr.                              │
+│ --log-level                     [debug|info|warning|error]  Lowest level of log events on        │
+│                                                             stderr; wins over --verbose and      │
+│                                                             --quiet.                             │
+│ --log-format                    [console|json]              Format of log events on stderr.      │
+│ --log-file                      PATH                        Also write redacted debug logs to    │
+│                                                             this file (created with mode 0600).  │
+│ --no-input                                                  Never prompt; a question that cannot │
+│                                                             be asked is answered no.             │
+│ --no-user-config                                            Ignore the user configuration file.  │
+│ --trust-project-config                                      Trust restricted keys in the project │
+│                                                             configuration for this run.          │
+│ --set                           KEY=VALUE                   Override one setting; may be         │
+│                                                             repeated.                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
+│ trust     Trust a project's configuration file, as it is now.                                    │
+│ untrust   Forget the trust granted to a project.                                                 │
+│ show      Print the configuration in force, masked, optionally with the origin of every key.     │
+│ validate  Check the configuration a scan would use, without scanning anything.                   │
+│ path      List every location CodeKavach reads, and whether it exists; creates nothing.          │
+│ profiles  List the built-in and user-defined profiles.                                           │
+│ init      Write a commented starter codekavach.toml rendered from the settings models.           │
+│ key       Store API keys in the OS keyring. The value is read from a hidden prompt or from       │
+│           standard input, never from an argument. Automation: printf %s "$KEY" | codekavach      │
+│           config key set primary --stdin                                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯

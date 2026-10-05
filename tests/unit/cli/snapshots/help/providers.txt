@@ -1,0 +1,45 @@
+
+ Usage: codekavach providers [OPTIONS] COMMAND [ARGS]...
+
+ Inspect and test LLM providers.
+
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮
+│ --config                        PATH                        Configuration file to use instead of │
+│                                                             the discovered project file.         │
+│ --profile                       <str>                       Profile to apply (for example demo   │
+│                                                             or ci).                              │
+│ --privacy-level                 [L0|L1|L2|L3|L4]            Privacy level for this run; cannot   │
+│                                                             go below the configured floor.       │
+│ --provider                      <str>                       LLM provider id to use.              │
+│ --model                         <str>                       Model of the selected provider.      │
+│ --offline                                                   Open no connection outside this      │
+│                                                             machine (no remote provider or       │
+│                                                             integration).                        │
+│ --json                                                      Write machine-readable JSON to       │
+│                                                             stdout.                              │
+│ --quiet                 -q                                  Print only results and errors.       │
+│ --verbose               -v      <int range>                 More diagnostics on stderr; repeat   │
+│                                                             for more.                            │
+│ --debug                                                     Print tracebacks and debug logs on   │
+│                                                             stderr.                              │
+│ --log-level                     [debug|info|warning|error]  Lowest level of log events on        │
+│                                                             stderr; wins over --verbose and      │
+│                                                             --quiet.                             │
+│ --log-format                    [console|json]              Format of log events on stderr.      │
+│ --log-file                      PATH                        Also write redacted debug logs to    │
+│                                                             this file (created with mode 0600).  │
+│ --no-input                                                  Never prompt; a question that cannot │
+│                                                             be asked is answered no.             │
+│ --no-user-config                                            Ignore the user configuration file.  │
+│ --trust-project-config                                      Trust restricted keys in the project │
+│                                                             configuration for this run.          │
+│ --set                           KEY=VALUE                   Override one setting; may be         │
+│                                                             repeated.                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
+│ list  List the configured providers; contacts nothing.                                           │
+│ test  Send a constant probe to a provider and report whether it answers.                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
