@@ -1,0 +1,4 @@
+This deletes the mapping vault of project 'kavachbank':
+  .codekavach/vault/vault.ckv (48 kB, 1 204 entries, referenced by 3 stored scans)
+Without it, pseudonyms in stored LLM responses and ledger payloads cannot be mapped back to
+the original names. Reports that were already generated are not affected. This cannot be undone.
