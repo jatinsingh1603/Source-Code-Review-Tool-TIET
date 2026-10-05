@@ -79,6 +79,11 @@ repos:
         language: system
         pass_filenames: false
         files: ^(src/codekavach/core/models/|docs/schemas/)
+      - id: docs-check
+        name: documentation check (links, anchors, style)
+        entry: uv run python tools/dev/check_docs.py
+        language: system
+        files: \.md$
       - id: commit-msg-format
         name: commit message convention (AGENTS.md section 5)
         entry: uv run python tools/dev/check_commit_msg.py

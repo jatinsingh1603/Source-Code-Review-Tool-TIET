@@ -51,6 +51,13 @@ dev = [
   { include-group = "release" },
 ]
 
+# Offline documentation checker (tools/dev/check_docs.py, E01-23). A link to a path on the
+# pending list is allowed while the document is not written; once it exists the checker
+# reports the entry as stale (DOC003).
+[tool.codekavach.docs]
+pending = ["docs/THREAT_MODEL.md"]
+exclude = ["fixtures/**", "tests/**/fixtures/**", "tests/**/golden/**"]
+
 # Changelog from fragments in changelog.d/ (ADR-0004). The six types are the categories of
 # Keep a Changelog.
 [tool.towncrier]
