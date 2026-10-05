@@ -79,6 +79,16 @@ python tools/status_report.py fetch                       # milestone and epic p
 - State is computed: progress is expected to grow evenly from a milestone's start to its due date; a milestone at or above that is ON_TRACK, up to 20 percentage points behind is AT_RISK, further behind is OFF_TRACK. The first milestone starts with Sprint 1 and each later one on the day after the previous due date. Review the column before publishing; the author may know more than the counts.
 - `--replay FILE` answers from a recorded response instead of the API, without a token or a connection; the tests use it.
 
+### Burndown and velocity charts
+
+```bash
+python tools/status_report.py charts --milestone "M1 Privacy layer MVP + Demo 1"
+```
+
+- Writes `burndown-M1.csv` and `velocity.csv` into `docs/status/charts/` (`--out-dir DIR` for another place). The burndown has one row per day from the milestone's start to its due date: the points still open (empty for days that have not come) and the ideal line from the total to zero. The velocity has one row per sprint: the points of the issues closed in that week.
+- With matplotlib installed the same data is also drawn as `burndown-M1.png` and `velocity.png`. matplotlib is an optional tooling dependency and not part of the project's lock file: run the command as `uv run --with matplotlib python tools/status_report.py charts ...`. Without it the CSV files are written and the command says so.
+- A status note refers to the charts by these file names.
+
 ### Posting the project status update
 
 The board has project-level status updates (a dated post with a status and a short text). The same tool composes one for a sprint (E42-05):

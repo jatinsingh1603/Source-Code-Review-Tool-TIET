@@ -5,13 +5,16 @@ Usage::
     python tools/status_report.py fetch [--sprint N] [--replay FILE]
     python tools/status_report.py draft --sprint N [--stdout | --out PATH] [--replay FILE]
     python tools/status_report.py post-status --sprint N [--post] [--replay FILE]
+    python tools/status_report.py charts --milestone TITLE [--out-dir DIR] [--replay FILE]
 
 ``fetch`` prints progress per milestone and per epic as JSON. ``draft`` loads
 ``docs/status/TEMPLATE.md``, fills the regions between the ``milestone:auto`` and ``metrics:auto``
 markers and the facts of the Sprint table, and leaves the prose sections as they are. The format
 of the note is fixed by E42-03 and checked by ``tests/process/test_status_note_format.py``.
 ``post-status`` computes the overall state of the project and prints the Projects v2 status
-update it would post; it sends it only with ``--post`` (E42-05).
+update it would post; it sends it only with ``--post`` (E42-05). ``charts`` writes the burndown
+of a milestone and the velocity per sprint as CSV, and as PNG when matplotlib is installed
+(E42-06).
 
 This is project tooling, not part of the shipped package: it reads CodeKavach's own board and
 depends on no product module. Project coordinates (project id, field and option ids, sprint
@@ -23,6 +26,7 @@ header and is not printed, logged or written anywhere.
 """
 
 import argparse
+import importlib
 import json
 import os
 import re
@@ -42,6 +46,9 @@ BOARD_FILE: Final = REPO_ROOT / "tools" / "project" / "board.json"
 PLAN_FILE: Final = REPO_ROOT / "docs" / "PLAN.md"
 STATUS_DIR: Final = REPO_ROOT / "docs" / "status"
 TEMPLATE_FILE: Final = STATUS_DIR / "TEMPLATE.md"
+CHARTS_DIR: Final = STATUS_DIR / "charts"
+CHART_SIZE: Final = (8.0, 4.5)  # inches
+CHART_DPI: Final = 100
 
 API_URL: Final = "https://api.github.com/graphql"
 TOKEN_VARIABLES: Final = ("GITHUB_TOKEN", "GH_TOKEN")
@@ -647,6 +654,114 @@ def status_update_input(
     }
 
 
+# charts (E42-06)
+
+
+@dataclass(frozen=True)
+class BurndownPoint:
+    """Points of a milestone still open at the end of a day, next to the ideal line."""
+
+    day: date
+    remaining: int | None  # None for a day after the day the series was built on
+    ideal: float
+
+
+def burndown_series(
+    items: Sequence[Item], milestone: Milestone, as_of: date
+) -> list[BurndownPoint]:
+    """One point per calendar day from the start of ``milestone`` to its due date.
+
+    Every issue of the milestone counts with the points of its Size; an open issue counts on
+    every day up to ``as_of``. The ideal line falls evenly from the total on the first day to
+    zero on the due date.
+    """
+    mine = [item for item in items if item.milestone == milestone.title]
+    total = sum(item.points for item in mine)
+    days = (milestone.due - milestone.start).days
+    series = []
+    for offset in range(days + 1):
+        day = milestone.start + timedelta(days=offset)
+        remaining = sum(item.points for item in mine if not item.closed_by(day))
+        ideal = total * (1 - offset / days) if days else 0.0
+        series.append(
+            BurndownPoint(day=day, remaining=remaining if day <= as_of else None, ideal=ideal)
+        )
+    return series
+
+
+def velocity_series(items: Sequence[Item], board: Board) -> list[tuple[Sprint, int]]:
+    """Points closed per sprint: an issue belongs to the sprint whose week holds its close date."""
+    return [
+        (sprint, sum(item.points for item in _closed_in(items, sprint))) for sprint in board.sprints
+    ]
+
+
+def burndown_csv(series: Sequence[BurndownPoint]) -> str:
+    """``date,remaining_points,ideal_points``; remaining is empty for days that have not come."""
+    lines = ["date,remaining_points,ideal_points"]
+    lines += [
+        f"{point.day.isoformat()},{'' if point.remaining is None else point.remaining},"
+        f"{point.ideal:.1f}"
+        for point in series
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def velocity_csv(series: Sequence[tuple[Sprint, int]]) -> str:
+    """``sprint,start_date,points_closed``, one row per sprint of the board."""
+    lines = ["sprint,start_date,points_closed"]
+    lines += [f"{sprint.title},{sprint.start.isoformat()},{points}" for sprint, points in series]
+    return "\n".join(lines) + "\n"
+
+
+def milestone_key(title: str) -> str:
+    """The short key used in file names: ``M1`` for ``M1 Privacy layer MVP + Demo 1``."""
+    return title.split(" ", 1)[0]
+
+
+def render_charts(
+    milestone: Milestone,
+    burndown: Sequence[BurndownPoint],
+    velocity: Sequence[tuple[Sprint, int]],
+    burndown_png: Path,
+    velocity_png: Path,
+) -> bool:
+    """Write the two PNG charts; ``False`` when matplotlib is not installed.
+
+    matplotlib is an optional tooling dependency and is imported here only. The figures have a
+    fixed size and carry no software or time metadata.
+    """
+    try:
+        matplotlib = importlib.import_module("matplotlib")
+        matplotlib.use("Agg")
+        pyplot = importlib.import_module("matplotlib.pyplot")
+    except ImportError:
+        return False
+    metadata = {"Software": None}
+
+    figure, axes = pyplot.subplots(figsize=CHART_SIZE, dpi=CHART_DPI)
+    known = [point for point in burndown if point.remaining is not None]
+    axes.plot([p.day for p in burndown], [p.ideal for p in burndown], "--", label="Ideal")
+    axes.plot([p.day for p in known], [p.remaining for p in known], marker="o", label="Remaining")
+    axes.set_title(f"Burndown: {milestone.title}")
+    axes.set_xlabel("Date")
+    axes.set_ylabel("Remaining points")
+    axes.set_ylim(bottom=0)
+    axes.legend()
+    figure.autofmt_xdate()
+    figure.savefig(burndown_png, metadata=metadata)
+    pyplot.close(figure)
+
+    figure, axes = pyplot.subplots(figsize=CHART_SIZE, dpi=CHART_DPI)
+    axes.bar([str(sprint.number) for sprint, _ in velocity], [points for _, points in velocity])
+    axes.set_title("Velocity: points closed per sprint")
+    axes.set_xlabel("Sprint")
+    axes.set_ylabel("Points closed")
+    figure.savefig(velocity_png, metadata=metadata)
+    pyplot.close(figure)
+    return True
+
+
 # the note
 
 
@@ -846,6 +961,49 @@ def run_post_status(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def run_charts(arguments: argparse.Namespace) -> int:
+    """Write the burndown of a milestone and the velocity per sprint: CSV, and PNG if possible."""
+    board = load_board()
+    milestones = load_milestones(board.sprints[0].start)
+    milestone = next((m for m in milestones if m.title == arguments.milestone), None)
+    if milestone is None:
+        known = "; ".join(m.title for m in milestones)
+        raise StatusReportError(f"no milestone '{arguments.milestone}' in the plan; known: {known}")
+    try:
+        as_of = date.fromisoformat(arguments.as_of) if arguments.as_of is not None else _today()
+    except ValueError:
+        raise StatusReportError(
+            f"--as-of needs a date as YYYY-MM-DD, got '{arguments.as_of}'"
+        ) from None
+    items = fetch_items(_graph_for(arguments), board)
+    burndown = burndown_series(items, milestone, as_of)
+    velocity = velocity_series(items, board)
+    directory = Path(arguments.out_dir) if arguments.out_dir is not None else CHARTS_DIR
+    directory.mkdir(parents=True, exist_ok=True)
+    burndown_base = directory / f"burndown-{milestone_key(milestone.title)}"
+    velocity_base = directory / "velocity"
+    burndown_base.with_suffix(".csv").write_bytes(burndown_csv(burndown).encode("utf-8"))
+    velocity_base.with_suffix(".csv").write_bytes(velocity_csv(velocity).encode("utf-8"))
+    print(f"wrote {burndown_base.with_suffix('.csv')}")
+    print(f"wrote {velocity_base.with_suffix('.csv')}")
+    drawn = render_charts(
+        milestone,
+        burndown,
+        velocity,
+        burndown_base.with_suffix(".png"),
+        velocity_base.with_suffix(".png"),
+    )
+    if drawn:
+        print(f"wrote {burndown_base.with_suffix('.png')}")
+        print(f"wrote {velocity_base.with_suffix('.png')}")
+    else:
+        print(
+            "matplotlib is not installed: wrote the CSV files only "
+            "(see docs/process/sprint-cadence.md)"
+        )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """The command line of the tool."""
     parser = argparse.ArgumentParser(
@@ -877,7 +1035,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     mode.add_argument("--post", action="store_true", help="send the update to the project")
     post.set_defaults(run=run_post_status)
-    for command in (fetch, draft, post):
+    charts = commands.add_parser(
+        "charts", help="write the burndown of a milestone and the velocity per sprint"
+    )
+    charts.add_argument("--milestone", required=True, help="milestone title as in docs/PLAN.md")
+    charts.add_argument("--as-of", metavar="DATE", help="last day with known data (default: today)")
+    charts.add_argument(
+        "--out-dir", metavar="DIR", help="where to write (default: docs/status/charts)"
+    )
+    charts.set_defaults(run=run_charts)
+    for command in (fetch, draft, post, charts):
         command.add_argument(
             "--replay",
             metavar="FILE",
