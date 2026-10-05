@@ -46,7 +46,7 @@ A local model (Ollama, vLLM) can sit inside the trusted boundary; policy may the
 | Quality | ruff, mypy (strict), pytest, hypothesis, import-linter, pre-commit, GitHub Actions | Privacy invariants are enforced by tests and import contracts |
 | Logging | structlog; events on stderr as console text or JSON; redaction processor; no telemetry | Structured by design; the processor chain makes scrubbing a fixed step (ADR-0005) |
 
-Rationale: [ADR-0001](adr/0001-technology-stack.md) records the options considered and the consequences accepted for each row.
+Rationale: [ADR-0001](adr/0001-technology-stack.md) records the options considered and the consequences accepted for each row; [ADR-0002](adr/0002-external-engines-as-subprocesses.md) does so for external engines.
 
 ## 3. Repository layout
 
