@@ -47,7 +47,7 @@ When a command is removed, delete its snapshot file by hand; the orphan check na
 
 ## Changed option names
 
-Renaming or removing an option or a command breaks callers. Besides the snapshot update, such a change needs an entry in `CHANGELOG.md` that names the old and the new spelling.
+Renaming or removing an option or a command breaks callers. Besides the snapshot update, such a change needs a `changed` or `removed` fragment in `changelog.d/` that names the old and the new spelling (see `changelog.d/README.md`).
 
 ## Related
 

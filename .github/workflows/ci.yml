@@ -34,7 +34,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: uv.lock
       - run: uv sync --locked --all-extras
-      - run: make lock-check fmt-check lint
+      - run: make lock-check fmt-check lint changelog-check
         env:
           UV_NO_SYNC: "1"
       - name: Schema drift check

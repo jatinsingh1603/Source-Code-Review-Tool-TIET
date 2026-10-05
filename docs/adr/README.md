@@ -46,7 +46,7 @@ If the title matches a `Reserved` row, the helper uses that number and changes t
 | [0001](0001-technology-stack.md) | Technology stack | Accepted | 2026-10-05 | | #21 (E01-10) |
 | [0002](0002-external-engines-as-subprocesses.md) | External engines as subprocesses | Accepted | 2026-10-05 | | #22 (E01-11) |
 | [0003](0003-single-egress.md) | Single egress | Accepted | 2026-09-27 | | #23 (E01-12) |
-| 0004 | Changelog and versioning | Reserved | | | #33 (E01-22) |
+| [0004](0004-changelog-and-versioning.md) | Changelog and versioning | Accepted | 2026-10-05 | | #33 (E01-22) |
 | [0005](0005-logging-and-no-telemetry.md) | Logging and no-telemetry | Accepted | 2026-09-27 | | #24 (E01-13) |
 | [0006](0006-configuration-layering-secrets-and-trust.md) | Configuration layering, secrets and trust | Accepted | 2026-09-28 | | #81 (E03-01) |
 | [0007](0007-pipeline-contracts.md) | Pipeline contracts | Proposed | 2026-09-28 | | #126 (E04-01) |

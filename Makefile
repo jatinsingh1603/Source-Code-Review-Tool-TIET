@@ -15,7 +15,8 @@
 PYTEST_ARGS ?=
 
 .PHONY: help setup fmt fmt-check lint type contracts test test-unit test-integration test-e2e \
-	test-privacy cov check lock-check build adr clean hooks hooks-update schemas schemas-check
+	test-privacy cov check lock-check build adr clean hooks hooks-update schemas schemas-check \
+	changelog-draft changelog-check
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "} {printf "  %-18s %s\n", $$1, $$2}'
@@ -74,6 +75,12 @@ schemas-check: ## Check docs/schemas for drift and the models for missing migrat
 
 lock-check: ## Check that uv.lock matches pyproject.toml
 	uv lock --check
+
+changelog-draft: ## Print the upcoming changelog section; changes no file
+	uv run towncrier build --draft --version Unreleased
+
+changelog-check: ## Check the names of the changelog fragments
+	uv run python tools/dev/check_changelog_fragments.py
 
 build: ## Build the wheel and the sdist
 	uv build

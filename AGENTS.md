@@ -67,7 +67,7 @@ Tick the acceptance-criteria checkboxes in the issue body. Close the issue with 
 - [ ] All acceptance criteria met and ticked
 - [ ] Unit tests, and integration tests where specified, written and passing
 - [ ] `ruff`, `mypy --strict` and the import-linter contracts pass
-- [ ] Documentation updated: docstrings, `docs/`, CLI help, and `CHANGELOG.md` for user-visible changes
+- [ ] Documentation updated: docstrings, `docs/`, CLI help, and a `changelog.d/` fragment for user-visible changes
 - [ ] No privacy invariant weakened; new outbound calls go through the egress guard
 - [ ] Board card moved, closing comment written
 
