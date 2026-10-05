@@ -181,6 +181,10 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106", "S108", "D", "PLR2004", "N802", "TID251"]
 "tools/**" = ["T20", "D"]            # project tooling (ARCHITECTURE section 3): stand-alone scripts may print
+# E42-04: reads CodeKavach's own project board from the GitHub API with the standard library.
+# Project tooling is outside the codekavach package that ADR-0003 governs; this is the only
+# tools file with the exemption (tests/process/test_status_report.py).
+"tools/status_report.py" = ["TID251"]
 "src/codekavach/cli/**" = ["B008"]   # Typer uses function calls as argument defaults
 "tests/typing/*" = ["F841", "B018"]  # typing case files hold deliberately unused names and expressions
 "src/codekavach/core/log/**" = ["TID251"]  # the only place that creates loggers (ADR-0005)

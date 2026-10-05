@@ -64,6 +64,21 @@ An issue that turns out to be larger than its Size is split: the follow-up issue
 
 Outside these three points the board is updated as work happens: move the card when you start, when you push and when you close.
 
+### Drafting the status note
+
+`tools/status_report.py` (E42-04) reads the board and fills the numbers of the note; the prose is written by hand.
+
+```bash
+python tools/status_report.py draft --sprint 2            # writes docs/status/2026-10-04-sprint-02.md
+python tools/status_report.py draft --sprint 2 --stdout   # prints the note instead
+python tools/status_report.py fetch                       # milestone and epic progress as JSON
+```
+
+- The GitHub token is read from `GITHUB_TOKEN` or `GH_TOKEN`, or from `gh auth token`. It needs read access to the repository and the project.
+- `draft` fills the milestone table, the metrics and the facts of the Sprint table of `docs/status/TEMPLATE.md`, counted at the end of the sprint. An existing note is not replaced unless `--force` is given.
+- State is computed: progress is expected to grow evenly from a milestone's start to its due date; a milestone at or above that is ON_TRACK, up to 20 percentage points behind is AT_RISK, further behind is OFF_TRACK. The first milestone starts with Sprint 1 and each later one on the day after the previous due date. Review the column before publishing; the author may know more than the counts.
+- `--replay FILE` answers from a recorded response instead of the API, without a token or a connection; the tests use it.
+
 ## 5. Roles
 
 | Role | Does | Who |

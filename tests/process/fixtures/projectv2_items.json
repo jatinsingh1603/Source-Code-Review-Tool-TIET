@@ -1,0 +1,354 @@
+[
+  {
+    "data": {
+      "node": {
+        "items": {
+          "nodes": [
+            {
+              "content": {
+                "number": 1,
+                "title": "[E01] Epic: Repository scaffolding",
+                "state": "OPEN",
+                "createdAt": "2026-09-20T09:00:00Z",
+                "closedAt": null,
+                "milestone": {
+                  "title": "M0 Foundations"
+                },
+                "labels": {
+                  "nodes": [
+                    {
+                      "name": "type:epic"
+                    },
+                    {
+                      "name": "P0-critical"
+                    }
+                  ]
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            },
+            {
+              "content": {
+                "number": 2,
+                "title": "[E01-01] infra: create the project file",
+                "state": "CLOSED",
+                "createdAt": "2026-09-20T09:00:00Z",
+                "closedAt": "2026-09-22T10:15:00Z",
+                "milestone": {
+                  "title": "M0 Foundations"
+                },
+                "labels": {
+                  "nodes": [
+                    {
+                      "name": "size:M"
+                    },
+                    {
+                      "name": "P0-critical"
+                    }
+                  ]
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            },
+            {
+              "content": {
+                "number": 3,
+                "title": "[E01-02] core: create the package skeleton",
+                "state": "CLOSED",
+                "createdAt": "2026-09-20T09:00:00Z",
+                "closedAt": "2026-09-24T16:40:00Z",
+                "milestone": {
+                  "title": "M0 Foundations"
+                },
+                "labels": {
+                  "nodes": [
+                    {
+                      "name": "size:S"
+                    },
+                    {
+                      "name": "P0-critical"
+                    }
+                  ]
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            },
+            {
+              "content": {
+                "number": 4,
+                "title": "[E02-01] core: add the model base class",
+                "state": "CLOSED",
+                "createdAt": "2026-09-20T09:00:00Z",
+                "closedAt": "2026-09-27T23:30:00Z",
+                "milestone": {
+                  "title": "M0 Foundations"
+                },
+                "labels": {
+                  "nodes": [
+                    {
+                      "name": "size:M"
+                    },
+                    {
+                      "name": "P1-high"
+                    }
+                  ]
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            },
+            {
+              "content": {
+                "number": 5,
+                "title": "[E02-02] core: add typed identifiers",
+                "state": "CLOSED",
+                "createdAt": "2026-09-20T09:00:00Z",
+                "closedAt": "2026-09-28T00:10:00Z",
+                "milestone": {
+                  "title": "M0 Foundations"
+                },
+                "labels": {
+                  "nodes": [
+                    {
+                      "name": "size:L"
+                    },
+                    {
+                      "name": "P1-high"
+                    }
+                  ]
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            },
+            {
+              "content": {
+                "number": 6,
+                "title": "[E03-01] core: add the settings root",
+                "state": "OPEN",
+                "createdAt": "2026-09-20T09:00:00Z",
+                "closedAt": null,
+                "milestone": {
+                  "title": "M0 Foundations"
+                },
+                "labels": {
+                  "nodes": [
+                    {
+                      "name": "size:XS"
+                    },
+                    {
+                      "name": "P1-high"
+                    }
+                  ]
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            },
+            {
+              "content": {},
+              "fieldValues": {
+                "nodes": []
+              }
+            },
+            {
+              "content": null,
+              "fieldValues": {
+                "nodes": []
+              }
+            }
+          ],
+          "pageInfo": {
+            "hasNextPage": true,
+            "endCursor": "CURSOR_PAGE_1"
+          }
+        }
+      }
+    }
+  },
+  {
+    "data": {
+      "node": {
+        "items": {
+          "nodes": [
+            {
+              "content": {
+                "number": 7,
+                "title": "[E06-01] ingest: walk the repository",
+                "state": "OPEN",
+                "createdAt": "2026-09-20T09:00:00Z",
+                "closedAt": null,
+                "milestone": {
+                  "title": "M1 Privacy layer MVP + Demo 1"
+                },
+                "labels": {
+                  "nodes": [
+                    {
+                      "name": "size:M"
+                    },
+                    {
+                      "name": "P0-critical"
+                    }
+                  ]
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            },
+            {
+              "content": {
+                "number": 8,
+                "title": "[E06-02] ingest: read git metadata",
+                "state": "OPEN",
+                "createdAt": "2026-09-20T09:00:00Z",
+                "closedAt": null,
+                "milestone": {
+                  "title": "M1 Privacy layer MVP + Demo 1"
+                },
+                "labels": {
+                  "nodes": [
+                    {
+                      "name": "size:XL"
+                    },
+                    {
+                      "name": "P1-high"
+                    }
+                  ]
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            },
+            {
+              "content": {
+                "number": 9,
+                "title": "[E14-01] engines: add the adapter protocol",
+                "state": "OPEN",
+                "createdAt": "2026-09-20T09:00:00Z",
+                "closedAt": null,
+                "milestone": {
+                  "title": "M2 Detection engine"
+                },
+                "labels": {
+                  "nodes": [
+                    {
+                      "name": "size:S"
+                    },
+                    {
+                      "name": "P1-high"
+                    }
+                  ]
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            },
+            {
+              "content": {
+                "number": 10,
+                "title": "[E42-01] pm: write the sprint guide",
+                "state": "CLOSED",
+                "createdAt": "2026-09-20T09:00:00Z",
+                "closedAt": "2026-09-25T08:05:00Z",
+                "milestone": {
+                  "title": "M0 Foundations"
+                },
+                "labels": {
+                  "nodes": [
+                    {
+                      "name": "P1-high"
+                    }
+                  ]
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            },
+            {
+              "content": {
+                "number": 11,
+                "title": "[E03-02] core: add the profile layer",
+                "state": "OPEN",
+                "createdAt": "2026-09-30T12:00:00Z",
+                "closedAt": null,
+                "milestone": {
+                  "title": "M0 Foundations"
+                },
+                "labels": {
+                  "nodes": [
+                    {
+                      "name": "size:S"
+                    },
+                    {
+                      "name": "P2-medium"
+                    }
+                  ]
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            },
+            {
+              "content": {
+                "number": 12,
+                "title": "Reserved number",
+                "state": "CLOSED",
+                "createdAt": "2026-09-20T09:00:00Z",
+                "closedAt": "2026-09-26T18:00:00Z",
+                "milestone": null,
+                "labels": {
+                  "nodes": []
+                }
+              },
+              "fieldValues": {
+                "nodes": [
+                  {}
+                ]
+              }
+            }
+          ],
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "CURSOR_PAGE_2"
+          }
+        }
+      }
+    }
+  }
+]
