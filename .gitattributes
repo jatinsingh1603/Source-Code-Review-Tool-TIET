@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+# Byte-exact: planted vulnerabilities, CRLF test inputs and golden outputs must never be normalised.
+fixtures/** -text linguist-vendored
+tests/**/golden/** -text
+tests/fixtures/** -text
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.woff2 binary
+
+uv.lock linguist-generated=true
