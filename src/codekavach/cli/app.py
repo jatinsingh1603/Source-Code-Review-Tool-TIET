@@ -39,6 +39,7 @@ from codekavach.cli.providers import providers_app
 from codekavach.cli.report import report_command
 from codekavach.cli.scan import scan_command
 from codekavach.cli.signals import normalise_resume
+from codekavach.cli.vault import vault_app
 from codekavach.core.log import configure_logging
 
 # Typer 0.27 vendors Click as ``typer._click``; command objects and ``ClickException`` come from
@@ -99,6 +100,7 @@ app.command("report")(report_command)
 app.command("doctor")(doctor_command)
 app.add_typer(privacy_app, name="privacy")
 app.add_typer(providers_app, name="providers")
+app.add_typer(vault_app, name="vault")
 
 
 def _mount(name: str, dotted: str, attr: str) -> bool:

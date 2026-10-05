@@ -201,6 +201,7 @@ ALLOWED_EXTRA_MODULES: frozenset[str] = frozenset(
         "codekavach.cli.scan",
         "codekavach.cli.signals",
         "codekavach.cli.term_check",
+        "codekavach.cli.vault",
     }
 )
 
