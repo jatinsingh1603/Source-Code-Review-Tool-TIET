@@ -60,7 +60,7 @@ An issue that turns out to be larger than its Size is split: the follow-up issue
 |------|------|--------|
 | Monday | **Sprint planning.** Work in the earliest open milestone. Take cards from Ready in the order of work of `docs/PLAN.md` section 7: the lowest-numbered open issue whose blockers are all closed, `P0-critical` before `P1-high` (`AGENTS.md` section 2). Set Sprint on each card taken and check that the total Size fits the week. | Cards for the week have Sprint set and an assignee. |
 | Wednesday | **Mid-sprint check.** Look at In progress and In review: anything older than two days, anything blocked, any card whose Size was wrong. Split or re-plan; move cards that will not finish back to Ready and clear their Sprint. | The board matches reality. |
-| Sunday | **End of sprint.** Write the status note in `docs/status/` (format and first note: E42-03) and review the risk register of `docs/PLAN.md` section 8 (ritual: E42-07). Cards still open keep their column; their Sprint is set again at the next planning. | One status note per sprint for the supervisor. |
+| Sunday | **End of sprint.** Write the status note in `docs/status/` (format and first note: E42-03) and review the risk register of `docs/PLAN.md` section 8 (ritual: [`risk-review.md`](risk-review.md), E42-07). Cards still open keep their column; their Sprint is set again at the next planning. | One status note per sprint for the supervisor. |
 
 Outside these three points the board is updated as work happens: move the card when you start, when you push and when you close.
 
@@ -96,4 +96,5 @@ Until E42-09 names people, whoever closes the last issue of the week writes the 
 - Choosing and closing an issue: `AGENTS.md` sections 2 and 6.
 - Board coordinates: `tools/project/README.md`.
 - Status notes: [`docs/status/`](../status/README.md). Demo 1 agenda: [`demo-1-agenda.md`](../status/demo-1-agenda.md).
+- Risk log: [`docs/status/risk-log.md`](../status/risk-log.md).
 - Other process guides: [`testing.md`](testing.md), [`cli-snapshots.md`](cli-snapshots.md).

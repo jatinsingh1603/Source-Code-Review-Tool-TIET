@@ -54,6 +54,7 @@ Points per Size: XS=1, S=2, M=5, L=8. An XL issue has no point value; it is spli
 
 ## Risks and blockers
 
+- The top three open risks of [`risk-log.md`](risk-log.md) by likelihood times impact, one line each (`docs/process/risk-review.md`).
 - Risks that changed this sprint, with the row of the risk register (`docs/PLAN.md` section 8) they belong to.
 - Blockers: `needs-human` issues and anything waiting on a decision, a key or an account.
 

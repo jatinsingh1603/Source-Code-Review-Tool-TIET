@@ -6,7 +6,7 @@ Weekly status notes for the supervisor, one per sprint. Owning epic: E42.
 - The headings and the milestone table of the template are a fixed format that tooling reads. `tests/process/test_status_note_format.py` checks every note against it.
 - When a note is written and by whom: [`docs/process/sprint-cadence.md`](../process/sprint-cadence.md).
 
-Demo agendas are kept here as well: [`demo-1-agenda.md`](demo-1-agenda.md).
+Demo agendas are kept here as well: [`demo-1-agenda.md`](demo-1-agenda.md). The risk log is [`risk-log.md`](risk-log.md).
 
 | Note | Sprint |
 |------|--------|
