@@ -12,6 +12,14 @@ Output names secret references (``env:NAME``) and their state, never key materia
 host of a ``base_url``, not the URL. Adapters and the resolution of ``auto`` belong to E22 and are
 reached through ``load_backend``; until E22 lands an adapter is reported as ``missing`` and
 ``auto`` is shown as ``mock`` with the warning ``auto_resolution_unavailable``.
+
+``providers test`` asks whether a provider answers a constant probe. It causes an outbound LLM
+request, so it follows the rules of a scan (I1, I2, I4): the pre-flight refuses an unknown,
+disabled or adapter-less provider, a remote provider when remote use is not allowed, and a run
+without consent, each before anything is sent. The probe itself belongs to E22 and is sent by the
+egress transport only. This module passes identifiers and settings: it builds no request, reads no
+project file and opens no connection. A provider's raw error body is never printed, because some
+providers echo request headers or parts of the key; only a reason code and its hint are shown.
 """
 
 from collections.abc import Mapping, Sequence
@@ -21,8 +29,15 @@ import typer
 from rich.console import Console
 
 from codekavach.cli.backends import load_backend
+from codekavach.cli.consent import EgressConsent, ensure_egress_consent
 from codekavach.cli.context import CliContext, get_context
-from codekavach.cli.errors import BackendUnavailableError
+from codekavach.cli.errors import (
+    BackendUnavailableError,
+    PrivacyBlockError,
+    ThresholdExceeded,
+    UsageError,
+)
+from codekavach.cli.onboarding import maybe_show_first_run_notice
 from codekavach.cli.output import Output, get_output
 from codekavach.config import keys
 
@@ -34,6 +49,34 @@ FALLBACK_PROVIDER: Final = "mock"
 BLOCKED: Final = "blocked (remote not allowed)"
 CAPABILITY_FIELDS: Final = ("structured_output", "tool_calling", "context_window", "batch", "local")
 DISABLED_LINE: Final = "LLM review is disabled (llm.enabled = false)"
+DEFAULT_PROBE_TIMEOUT: Final = 30.0
+LOCAL_DOUBLES: Final = frozenset({"mock", "replay"})
+LOCAL_DOUBLE_LINE: Final = "local test double: no network request was made"
+STRUCTURED_STATES: Final = frozenset({"passed", "failed", "not-tested"})
+_NETWORK_HINT: Final = (
+    "check network access and proxy settings; for local providers check that the server is running"
+)
+REASON_HINTS: Final[Mapping[str, str]] = {
+    "unauthorised": (
+        "check the secret reference with `codekavach config key status`; "
+        "the key value is never shown"
+    ),
+    "model_not_found": (
+        "the configured model name is not offered by this provider; "
+        "see `codekavach providers list --kinds`"
+    ),
+    "unreachable": _NETWORK_HINT,
+    "timeout": _NETWORK_HINT,
+    "tls_error": (
+        "the endpoint certificate was rejected; "
+        "`allow_insecure_http` does not disable certificate checks"
+    ),
+    "rate_limited": "the provider throttled the probe; try again later",
+    "bad_response": (
+        "the provider answered in an unexpected format; run with `--debug` and report an issue"
+    ),
+}
+FALLBACK_REASON: Final = "bad_response"
 
 providers_app = typer.Typer(help="Inspect and test LLM providers.", no_args_is_help=True)
 
@@ -261,3 +304,177 @@ def list_command(
             rows, default=default, configured=llm.default_provider, llm_enabled=llm.enabled
         ),
     )
+
+
+# providers test (E05-23)
+
+
+def _count(value: object) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def probe_data(result: object, *, provider_id: str, kind: str) -> dict[str, Any]:
+    """The fields of a probe result that may be shown; anything else it carries is ignored."""
+    ok = getattr(result, "ok", False) is True
+    structured = getattr(result, "structured_output", None)
+    reason = getattr(result, "reason_code", None)
+    model = getattr(result, "model", None)
+    data: dict[str, Any] = {
+        "ok": ok,
+        "provider_id": provider_id,
+        "kind": kind,
+        "model": model if isinstance(model, str) else None,
+        "latency_ms": _count(getattr(result, "latency_ms", None)),
+        "prompt_tokens": _count(getattr(result, "prompt_tokens", None)),
+        "completion_tokens": _count(getattr(result, "completion_tokens", None)),
+        "structured_output": structured if structured in STRUCTURED_STATES else "not-tested",
+        "ledger_seq": _count(getattr(result, "ledger_seq", None)),
+        "reason_code": None,
+        "hint": None,
+    }
+    if not ok:
+        code = reason if isinstance(reason, str) and reason in REASON_HINTS else FALLBACK_REASON
+        data["reason_code"] = code
+        data["hint"] = REASON_HINTS[code]
+    return data
+
+
+def probe_lines(data: Mapping[str, Any]) -> list[str]:
+    """The human lines of one probe result."""
+    head = f"provider {data['provider_id']} ({data['kind']}, {data['model'] or 'default model'})"
+    if not data["ok"]:
+        return [f"{head}: FAILED ({data['reason_code']})", f"hint: {data['hint']}"]
+    details = []
+    if data["latency_ms"] is not None:
+        details.append(f"OK in {data['latency_ms']} ms")
+    else:
+        details.append("OK")
+    if data["prompt_tokens"] is not None and data["completion_tokens"] is not None:
+        details.append(
+            f"{data['prompt_tokens']} prompt + {data['completion_tokens']} completion tokens"
+        )
+    lines = [f"{head}: {', '.join(details)}"]
+    if data["structured_output"] != "not-tested":
+        lines.append(f"structured output: {data['structured_output']}")
+    if data["kind"] in LOCAL_DOUBLES:
+        lines.append(LOCAL_DOUBLE_LINE)
+    if data["ledger_seq"] is not None:
+        lines.append(f"recorded in ledger as seq {data['ledger_seq']}")
+    return lines
+
+
+def preflight(
+    ctx: typer.Context, cli_ctx: CliContext, provider_id: str, *, accept: bool
+) -> EgressConsent:
+    """Refuse a probe that must not be sent; returns the consent outcome when it may be.
+
+    Order: unknown id, disabled provider, missing adapter, remote provider when remote use is
+    not allowed, then the consent gate.
+
+    Raises:
+        UsageError: ``unknown_provider`` or ``provider_disabled`` (exit 2).
+        BackendUnavailableError: no adapter for the provider's kind in this build (exit 2).
+        PrivacyBlockError: ``remote_not_allowed`` or ``consent_required`` (exit 3).
+    """
+    llm = cli_ctx.settings.llm
+    provider = llm.providers.get(provider_id)
+    if provider is None:
+        raise UsageError(
+            f"unknown provider '{provider_id}'",
+            code="unknown_provider",
+            hint=f"configured providers: {', '.join(sorted(llm.providers))}",
+        )
+    if not provider.enabled:
+        raise UsageError(f"provider '{provider_id}' is disabled", code="provider_disabled")
+    if adapters().get(str(provider.kind)) is None:
+        raise BackendUnavailableError(
+            f"no adapter for provider kind '{provider.kind}' is available in this build",
+            hint="delivered by epic E22",
+        )
+    if provider.is_remote and (cli_ctx.offline or not llm.allow_remote):
+        raise PrivacyBlockError(
+            f"provider '{provider_id}' is remote and remote providers are not allowed in this run",
+            code="remote_not_allowed",
+            hint="drop --offline or set llm.allow_remote = true, or test a local provider",
+        )
+    return ensure_egress_consent(
+        ctx,
+        provider_id=provider_id,
+        provider=provider,
+        level=cli_ctx.privacy_level,
+        accept=accept,
+    )
+
+
+def _targets(
+    cli_ctx: CliContext, out: Output, provider_id: str | None, everything: bool
+) -> list[str]:
+    llm = cli_ctx.settings.llm
+    if everything:
+        return [name for name, provider in llm.providers.items() if provider.enabled]
+    if provider_id is not None:
+        return [provider_id]
+    default = default_provider(cli_ctx, out)
+    if default is None:
+        raise UsageError(
+            "LLM review is disabled (llm.enabled = false); name a provider to test it",
+            code="llm_disabled",
+        )
+    return [default]
+
+
+@providers_app.command("test")
+def test_command(  # noqa: PLR0917 - Typer maps each parameter to one option
+    ctx: typer.Context,
+    provider_id: Annotated[
+        str | None, typer.Argument(help="Provider id; default: the provider a scan would use.")
+    ] = None,
+    model: Annotated[
+        str | None, typer.Option("--model", help="Model to use for this test.")
+    ] = None,
+    structured: Annotated[
+        bool, typer.Option("--structured", help="Also run the structured-output probe.")
+    ] = False,
+    accept_egress: Annotated[
+        bool,
+        typer.Option("--accept-egress", help="Approve contacting a remote provider for this run."),
+    ] = False,
+    timeout: Annotated[
+        float, typer.Option("--timeout", min=1.0, help="Seconds allowed per provider.")
+    ] = DEFAULT_PROBE_TIMEOUT,
+    everything: Annotated[
+        bool, typer.Option("--all", help="Test every enabled provider in turn.")
+    ] = False,
+) -> None:
+    """Send a constant probe to a provider and report whether it answers."""
+    cli_ctx = get_context(ctx)
+    out = get_output(ctx)
+    if everything and provider_id is not None:
+        raise UsageError("pass a provider id or --all, not both", code="usage")
+    targets = _targets(cli_ctx, out, provider_id, everything)
+    maybe_show_first_run_notice(ctx)
+    # Every refusal happens before the first probe: nothing is sent for a run that is not allowed.
+    consents = {name: preflight(ctx, cli_ctx, name, accept=accept_egress) for name in targets}
+    probe = load_backend(
+        "codekavach.llm.providers", "probe_provider", feature="provider probe", epic="E22"
+    )
+    results: list[dict[str, Any]] = []
+    for name in targets:
+        kind = str(cli_ctx.settings.llm.providers[name].kind)
+        consent = consents[name]
+        if consent.source != "not-required":
+            out.info(f"remote egress to {name} accepted via {consent.source}")
+        outcome = probe(
+            name,
+            cli_ctx.settings,
+            model=model,
+            structured=structured,
+            timeout=timeout,
+            consent=consent.decision(),
+        )
+        results.append(probe_data(outcome, provider_id=name, kind=kind))
+    lines = [line for data in results for line in probe_lines(data)]
+    out.result({"results": results}, human=lambda console: _print(console, lines))
+    failed = [data["provider_id"] for data in results if not data["ok"]]
+    if failed:
+        raise ThresholdExceeded(f"provider test failed: {', '.join(failed)}")

@@ -1,0 +1,2 @@
+provider lab (ollama, qwen2.5-coder:7b): OK in 412 ms, 9 prompt + 2 completion tokens
+recorded in ledger as seq 43
