@@ -51,3 +51,4 @@ If the title matches a `Reserved` row, the helper uses that number and changes t
 | [0006](0006-configuration-layering-secrets-and-trust.md) | Configuration layering, secrets and trust | Accepted | 2026-09-28 | | #81 (E03-01) |
 | [0007](0007-pipeline-contracts.md) | Pipeline contracts | Proposed | 2026-09-28 | | #126 (E04-01) |
 | [0008](0008-cli-conventions.md) | CLI conventions | Proposed | 2026-10-04 | | #160 (E05-01) |
+| [0009](0009-domain-model-conventions.md) | Domain-model conventions | Proposed | 2026-10-06 | | #49 (E02-01) |
