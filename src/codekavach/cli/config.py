@@ -1,6 +1,6 @@
-"""``codekavach config``: init, show, validate, path, profiles, trust, key (E03-27, E03-33 to 37).
+"""``codekavach config``: init, show, validate, path, profiles, trust, key and policy.
 
-Owning epic: E03.
+Owning epic: E03. The commands come from E03-27 and E03-32 to E03-37.
 
 ``config key set|delete|status`` manage keyring entries under the service ``codekavach``. A key
 is never taken from an argument (shell history and process listings, CWE-214): it comes from a
@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
+from pydantic import ValidationError
 from typer._click.core import ParameterSource
 
 from codekavach.cli.console import get_console, get_err_console
@@ -49,6 +50,7 @@ from codekavach.config.errors import (
     ConfigError,
     ConfigErrorCode,
     ConfigIssue,
+    OrgPolicyError,
     ProfileError,
     SecretResolutionError,
 )
@@ -77,7 +79,11 @@ from codekavach.config.toml_source import read_toml
 from codekavach.config.trust import TrustStore, project_violations, store_path
 
 if TYPE_CHECKING:
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
     from codekavach.config.loader import LoadedConfig
+    from codekavach.config.orgpolicy.discovery import LoadedOrgPolicy
+    from codekavach.config.orgpolicy.model import OrgPolicy
 
 config_app = typer.Typer(help="Inspect and manage configuration.", no_args_is_help=True)
 
@@ -850,3 +856,214 @@ def init_command(  # noqa: PLR0917 - the documented option set of the command
 
 
 config_app.command("init")(init_command)
+
+
+# --- config policy: show, sign, verify (E03-32) --------------------------------------------------
+
+policy_app = typer.Typer(
+    help=(
+        "Inspect organisation policies and sign or verify their detached Ed25519 signatures. "
+        "No key material is ever taken from an argument or printed."
+    ),
+    no_args_is_help=True,
+)
+config_app.add_typer(policy_app, name="policy")
+
+_RULE_SECTIONS = ("privacy", "llm", "integrations", "project_config")
+
+
+def _rule_summary(policy: "OrgPolicy") -> str:
+    """``privacy.min_level=L3, llm.allowed_kinds=5, lock=2 keys`` from the rules that are set."""
+    parts: list[str] = []
+    for section in _RULE_SECTIONS:
+        rules = getattr(policy, section).model_dump(mode="json")
+        for name, value in rules.items():
+            if value is None:
+                continue
+            if isinstance(value, list | dict):
+                parts.append(f"{section}.{name}={len(value)}")
+            else:
+                shown = str(value).lower() if isinstance(value, bool) else str(value)
+                parts.append(f"{section}.{name}={shown}")
+    if policy.lock:
+        parts.append(f"lock={len(policy.lock)} key{'s' if len(policy.lock) != 1 else ''}")
+    return ", ".join(parts) or "none"
+
+
+def _policy_document(loaded: "LoadedOrgPolicy") -> dict[str, Any]:
+    policy = loaded.policy
+    return {
+        "organisation": policy.organisation,
+        "path": str(loaded.path),
+        "origin": loaded.origin,
+        "sha256": loaded.sha256,
+        "signature": loaded.signature,
+        "enforcement": policy.enforcement,
+        "issued": policy.issued.isoformat() if policy.issued else None,
+        "expires": policy.expires.isoformat() if policy.expires else None,
+        "rules": {
+            **{section: getattr(policy, section).model_dump(mode="json")
+               for section in _RULE_SECTIONS},
+            "lock": dict(policy.lock),
+        },
+    }  # fmt: skip
+
+
+@policy_app.command("show")
+def policy_show(
+    ctx: typer.Context,
+    target: Annotated[
+        Path | None, typer.Argument(help="Project directory; default: the current directory.")
+    ] = None,
+    output_format: Annotated[
+        ListFormat, typer.Option("--format", help="Output format.")
+    ] = ListFormat.text,
+) -> None:
+    """Show the organisation policies that apply here, with their signature state."""
+    from codekavach.config.orgpolicy.discovery import discover_org_policies  # noqa: PLC0415
+    from codekavach.config.orgpolicy.signature import find_public_key  # noqa: PLC0415
+    from codekavach.config.paths import project_root_for, system_policy_paths  # noqa: PLC0415
+
+    start = (target or Path.cwd()).resolve()
+    policies = discover_org_policies(os.environ, project_root=project_root_for(start))
+    documents = [_policy_document(loaded) for loaded in policies]
+    if _json_wanted(ctx, output_format):
+        _write_json(ctx, documents)
+        return
+    console = get_console()
+    if not policies:
+        console.print("no organisation policy is active", markup=False)
+        return
+    key = find_public_key(os.environ, [path.parent for path in system_policy_paths()])
+    for index, (loaded, document) in enumerate(zip(policies, documents, strict=True)):
+        if index:
+            console.print("", markup=False)
+        signature = document["signature"]
+        if signature == "valid" and key is not None:
+            signature = f"valid (key {key})"
+        sha = document["sha256"]
+        rows = [
+            ("organisation", document["organisation"]),
+            ("path", f"{document['path']}   ({document['origin']})"),
+            ("sha256", f"{sha[:4]}...{sha[-2:]}"),
+            ("signature", signature),
+            ("enforcement", document["enforcement"]),
+        ]
+        if document["issued"]:
+            rows.append(("issued", document["issued"]))
+        if document["expires"]:
+            rows.append(("expires", document["expires"]))
+        rows.append(("rules", _rule_summary(loaded.policy)))
+        for label, value in rows:
+            console.print(f"{label:<14} {value}", markup=False, soft_wrap=True)
+
+
+def _signing_key(path: Path) -> "Ed25519PrivateKey":
+    """Load the private key, prompting for a passphrase (hidden) when it is encrypted."""
+    from codekavach.config.orgpolicy.signature import load_private_key  # noqa: PLC0415
+
+    try:
+        return load_private_key(path, None)
+    except OrgPolicyError as error:
+        if "needs a passphrase" not in error.issues[0].message:
+            raise
+    if not sys.stdin.isatty():
+        raise UsageError(
+            "the signing key is encrypted and standard input is not a terminal, so the "
+            "passphrase cannot be prompted for",
+            code="prompt_unavailable",
+            hint="sign on the policy owner's workstation, in a terminal",
+        )
+    passphrase = typer.prompt("Passphrase", hide_input=True)
+    return load_private_key(path, passphrase.encode("utf-8"))
+
+
+def _write_atomically(path: Path, text: str, mode: int) -> None:
+    descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    try:
+        with os.fdopen(descriptor, "w", encoding="ascii", newline="\n") as handle:
+            handle.write(text)
+        Path(temporary).chmod(mode)
+        Path(temporary).replace(path)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            Path(temporary).unlink()
+        raise
+
+
+def _validated_policy_bytes(policy: Path) -> bytes:
+    from codekavach.config.orgpolicy.model import OrgPolicy  # noqa: PLC0415
+    from codekavach.config.toml_source import (  # noqa: PLC0415
+        parse_toml_bytes,
+        read_bounded_bytes,
+    )
+
+    raw = read_bounded_bytes(policy)
+    try:
+        OrgPolicy.model_validate(parse_toml_bytes(raw, policy).data)
+    except ValidationError:
+        raise UsageError(
+            "the file is not a valid organisation policy; refusing to sign it",
+            code="invalid_policy",
+            hint="check it with: codekavach config validate",
+        ) from None
+    return raw
+
+
+@policy_app.command("sign")
+def policy_sign(
+    policy: Annotated[Path, typer.Argument(help="The policy file to sign.")],
+    key: Annotated[Path, typer.Option("--key", help="Ed25519 private key, PEM PKCS#8 (mode 600).")],
+    out: Annotated[
+        Path | None, typer.Option("--out", help="Signature file; default: POLICY.sig.")
+    ] = None,
+) -> None:
+    """Sign a policy file with an Ed25519 key and write the detached signature.
+
+    Meant for the policy owner's workstation, not for pipelines: keep the private key offline.
+    An encrypted key's passphrase is asked for with hidden input. Create a key pair with
+    `openssl genpkey -algorithm ed25519 -out policy.key` and
+    `openssl pkey -in policy.key -pubout -out policy.pub`.
+    """
+    from codekavach.config.orgpolicy.signature import (  # noqa: PLC0415
+        sign_policy,
+        signature_path,
+    )
+
+    raw = _validated_policy_bytes(policy)
+    signing_key = _signing_key(key)
+    destination = out or signature_path(policy)
+    _write_atomically(destination, sign_policy(raw, signing_key) + "\n", 0o644)
+    get_console().print(f"signature written to {destination}", markup=False)
+
+
+@policy_app.command("verify")
+def policy_verify(
+    policy: Annotated[Path, typer.Argument(help="The policy file to verify.")],
+    pubkey: Annotated[
+        Path, typer.Option("--pubkey", help="Ed25519 public key, PEM SubjectPublicKeyInfo.")
+    ],
+    sig: Annotated[
+        Path | None, typer.Option("--sig", help="Signature file; default: POLICY.sig.")
+    ] = None,
+) -> None:
+    """Verify a policy's detached Ed25519 signature; exit 2 with code 054 when it fails."""
+    from codekavach.config.orgpolicy.signature import (  # noqa: PLC0415
+        MAX_SIGNATURE_BYTES,
+        load_public_key,
+        read_signature,
+        signature_path,
+        verify_policy,
+    )
+    from codekavach.config.toml_source import read_bounded_bytes  # noqa: PLC0415
+
+    raw = read_bounded_bytes(policy)
+    if sig is None or sig == signature_path(policy):
+        text = read_signature(policy)
+    else:
+        data = sig.read_bytes()[: MAX_SIGNATURE_BYTES + 1]
+        if len(data) > MAX_SIGNATURE_BYTES:
+            raise UsageError("the signature file is too large", code="invalid_signature")
+        text = data.decode("ascii", errors="replace")
+    verify_policy(raw, text, load_public_key(pubkey))
+    get_console().print("signature valid", markup=False)

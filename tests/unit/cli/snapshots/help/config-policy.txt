@@ -1,7 +1,8 @@
 
- Usage: codekavach config [OPTIONS] COMMAND [ARGS]...
+ Usage: codekavach config policy [OPTIONS] COMMAND [ARGS]...
 
- Inspect and manage configuration.
+ Inspect organisation policies and sign or verify their detached Ed25519 signatures. No key
+ material is ever taken from an argument or printed.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help  -h        Show this message and exit.                                                    │
@@ -40,16 +41,7 @@
 │                                                             repeated.                            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
-│ trust     Trust a project's configuration file, as it is now.                                    │
-│ untrust   Forget the trust granted to a project.                                                 │
-│ show      Print the configuration in force, masked, optionally with the origin of every key.     │
-│ validate  Check the configuration a scan would use, without scanning anything.                   │
-│ path      List every location CodeKavach reads, and whether it exists; creates nothing.          │
-│ profiles  List the built-in and user-defined profiles.                                           │
-│ init      Write a commented starter codekavach.toml rendered from the settings models.           │
-│ key       Store API keys in the OS keyring. The value is read from a hidden prompt or from       │
-│           standard input, never from an argument. Automation: printf %s "$KEY" | codekavach      │
-│           config key set primary --stdin                                                         │
-│ policy    Inspect organisation policies and sign or verify their detached Ed25519 signatures. No │
-│           key material is ever taken from an argument or printed.                                │
+│ show    Show the organisation policies that apply here, with their signature state.              │
+│ sign    Sign a policy file with an Ed25519 key and write the detached signature.                 │
+│ verify  Verify a policy's detached Ed25519 signature; exit 2 with code 054 when it fails.        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯

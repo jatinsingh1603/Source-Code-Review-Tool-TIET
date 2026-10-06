@@ -1,10 +1,15 @@
 
- Usage: codekavach config [OPTIONS] COMMAND [ARGS]...
+ Usage: codekavach config policy verify [OPTIONS] {policy}
 
- Inspect and manage configuration.
+ Verify a policy's detached Ed25519 signature; exit 2 with code 054 when it fails.
 
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│ *    policy      <path>  The policy file to verify. [required]                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help  -h        Show this message and exit.                                                    │
+│ *  --pubkey          <path>  Ed25519 public key, PEM SubjectPublicKeyInfo. [required]            │
+│    --sig             <path>  Signature file; default: POLICY.sig.                                │
+│    --help    -h              Show this message and exit.                                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮
 │ --config                        PATH                        Configuration file to use instead of │
@@ -38,18 +43,4 @@
 │                                                             configuration for this run.          │
 │ --set                           KEY=VALUE                   Override one setting; may be         │
 │                                                             repeated.                            │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
-│ trust     Trust a project's configuration file, as it is now.                                    │
-│ untrust   Forget the trust granted to a project.                                                 │
-│ show      Print the configuration in force, masked, optionally with the origin of every key.     │
-│ validate  Check the configuration a scan would use, without scanning anything.                   │
-│ path      List every location CodeKavach reads, and whether it exists; creates nothing.          │
-│ profiles  List the built-in and user-defined profiles.                                           │
-│ init      Write a commented starter codekavach.toml rendered from the settings models.           │
-│ key       Store API keys in the OS keyring. The value is read from a hidden prompt or from       │
-│           standard input, never from an argument. Automation: printf %s "$KEY" | codekavach      │
-│           config key set primary --stdin                                                         │
-│ policy    Inspect organisation policies and sign or verify their detached Ed25519 signatures. No │
-│           key material is ever taken from an argument or printed.                                │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
