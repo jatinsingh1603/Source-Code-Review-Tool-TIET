@@ -7,6 +7,8 @@ import pytest
 import typer
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
+from typer import _click as click  # Typer >= 0.27 ships its own copy of Click
+from typer.core import TyperGroup
 
 from codekavach.cli import context as context_module
 from codekavach.cli.app import app, build_cli
@@ -199,8 +201,11 @@ def test_with_target(cli: Cli, probe: None, tmp_path: Path) -> None:
 
 def test_every_command_has_the_options() -> None:
     command = build_cli()
-    children = getattr(command, "commands", {})
-    for target in (command, *children.values()):
+    assert isinstance(command, TyperGroup)
+    ctx = click.Context(command)
+    children = [command.get_command(ctx, name) for name in command.list_commands(ctx)]
+    assert len(children) >= 9  # resolves the lazily mounted commands (E05-31)
+    for target in (command, *(child for child in children if child is not None)):
         names = {param.name for param in target.params}
         assert {"json_mode", "offline", "set_values", "verbose"} <= names
 

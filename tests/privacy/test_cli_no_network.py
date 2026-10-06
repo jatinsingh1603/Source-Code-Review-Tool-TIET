@@ -18,6 +18,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from typer import _click as click  # Typer >= 0.27 ships its own copy of Click
+from typer.core import TyperGroup
 
 from codekavach.cli.app import build_cli
 from codekavach.cli.onboarding import build_notice
@@ -96,7 +98,10 @@ def find_command(path: Sequence[str]) -> Any | None:
     """The command at ``path`` in the current tree, or ``None``."""
     node: Any = build_cli()
     for name in path:
-        node = (getattr(node, "commands", None) or {}).get(name)
+        if not isinstance(node, TyperGroup):
+            return None
+        # Through the Click API, so that lazily mounted commands (E05-31) are found too.
+        node = node.get_command(click.Context(node), name)
         if node is None:
             return None
     return node
