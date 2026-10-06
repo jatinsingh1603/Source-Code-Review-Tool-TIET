@@ -24,8 +24,10 @@ def config() -> dict[str, Any]:
 
 def test_version_and_ecosystems(config: dict[str, Any]) -> None:
     assert config["version"] == 2
-    assert [entry["package-ecosystem"] for entry in config["updates"]] == ["uv", "github-actions"]
-    assert all(entry["directory"] == "/" for entry in config["updates"])
+    ecosystems = [entry["package-ecosystem"] for entry in config["updates"]]
+    assert ecosystems == ["uv", "github-actions", "devcontainers", "docker"]
+    directories = [entry["directory"] for entry in config["updates"]]
+    assert directories == ["/", "/", "/.devcontainer", "/.devcontainer"]
 
 
 def test_every_entry_is_weekly_prefixed_limited_and_labelled(config: dict[str, Any]) -> None:
@@ -42,7 +44,7 @@ def test_every_entry_is_weekly_prefixed_limited_and_labelled(config: dict[str, A
 
 
 def test_groups_leave_major_updates_ungrouped(config: dict[str, Any]) -> None:
-    python, actions = config["updates"]
+    python, actions = config["updates"][:2]
     assert set(python["groups"]) == {"dev-tools", "runtime-minor-patch"}
     for group in python["groups"].values():
         assert group["update-types"] == ["minor", "patch"]

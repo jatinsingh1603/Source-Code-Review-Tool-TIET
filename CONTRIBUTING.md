@@ -39,6 +39,14 @@ make check
 
 On Windows the supported route is the devcontainer or WSL2 ([ADR-0001](docs/adr/0001-technology-stack.md), "Supported platforms").
 
+**Devcontainer.** Open the repository in VS Code with the Dev Containers extension, or in GitHub Codespaces, and choose "Reopen in Container". The container (`.devcontainer/`) gives you:
+
+- Python 3.12, `uv`, `make`, Git and Node 22;
+- the WeasyPrint system libraries;
+- `make setup`, run automatically on creation.
+
+The virtual environment lives at `/home/vscode/.venvs/codekavach`, outside the workspace, so the host and the container do not share a `.venv`. The container mounts no host credentials and runs nothing privileged, and editor and tool telemetry are off. Set provider keys inside the container session when you need them. The `Devcontainer` workflow rebuilds the container and runs `make check` in it whenever `.devcontainer/` changes.
+
 ## 4. Workflow
 
 - **Core team and coding agents:** pick an issue as described in [`AGENTS.md`](AGENTS.md) section 2 and commit small, focused changes directly to `main`.

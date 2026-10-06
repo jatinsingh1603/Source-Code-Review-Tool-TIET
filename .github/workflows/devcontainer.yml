@@ -1,0 +1,49 @@
+name: Devcontainer
+
+# Builds the development container and runs "make check" inside it (E01-29). Runs only when the
+# container definition or this workflow changes, or by hand. Hardened like ci.yml (E01-18):
+# read-only token, actions pinned to commit SHAs, no secrets, image never pushed.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".devcontainer/**"
+      - ".github/workflows/devcontainer.yml"
+  pull_request:
+    paths:
+      - ".devcontainer/**"
+      - ".github/workflows/devcontainer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: devcontainer-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the container and run make check inside it
+        uses: devcontainers/ci@513af61f4de4f75d37e4438f184ba4358f0fc1ca # v0.3.1900000450
+        with:
+          push: never
+          runCmd: |
+            set -e
+            export CODEKAVACH_PERF_FACTOR=3.0 HYPOTHESIS_PROFILE=ci
+            uv --version
+            make --version
+            node --version
+            test "$(whoami)" = vscode
+            python3 -c "import ctypes.util, sys; sys.exit(0 if ctypes.util.find_library('pango-1.0') else 1)"
+            test ! -e .venv
+            make check
+            test ! -e .venv
+            test -x /home/vscode/.venvs/codekavach/bin/python

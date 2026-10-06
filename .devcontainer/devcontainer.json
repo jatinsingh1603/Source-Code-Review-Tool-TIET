@@ -1,0 +1,30 @@
+{
+  "name": "CodeKavach",
+  "build": { "dockerfile": "Dockerfile" },
+  "remoteUser": "vscode",
+  "containerEnv": {
+    "UV_LINK_MODE": "copy",
+    "UV_PROJECT_ENVIRONMENT": "/home/vscode/.venvs/codekavach",
+    "DO_NOT_TRACK": "1",
+    "HF_HUB_DISABLE_TELEMETRY": "1"
+  },
+  "postCreateCommand": "make setup",
+  "features": { "ghcr.io/devcontainers/features/node:1": { "version": "22" } },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "tamasfe.even-better-toml",
+        "editorconfig.editorconfig"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/home/vscode/.venvs/codekavach/bin/python",
+        "editor.formatOnSave": true,
+        "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
+        "telemetry.telemetryLevel": "off"
+      }
+    }
+  }
+}
