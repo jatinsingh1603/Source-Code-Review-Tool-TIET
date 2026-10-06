@@ -257,3 +257,23 @@ confirmed = finding.with_status(
 assert confirmed.status is FindingStatus.CONFIRMED
 assert len(confirmed.status_history) == 1
 ```
+
+## Performance budgets
+
+`tests/perf/test_model_budgets.py` (marker `perf`) measures the heaviest model operations. Each measurement takes the best of three runs and is scaled by `CODEKAVACH_PERF_FACTOR`. The budgets are roughly ten times the expected timings, so they catch regressions rather than noise. Measured on 2026-10-06 on a Windows 11 laptop (AMD64), Python 3.12.14, factor 1.0:
+
+| Measurement | Workload | Measured | Budget |
+|-------------|----------|----------|--------|
+| Construct `Location` | 100,000 instances, paths needing normalisation | 0.63 s | 3.0 s |
+| Validate `Candidate` | 20,000 from dicts | 1.10 s | 3.0 s |
+| `Finding` JSON round trip | 5,000, each with a 9-line `Evidence` and a 3-step taint path | 0.78 s | 5.0 s |
+| `Evidence.from_source` | 5,000 snippets from a 2,000-line text | 1.98 s | 4.0 s |
+| `fingerprint_batch` | 50,000 parts with 3-line snippets, including `snippet_hash` | 1.28 s | 3.0 s |
+| `EgressRecord.seal` and `verify_link` | a chain of 20,000 records | 2.05 s | 4.0 s |
+| `split_lines` | 50,000 CRLF lines of 40 characters | 0.02 s | 0.5 s |
+| `ScanSummary.from_findings` | 5,000 findings | 0.01 s | 1.0 s |
+| `SanitisedPayload.build` | 5,000 payloads of 60 lines with 5 placeholders | 0.51 s | 4.0 s |
+
+Peak traced memory for 5,000 such findings is 111 MB (the guard is 400 MB).
+
+Validation is never skipped to meet a budget: the same module checks that no production code calls `model_construct`. The one allow-listed use, in `EgressRecord.seal`, builds a draft only to compute the entry hash, and the record it returns is validated.

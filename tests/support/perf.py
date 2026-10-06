@@ -34,3 +34,20 @@ def measure(fn: Callable[[], object], *, repeat: int = 3) -> float:
         fn()
         best = min(best, time.perf_counter() - start)
     return best
+
+
+def assert_within_budget(
+    measured: float, seconds: float, *, factor: float | None = None, label: str = "measurement"
+) -> None:
+    """Fail when ``measured`` exceeds ``seconds`` times the factor (by default the environment's).
+
+    The message shows the measured time, the budget and the factor, so a CI log says by how much
+    a budget was missed.
+    """
+    scale = perf_factor() if factor is None else factor
+    limit = seconds * scale
+    if measured > limit:
+        raise AssertionError(
+            f"{label}: measured {measured:.3f} s; budget {seconds:.3f} s x factor {scale:g} "
+            f"= {limit:.3f} s"
+        )
