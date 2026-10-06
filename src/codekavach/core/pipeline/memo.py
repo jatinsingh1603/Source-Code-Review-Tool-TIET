@@ -54,6 +54,7 @@ from typing import Final, Protocol
 from pydantic import BaseModel, JsonValue
 
 from codekavach.core.log import get_logger
+from codekavach.core.store.admin import touch
 from codekavach.core.store.base import (
     ArtefactCorruptError,
     ArtefactError,
@@ -282,6 +283,7 @@ class DiskItemMemo:
         if not isinstance(cached, _Absent):
             with self._lock:
                 self._hits += 1
+            touch(path)  # recency for pruning (E04-23); the modification time is the signal
             return cached
         with self._lock:
             self._misses += 1

@@ -28,6 +28,7 @@ from pydantic import JsonValue
 
 from codekavach.core.log import get_logger
 from codekavach.core.pipeline.keys import is_valid_key
+from codekavach.core.store.admin import touch
 from codekavach.core.store.base import (
     ArtefactCorruptError,
     ArtefactMissingError,
@@ -279,6 +280,7 @@ class OnDiskArtefactStore:
         multi_key(key)
         check_part(part)
         size = self._blob_size(key, digest)
+        touch(self._layout.blob_path(digest))  # a reused blob is recent for pruning (E04-23)
         with self._key_lock(key):
             binding = self._read_binding(key) or {"v": BINDING_VERSION, "key": key, "parts": {}}
             binding["parts"][part] = {"digest": digest, "size": size}
@@ -293,6 +295,7 @@ class OnDiskArtefactStore:
             for part, digest in ref.parts:
                 check_part(part)
                 parts[part] = {"digest": digest, "size": self._blob_size(key, digest)}
+                touch(self._layout.blob_path(digest))
             with self._key_lock(key):
                 self._write_binding(key, {"v": BINDING_VERSION, "key": key, "parts": parts})
             return
@@ -300,6 +303,7 @@ class OnDiskArtefactStore:
         if ref.digest is None:
             raise ArtefactMissingError(f"no stored content for artefact {key!r}")
         self._blob_size(key, ref.digest)
+        touch(self._layout.blob_path(ref.digest))
         encoded = self._read_blob(key, ref.digest)
         with self._key_lock(key):
             self._write_binding(key, self._single_binding(key, encoded))

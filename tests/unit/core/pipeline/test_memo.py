@@ -1,5 +1,6 @@
 """The per-item memo (E04-22): keys, hits and misses, damage, salt separation, threads."""
 
+import hashlib
 import json
 import sys
 import threading
@@ -553,7 +554,7 @@ def test_json_values_are_returned_on_a_miss_and_equal_on_the_next_hit(
 ) -> None:
     layout = StateLayout(tmp_path_factory.mktemp("memo") / ".codekavach")
     memo = DiskItemMemo(layout)
-    key = memo_key(label)
+    key = hashlib.sha256(label.encode("utf-8")).hexdigest()  # any text, even a separator
     compute = Counter(value)
     first = memo.get_or_compute_json(NAMESPACE, key, compute)
     second = memo.get_or_compute_json(NAMESPACE, key, compute)

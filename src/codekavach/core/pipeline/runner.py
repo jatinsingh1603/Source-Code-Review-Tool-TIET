@@ -81,6 +81,7 @@ from codekavach.core.pipeline.resume import (
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.pipeline.signals import cancel_on_signals
 from codekavach.core.plugins.registry import PluginRegistry, registry_from_environment
+from codekavach.core.store.admin import CacheAdmin
 from codekavach.core.store.artefacts import OnDiskArtefactStore
 from codekavach.core.store.base import ArtefactError, ArtefactStore
 from codekavach.core.store.layout import StateLayout, atomic_write_bytes
@@ -93,6 +94,7 @@ CREDENTIALS_IN_TARGET = (
 )
 _FINISHED = frozenset({ScanStatus.COMPLETED, ScanStatus.COMPLETED_WITH_ERRORS})
 _log = get_logger("codekavach.pipeline.runner")
+MEGABYTE = 1024 * 1024
 
 
 @dataclass(frozen=True, slots=True)
@@ -316,10 +318,11 @@ def run_scan(
         state_dir=layout.root,
         consent=consent,
     )
+    cache_on = resumed is not None or (settings.scan.cache if use_cache is None else use_cache)
     orchestrator = Orchestrator(
         clock=clock,
         cache=StageCache(layout) if store is None else None,
-        use_cache=resumed is not None or (settings.scan.cache if use_cache is None else use_cache),
+        use_cache=cache_on,
         refresh=refresh,
         version=codekavach_version(),
     )
@@ -386,12 +389,24 @@ def run_scan(
     artefacts.put(keys.SCAN_RECORD, scan)
     if recorder is not None:
         recorder.finish(scan, result.stage_runs, _findings(artefacts))
+    if cache_on and store is None:
+        _prune_cache(layout, settings)
     return ScanOutcome(
         result=result,
         scan=scan,
         state_dir=layout.root,
         manifest_path=layout.manifest_path(scan_id),
     )
+
+
+def _prune_cache(layout: StateLayout, settings: Settings) -> None:
+    """Keep the cache within ``scan.cache_max_size_mb`` after a scan; never fails the scan."""
+    try:
+        CacheAdmin(layout).prune(
+            settings.scan.cache_max_size_mb * MEGABYTE, settings.scan.cache_keep_scans
+        )
+    except Exception as error:  # noqa: BLE001 - housekeeping must not lose a finished scan
+        _log.warning("cache_prune_failed", error_type=type(error).__name__)
 
 
 def _checked_plan(
