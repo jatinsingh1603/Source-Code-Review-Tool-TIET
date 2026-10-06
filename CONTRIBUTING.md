@@ -121,6 +121,14 @@ Do not paste client code, real secrets, or vault or ledger content into an issue
 
 The reasons are in [ADR-0001](docs/adr/0001-technology-stack.md), "Dependency policy".
 
+`make licences` (and the CI job `licences`) checks the licence of every installed package against `[tool.codekavach.licences]` in `pyproject.toml`. Everything a user installs must be `allowed`. Development-only tools fail only when `denied`. When the gate fails:
+
+- **`denied`** (GPL, AGPL, SSPL and similar): do not add the package; find an alternative.
+- **`unknown`**: the metadata does not say which licence applies. Read the licence file the package ships. If the licence is clear, add an entry under `[tool.codekavach.licences.exceptions]` with the licence, the reason and the issue number.
+- **`review`** (LGPL, EPL, CDDL and similar): a person decides. Label the issue `needs-human`, name the package and its licence, and record the decision as an exception once it is made.
+
+The gate is an engineering control, not legal advice.
+
 Dependabot opens grouped pull requests every Monday for Python dependencies and GitHub Actions (`.github/dependabot.yml`). They are the exception to direct-to-main work:
 
 - CI has to be green.

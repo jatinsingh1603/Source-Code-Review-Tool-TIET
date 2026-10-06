@@ -273,3 +273,19 @@ docstring-code-format = true
 # Code blocks in Markdown are illustrative and docs/ARCHITECTURE.md is normative;
 # the formatter must not rewrite them.
 exclude = ["*.md"]
+
+# Dependency licence gate (E01-30, tools/dev/check_licences.py). SPDX identifiers with shell-style
+# wildcards. The runtime closure must be "allowed" or a recorded exception; dev-only tools fail
+# only when "denied". An engineering control, not legal advice.
+[tool.codekavach.licences]
+allowed = ["MIT", "MIT-0", "BSD-2-Clause", "BSD-3-Clause", "Apache-2.0", "ISC", "PSF-2.0", "Python-2.0",
+           "MPL-2.0", "Unlicense", "0BSD", "Zlib", "CC0-1.0", "Unicode-3.0", "HPND"]
+review = ["LGPL-*", "EPL-*", "CDDL-*", "CC-BY-*"]
+denied = ["GPL-*", "AGPL-*", "SSPL-*", "BUSL-*", "CC-BY-NC-*", "CC-BY-SA-*", "Elastic-*", "Commons-Clause"]
+
+[tool.codekavach.licences.exceptions]
+# "package-name" = { licence = "LGPL-3.0-only", reason = "...", approved_in = "#123 / ADR-00NN" }
+# The two below declare only the ambiguous "BSD License" classifier; their bundled licence files
+# are the three-clause BSD text (checked for E01-30).
+"colorama" = { licence = "BSD-3-Clause", reason = "metadata says only 'BSD License'; dist-info/licenses/LICENSE.txt is BSD-3-Clause", approved_in = "#41 (E01-30)" }
+"jinja2" = { licence = "BSD-3-Clause", reason = "metadata says only 'BSD License'; dist-info/licenses/LICENSE.txt is BSD-3-Clause", approved_in = "#41 (E01-30)" }
