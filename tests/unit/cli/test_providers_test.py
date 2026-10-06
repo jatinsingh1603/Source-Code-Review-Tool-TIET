@@ -81,7 +81,7 @@ def project(project_dir: Path) -> Path:
 @pytest.fixture
 def probe(monkeypatch: pytest.MonkeyPatch) -> FakeProbe:
     kinds = {kind: SimpleNamespace(capabilities=None) for kind in ("mock", "anthropic", "ollama")}
-    fake_backend(monkeypatch, REGISTRY, lambda: SimpleNamespace(providers=lambda: kinds))
+    fake_backend(monkeypatch, REGISTRY, lambda *_settings: SimpleNamespace(providers=lambda: kinds))
     fake = FakeProbe()
     fake_backend(monkeypatch, PROBE, fake)
     return fake
@@ -250,7 +250,7 @@ def test_all_tests_every_enabled_provider_and_then_decides(
     cli: Cli, project: Path, probe: FakeProbe, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     kinds = {name: SimpleNamespace() for name in ("mock", "anthropic", "ollama", "gemini")}
-    fake_backend(monkeypatch, REGISTRY, lambda: SimpleNamespace(providers=lambda: kinds))
+    fake_backend(monkeypatch, REGISTRY, lambda *_settings: SimpleNamespace(providers=lambda: kinds))
     probe.failures["lab"] = "unreachable"
     result = run(cli, project, "--all", "--accept-egress", "--json")
     assert result.exit_code == 1

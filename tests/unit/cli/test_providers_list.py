@@ -46,9 +46,9 @@ class FakeCapabilities:
     local: bool = False
 
 
-def registry(**kinds: FakeCapabilities) -> Callable[[], Any]:
+def registry(**kinds: FakeCapabilities) -> Callable[..., Any]:
     adapters = {kind: SimpleNamespace(capabilities=value) for kind, value in kinds.items()}
-    return lambda: SimpleNamespace(providers=lambda: adapters)
+    return lambda *_settings: SimpleNamespace(providers=lambda: adapters)
 
 
 @pytest.fixture
@@ -225,6 +225,42 @@ def test_kinds(
     fake_backend(monkeypatch, REGISTRY, registry())
     empty = cli(["providers", "list", "--kinds"], cwd=project)
     assert "no provider adapter is installed in this build" in empty.stdout
+
+
+def recording_registry(received: list[Any]) -> Callable[..., Any]:
+    def build(*args: Any) -> Any:
+        received.extend(args)
+        return SimpleNamespace(providers=dict)
+
+    return build
+
+
+def test_kinds_are_listed_under_the_plugin_settings(
+    cli: Cli, project: Path, isolated_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A valid configuration: the registry is built from its settings, so [plugins] applies.
+    (project / "codekavach.toml").write_text("", encoding="utf-8")
+    (isolated_home / "config.toml").write_text(
+        '[plugins]\nallow_distributions = ["acme-rules"]\n', encoding="utf-8"
+    )
+    received: list[Any] = []
+    fake_backend(monkeypatch, REGISTRY, recording_registry(received))
+    assert cli(["providers", "list", "--kinds"], cwd=project).exit_code == 0
+    assert len(received) == 1
+    assert received[0].plugins.allow_distributions == ["acme-rules"]
+
+
+def test_kinds_with_an_invalid_configuration_load_only_the_core_distribution(
+    cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Listing kinds does not need a valid configuration, but it must not import a third-party
+    # plugin that the unreadable settings might have excluded.
+    (project / "codekavach.toml").write_text('[privacy]\nlevel = "L9"\n', encoding="utf-8")
+    received: list[Any] = []
+    fake_backend(monkeypatch, REGISTRY, recording_registry(received))
+    assert cli(["providers", "list", "--kinds"], cwd=project).exit_code == 0
+    assert len(received) == 1
+    assert received[0].plugins.allow_distributions == ["codekavach"]
 
 
 def test_real_registry_without_adapters(cli: Cli, project: Path) -> None:

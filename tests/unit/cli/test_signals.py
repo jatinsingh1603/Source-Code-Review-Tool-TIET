@@ -272,7 +272,9 @@ def test_real_pipeline_refuses_unknown_and_changed_scans(
 ) -> None:
     """With the real ``run_scan`` and no stage installed: the refusals come from the pipeline."""
     monkeypatch.setitem(backends._OVERRIDES, RUN_SCAN_KEY, run_scan)
-    monkeypatch.setattr(runner_module, "registry_from_environment", lambda: PluginRegistry([]))
+    monkeypatch.setattr(
+        runner_module, "registry_from_environment", lambda *_settings: PluginRegistry([])
+    )
     stored_salt(monkeypatch)
     unknown = cli(base(project, "--resume", SCAN))
     assert unknown.exit_code == 2

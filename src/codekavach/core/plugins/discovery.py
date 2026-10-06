@@ -20,6 +20,7 @@ GROUPS: Final = (
     "codekavach.renderers",
 )
 UNKNOWN_DIST: Final = "unknown"
+CORE_DIST: Final = "codekavach"
 
 EntryPointsFn = Callable[..., Iterable[Any]]
 
@@ -33,6 +34,11 @@ class PluginSpec:
     target: str
     dist_name: str
     dist_version: str
+
+
+def kind_of(group: str) -> str:
+    """``codekavach.stages`` gives ``stage``."""
+    return group.removeprefix("codekavach.").removesuffix("s")
 
 
 def _spec(group: str, entry_point: Any) -> PluginSpec:

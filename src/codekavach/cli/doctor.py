@@ -466,12 +466,19 @@ def _keyring(_ctx: CliContext) -> Outcome:
     return Outcome(CheckStatus.PASS, f"backend {backend}", {"backend": backend})
 
 
-def _plugins(_ctx: CliContext) -> Outcome:
+def _plugins(ctx: CliContext) -> Outcome:
+    from codekavach.config.errors import ConfigError  # noqa: PLC0415
     from codekavach.core.plugins.registry import registry_from_environment  # noqa: PLC0415
 
-    failures = registry_from_environment().failures()
+    try:
+        settings = ctx.loaded.settings
+    except ConfigError:
+        # Without valid settings the allow-list is unknown, and checking would import every
+        # installed plugin; the configuration check reports the real problem.
+        return Outcome(CheckStatus.WARN, "plugins not checked: the configuration is invalid")
+    failures = registry_from_environment(settings).failures()
     if not failures:
-        return Outcome(CheckStatus.PASS, "every plugin loads")
+        return Outcome(CheckStatus.PASS, "every allowed plugin loads")
     broken: list[JsonValue] = [f"{failure.spec.group}:{failure.spec.name}" for failure in failures]
     return Outcome(CheckStatus.WARN, f"{len(broken)} plugin(s) failed to load", {"broken": broken})
 

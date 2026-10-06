@@ -401,7 +401,9 @@ def _checked_plan(
     until: str | None,
     refresh: Collection[str],
 ) -> RunPlan:
-    plan = build_plan(registry or registry_from_environment(), settings, skip=skip, until=until)
+    plan = build_plan(
+        registry or registry_from_environment(settings), settings, skip=skip, until=until
+    )
     for selector in sorted(refresh):
         if not any(keys.matches_stage_selector(info, selector) for info in plan.infos.values()):
             raise PlanError("unknown_stage_selector", repr(selector))

@@ -7,10 +7,9 @@ from pathlib import Path
 import pytest
 
 from codekavach.core.plugins import registry as registry_module
-from codekavach.core.plugins.discovery import PluginSpec, discover
+from codekavach.core.plugins.discovery import PluginSpec, discover, kind_of
 from codekavach.core.plugins.registry import (
     PluginRegistry,
-    kind_of,
     register_group_validator,
     registry_from_environment,
 )

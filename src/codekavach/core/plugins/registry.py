@@ -25,12 +25,13 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Literal, cast
 
+from codekavach.config import Settings
 from codekavach.core.log import get_logger
 from codekavach.core.pipeline.stage import Stage, StageInfo, describe_stage
-from codekavach.core.plugins.discovery import GROUPS, PluginSpec, discover
+from codekavach.core.plugins.discovery import CORE_DIST, GROUPS, PluginSpec, discover, kind_of
+from codekavach.core.plugins.policy import apply_policy
 
 STAGES_GROUP = "codekavach.stages"
-CORE_DIST = "codekavach"
 FailureStage = Literal["import", "create", "validate"]
 Status = Literal["ok", "error", "shadowed", "disabled"]
 GroupValidator = Callable[[object], None]
@@ -71,11 +72,6 @@ class PluginRow:
     provides: list[str] = field(default_factory=list)
 
 
-def kind_of(group: str) -> str:
-    """``codekavach.stages`` gives ``stage``."""
-    return group.removeprefix("codekavach.").removesuffix("s")
-
-
 def _rank(spec: PluginSpec) -> tuple[bool, str, str]:
     return (spec.dist_name != CORE_DIST, spec.dist_name, spec.target)
 
@@ -88,6 +84,7 @@ class PluginRegistry:
         specs: Iterable[PluginSpec],
         *,
         validators: dict[str, GroupValidator] | None = None,
+        disabled: Iterable[PluginSpec] = (),
     ) -> None:
         candidates: dict[tuple[str, str], list[PluginSpec]] = {}
         for spec in specs:
@@ -99,6 +96,10 @@ class PluginRegistry:
             self._winners[key] = ordered[0]
             shadowed.extend(ordered[1:])
         self._shadowed = tuple(sorted(shadowed, key=lambda s: (s.group, s.name, s.dist_name)))
+        # Disabled specs are listed and never loaded; they take no part in name collisions.
+        self._disabled = tuple(
+            sorted(set(disabled), key=lambda s: (s.group, s.name, s.dist_name, s.target))
+        )
         self._validators = dict(_GROUP_VALIDATORS if validators is None else validators)
         self._lock = threading.RLock()
         self._instances: dict[tuple[str, str], object] = {}
@@ -216,6 +217,10 @@ class PluginRegistry:
         """Entry points that lost a name collision."""
         return self._shadowed
 
+    def disabled(self) -> tuple[PluginSpec, ...]:
+        """Entry points that the ``[plugins]`` settings keep from loading; never imported."""
+        return self._disabled
+
     def _row(self, spec: PluginSpec, status: Status, error_type: str | None) -> PluginRow:
         info = self._infos.get(spec.name) if spec.group == STAGES_GROUP else None
         if status != "ok":
@@ -236,7 +241,7 @@ class PluginRegistry:
         )
 
     def rows(self) -> list[PluginRow]:
-        """One row per entry point (winners and shadowed), sorted by (group, name, dist)."""
+        """One row per entry point (winners, shadowed, disabled), sorted by (group, name, dist)."""
         self._ensure_all()
         rows: list[PluginRow] = []
         with self._lock:
@@ -247,9 +252,19 @@ class PluginRegistry:
                 else:
                     rows.append(self._row(spec, "error", failure.error_type))
         rows.extend(self._row(spec, "shadowed", None) for spec in self._shadowed)
+        rows.extend(self._row(spec, "disabled", None) for spec in self._disabled)
         return sorted(rows, key=lambda row: (row.group, row.name, row.dist))
 
 
-def registry_from_environment() -> PluginRegistry:
-    """A registry over every plugin installed in the running environment."""
-    return PluginRegistry(discover(GROUPS))
+def registry_from_environment(settings: Settings | None = None) -> PluginRegistry:
+    """A registry over the plugins installed in the running environment.
+
+    With ``settings``, the ``[plugins]`` allow-list and disable-list are applied to the discovered
+    entry points first, so a plugin that is not allowed is listed as ``disabled`` and never
+    imported. Without settings every installed plugin is available.
+    """
+    specs = discover(GROUPS)
+    if settings is None:
+        return PluginRegistry(specs)
+    allowed, disabled = apply_policy(specs, settings.plugins)
+    return PluginRegistry(allowed, disabled=disabled)

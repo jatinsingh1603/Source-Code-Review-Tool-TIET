@@ -43,6 +43,7 @@ from codekavach.cli.output import Output, get_output
 from codekavach.config import keys
 
 if TYPE_CHECKING:
+    from codekavach.config import Settings
     from codekavach.config.models.llm import ProviderSettings
 
 AUTO: Final = "auto"
@@ -82,15 +83,24 @@ FALLBACK_REASON: Final = "bad_response"
 providers_app = typer.Typer(help="Inspect and test LLM providers.", no_args_is_help=True)
 
 
-def adapters() -> Mapping[str, object]:
-    """The provider adapters of this build, by kind; empty when the registry cannot be read."""
+def adapters(settings: "Settings | None") -> Mapping[str, object]:
+    """The provider adapters of this build, by kind; empty when the registry cannot be read.
+
+    The ``[plugins]`` settings apply: an adapter from a plugin that is not allowed is not loaded.
+    With no settings (the configuration is invalid) only the adapters of the ``codekavach``
+    distribution load, so that listing kinds never imports a third-party plugin unchecked.
+    """
+    from codekavach.config import Settings  # noqa: PLC0415
+
+    if settings is None:
+        settings = Settings.model_validate({"plugins": {"allow_distributions": ["codekavach"]}})
     try:
         registry = load_backend(
             "codekavach.core.plugins.registry",
             "registry_from_environment",
             feature="the plugin registry",
             epic="E04",
-        )()
+        )(settings)
     except BackendUnavailableError:
         return {}
     found: Mapping[str, object] = registry.providers()
@@ -157,7 +167,7 @@ def provider_rows(
 ) -> list[dict[str, Any]]:
     """One JSON-ready row per configured provider."""
     settings = cli_ctx.settings
-    installed = adapters()
+    installed = adapters(settings)
     rows: list[dict[str, Any]] = []
     for provider_id, provider in settings.llm.providers.items():
         if not provider.enabled and not include_disabled:
@@ -281,7 +291,13 @@ def list_command(
     """List the configured providers; contacts nothing."""
     out = get_output(ctx)
     if kinds:
-        installed = adapters()
+        from codekavach.config.errors import ConfigError  # noqa: PLC0415
+
+        try:
+            settings = get_context(ctx).settings
+        except ConfigError:
+            settings = None  # the kinds of a build do not depend on a valid configuration
+        installed = adapters(settings)
         found = [
             {"kind": kind, "capabilities": capabilities(installed[kind])}
             for kind in sorted(installed)
@@ -387,7 +403,7 @@ def preflight(
         )
     if not provider.enabled:
         raise UsageError(f"provider '{provider_id}' is disabled", code="provider_disabled")
-    if adapters().get(str(provider.kind)) is None:
+    if adapters(cli_ctx.settings).get(str(provider.kind)) is None:
         raise BackendUnavailableError(
             f"no adapter for provider kind '{provider.kind}' is available in this build",
             hint="delivered by epic E22",

@@ -455,9 +455,38 @@ def test_keyring_check_looks_at_the_backend_only(
     assert cli(["doctor", "--check", "secrets:keyring", "--strict"], cwd=project).exit_code == 1
 
 
+def test_plugin_check_passes_the_settings_to_the_registry(
+    cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    received: list[object] = []
+
+    def environment(*settings: object) -> Any:
+        received.extend(settings)
+        return SimpleNamespace(failures=lambda: ())
+
+    monkeypatch.setattr(registry_module, "registry_from_environment", environment)
+    assert one(cli, project, "plugins:load")["status"] == "pass"
+    assert len(received) == 1
+    assert getattr(received[0], "plugins", None) is not None  # the loaded Settings
+
+
+def test_plugin_check_loads_nothing_when_the_configuration_is_invalid(
+    cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Without valid settings the allow-list is unknown, so no plugin may be imported to check it.
+    def environment(*_settings: object) -> Any:
+        raise AssertionError("the registry must not be built")
+
+    monkeypatch.setattr(registry_module, "registry_from_environment", environment)
+    (project / "codekavach.toml").write_text('[privacy]\nlevel = "L9"\n', encoding="utf-8")
+    entry = one(cli, project, "plugins:load")
+    assert entry["status"] == "warn"
+    assert entry["summary"] == "plugins not checked: the configuration is invalid"
+
+
 def test_plugin_check(cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    def environment(failures: tuple[PluginFailure, ...]) -> Callable[[], Any]:
-        return lambda: SimpleNamespace(failures=lambda: failures)
+    def environment(failures: tuple[PluginFailure, ...]) -> Callable[..., Any]:
+        return lambda *_settings: SimpleNamespace(failures=lambda: failures)
 
     monkeypatch.setattr(registry_module, "registry_from_environment", environment(()))
     assert one(cli, project, "plugins:load")["status"] == "pass"
