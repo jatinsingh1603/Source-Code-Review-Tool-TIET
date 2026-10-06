@@ -16,3 +16,21 @@ Configuration tests must never read the contributor's real configuration, provid
 | Provider key shapes | `tests/support/synthetic.py` | `example_secret("anthropic_api_key")`, `"openai_project_key"`, `"xai_api_key"` and the earlier kinds; values are assembled at run time and are never live. |
 
 The fixtures are registered through `pytest_plugins` in `tests/conftest.py`.
+
+### Configuration stays offline and fast
+
+Loading configuration is offline (ADR-0006 D9) and runs at the start of every invocation, so three test modules keep it that way:
+
+| Module | What it proves |
+|--------|----------------|
+| `tests/integration/config/test_offline.py` | `load_settings()` and the seven local `config` commands succeed while `socket.socket`, `create_connection`, `getaddrinfo`, `subprocess.Popen`, `os.system` and `os.posix_spawn` raise. A fresh interpreter that imports and loads `codekavach.config` has none of `keyring`, `cryptography`, `httpx`, `requests`, `urllib3`, `aiohttp`, `litellm`, `anthropic`, `openai`, `boto3` or `google` in `sys.modules`. |
+| `tests/unit/config/test_no_telemetry.py` | An `ast` scan of every string constant (docstrings included) under `src/codekavach/config/` finds no URL outside `ALLOWED_HOSTS`, which names each host, its module and the reason. No module imports a network client or credential store at module level; a lazy import inside a function is allowed. |
+| `tests/integration/config/test_budget.py` (marker `perf`) | After one warm-up load, the best of 20 `load_settings()` calls on a sandbox with a user file, a project file, a profile and ten environment variables is within `budget(0.05)` seconds. The cumulative `-X importtime` figure of `import codekavach.config` is within `budget(0.4)` seconds. |
+
+Measured at the time of writing: `load_settings()` takes about 5 ms and the package imports in about 360 ms on Windows; roughly 4 ms and 250 ms on Linux. The load budget leaves about ten times headroom. The import budget leaves little (about 1.6 times on Linux), so the test takes the best of three fresh interpreters, and CI relies on its `CODEKAVACH_PERF_FACTOR` of 3.0. A slow laptop that fails only this test needs a factor, not a code change.
+
+To relax the budgets locally, set `CODEKAVACH_PERF_FACTOR` (for example `CODEKAVACH_PERF_FACTOR=3`), skip the timing tests with `-m "not perf"` or `CODEKAVACH_SKIP_PERF=1`. The macOS CI cells deselect `perf` tests.
+
+When a budget fails, the cause is almost always an eager import. Find it with `python tools/dev/importtime_report.py --target codekavach.config`, and make the import lazy (inside the function that needs it), as `keys.py` does for `keyring` and `orgpolicy/signature.py` does for `cryptography`.
+
+When a new URL is truly needed in the package, add its host to `ALLOWED_HOSTS` with a reason in the same commit; the telemetry guard then stays a statement of what the package may name.
