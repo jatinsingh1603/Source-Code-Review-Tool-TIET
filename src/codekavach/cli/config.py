@@ -1067,3 +1067,33 @@ def policy_verify(
         text = data.decode("ascii", errors="replace")
     verify_policy(raw, text, load_public_key(pubkey))
     get_console().print("signature valid", markup=False)
+
+
+# --- config schema (E03-38) --------------------------------------------------------------------
+
+
+@config_app.command("schema")
+def schema_command(
+    ctx: typer.Context,
+    policy: Annotated[
+        bool, typer.Option("--policy", help="The schema of an organisation policy.toml instead.")
+    ] = False,
+    output: Annotated[
+        Path | None, typer.Option("--output", help="Write the schema to this file.")
+    ] = None,
+) -> None:
+    """Print the JSON Schema of codekavach.toml, for editors and validation tools."""
+    from codekavach.config.schema import (  # noqa: PLC0415
+        dump_schema,
+        policy_schema,
+        settings_schema,
+    )
+
+    schema = policy_schema() if policy else settings_schema()
+    text = dump_schema(schema)
+    if output is not None:
+        with output.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+        get_err_console().print(f"schema written to {output}", markup=False)
+        return
+    _write_json(ctx, schema, text)

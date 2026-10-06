@@ -1,10 +1,12 @@
 
- Usage: codekavach config [OPTIONS] COMMAND [ARGS]...
+ Usage: codekavach config schema [OPTIONS]
 
- Inspect and manage configuration.
+ Print the JSON Schema of codekavach.toml, for editors and validation tools.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help  -h        Show this message and exit.                                                    │
+│ --policy                  The schema of an organisation policy.toml instead.                     │
+│ --output          <path>  Write the schema to this file.                                         │
+│ --help    -h              Show this message and exit.                                            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮
 │ --config                        PATH                        Configuration file to use instead of │
@@ -38,19 +40,4 @@
 │                                                             configuration for this run.          │
 │ --set                           KEY=VALUE                   Override one setting; may be         │
 │                                                             repeated.                            │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
-│ trust     Trust a project's configuration file, as it is now.                                    │
-│ untrust   Forget the trust granted to a project.                                                 │
-│ show      Print the configuration in force, masked, optionally with the origin of every key.     │
-│ validate  Check the configuration a scan would use, without scanning anything.                   │
-│ path      List every location CodeKavach reads, and whether it exists; creates nothing.          │
-│ profiles  List the built-in and user-defined profiles.                                           │
-│ init      Write a commented starter codekavach.toml rendered from the settings models.           │
-│ schema    Print the JSON Schema of codekavach.toml, for editors and validation tools.            │
-│ key       Store API keys in the OS keyring. The value is read from a hidden prompt or from       │
-│           standard input, never from an argument. Automation: printf %s "$KEY" | codekavach      │
-│           config key set primary --stdin                                                         │
-│ policy    Inspect organisation policies and sign or verify their detached Ed25519 signatures. No │
-│           key material is ever taken from an argument or printed.                                │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯

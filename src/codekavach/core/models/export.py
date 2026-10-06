@@ -59,6 +59,9 @@ INDEX_FILE = "index.json"
 OUTPUT_SCHEMA_FILE = "llm_verdict.output.schema.json"
 OUTPUT_SCHEMA_NAME = "LLMVerdictOutput"
 HINT = "run: uv run python -m codekavach.core.models.export"
+# Configuration schemas in the same directory, exported by ``codekavach config schema``
+# (codekavach.config.schema, E03-38). Named here because core.models must not import config.
+CONFIG_SCHEMA_FILES = frozenset({"codekavach.schema.json", "codekavach-policy.schema.json"})
 MIGRATION_HINT = "register the missing steps; see docs/reference/model-versioning.md"
 
 
@@ -139,7 +142,7 @@ def check_schemas(out_dir: Path) -> list[str]:
         problems.extend(
             f"unexpected: {path.name}"
             for path in sorted(out_dir.glob("*.schema.json"))
-            if path.name not in expected
+            if path.name not in expected and path.name not in CONFIG_SCHEMA_FILES
         )
     return problems
 

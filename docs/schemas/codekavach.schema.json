@@ -1,0 +1,1509 @@
+{
+  "$defs": {
+    "BudgetSettings": {
+      "additionalProperties": false,
+      "description": "Limits for one scan; ``None`` means unlimited.",
+      "properties": {
+        "max_cost_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum estimated cost in US dollars.",
+          "title": "Max Cost Usd"
+        },
+        "max_requests": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum LLM requests.",
+          "title": "Max Requests"
+        },
+        "max_total_input_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum input tokens across all requests.",
+          "title": "Max Total Input Tokens"
+        },
+        "max_total_output_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum output tokens across all requests.",
+          "title": "Max Total Output Tokens"
+        }
+      },
+      "title": "BudgetSettings",
+      "type": "object"
+    },
+    "ComplianceFramework": {
+      "description": "Frameworks a report maps findings to.",
+      "enum": [
+        "owasp-top10",
+        "owasp-asvs",
+        "cwe-top25",
+        "capec",
+        "pci-dss",
+        "iso27001",
+        "nist-ssdf",
+        "rbi",
+        "sebi"
+      ],
+      "title": "ComplianceFramework",
+      "type": "string"
+    },
+    "EngineOptions": {
+      "additionalProperties": false,
+      "description": "Per-engine overrides.",
+      "properties": {
+        "args": {
+          "description": "Extra command-line arguments passed to the engine.",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Args",
+          "type": "array",
+          "x-ck-restricted": true
+        },
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Force the engine on or off; beats the section lists.",
+          "title": "Enabled"
+        },
+        "env_passthrough": {
+          "description": "Names of environment variables the sandboxed engine may see.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Env Passthrough",
+          "type": "array",
+          "x-ck-restricted": true
+        },
+        "executable": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Path of the engine executable instead of the one found on PATH.",
+          "title": "Executable",
+          "x-ck-restricted": true
+        },
+        "options": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "description": "Engine-specific options passed to its adapter.",
+          "title": "Options",
+          "type": "object"
+        },
+        "timeout_seconds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Time limit for this engine in seconds.",
+          "maximum": 86400,
+          "minimum": 10,
+          "title": "Timeout Seconds",
+          "x-ck-volatile": true
+        }
+      },
+      "title": "EngineOptions",
+      "type": "object"
+    },
+    "EnginesSettings": {
+      "additionalProperties": false,
+      "description": "Which external engines and native analysers run, and how.",
+      "properties": {
+        "disabled": {
+          "description": "External engine ids that are not run.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Disabled",
+          "type": "array"
+        },
+        "enabled": {
+          "description": "External engine ids to run; empty means every installed engine applicable to the detected languages.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Enabled",
+          "type": "array"
+        },
+        "native": {
+          "$ref": "#/$defs/NativeEngines",
+          "description": "Built-in analysers."
+        },
+        "options": {
+          "additionalProperties": {
+            "$ref": "#/$defs/EngineOptions"
+          },
+          "description": "Per-engine overrides keyed by engine id.",
+          "title": "Options",
+          "type": "object"
+        },
+        "rule_packs": {
+          "description": "Native rule packs from rules/.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Rule Packs",
+          "type": "array"
+        },
+        "rule_paths": {
+          "description": "Extra directories of native YAML rules.",
+          "items": {
+            "format": "path",
+            "type": "string"
+          },
+          "title": "Rule Paths",
+          "type": "array"
+        },
+        "timeout_seconds": {
+          "default": 600,
+          "description": "Time limit per engine in seconds.",
+          "maximum": 86400,
+          "minimum": 10,
+          "title": "Timeout Seconds",
+          "type": "integer",
+          "x-ck-volatile": true
+        }
+      },
+      "title": "EnginesSettings",
+      "type": "object"
+    },
+    "GitHubSettings": {
+      "additionalProperties": false,
+      "description": "Issue sync, Projects v2 sync, SARIF upload and check runs on GitHub.",
+      "properties": {
+        "api_url": {
+          "default": "https://api.github.com/",
+          "description": "API base URL; GitHub Enterprise Server is allowed, https only.",
+          "format": "uri",
+          "minLength": 1,
+          "title": "Api Url",
+          "type": "string"
+        },
+        "checks": {
+          "default": false,
+          "description": "Create check runs and annotations.",
+          "title": "Checks",
+          "type": "boolean"
+        },
+        "close_resolved": {
+          "default": true,
+          "description": "Close issues whose finding no longer appears.",
+          "title": "Close Resolved",
+          "type": "boolean"
+        },
+        "dry_run": {
+          "default": true,
+          "description": "Log intended writes without performing them.",
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "enabled": {
+          "default": false,
+          "description": "Master switch of the GitHub integration.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "issue_sync": {
+          "default": false,
+          "description": "Raise one issue per finding.",
+          "title": "Issue Sync",
+          "type": "boolean"
+        },
+        "labels_prefix": {
+          "default": "codekavach",
+          "description": "Prefix of the labels the integration applies.",
+          "title": "Labels Prefix",
+          "type": "string"
+        },
+        "max_issues_per_run": {
+          "default": 50,
+          "description": "Largest number of issues created or updated in one run.",
+          "maximum": 500,
+          "minimum": 1,
+          "title": "Max Issues Per Run",
+          "type": "integer"
+        },
+        "min_severity_for_issues": {
+          "$ref": "#/$defs/Severity",
+          "default": "medium",
+          "description": "Lowest severity for which an issue is raised."
+        },
+        "project_number": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Number of the Projects v2 board.",
+          "title": "Project Number"
+        },
+        "project_owner": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Organisation or user that owns the Projects v2 board.",
+          "title": "Project Owner"
+        },
+        "repository": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Target repository written as owner/name.",
+          "title": "Repository"
+        },
+        "sarif_upload": {
+          "default": false,
+          "description": "Upload SARIF to code scanning.",
+          "title": "Sarif Upload",
+          "type": "boolean"
+        },
+        "token": {
+          "anyOf": [
+            {
+              "pattern": "^(env:[A-Za-z_][A-Za-z0-9_]{0,127}|keyring:[A-Za-z0-9._@-]{1,128}(/[A-Za-z0-9._@-]{1,128})?|file:(/|~/|[A-Za-z]:[\\\\/]).+)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Secret reference to the token; env:GITHUB_TOKEN or env:GH_TOKEN when unset.",
+          "title": "Token"
+        }
+      },
+      "title": "GitHubSettings",
+      "type": "object"
+    },
+    "IntegrationsSettings": {
+      "additionalProperties": false,
+      "description": "External systems that receive findings.",
+      "properties": {
+        "github": {
+          "$ref": "#/$defs/GitHubSettings",
+          "description": "GitHub issue, board, SARIF and check sync."
+        },
+        "mcp": {
+          "$ref": "#/$defs/McpSettings",
+          "description": "The MCP server."
+        }
+      },
+      "title": "IntegrationsSettings",
+      "type": "object"
+    },
+    "LLMSettings": {
+      "additionalProperties": false,
+      "description": "How findings are sent to language models, and which ones.",
+      "properties": {
+        "allow_remote": {
+          "default": true,
+          "description": "False forbids every provider that is remote.",
+          "title": "Allow Remote",
+          "type": "boolean"
+        },
+        "budget": {
+          "$ref": "#/$defs/BudgetSettings",
+          "description": "Limits for one scan."
+        },
+        "cache": {
+          "default": true,
+          "description": "Cache responses keyed on the payload hash.",
+          "title": "Cache",
+          "type": "boolean",
+          "x-ck-volatile": true
+        },
+        "consensus": {
+          "default": 1,
+          "description": "Models or samples asked per candidate.",
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Consensus",
+          "type": "integer"
+        },
+        "default_provider": {
+          "default": "auto",
+          "description": "A provider id, or auto to pick the first usable one.",
+          "title": "Default Provider",
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "description": "False runs deterministic engines only; nothing leaves.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "max_output_tokens": {
+          "default": 2048,
+          "description": "Maximum output tokens per request.",
+          "maximum": 65536,
+          "minimum": 64,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        },
+        "max_retries": {
+          "default": 2,
+          "description": "Retries of a failed request.",
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Max Retries",
+          "type": "integer",
+          "x-ck-volatile": true
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Overrides the model of the selected provider for this run.",
+          "title": "Model"
+        },
+        "providers": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ProviderSettings"
+          },
+          "description": "Named providers; mock is always present.",
+          "title": "Providers",
+          "type": "object",
+          "x-ck-restricted": true
+        },
+        "tasks": {
+          "description": "LLM tasks to run.",
+          "items": {
+            "$ref": "#/$defs/TaskName"
+          },
+          "title": "Tasks",
+          "type": "array"
+        },
+        "temperature": {
+          "default": 0.0,
+          "description": "Sampling temperature, 0.0 to 2.0.",
+          "title": "Temperature",
+          "type": "number"
+        },
+        "timeout_seconds": {
+          "default": 120,
+          "description": "Timeout of one request in seconds.",
+          "maximum": 3600,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer",
+          "x-ck-volatile": true
+        }
+      },
+      "title": "LLMSettings",
+      "type": "object"
+    },
+    "Language": {
+      "description": "Source language of a file (unordered).",
+      "enum": [
+        "python",
+        "javascript",
+        "typescript",
+        "java",
+        "kotlin",
+        "c",
+        "cpp",
+        "php",
+        "go",
+        "csharp",
+        "ruby",
+        "dockerfile",
+        "terraform",
+        "yaml",
+        "json",
+        "toml",
+        "xml",
+        "shell",
+        "sql",
+        "html",
+        "unknown"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "LoggingSettings": {
+      "additionalProperties": false,
+      "description": "Diagnostic logging on stderr.",
+      "properties": {
+        "format": {
+          "default": "console",
+          "description": "Human-readable console text or one JSON object per line.",
+          "enum": [
+            "console",
+            "json"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "level": {
+          "default": "info",
+          "description": "Lowest level of events that are written.",
+          "enum": [
+            "debug",
+            "info",
+            "warning",
+            "error"
+          ],
+          "title": "Level",
+          "type": "string"
+        }
+      },
+      "title": "LoggingSettings",
+      "type": "object"
+    },
+    "McpSettings": {
+      "additionalProperties": false,
+      "description": "The MCP server that exposes CodeKavach to editors and agents.",
+      "properties": {
+        "allow_non_loopback": {
+          "default": false,
+          "description": "Allow the HTTP transport to listen on a non-loopback address.",
+          "title": "Allow Non Loopback",
+          "type": "boolean"
+        },
+        "bind": {
+          "default": "127.0.0.1:8765",
+          "description": "Host and port the HTTP transport listens on.",
+          "title": "Bind",
+          "type": "string"
+        },
+        "enabled": {
+          "default": false,
+          "description": "Start the MCP server.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "transport": {
+          "default": "stdio",
+          "description": "Transport of the MCP server.",
+          "enum": [
+            "stdio",
+            "http"
+          ],
+          "title": "Transport",
+          "type": "string"
+        }
+      },
+      "title": "McpSettings",
+      "type": "object"
+    },
+    "NativeEngines": {
+      "additionalProperties": false,
+      "description": "Built-in analysers (ARCHITECTURE ``analysis/``); all on by default.",
+      "properties": {
+        "iac": {
+          "default": true,
+          "description": "Native infrastructure-as-code checks.",
+          "title": "Iac",
+          "type": "boolean"
+        },
+        "rules": {
+          "default": true,
+          "description": "Native pattern rules.",
+          "title": "Rules",
+          "type": "boolean"
+        },
+        "sca": {
+          "default": true,
+          "description": "Native software composition analysis.",
+          "title": "Sca",
+          "type": "boolean"
+        },
+        "secrets": {
+          "default": true,
+          "description": "Native secret detection.",
+          "title": "Secrets",
+          "type": "boolean"
+        },
+        "taint": {
+          "default": true,
+          "description": "Native taint analysis.",
+          "title": "Taint",
+          "type": "boolean"
+        }
+      },
+      "title": "NativeEngines",
+      "type": "object"
+    },
+    "PartialSettings": {
+      "additionalProperties": false,
+      "description": "A profile overlay: any settings sections, all optional.",
+      "properties": {
+        "description": {
+          "description": "One line saying what the profile is for.",
+          "type": "string"
+        },
+        "engines": {
+          "$ref": "#/$defs/EnginesSettings",
+          "description": "Which analysers run and how."
+        },
+        "extends": {
+          "description": "Name of the profile this profile builds on.",
+          "type": "string"
+        },
+        "integrations": {
+          "$ref": "#/$defs/IntegrationsSettings",
+          "description": "External systems that receive findings.",
+          "x-ck-restricted": true
+        },
+        "llm": {
+          "$ref": "#/$defs/LLMSettings",
+          "description": "Language models and their providers."
+        },
+        "logging": {
+          "$ref": "#/$defs/LoggingSettings",
+          "description": "Diagnostic logging on stderr."
+        },
+        "plugins": {
+          "$ref": "#/$defs/PluginsSettings",
+          "description": "Which installed plugins may load."
+        },
+        "privacy": {
+          "$ref": "#/$defs/PrivacySettings",
+          "description": "What may leave the machine."
+        },
+        "project": {
+          "$ref": "#/$defs/ProjectSettings",
+          "description": "Identity of the scanned project."
+        },
+        "reporting": {
+          "$ref": "#/$defs/ReportingSettings",
+          "description": "Which reports are written and how."
+        },
+        "scan": {
+          "$ref": "#/$defs/ScanSettings",
+          "description": "What to scan and how."
+        }
+      },
+      "title": "PartialSettings",
+      "type": "object"
+    },
+    "PathRule": {
+      "additionalProperties": false,
+      "description": "A per-path privacy rule; later rules win on overlap (evaluated by E25).",
+      "properties": {
+        "level": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PrivacyLevel"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Privacy level for matching files."
+        },
+        "never_send": {
+          "default": false,
+          "description": "Never prepare matching files for egress at any level.",
+          "title": "Never Send",
+          "type": "boolean"
+        },
+        "pattern": {
+          "description": "Glob relative to the project root.",
+          "title": "Pattern",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pattern"
+      ],
+      "title": "PathRule",
+      "type": "object"
+    },
+    "PluginsSettings": {
+      "additionalProperties": false,
+      "description": "Plugin allow-list and disable-list.",
+      "properties": {
+        "allow_distributions": {
+          "description": "Distributions whose plugins may load; empty allows all, and codekavach itself is always allowed.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Allow Distributions",
+          "type": "array",
+          "x-ck-restricted": true
+        },
+        "disable": {
+          "description": "Plugins to disable, written as kind:name, for example engine:semgrep.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Disable",
+          "type": "array",
+          "x-ck-restricted": true
+        }
+      },
+      "title": "PluginsSettings",
+      "type": "object"
+    },
+    "PrivacyLevel": {
+      "description": "Privacy level, ordered by strictness, not by the digit: L1 < L2 < L3 < L4 < L0.\n\nRank (ADR E03-01 decision D5): L1=1, L2=2, L3=3, L4=4, L0=5. L0 sends nothing, L4 sends\nabstract facts but no code, L3 a pseudonymised slice, L2 pseudonymised files and L1 code with\nonly secrets and PII replaced. Comparisons mean \"stricter than\", ``strictest`` returns the\nmaximum by rank, and ``at_least`` checks a floor. Ordering by the digit would make L0 the\nweakest level and silently turn a floor of L3 into permission for L1.",
+      "enum": [
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L0"
+      ],
+      "title": "PrivacyLevel",
+      "type": "string"
+    },
+    "PrivacySettings": {
+      "additionalProperties": false,
+      "description": "What may leave the machine, at which privacy level.",
+      "properties": {
+        "domain_terms": {
+          "description": "Business words that must not appear verbatim in any payload.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Domain Terms",
+          "type": "array",
+          "x-ck-merge": "union",
+          "x-ck-sensitive": true
+        },
+        "domain_terms_file": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "File with one domain term per line; lines starting with # are comments.",
+          "title": "Domain Terms File"
+        },
+        "level": {
+          "$ref": "#/$defs/PrivacyLevel",
+          "default": "L3",
+          "description": "Default privacy level for every path."
+        },
+        "min_level": {
+          "$ref": "#/$defs/PrivacyLevel",
+          "default": "L1",
+          "description": "Floor that no configured level may be weaker than."
+        },
+        "never_send": {
+          "description": "Globs whose content is never prepared for egress at any level.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Never Send",
+          "type": "array",
+          "x-ck-merge": "union"
+        },
+        "paths": {
+          "description": "Per-path rules; later rules win on overlap.",
+          "items": {
+            "$ref": "#/$defs/PathRule"
+          },
+          "maxItems": 500,
+          "title": "Paths",
+          "type": "array"
+        },
+        "provider_tier_levels": {
+          "additionalProperties": {
+            "$ref": "#/$defs/PrivacyLevel"
+          },
+          "description": "Minimum privacy level per provider trust tier.",
+          "propertyNames": {
+            "$ref": "#/$defs/TrustTier"
+          },
+          "title": "Provider Tier Levels",
+          "type": "object"
+        },
+        "public_allowlist_extra": {
+          "description": "Extra identifiers kept un-pseudonymised; every entry weakens privacy.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Public Allowlist Extra",
+          "type": "array",
+          "x-ck-restricted": true
+        },
+        "vault": {
+          "$ref": "#/$defs/VaultSettings",
+          "description": "Where the vault key comes from."
+        }
+      },
+      "title": "PrivacySettings",
+      "type": "object"
+    },
+    "ProjectSettings": {
+      "additionalProperties": false,
+      "description": "Identity of the scanned project and where its local state lives.",
+      "properties": {
+        "client": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Client organisation shown on the report cover.",
+          "title": "Client"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "One-paragraph description for the scope section of the report.",
+          "title": "Description"
+        },
+        "languages": {
+          "description": "Languages to analyse; an empty list means detect them automatically.",
+          "items": {
+            "$ref": "#/$defs/Language"
+          },
+          "title": "Languages",
+          "type": "array"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Project name for reports; when unset, the root directory name is used.",
+          "title": "Name"
+        },
+        "state_dir": {
+          "default": ".codekavach",
+          "description": "Directory for the vault, ledger, local database and cache.",
+          "format": "path",
+          "title": "State Dir",
+          "type": "string"
+        }
+      },
+      "title": "ProjectSettings",
+      "type": "object"
+    },
+    "ProviderKind": {
+      "description": "The adapter kinds of ARCHITECTURE section 7.",
+      "enum": [
+        "anthropic",
+        "openai",
+        "gemini",
+        "xai",
+        "bedrock",
+        "azure-openai",
+        "ollama",
+        "openai-compatible",
+        "litellm",
+        "cli-bridge",
+        "mock",
+        "replay"
+      ],
+      "title": "ProviderKind",
+      "type": "string"
+    },
+    "ProviderSettings": {
+      "additionalProperties": false,
+      "description": "One named LLM provider.",
+      "properties": {
+        "allow_insecure_http": {
+          "default": false,
+          "description": "Accept plain http to a host outside the machine or private network.",
+          "title": "Allow Insecure Http",
+          "type": "boolean",
+          "x-ck-restricted": true
+        },
+        "api_key": {
+          "anyOf": [
+            {
+              "pattern": "^(env:[A-Za-z_][A-Za-z0-9_]{0,127}|keyring:[A-Za-z0-9._@-]{1,128}(/[A-Za-z0-9._@-]{1,128})?|file:(/|~/|[A-Za-z]:[\\\\/]).+)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Secret reference to the API key.",
+          "title": "Api Key"
+        },
+        "api_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "API version (azure-openai).",
+          "title": "Api Version"
+        },
+        "aws_profile": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "AWS profile name (bedrock).",
+          "title": "Aws Profile"
+        },
+        "azure_deployment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Deployment name (azure-openai).",
+          "title": "Azure Deployment"
+        },
+        "base_url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Endpoint URL; where payloads and the API key are sent.",
+          "title": "Base Url",
+          "x-ck-restricted": true
+        },
+        "cassette_dir": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Directory of recorded responses (replay).",
+          "title": "Cassette Dir"
+        },
+        "command": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Command line of the local CLI to run (cli-bridge).",
+          "title": "Command",
+          "x-ck-restricted": true
+        },
+        "enabled": {
+          "default": true,
+          "description": "Whether the provider may be selected.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "kind": {
+          "$ref": "#/$defs/ProviderKind",
+          "description": "Adapter kind."
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Model identifier sent to the provider.",
+          "title": "Model"
+        },
+        "options": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "description": "Adapter-specific options.",
+          "title": "Options",
+          "type": "object"
+        },
+        "region": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Cloud region (bedrock).",
+          "title": "Region"
+        },
+        "trust_tier": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TrustTier"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Trust tier; derived from the kind and host when unset.",
+          "x-ck-restricted": true
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "ProviderSettings",
+      "type": "object"
+    },
+    "ReportFormat": {
+      "description": "Report output formats (requirement R8).",
+      "enum": [
+        "html",
+        "pdf",
+        "docx",
+        "sarif",
+        "json",
+        "csv",
+        "xlsx",
+        "markdown"
+      ],
+      "title": "ReportFormat",
+      "type": "string"
+    },
+    "ReportingSettings": {
+      "additionalProperties": false,
+      "description": "Which reports are written, where, and how much context they show.",
+      "properties": {
+        "auditor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Reviewing person or firm, for document control.",
+          "title": "Auditor"
+        },
+        "classification": {
+          "default": "Confidential",
+          "description": "Classification printed in header and footer.",
+          "title": "Classification",
+          "type": "string"
+        },
+        "compliance": {
+          "description": "Compliance frameworks findings are mapped to.",
+          "items": {
+            "$ref": "#/$defs/ComplianceFramework"
+          },
+          "title": "Compliance",
+          "type": "array"
+        },
+        "formats": {
+          "description": "Report formats to write.",
+          "items": {
+            "$ref": "#/$defs/ReportFormat"
+          },
+          "title": "Formats",
+          "type": "array"
+        },
+        "include_privacy_attestation": {
+          "default": true,
+          "description": "Include the section showing what left the environment.",
+          "title": "Include Privacy Attestation",
+          "type": "boolean"
+        },
+        "logo": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "PNG or SVG image for the cover.",
+          "title": "Logo"
+        },
+        "min_severity": {
+          "$ref": "#/$defs/Severity",
+          "default": "info",
+          "description": "Findings below this are summarised, not detailed."
+        },
+        "output_dir": {
+          "default": "codekavach-report",
+          "description": "Directory for reports, relative to the project root.",
+          "format": "path",
+          "title": "Output Dir",
+          "type": "string",
+          "x-ck-volatile": true
+        },
+        "snippet_context_lines": {
+          "default": 3,
+          "description": "Lines shown around each evidence line.",
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Snippet Context Lines",
+          "type": "integer"
+        },
+        "template_dir": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Override directory for report templates.",
+          "title": "Template Dir",
+          "x-ck-restricted": true
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Report title; defaults to 'Secure Source Code Review: <project name>'.",
+          "title": "Title"
+        }
+      },
+      "title": "ReportingSettings",
+      "type": "object"
+    },
+    "ScanSettings": {
+      "additionalProperties": false,
+      "description": "What to scan, resource limits and pipeline behaviour.",
+      "properties": {
+        "cache": {
+          "default": true,
+          "description": "Reuse results of unchanged stages from earlier scans.",
+          "title": "Cache",
+          "type": "boolean",
+          "x-ck-volatile": true
+        },
+        "cache_keep_scans": {
+          "default": 5,
+          "description": "Number of most recent scans whose cache entries survive pruning.",
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Cache Keep Scans",
+          "type": "integer",
+          "x-ck-volatile": true
+        },
+        "cache_max_size_mb": {
+          "default": 2048,
+          "description": "Size budget of the stage cache, in megabytes, used when pruning.",
+          "maximum": 1048576,
+          "minimum": 64,
+          "title": "Cache Max Size Mb",
+          "type": "integer",
+          "x-ck-volatile": true
+        },
+        "exclude": {
+          "description": "Glob patterns of files to exclude, relative to the project root.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclude",
+          "type": "array"
+        },
+        "fail_on": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "const": "none",
+              "type": "string"
+            }
+          ],
+          "default": "high",
+          "description": "Exit non-zero when a finding at or above this severity exists; none disables.",
+          "title": "Fail On"
+        },
+        "follow_symlinks": {
+          "default": false,
+          "description": "Follow symbolic links while discovering files.",
+          "title": "Follow Symlinks",
+          "type": "boolean"
+        },
+        "include": {
+          "description": "Glob patterns of files to include, relative to the project root.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Include",
+          "type": "array"
+        },
+        "jobs": {
+          "default": 0,
+          "description": "Number of parallel workers; 0 means the number of CPUs.",
+          "maximum": 256,
+          "minimum": 0,
+          "title": "Jobs",
+          "type": "integer",
+          "x-ck-volatile": true
+        },
+        "max_file_size_kb": {
+          "default": 1024,
+          "description": "Largest file, in kilobytes, that is analysed.",
+          "maximum": 102400,
+          "minimum": 1,
+          "title": "Max File Size Kb",
+          "type": "integer"
+        },
+        "max_files": {
+          "default": 50000,
+          "description": "Largest number of files that is analysed.",
+          "maximum": 5000000,
+          "minimum": 1,
+          "title": "Max Files",
+          "type": "integer"
+        },
+        "max_total_size_mb": {
+          "default": 2048,
+          "description": "Largest total size, in megabytes, of the analysed files.",
+          "maximum": 1048576,
+          "minimum": 1,
+          "title": "Max Total Size Mb",
+          "type": "integer"
+        },
+        "respect_gitignore": {
+          "default": true,
+          "description": "Skip files that the repository's .gitignore ignores.",
+          "title": "Respect Gitignore",
+          "type": "boolean"
+        },
+        "skip_stages": {
+          "description": "Pipeline stages to skip, by their stage name.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Skip Stages",
+          "type": "array"
+        },
+        "stage_timeout_seconds": {
+          "default": 1800,
+          "description": "Default time limit of one pipeline stage, in seconds.",
+          "maximum": 86400,
+          "minimum": 10,
+          "title": "Stage Timeout Seconds",
+          "type": "integer",
+          "x-ck-volatile": true
+        },
+        "stage_timeouts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Per-stage or per-group time limits in seconds that override the default.",
+          "title": "Stage Timeouts",
+          "type": "object",
+          "x-ck-volatile": true
+        },
+        "timeout_seconds": {
+          "default": 3600,
+          "description": "Wall-clock limit of a whole scan, in seconds.",
+          "maximum": 604800,
+          "minimum": 10,
+          "title": "Timeout Seconds",
+          "type": "integer",
+          "x-ck-volatile": true
+        }
+      },
+      "title": "ScanSettings",
+      "type": "object"
+    },
+    "Severity": {
+      "description": "Severity of a candidate or finding, in ascending order.",
+      "enum": [
+        "info",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "TaskName": {
+      "description": "The LLM tasks a scan may run.",
+      "enum": [
+        "triage",
+        "discover",
+        "explain",
+        "remediate",
+        "classify",
+        "summarise"
+      ],
+      "title": "TaskName",
+      "type": "string"
+    },
+    "TrustTier": {
+      "description": "How far a provider sits from the client environment.",
+      "enum": [
+        "local",
+        "private",
+        "public"
+      ],
+      "title": "TrustTier",
+      "type": "string"
+    },
+    "VaultSettings": {
+      "additionalProperties": false,
+      "description": "Where the mapping vault's key comes from (E10 implements).",
+      "properties": {
+        "key_source": {
+          "default": "keyring",
+          "description": "Source of the vault key: OS keyring, passphrase or key-management service.",
+          "enum": [
+            "keyring",
+            "passphrase",
+            "kms"
+          ],
+          "title": "Key Source",
+          "type": "string",
+          "x-ck-restricted": true
+        },
+        "passphrase": {
+          "anyOf": [
+            {
+              "pattern": "^(env:[A-Za-z_][A-Za-z0-9_]{0,127}|keyring:[A-Za-z0-9._@-]{1,128}(/[A-Za-z0-9._@-]{1,128})?|file:(/|~/|[A-Za-z]:[\\\\/]).+)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Secret reference to the passphrase; required when key_source is passphrase.",
+          "title": "Passphrase",
+          "x-ck-restricted": true
+        }
+      },
+      "title": "VaultSettings",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/jatinsingh1603/Source-Code-Review-Tool-TIET/main/docs/schemas/codekavach.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Settings of codekavach.toml and the user configuration file (ADR-0006).",
+  "properties": {
+    "config_version": {
+      "const": 1,
+      "default": 1,
+      "description": "Version of the configuration format; only 1 is supported.",
+      "title": "Config Version",
+      "type": "integer"
+    },
+    "engines": {
+      "$ref": "#/$defs/EnginesSettings",
+      "description": "Which analysers run and how."
+    },
+    "integrations": {
+      "$ref": "#/$defs/IntegrationsSettings",
+      "description": "External systems that receive findings.",
+      "x-ck-restricted": true
+    },
+    "llm": {
+      "$ref": "#/$defs/LLMSettings",
+      "description": "Language models and their providers."
+    },
+    "logging": {
+      "$ref": "#/$defs/LoggingSettings",
+      "description": "Diagnostic logging on stderr."
+    },
+    "plugins": {
+      "$ref": "#/$defs/PluginsSettings",
+      "description": "Which installed plugins may load."
+    },
+    "privacy": {
+      "$ref": "#/$defs/PrivacySettings",
+      "description": "What may leave the machine."
+    },
+    "profile": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Name of the profile to apply.",
+      "title": "Profile"
+    },
+    "profiles": {
+      "additionalProperties": {
+        "$ref": "#/$defs/PartialSettings"
+      },
+      "description": "Named profile overlays, interpreted by the profile layer.",
+      "title": "Profiles",
+      "type": "object"
+    },
+    "project": {
+      "$ref": "#/$defs/ProjectSettings",
+      "description": "Identity of the scanned project."
+    },
+    "reporting": {
+      "$ref": "#/$defs/ReportingSettings",
+      "description": "Which reports are written and how."
+    },
+    "scan": {
+      "$ref": "#/$defs/ScanSettings",
+      "description": "What to scan and how."
+    }
+  },
+  "title": "CodeKavach configuration",
+  "type": "object"
+}

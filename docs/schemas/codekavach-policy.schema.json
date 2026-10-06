@@ -1,0 +1,359 @@
+{
+  "$defs": {
+    "IntegrationRules": {
+      "additionalProperties": false,
+      "description": "Which external systems may receive findings.",
+      "properties": {
+        "allow_github": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "False forbids the GitHub integration.",
+          "title": "Allow Github"
+        },
+        "allowed_github_api_hosts": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Hosts that integrations.github.api_url may point at.",
+          "title": "Allowed Github Api Hosts"
+        }
+      },
+      "title": "IntegrationRules",
+      "type": "object"
+    },
+    "LlmRules": {
+      "additionalProperties": false,
+      "description": "Which providers may be used.",
+      "properties": {
+        "allow_remote": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "False forbids every remote provider.",
+          "title": "Allow Remote"
+        },
+        "allowed_base_url_hosts": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Hosts that provider base URLs may point at.",
+          "title": "Allowed Base Url Hosts"
+        },
+        "allowed_kinds": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ProviderKind"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Provider kinds that may be configured.",
+          "title": "Allowed Kinds"
+        },
+        "allowed_providers": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Provider ids that may be used; empty means any id.",
+          "title": "Allowed Providers"
+        }
+      },
+      "title": "LlmRules",
+      "type": "object"
+    },
+    "PrivacyLevel": {
+      "description": "Privacy level, ordered by strictness, not by the digit: L1 < L2 < L3 < L4 < L0.\n\nRank (ADR E03-01 decision D5): L1=1, L2=2, L3=3, L4=4, L0=5. L0 sends nothing, L4 sends\nabstract facts but no code, L3 a pseudonymised slice, L2 pseudonymised files and L1 code with\nonly secrets and PII replaced. Comparisons mean \"stricter than\", ``strictest`` returns the\nmaximum by rank, and ``at_least`` checks a floor. Ordering by the digit would make L0 the\nweakest level and silently turn a floor of L3 into permission for L1.",
+      "enum": [
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L0"
+      ],
+      "title": "PrivacyLevel",
+      "type": "string"
+    },
+    "PrivacyRules": {
+      "additionalProperties": false,
+      "description": "Privacy floors that bind every layer, the operator's included.",
+      "properties": {
+        "forbid_allowlist_extra": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "True forbids privacy.public_allowlist_extra entirely.",
+          "title": "Forbid Allowlist Extra"
+        },
+        "min_level": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PrivacyLevel"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Floor for privacy.level, every path rule and every tier."
+        },
+        "min_level_by_tier": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/PrivacyLevel"
+              },
+              "propertyNames": {
+                "$ref": "#/$defs/TrustTier"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Floor per provider trust tier.",
+          "title": "Min Level By Tier"
+        },
+        "never_send": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Globs added to privacy.never_send in every run.",
+          "title": "Never Send"
+        }
+      },
+      "title": "PrivacyRules",
+      "type": "object"
+    },
+    "ProjectConfigRules": {
+      "additionalProperties": false,
+      "description": "How far project configuration files may be trusted.",
+      "properties": {
+        "allow_trust": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "False ignores --trust-project-config, the variable and the trust store.",
+          "title": "Allow Trust"
+        }
+      },
+      "title": "ProjectConfigRules",
+      "type": "object"
+    },
+    "ProviderKind": {
+      "description": "The adapter kinds of ARCHITECTURE section 7.",
+      "enum": [
+        "anthropic",
+        "openai",
+        "gemini",
+        "xai",
+        "bedrock",
+        "azure-openai",
+        "ollama",
+        "openai-compatible",
+        "litellm",
+        "cli-bridge",
+        "mock",
+        "replay"
+      ],
+      "title": "ProviderKind",
+      "type": "string"
+    },
+    "TrustTier": {
+      "description": "How far a provider sits from the client environment.",
+      "enum": [
+        "local",
+        "private",
+        "public"
+      ],
+      "title": "TrustTier",
+      "type": "string"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/jatinsingh1603/Source-Code-Review-Tool-TIET/main/docs/schemas/codekavach-policy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Floors, allow-lists and locks an organisation imposes on every run (ADR-0006 D7).",
+  "properties": {
+    "enforcement": {
+      "default": "reject",
+      "description": "reject stops a run that violates the policy; clamp tightens and warns.",
+      "enum": [
+        "reject",
+        "clamp"
+      ],
+      "title": "Enforcement",
+      "type": "string"
+    },
+    "expires": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Date after which the policy no longer loads.",
+      "title": "Expires"
+    },
+    "integrations": {
+      "$ref": "#/$defs/IntegrationRules",
+      "description": "Integration rules."
+    },
+    "issued": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Date the policy was issued.",
+      "title": "Issued"
+    },
+    "llm": {
+      "$ref": "#/$defs/LlmRules",
+      "description": "Provider rules."
+    },
+    "lock": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "array"
+          }
+        ]
+      },
+      "description": "Settings keys pinned to a value in every run.",
+      "title": "Lock",
+      "type": "object"
+    },
+    "organisation": {
+      "description": "Name of the issuing organisation.",
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Organisation",
+      "type": "string"
+    },
+    "policy_version": {
+      "const": 1,
+      "description": "Format version of the policy file.",
+      "title": "Policy Version",
+      "type": "integer"
+    },
+    "privacy": {
+      "$ref": "#/$defs/PrivacyRules",
+      "description": "Privacy floors."
+    },
+    "project_config": {
+      "$ref": "#/$defs/ProjectConfigRules",
+      "description": "Project configuration trust rules."
+    }
+  },
+  "required": [
+    "policy_version",
+    "organisation"
+  ],
+  "title": "CodeKavach organisation policy",
+  "type": "object"
+}

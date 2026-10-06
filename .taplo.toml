@@ -1,0 +1,15 @@
+# Editor support for CodeKavach TOML files (E03-38): Taplo, and the "Even Better TOML" VS Code
+# extension that uses it, validate and complete these files against the committed JSON Schemas.
+# Refresh the schemas with: uv run codekavach config schema --output docs/schemas/codekavach.schema.json
+
+[[rule]]
+include = ["**/codekavach.toml", "src/codekavach/config/builtin_profiles/*.toml"]
+
+[rule.schema]
+path = "./docs/schemas/codekavach.schema.json"
+
+[[rule]]
+include = ["docs/examples/policy.*.toml"]
+
+[rule.schema]
+path = "./docs/schemas/codekavach-policy.schema.json"
