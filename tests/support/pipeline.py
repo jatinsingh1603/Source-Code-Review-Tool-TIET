@@ -17,7 +17,7 @@ from codekavach.core.pipeline.context import RunContext
 from codekavach.core.pipeline.events import Event, EventBus, InMemoryEventBus
 from codekavach.core.pipeline.keys import is_multi_provider
 from codekavach.core.pipeline.salt import ScanSalt
-from codekavach.core.pipeline.stage import StageCategory
+from codekavach.core.pipeline.stage import StageCategory, StageInfo
 from codekavach.core.store.base import ArtefactStore
 from codekavach.core.store.memory import InMemoryArtefactStore
 
@@ -197,3 +197,29 @@ def default_fake_stages() -> list[FakeStage]:
                   category=cat.REPORT),
         FakeStage("sync", requires={"findings"}, provides={"sync.result"}, category=cat.SYNC),
     ]  # fmt: skip
+
+
+def layered_stage_infos(layers: int = 10, width: int = 50) -> list[StageInfo]:
+    """``layers`` x ``width`` synthetic stages; each requires two keys of the previous layer.
+
+    The first layer requires ``scan.target``. Names are ``l00-s00``, keys ``l00.k00``, so the
+    graph is valid and resolvable; it is the graph of the pipeline budget tests (E04-32).
+    """
+    infos: list[StageInfo] = []
+    for layer in range(layers):
+        for index in range(width):
+            if layer == 0:
+                requires = frozenset({"scan.target"})
+            else:
+                previous = f"l{layer - 1:02d}"
+                requires = frozenset(
+                    {f"{previous}.k{index:02d}", f"{previous}.k{(index + 1) % width:02d}"}
+                )
+            infos.append(
+                StageInfo(
+                    name=f"l{layer:02d}-s{index:02d}",
+                    requires=requires,
+                    provides=frozenset({f"l{layer:02d}.k{index:02d}"}),
+                )
+            )
+    return infos

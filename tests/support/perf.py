@@ -1,6 +1,7 @@
 """Helpers for performance budget tests (marker ``perf``)."""
 
 import os
+import statistics
 import time
 from collections.abc import Callable
 
@@ -51,3 +52,18 @@ def assert_within_budget(
             f"{label}: measured {measured:.3f} s; budget {seconds:.3f} s x factor {scale:g} "
             f"= {limit:.3f} s"
         )
+
+
+def median_seconds(fn: Callable[[], object], *, repeat: int = 5) -> float:
+    """Return the median wall-clock time in seconds of ``repeat`` calls to ``fn``."""
+    times: list[float] = []
+    for _ in range(repeat):
+        start = time.perf_counter()
+        fn()
+        times.append(time.perf_counter() - start)
+    return statistics.median(times)
+
+
+def measurement_line(name: str, median_s: float, target_ms: float, limit_ms: float) -> str:
+    """One log line per measurement: ``name median_ms target_ms limit_ms``."""
+    return f"{name} {median_s * 1000:.1f} {target_ms:g} {limit_ms:g}"

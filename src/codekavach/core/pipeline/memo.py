@@ -205,6 +205,7 @@ class DiskItemMemo:
         self._layout = layout
         self._salt_fp = salt_fp
         self._lock = threading.Lock()
+        self._directories: dict[str, Path] = {}
         self._hits = 0
         self._misses = 0
         self._errors = 0
@@ -278,7 +279,7 @@ class DiskItemMemo:
     ) -> T:
         check_arguments(namespace, item_key)
         effective = memo_key(item_key, self._salt_fp) if self._salt_fp else item_key
-        path = self._layout.item_path(namespace, effective)
+        path = self._entry_path(namespace, effective)
         cached = self._read(path, namespace, decode)
         if not isinstance(cached, _Absent):
             with self._lock:
@@ -292,6 +293,21 @@ class DiskItemMemo:
         encoded = encode_artefact(value)
         self._write(path, namespace, encoded.data)
         return value
+
+    def _entry_path(self, namespace: str, effective_key: str) -> Path:
+        """``layout.item_path`` without resolving the file system on every call.
+
+        The contained, resolved namespace directory is asked of the layout once per memo (a
+        resolve is the dominant cost of a hit); the key is 64 hexadecimal characters, checked by
+        the caller, so the rest of the path cannot leave that directory.
+        """
+        with self._lock:
+            directory = self._directories.get(namespace)
+        if directory is None:
+            directory = self._layout.items_dir(namespace)
+            with self._lock:
+                self._directories[namespace] = directory
+        return directory / effective_key[:2] / f"{effective_key}.json"
 
     def _count_error(self) -> None:
         with self._lock:
