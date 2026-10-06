@@ -60,6 +60,38 @@ RESERVED_ENV: frozenset[str] = frozenset(
         "CODEKAVACH_UPDATE_SNAPSHOTS",
     }
 )
+# One line per reserved variable, for the generated reference (E03-40); a test keeps the two in
+# step, so a new variable needs a meaning here.
+RESERVED_ENV_MEANINGS: Mapping[str, str] = MappingProxyType(
+    {
+        "CODEKAVACH_CONFIG": "Configuration file to use instead of the discovered project file.",
+        "CODEKAVACH_PROFILE": "Name of the profile to apply (for example demo or ci).",
+        "CODEKAVACH_HOME": "Directory of the user configuration, state and trust store.",
+        "CODEKAVACH_NO_USER_CONFIG": "Ignore the user configuration file when true.",
+        "CODEKAVACH_ORG_POLICY": "Organisation policy file, applied after any system policy.",
+        "CODEKAVACH_ORG_POLICY_SHA256": "SHA-256 that the organisation policy file must match.",
+        "CODEKAVACH_ORG_POLICY_PUBKEY": "Public key for organisation policy signatures.",
+        "CODEKAVACH_TRUST_PROJECT_CONFIG": "Trust restricted keys in the project configuration.",
+        "CODEKAVACH_PRIVACY_LEVEL": "Privacy level for this run (the --privacy-level option).",
+        "CODEKAVACH_PROVIDER": "LLM provider id to use (the --provider option).",
+        "CODEKAVACH_MODEL": "Model of the selected provider (the --model option).",
+        "CODEKAVACH_OFFLINE": "Open no connection outside this machine (the --offline option).",
+        "CODEKAVACH_JSON": "Write machine-readable JSON to stdout (the --json option).",
+        "CODEKAVACH_QUIET": "Print only results and errors (the --quiet option).",
+        "CODEKAVACH_VERBOSE": "More diagnostics on stderr (the --verbose option).",
+        "CODEKAVACH_DEBUG": "Print tracebacks and debug logs on stderr.",
+        "CODEKAVACH_NO_COLOR": "Disable colour in terminal output.",
+        "CODEKAVACH_ACCEPT_EGRESS": "Approve sending sanitised payloads to a remote provider (CI).",
+        "CODEKAVACH_LOG_LEVEL": "Lowest level of log events on stderr.",
+        "CODEKAVACH_LOG_FORMAT": "Format of log events on stderr: console or json.",
+        "CODEKAVACH_LOG_THIRD_PARTY": "Show log events of third-party libraries when true.",
+        "CODEKAVACH_PERF_FACTOR": "Test harness: multiplier for performance budgets.",
+        "CODEKAVACH_TEST_NETWORK": "Test harness: allow tests marked network to open sockets.",
+        "CODEKAVACH_UPDATE_GOLDEN": "Test harness: rewrite golden files instead of comparing.",
+        "CODEKAVACH_SKIP_PERF": "Test harness: skip the performance budget tests.",
+        "CODEKAVACH_UPDATE_SNAPSHOTS": "Test harness: rewrite the CLI help snapshots.",
+    }
+)
 SETTINGS_FORM_HINT = "settings variables use the form CODEKAVACH_<SECTION>__<KEY>"
 _TRUE = frozenset({"1", "true", "yes", "on"})
 _FALSE = frozenset({"0", "false", "no", "off"})
