@@ -12,9 +12,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from typer import _click as click  # Typer >= 0.27 ships its own copy of Click
 
-from codekavach.cli import app as app_module
 from codekavach.cli import config as config_module
+from codekavach.cli.app import LazyEntry, LazyGroup, build_cli
 from codekavach.cli.exit_codes import ExitCode
 from codekavach.config import load_settings
 from tests.support.cli import CliResult
@@ -60,15 +61,22 @@ def test_init_is_a_top_level_command(cli: Cli, project: Path) -> None:
     assert result.stdout == config(cli, project, "init", "--stdout").stdout
 
 
-def test_mount_skips_what_is_absent() -> None:
+def test_optional_commands_skip_what_is_absent() -> None:
     before = set(sys.modules)
-    assert app_module._mount("absent", "codekavach.cli.module_that_does_not_exist", "x") is False
-    assert app_module._mount("absent", "codekavach.cli.config", "no_such_attribute") is False
-    assert set(sys.modules) == before
-    registered = {info.name for info in app_module.app.registered_groups}
-    registered |= {command.name for command in app_module.app.registered_commands}
-    assert "absent" not in registered
-    assert {"config", "init"} <= registered
+    absent = LazyEntry("absent", "codekavach.cli.module_that_does_not_exist:x", "command", "x",
+                       optional=True)  # fmt: skip
+    assert absent.available() is False
+    assert set(sys.modules) == before  # checked without importing anything
+    root = build_cli()
+    assert isinstance(root, LazyGroup)
+    names = root.list_commands(click.Context(root))
+    assert "absent" not in names
+    assert {"config", "init"} <= set(names)
+    broken = LazyEntry("broken", "codekavach.cli.config:no_such_attribute", "command", "x",
+                       optional=True)  # fmt: skip
+    assert broken.available() is True
+    with pytest.raises(click.ClickException, match="command 'broken' is not available"):
+        root.resolve_lazy(broken)
 
 
 def test_config_module_uses_exit_code_members_only() -> None:

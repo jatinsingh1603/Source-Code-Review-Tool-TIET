@@ -16,6 +16,8 @@ from collections.abc import Iterator, Sequence
 from pathlib import Path
 
 import rich.console
+from typer import _click as click  # Typer >= 0.27 ships its own copy of Click
+from typer.core import TyperGroup
 
 from tests.support.cli import run_cli
 
@@ -32,7 +34,14 @@ def command_paths(command: object) -> list[CommandPath]:
     paths: list[CommandPath] = [()]
 
     def visit(node: object, prefix: CommandPath) -> None:
-        children = getattr(node, "commands", None) or {}
+        # Through the Click API, so that lazily mounted commands (E05-31) are resolved too.
+        children: dict[str, object] = {}
+        if isinstance(node, TyperGroup):
+            ctx = click.Context(node)
+            for name in node.list_commands(ctx):
+                found = node.get_command(ctx, name)
+                if found is not None:
+                    children[name] = found
         for name in sorted(children):
             child = children[name]
             if getattr(child, "hidden", False):

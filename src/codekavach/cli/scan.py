@@ -32,8 +32,6 @@ from rich.table import Table
 
 from codekavach.cli.backends import load_backend
 from codekavach.cli.completion import complete_report_format
-from codekavach.cli.consent import EgressConsent, ensure_egress_consent
-from codekavach.cli.context import CliContext, with_overrides, with_target
 from codekavach.cli.errors import (
     CliError,
     InternalError,
@@ -42,13 +40,16 @@ from codekavach.cli.errors import (
     UsageError,
 )
 from codekavach.cli.exit_codes import ExitCode
-from codekavach.cli.onboarding import maybe_show_first_run_notice
 from codekavach.cli.output import TABLE_BOX, Output, get_output, severity_style
 from codekavach.cli.progress import ProgressMode, progress_listener
 from codekavach.cli.signals import report_cancelled, resume_refusal, scan_salt
-from codekavach.core.models.enums import FindingStatus, Severity
 
 if TYPE_CHECKING:
+    # Imported for annotations only: the context and consent modules load the configuration
+    # models (Pydantic), which ``scan --help`` must not import (start-up budget, E05-31).
+    from codekavach.cli.consent import EgressConsent
+    from codekavach.cli.context import CliContext
+    from codekavach.core.models.enums import Severity
     from codekavach.core.models.finding import Finding
     from codekavach.core.models.summary import ScanSummary
 
@@ -56,7 +57,15 @@ REMOTE_TARGET = re.compile(r"^(https://|git@|ssh://)")
 ARCHIVE_SUFFIXES = (".zip", ".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tbz2", ".tar.xz", ".txz")
 SEVERITIES = ("critical", "high", "medium", "low", "info")
 LOCAL_KINDS = frozenset({"mock", "replay"})
-COUNTED_STATUSES = frozenset({FindingStatus.OPEN, FindingStatus.CONFIRMED})
+# Values of FindingStatus counted by the severity gate (compared by value, no model import).
+COUNTED_STATUSES = frozenset({"open", "confirmed"})
+
+
+def maybe_show_first_run_notice(ctx: typer.Context) -> None:
+    """Show the first-run notice when due (``codekavach.cli.onboarding``, imported on use)."""
+    from codekavach.cli.onboarding import maybe_show_first_run_notice as show  # noqa: PLC0415
+
+    show(ctx)
 
 
 class FailOn(StrEnum):
@@ -101,9 +110,9 @@ class ThresholdResult:
     """The severity gate applied to the findings of one scan."""
 
     exceeded: bool
-    threshold: Severity | Literal["none"]
+    threshold: "Severity | Literal['none']"
     counted_at_or_above: int
-    worst: Severity | None
+    worst: "Severity | None"
     not_counted: int = 0
 
     @property
@@ -113,7 +122,7 @@ class ThresholdResult:
 
 
 def evaluate_threshold(
-    findings: "Iterable[Finding]", fail_on: Severity | Literal["none"]
+    findings: "Iterable[Finding]", fail_on: "Severity | Literal['none']"
 ) -> ThresholdResult:
     """Whether the counted findings reach ``fail_on``.
 
@@ -122,7 +131,7 @@ def evaluate_threshold(
     the counted findings. ``none`` disables the gate.
     """
     items = list(findings)
-    counted = [finding.severity for finding in items if finding.status in COUNTED_STATUSES]
+    counted = [f.severity for f in items if str(f.status.value) in COUNTED_STATUSES]
     not_counted = len(items) - len(counted)
     worst = max(counted, default=None)
     if fail_on == "none":
@@ -161,7 +170,7 @@ def split_formats(values: Sequence[str]) -> tuple[str, ...]:
     return tuple(part.strip() for value in values for part in value.split(",") if part.strip())
 
 
-def resolve_provider(cli_ctx: CliContext) -> ProviderChoice:
+def resolve_provider(cli_ctx: "CliContext") -> ProviderChoice:
     """The provider of this run; ``auto`` means ``mock`` until provider selection (E22)."""
     llm = cli_ctx.settings.llm
     if not llm.enabled:
@@ -226,12 +235,12 @@ def to_cli_result(outcome: Any) -> CliScanResult:
 
 
 def execute_scan(
-    cli_ctx: CliContext,
+    cli_ctx: "CliContext",
     target: str,
     *,
     runner: Callable[..., Any] | None = None,
     listen: Callable[[Any], contextlib.AbstractContextManager[None]] | None = None,
-    consent: EgressConsent | None = None,
+    consent: "EgressConsent | None" = None,
     resume: str | None = None,
     use_cache: bool | None = None,
     refresh: Sequence[str] = (),
@@ -482,6 +491,8 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     ] = ProgressMode.auto,
 ) -> None:
     """Scan a code base and print a severity summary."""
+    from codekavach.cli.consent import EgressConsent, ensure_egress_consent  # noqa: PLC0415
+    from codekavach.cli.context import with_overrides, with_target  # noqa: PLC0415
     from codekavach.config.overrides import overrides_from_flags  # noqa: PLC0415
 
     if resume is not None and no_cache:

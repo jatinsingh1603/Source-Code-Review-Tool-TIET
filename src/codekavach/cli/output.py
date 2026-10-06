@@ -21,9 +21,8 @@ import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, date, datetime
 from pathlib import PurePath
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
-from pydantic import BaseModel, JsonValue
 from rich import box
 from rich.console import Console
 from rich.table import Table
@@ -32,6 +31,11 @@ from typer import _click as click  # Typer >= 0.27 ships its own copy of Click
 
 from codekavach.cli._version import get_version
 from codekavach.cli.console import get_console, get_err_console
+
+if TYPE_CHECKING:  # Pydantic is imported only when an envelope is built (E05-31)
+    from pydantic import BaseModel, JsonValue
+
+    from codekavach.cli.envelope import Envelope
 
 OUTPUT_KEY = "codekavach.output"
 SCHEMA_VERSION: Literal["1"] = "1"
@@ -54,25 +58,21 @@ TABLE_BOX = box.SQUARE
 _STATUS_STYLES = {"pass": "green", "warn": "yellow", "fail": "red", "skip": "dim"}
 
 
-class EnvelopeMessage(BaseModel):
-    """One warning or error in the envelope."""
+@dataclasses.dataclass(frozen=True)
+class EnvelopeMessage:
+    """One warning or error, converted to the envelope's model when the envelope is built."""
 
     code: str
     message: str
     hint: str | None = None
 
 
-class Envelope(BaseModel):
-    """The JSON document written to stdout in ``--json`` mode (stable while additive)."""
-
-    schema_version: Literal["1"]
-    codekavach_version: str
-    command: str
-    ok: bool
-    exit_code: int
-    data: JsonValue
-    warnings: tuple[EnvelopeMessage, ...]
-    errors: tuple[EnvelopeMessage, ...]
+def _as_model(obj: object) -> "BaseModel | None":
+    """``obj`` if it is a Pydantic model; no Pydantic import (none can exist before one)."""
+    pydantic = sys.modules.get("pydantic")
+    if pydantic is not None and isinstance(obj, pydantic.BaseModel):
+        return cast("BaseModel", obj)
+    return None
 
 
 def _identity(obj: object) -> tuple[str, str]:
@@ -92,7 +92,7 @@ def _check(obj: object, allow_sanitised: bool) -> None:
         raise _refuse(obj)
 
 
-def to_jsonable(obj: Any, *, allow_sanitised: bool = False) -> JsonValue:  # noqa: PLR0911
+def to_jsonable(obj: Any, *, allow_sanitised: bool = False) -> "JsonValue":  # noqa: PLR0911
     """Convert ``obj`` to JSON data, refusing raw code, vault material and sanitised text."""
     _check(obj, allow_sanitised)
     if obj is None or isinstance(obj, (bool, int, float, str)):
@@ -108,9 +108,10 @@ def to_jsonable(obj: Any, *, allow_sanitised: bool = False) -> JsonValue:  # noq
         return obj.isoformat()
     if isinstance(obj, PurePath):
         return str(obj)
-    if isinstance(obj, BaseModel):
-        _deep_check(obj, allow_sanitised)
-        dumped: JsonValue = obj.model_dump(mode="json")
+    model = _as_model(obj)
+    if model is not None:
+        _deep_check(model, allow_sanitised)
+        dumped: JsonValue = model.model_dump(mode="json")
         return dumped
     if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
         return {
@@ -135,9 +136,10 @@ def to_jsonable(obj: Any, *, allow_sanitised: bool = False) -> JsonValue:  # noq
 
 def _deep_check(obj: object, allow_sanitised: bool) -> None:
     _check(obj, allow_sanitised)
-    if isinstance(obj, BaseModel):
-        for name in type(obj).model_fields:
-            _deep_check(getattr(obj, name), allow_sanitised)
+    model = _as_model(obj)
+    if model is not None:
+        for name in type(model).model_fields:
+            _deep_check(getattr(model, name), allow_sanitised)
     elif isinstance(obj, Mapping):
         for key, value in obj.items():
             _deep_check(key, allow_sanitised)
@@ -213,8 +215,11 @@ class Output:
         if hint:
             console.print(f"hint: {hint}", markup=False)
 
-    def envelope(self, exit_code: int) -> Envelope:
+    def envelope(self, exit_code: int) -> "Envelope":
         """The envelope for ``exit_code``."""
+        from codekavach.cli.envelope import Envelope  # noqa: PLC0415 - lazy: Pydantic
+        from codekavach.cli.envelope import EnvelopeMessage as Message  # noqa: PLC0415
+
         return Envelope(
             schema_version=SCHEMA_VERSION,
             codekavach_version=get_version(),
@@ -222,8 +227,8 @@ class Output:
             ok=exit_code == 0,
             exit_code=exit_code,
             data=self._data,
-            warnings=tuple(self._warnings),
-            errors=tuple(self._errors),
+            warnings=tuple(Message(**dataclasses.asdict(item)) for item in self._warnings),
+            errors=tuple(Message(**dataclasses.asdict(item)) for item in self._errors),
         )
 
     def finish(self, exit_code: int) -> None:
@@ -301,7 +306,7 @@ def get_output(ctx: click.Context) -> Output:
     return output
 
 
-def _plain(value: JsonValue) -> str:
+def _plain(value: "JsonValue") -> str:
     if isinstance(value, (dict, list)):
         return json.dumps(value, ensure_ascii=False)
     return "" if value is None else str(value)

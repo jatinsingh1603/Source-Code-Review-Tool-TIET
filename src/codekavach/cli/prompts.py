@@ -19,7 +19,6 @@ from typing import Final
 from typer import _click as click  # Typer >= 0.27 ships its own copy of Click
 
 from codekavach.cli.console import get_err_console
-from codekavach.cli.context import get_context
 from codekavach.cli.errors import CliError
 
 MAX_ATTEMPTS: Final = 3
@@ -44,6 +43,8 @@ def is_interactive(ctx: click.Context) -> bool:
     is set to anything but ``0`` or ``false``, and under the ``ci`` profile. The profile is read
     from the flag or from configuration that is already loaded; this never triggers a load.
     """
+    from codekavach.cli.context import get_context  # noqa: PLC0415 - loads config models
+
     context = get_context(ctx)
     if context.no_input or context.json_mode:
         return False

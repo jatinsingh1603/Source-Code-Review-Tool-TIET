@@ -11,7 +11,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from codekavach.cli.output import Envelope
+from codekavach.cli.envelope import Envelope
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / "docs" / "schemas" / "cli" / "envelope.schema.json"

@@ -38,7 +38,6 @@ from rich.progress import (
 from typer import _click as click  # Typer >= 0.27 ships its own copy of Click
 
 from codekavach.cli.console import get_err_console
-from codekavach.cli.context import get_context
 from codekavach.cli.prompts import is_interactive
 
 if TYPE_CHECKING:
@@ -100,6 +99,8 @@ def resolve_mode(requested: ProgressMode, ctx: click.Context) -> ProgressMode:
     """
     if requested is not ProgressMode.auto:
         return requested
+    from codekavach.cli.context import get_context  # noqa: PLC0415 - loads config models
+
     context = get_context(ctx)
     if context.quiet or context.json_mode:
         return ProgressMode.off

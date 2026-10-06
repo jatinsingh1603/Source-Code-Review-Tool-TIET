@@ -9,3 +9,4 @@ Process guides for the team. Owning epic: E42.
 | [`risk-review.md`](risk-review.md) | The end-of-sprint review of the risk register and how the risk log is kept |
 | [`testing.md`](testing.md) | Topic-specific testing guidance |
 | [`cli-snapshots.md`](cli-snapshots.md) | Help-text snapshots of the CLI and how to update them |
+| [`cli-conventions.md`](cli-conventions.md) | Imports in the CLI, lazily mounted commands and the start-up tests |

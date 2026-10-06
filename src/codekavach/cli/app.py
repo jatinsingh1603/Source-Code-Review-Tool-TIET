@@ -17,30 +17,27 @@ paths or credentials. Tracebacks go to stderr only with ``--debug``, ``-vv`` or
 import contextlib
 import errno
 import importlib
+import importlib.util
 import os
 import sys
 import traceback
 from collections.abc import Sequence
-from typing import Annotated
+from dataclasses import dataclass
+from typing import Annotated, Any, Literal
 
 import typer
 from typer import _click as click  # Typer >= 0.27 ships its own copy of Click
 from typer._click.exceptions import NoArgsIsHelpError
+from typer.core import TyperCommand, TyperGroup
 
 from codekavach.cli import output
 from codekavach.cli._version import get_version
-from codekavach.cli.completion import COMPLETE_VAR, completion_command, handle_request
+from codekavach.cli.completion import COMPLETE_VAR, handle_request
 from codekavach.cli.console import get_err_console
-from codekavach.cli.doctor import doctor_command
 from codekavach.cli.errors import CliError, error_line, render_error
 from codekavach.cli.exit_codes import EXIT_CODE_HELP, ExitCode
 from codekavach.cli.options import attach_global_options
-from codekavach.cli.privacy import privacy_app
-from codekavach.cli.providers import providers_app
-from codekavach.cli.report import report_command
-from codekavach.cli.scan import scan_command
 from codekavach.cli.signals import normalise_resume
-from codekavach.cli.vault import vault_app
 from codekavach.core.log import configure_logging
 from codekavach.core.no_telemetry import apply_opt_outs
 
@@ -53,8 +50,164 @@ DEBUG_ENV = "CODEKAVACH_DEBUG"
 
 # pretty_exceptions_enable must stay False: Rich tracebacks with locals would print client code,
 # secrets or vault entries to the terminal on a crash.
+# --- lazily resolved sub-commands (E05-31) --------------------------------------------------
+#
+# The root group knows its sub-commands from LAZY_COMMANDS (name, ``module:attribute`` target,
+# kind, short help). A command module is imported only when the command runs or shows its own
+# help, so ``--version``, ``--help`` and completion import no command module, no configuration
+# loader and no Pydantic. Listing (root help, completion of names) uses placeholders carrying the
+# short help; global options are attached on resolution; a target that fails to import is a
+# ClickException naming the command.
+
+
+@dataclass(frozen=True)
+class LazyEntry:
+    """One lazily imported sub-command."""
+
+    name: str
+    target: str  # "package.module:attribute"
+    kind: Literal["command", "group"]
+    short_help: str
+    optional: bool = False  # skipped when its module does not exist (its epic has not landed)
+
+    @property
+    def module(self) -> str:
+        """The dotted module of the target."""
+        return self.target.partition(":")[0]
+
+    @property
+    def attribute(self) -> str:
+        """The attribute of the target module."""
+        return self.target.partition(":")[2]
+
+    def available(self) -> bool:
+        """Whether the target module exists (checked without importing it)."""
+        if not self.optional:
+            return True
+        try:
+            return importlib.util.find_spec(self.module) is not None
+        except ModuleNotFoundError:
+            return False
+
+
+class LazyGroup(TyperGroup):
+    """A Typer group whose sub-commands in ``LAZY_COMMANDS`` are imported on first use."""
+
+    lazy_entries: Sequence[LazyEntry] = ()
+    root_app: typer.Typer | None = None
+
+    def _entry(self, name: str) -> LazyEntry | None:
+        return next((e for e in self.lazy_entries if e.name == name and e.available()), None)
+
+    def list_commands(self, ctx: click.Context) -> list[str]:
+        """Eagerly registered commands first, then the lazy ones in table order."""
+        lazy = [entry.name for entry in self.lazy_entries if entry.available()]
+        eager = [name for name in self.commands if name not in lazy]
+        return [*eager, *lazy]
+
+    def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
+        """The command; a help placeholder while listing (help or completion of names)."""
+        found = self.commands.get(cmd_name)
+        if found is not None:
+            return found
+        entry = self._entry(cmd_name)
+        if entry is None:
+            return None
+        if ctx.resilient_parsing or getattr(self, "_listing", False):
+            return TyperCommand(name=entry.name, help=entry.short_help)
+        return self.resolve_lazy(entry)
+
+    def resolve_command(
+        self, ctx: click.Context, args: list[str]
+    ) -> tuple[str | None, click.Command | None, list[str]]:
+        """Resolve the real command, also during completion (``scan --pr<TAB>`` needs options)."""
+        if args:
+            entry = self._entry(args[0])
+            if entry is not None and args[0] not in self.commands:
+                self.resolve_lazy(entry)
+        return super().resolve_command(ctx, args)
+
+    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Root help lists the lazy commands from their placeholders, importing none of them."""
+        self._listing = True
+        try:
+            super().format_help(ctx, formatter)
+        finally:
+            self._listing = False
+
+    def resolve_lazy(self, entry: LazyEntry) -> click.Command:
+        """Import ``entry``'s target, build its Click command and attach the global options."""
+        try:
+            module = importlib.import_module(entry.module)
+            target: Any = getattr(module, entry.attribute)
+        except (ImportError, AttributeError) as error:
+            raise click.ClickException(
+                f"command '{entry.name}' is not available in this build ({type(error).__name__})"
+            ) from None
+        command = self._build(entry, target)
+        attach_global_options(command)
+        self.commands[entry.name] = command
+        return command
+
+    def _build(self, entry: LazyEntry, target: Any) -> click.Command:
+        from typer.main import get_command_from_info, get_group_from_info  # noqa: PLC0415
+        from typer.models import CommandInfo, TyperInfo  # noqa: PLC0415
+
+        app = self.root_app
+        markup = app.rich_markup_mode if app is not None else "rich"
+        short = app.pretty_exceptions_short if app is not None else True
+        if isinstance(target, typer.Typer):
+            group = get_group_from_info(
+                TyperInfo(target, name=entry.name),
+                pretty_exceptions_short=short,
+                suggest_commands=app.suggest_commands if app is not None else True,
+                rich_markup_mode=markup,
+            )
+            group.name = entry.name
+            return group
+        return get_command_from_info(
+            CommandInfo(name=entry.name, callback=target),
+            pretty_exceptions_short=short,
+            rich_markup_mode=markup,
+        )
+
+
+# Every sub-command except ``version`` is imported on first use (E05-31): ``--version``,
+# ``--help`` and completion import no command module. Short help is the first paragraph of the
+# command's help; tests/unit/cli/test_lazy_group.py keeps the two in step.
+LAZY_COMMANDS: tuple[LazyEntry, ...] = (
+    LazyEntry("scan", "codekavach.cli.scan:scan_command", "command",
+              "Scan a code base and print a severity summary."),
+    LazyEntry("report", "codekavach.cli.report:report_command", "command",
+              "Render the report of a stored scan."),
+    LazyEntry("doctor", "codekavach.cli.doctor:doctor_command", "command",
+              "Check that this machine is ready to scan."),
+    LazyEntry("completion", "codekavach.cli.completion:completion_command", "command",
+              "Print a shell completion script."),
+    # The configuration commands are owned by E03 (codekavach.cli.config).
+    LazyEntry("init", "codekavach.cli.config:init_command", "command",
+              "Write a commented starter codekavach.toml rendered from the settings models.",
+              optional=True),
+    LazyEntry("privacy", "codekavach.cli.privacy:privacy_app", "group",
+              "Inspect what is prepared for, and recorded as sent to, LLM providers."),
+    LazyEntry("providers", "codekavach.cli.providers:providers_app", "group",
+              "Inspect and test LLM providers."),
+    LazyEntry("vault", "codekavach.cli.vault:vault_app", "group",
+              "Manage the local mapping vault. Its contents never appear in any output."),
+    LazyEntry("config", "codekavach.cli.config:config_app", "group",
+              "Inspect and manage configuration.", optional=True),
+)  # fmt: skip
+
+
+class RootGroup(LazyGroup):
+    """The ``codekavach`` group with the lazy table above."""
+
+    lazy_entries = LAZY_COMMANDS
+
+
 app = typer.Typer(
     name="codekavach",
+    cls=RootGroup,
     help=HELP,
     epilog=EPILOG,
     no_args_is_help=True,
@@ -97,47 +250,11 @@ def version_command() -> None:
     typer.echo(f"codekavach {get_version()}")
 
 
-app.command("scan")(scan_command)
-app.command("report")(report_command)
-app.command("doctor")(doctor_command)
-app.command("completion")(completion_command)
-app.add_typer(privacy_app, name="privacy")
-app.add_typer(providers_app, name="providers")
-app.add_typer(vault_app, name="vault")
-
-
-def _mount(name: str, dotted: str, attr: str) -> bool:
-    """Register ``dotted.attr`` on the root application as ``name``; skip it when absent.
-
-    A sub-application is added as a group, a function as a command. A module that does not
-    exist (its epic has not landed) or lacks the attribute is skipped without an error, so the
-    group simply does not exist; an ``ImportError`` raised inside an existing module propagates.
-    """
-    try:
-        module = importlib.import_module(dotted)
-    except ModuleNotFoundError as error:
-        if error.name is not None and (dotted == error.name or dotted.startswith(f"{error.name}.")):
-            return False
-        raise
-    target = getattr(module, attr, None)
-    if target is None:
-        return False
-    if isinstance(target, typer.Typer):
-        app.add_typer(target, name=name)
-    else:
-        app.command(name)(target)
-    return True
-
-
-# The configuration commands are owned by E03 (codekavach.cli.config); this is their only mount.
-_mount("config", "codekavach.cli.config", "config_app")
-_mount("init", "codekavach.cli.config", "init_command")
-
-
 def build_cli() -> click.Command:
     """The Click command tree of the application with the global options attached."""
     command = typer.main.get_command(app)
-    attach_global_options(command)
+    RootGroup.root_app = app
+    attach_global_options(command)  # root group and eager commands; lazy ones on resolution
     return command
 
 
