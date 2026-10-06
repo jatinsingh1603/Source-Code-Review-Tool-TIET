@@ -9,8 +9,9 @@ Four checks over every Markdown page in ``docs/configuration``:
   to load as a project file with exactly that code;
 - every ``codekavach`` command in a ``console`` block exists (``--help`` exits 0).
 
-A fifth check keeps the wording of the guide (README.md) measured: a line that uses an
-absolute word names the test or issue that enforces the claim. The generated reference is exempt.
+A fifth check keeps the wording of the guides (README.md and organisation-policy.md) measured:
+a line that uses an absolute word names the test or issue that enforces the claim. The generated
+reference is exempt.
 """
 
 import re
@@ -23,6 +24,7 @@ import typer.main
 
 from codekavach.cli.app import app
 from codekavach.config.errors import ConfigError
+from codekavach.config.orgpolicy.model import OrgPolicy
 from tests.support.cli import run_cli
 from tests.support.config import ConfigSandbox
 from tests.support.doc_blocks import Block, extract_blocks
@@ -124,6 +126,17 @@ def command_tree() -> set[tuple[str, ...]]:
     return set(command_paths(typer.main.get_command(app)))
 
 
+@pytest.mark.parametrize(
+    "block", blocks_of("toml", marker="org-policy"), ids=lambda block: block.id
+)
+def test_org_policy_blocks_validate(block: Block) -> None:
+    OrgPolicy.model_validate(tomllib.loads(block.text))
+
+
+def test_there_are_org_policy_blocks() -> None:
+    assert blocks_of("toml", marker="org-policy")
+
+
 def console_commands() -> list[tuple[str, ...]]:
     """The command words that each documented ``codekavach`` line starts with."""
     found: set[tuple[str, ...]] = set()
@@ -172,9 +185,9 @@ def test_every_documented_command_exists(
 
 
 def test_absolute_words_name_what_enforces_them() -> None:
-    guide = DOCS / "README.md"
     offenders = [
         f"{guide.name}:{number}: {line.strip()}"
+        for guide in (DOCS / "README.md", DOCS / "organisation-policy.md")
         for number, line in enumerate(guide.read_text(encoding="utf-8").splitlines(), start=1)
         if ABSOLUTE.search(line) and not ENFORCED_BY.search(line)
     ]

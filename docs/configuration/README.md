@@ -1,6 +1,6 @@
 # Configuration guide
 
-This guide shows how to get common configuration tasks done. For the meaning of every key see the [key reference](reference.md); for what an error code means see the [error codes](error-codes.md). The design decisions are in [ADR-0006](../adr/0006-configuration-layering-secrets-and-trust.md).
+This guide shows how to get common configuration tasks done. For the meaning of every key see the [key reference](reference.md); for what an error code means see the [error codes](error-codes.md); administrators who roll out an organisation policy should read the [organisation policy guide](organisation-policy.md). The design decisions are in [ADR-0006](../adr/0006-configuration-layering-secrets-and-trust.md).
 
 Every `toml` block here is parsed by a test, every block marked as a project file or user file is loaded by the real loader, and every `codekavach` command in a `console` block is checked to exist (`tests/unit/config/test_docs_examples.py`). The worked precedence example is reproduced by `tests/integration/config/test_guide_precedence_example.py`.
 
@@ -30,7 +30,7 @@ There are four places, and `codekavach config path` lists every one with whether
 |------|-------|-------|
 | Project file | `codekavach.toml` at the repository root | Found by walking up from the scan target; the search stops at the repository boundary (`.git`) and at your home directory, so a file above the repository is not used. |
 | User file | `config.toml` in the user configuration directory | See below. |
-| Organisation policy | `policy.toml` in a system location, or the file named by `CODEKAVACH_ORG_POLICY` | See the organisation policy guide when it is available. |
+| Organisation policy | `policy.toml` in a system location, or the file named by `CODEKAVACH_ORG_POLICY` | See the [organisation policy guide](organisation-policy.md). |
 | State | `.codekavach/` in the project (setting `project.state_dir`) | The vault, ledger, local database and cache. It is created with owner-only access and a `.gitignore` of its own. |
 
 The user configuration directory is the first of: `$CODEKAVACH_HOME`; `$XDG_CONFIG_HOME/codekavach`; the platform default, which is `~/.config/codekavach` on Linux, `~/Library/Application Support/codekavach` on macOS and `%APPDATA%\codekavach` on Windows. The trust store (`trusted-projects.json`) and the per-user consent state live in the same directory.
