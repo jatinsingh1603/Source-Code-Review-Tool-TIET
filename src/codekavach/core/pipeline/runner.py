@@ -638,6 +638,8 @@ class _ManifestInputs:
         counters = ManifestCounters(
             cache_hits=result.cache_hits if result else 0,
             cache_misses=result.cache_misses if result else 0,
+            memo_hits=result.memo_hits if result else 0,
+            memo_misses=result.memo_misses if result else 0,
             item_failures=len(result.item_failures) if result else 0,
             abandoned_threads=result.abandoned_threads if result else 0,
             egress_locked=result.egress_locked if result else False,
