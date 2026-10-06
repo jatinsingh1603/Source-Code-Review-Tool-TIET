@@ -10,7 +10,9 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from codekavach.config import Settings, parse_secret_ref, paths
+from codekavach.config.env_source import RESERVED_ENV
 from tests.support.config import (
+    HARNESS_VARIABLES,
     ORG_POLICY_ENV,
     PROVIDER_VARIABLES,
     ConfigSandbox,
@@ -84,12 +86,31 @@ def test_isolation_hides_real_user_config(tmp_path: Path, monkeypatch: pytest.Mo
     for name in PROVIDER_VARIABLES:
         assert name not in os.environ
     assert not [
-        name for name in os.environ if name.startswith("CODEKAVACH_") and name != "CODEKAVACH_HOME"
+        name
+        for name in os.environ
+        if name.startswith("CODEKAVACH_")
+        and name != "CODEKAVACH_HOME"
+        and name not in HARNESS_VARIABLES
     ]
     assert paths.system_policy_paths() == ()
     loaded = ConfigSandbox(tmp_path / "sandbox").load()
     assert loaded.user_config is None
     assert loaded.settings.scan.jobs == 0
+
+
+def test_isolation_keeps_the_harness_variables(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # CI sets a performance factor for the whole run; the budget tests under a config directory
+    # must still see it, while every settings variable is removed.
+    monkeypatch.setenv("CODEKAVACH_PERF_FACTOR", "3.0")
+    monkeypatch.setenv("CODEKAVACH_SKIP_PERF", "1")
+    monkeypatch.setenv("CODEKAVACH_SCAN__JOBS", "7")
+    isolate_config_env(monkeypatch, tmp_path)
+    assert os.environ["CODEKAVACH_PERF_FACTOR"] == "3.0"
+    assert os.environ["CODEKAVACH_SKIP_PERF"] == "1"
+    assert "CODEKAVACH_SCAN__JOBS" not in os.environ
+    assert HARNESS_VARIABLES <= RESERVED_ENV  # the loader accepts them, so they cannot break a load
 
 
 # keyring

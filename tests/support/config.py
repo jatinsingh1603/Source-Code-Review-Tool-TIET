@@ -3,7 +3,8 @@
 - ``ConfigSandbox`` and the ``config_sandbox`` fixture: a project root, a user configuration home
   and an outside directory, all under ``tmp_path``, with writers for the three kinds of file.
 - ``isolate_config_env`` and the autouse ``_isolate_config_env`` fixture: every test module under
-  a ``config`` directory runs without ``CODEKAVACH_*`` or provider variables, with ``HOME`` and
+  a ``config`` directory runs without ``CODEKAVACH_*`` settings or provider variables (the harness
+  variables ``CODEKAVACH_PERF_FACTOR`` and friends are kept), with ``HOME`` and
   ``CODEKAVACH_HOME`` under ``tmp_path`` and no system organisation policy paths, so a test can
   never read the developer's real configuration, keys or policy.
 - ``MemoryKeyring`` and the ``memory_keyring`` fixture: an in-memory keyring backend, so tests
@@ -37,6 +38,11 @@ PROVIDER_VARIABLES = (
     "XDG_CONFIG_HOME",
 )
 ORG_POLICY_ENV = "CODEKAVACH_ORG_POLICY"
+# Variables of the test harness, not settings: the loader recognises them (``RESERVED_ENV``) and
+# the budget tests need CI's ``CODEKAVACH_PERF_FACTOR``, so isolation leaves them alone.
+HARNESS_VARIABLES = frozenset(
+    {"CODEKAVACH_PERF_FACTOR", "CODEKAVACH_SKIP_PERF", "CODEKAVACH_UPDATE_SNAPSHOTS"}
+)
 FILE_MODE = 0o644
 DIR_MODE = 0o755
 
@@ -121,6 +127,8 @@ def config_sandbox(tmp_path: Path) -> ConfigSandbox:
 def isolate_config_env(monkeypatch: pytest.MonkeyPatch, base: Path) -> Path:
     """Hide the real user environment; return the redirected home directory."""
     for name in list(os.environ):
+        if name in HARNESS_VARIABLES:
+            continue
         if name.startswith("CODEKAVACH_") or name in PROVIDER_VARIABLES:
             monkeypatch.delenv(name, raising=False)
     home = _mkdir(base / "isolated-home")
