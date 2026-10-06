@@ -91,6 +91,14 @@ A Git hook checks the message when you commit, and the CI job `commits` checks i
 - British spelling in identifiers and prose: `pseudonymise`, `normalise`, `artefact`, and `licence` as a noun.
 - No `print`. Loggers come from `codekavach.core.log` only ([ADR-0005](docs/adr/0005-logging-and-no-telemetry.md)). Do not log code, payloads or secrets.
 - Module paths and interface names follow [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) section 3.
+- **Lazy imports keep start-up fast.** The rules:
+  1. Package `__init__.py` files import nothing.
+  2. A CLI command module imports its implementation inside the command function, not at module top level (`from codekavach.core.pipeline import run_scan  # lazy`).
+  3. Optional extras are imported inside the function that needs them, and a missing package raises an error naming the extra, for example `ImportError("PDF reports need the 'reports' extra: pip install 'codekavach[reports]'")`.
+  4. Type-only imports go under `if TYPE_CHECKING:`.
+  5. Plugin discovery lists entry points and loads a plugin on first use.
+
+  `tests/unit/test_import_budget.py` fails when `import codekavach.cli.app` loads a module from its `HEAVY` list. Run `uv run python tools/dev/importtime_report.py` to see the slowest imports. The CLI side of these rules is in [`docs/process/cli-conventions.md`](docs/process/cli-conventions.md).
 
 ## 7. Tests
 

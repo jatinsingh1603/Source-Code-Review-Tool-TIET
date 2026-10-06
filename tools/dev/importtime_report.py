@@ -38,7 +38,7 @@ def parse(text: str) -> list[ImportTime]:
         if not line.startswith(PREFIX):
             continue
         parts = line[len(PREFIX) :].split("|")
-        if len(parts) != 3:  # noqa: PLR2004 - self | cumulative | module
+        if len(parts) != 3:
             continue
         self_text, cumulative_text, name = parts
         try:
@@ -68,7 +68,7 @@ def render(rows: Sequence[ImportTime]) -> str:
 
 def measure(target: str = DEFAULT_TARGET) -> str:
     """The ``-X importtime`` output of importing ``target`` in a fresh interpreter."""
-    completed = subprocess.run(  # noqa: S603 - our own interpreter, fixed arguments
+    completed = subprocess.run(
         [sys.executable, "-X", "importtime", "-c", f"import {target}"],
         capture_output=True,
         text=True,
