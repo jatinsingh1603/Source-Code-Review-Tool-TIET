@@ -62,6 +62,7 @@ from codekavach.core.pipeline.keys import (
     matches_stage_selector,
 )
 from codekavach.core.pipeline.manifest import collect_tool_versions
+from codekavach.core.pipeline.memo import DiskItemMemo, ItemMemo, MemoStats, NullMemo
 from codekavach.core.pipeline.plan import RunPlan
 from codekavach.core.pipeline.policy import (
     LOCKED_CATEGORIES,
@@ -160,6 +161,8 @@ class Orchestrator:
         self._fingerprints: ConfigFingerprints | None = None
         self._hits = 0
         self._misses = 0
+        self._memo = MemoStats()
+        self._memo_lock = threading.Lock()
         self._tool_versions: dict[str, dict[str, str]] = {}
         self._abandoned: list[tuple[str, threading.Thread]] = []
         self._abandoned_lock = threading.Lock()
@@ -176,7 +179,8 @@ class Orchestrator:
         """
         scoped = StageScopedStore(stage_ctx.artefacts, info)
         token = stage_ctx.cancellation.child()
-        run_ctx = stage_ctx.for_stage(info.name, artefacts=scoped, cancellation=token)
+        memo = self._memo_for(info, stage_ctx)
+        run_ctx = stage_ctx.for_stage(info.name, artefacts=scoped, cancellation=token, memo=memo)
         timeout = resolve_timeout(info, stage_ctx.config.scan, stage_ctx.remaining_seconds())
         try:
             result = run_with_deadline(
@@ -192,6 +196,22 @@ class Orchestrator:
                 raise result.error
         finally:
             scoped.revoke()
+            self._collect_memo(memo)
+
+    def _memo_for(self, info: StageInfo, ctx: RunContext) -> ItemMemo:
+        """The item memo of one stage run (E04-22): on disk with the cache, else a null memo.
+
+        A salt-dependent stage gets a salt-separated key space (I5); the salt is not stored.
+        """
+        if not self._use_cache or self._cache is None:
+            return NullMemo()
+        salt_fp = ctx.scan_salt.fingerprint() if info.salt_dependent else None
+        return DiskItemMemo(self._cache.layout, salt_fp=salt_fp)
+
+    def _collect_memo(self, memo: ItemMemo) -> None:
+        stats = memo.stats()
+        with self._memo_lock:
+            self._memo += stats
 
     @staticmethod
     def _discard_outputs(info: StageInfo, ctx: RunContext) -> None:
@@ -423,6 +443,7 @@ class Orchestrator:
             self._stage_keys = {}
             self._fingerprints = ConfigFingerprints(ctx.config)
             self._hits = self._misses = 0
+            self._memo = MemoStats()
             self._tool_versions = {}
         workers = max_workers(ctx)
         for wave in plan.waves:
@@ -759,6 +780,8 @@ class Orchestrator:
             item_failures=ctx.item_failures.snapshot(),
             cache_hits=self._hits,
             cache_misses=self._misses,
+            memo_hits=self._memo.hits,
+            memo_misses=self._memo.misses,
             tool_versions=self.tool_versions(),
             started_at=started_at,
             finished_at=self._clock(),

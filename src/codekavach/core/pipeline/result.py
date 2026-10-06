@@ -113,6 +113,8 @@ class PipelineResult:
     item_failures: tuple["ItemFailure", ...] = ()
     cache_hits: int = 0
     cache_misses: int = 0
+    memo_hits: int = 0
+    memo_misses: int = 0
     tool_versions: Mapping[str, Mapping[str, str]] = field(default_factory=dict)
     started_at: datetime | None = None
     finished_at: datetime | None = None

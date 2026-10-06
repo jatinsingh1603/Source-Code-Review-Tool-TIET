@@ -80,7 +80,8 @@ def atomic_write_bytes(path: Path, data: bytes) -> None:
 
 
 def _component(pattern: re.Pattern[str], value: object, what: str) -> str:
-    if not isinstance(value, str) or not pattern.match(value):
+    # fullmatch: ``$`` would also accept a trailing newline, which must not reach a file name.
+    if not isinstance(value, str) or not pattern.fullmatch(value):
         raise StateLayoutError(f"invalid {what}")
     return value
 

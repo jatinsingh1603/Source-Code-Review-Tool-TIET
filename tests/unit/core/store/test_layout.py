@@ -59,6 +59,12 @@ def test_accessor_paths(tmp_path: Path) -> None:
         lambda layout: layout.item_path("ns", "x"),
         lambda layout: layout.index_path(SCAN, "../x"),
         lambda layout: layout.index_path(SCAN, "A"),
+        # A trailing newline satisfies ``$`` but must not reach a file name.
+        lambda layout: layout.scan_dir(SCAN + "\n"),
+        lambda layout: layout.items_dir("ns\n"),
+        lambda layout: layout.blob_path("a" * 64 + "\n"),
+        lambda layout: layout.stage_record_path("a" * 64 + "\n"),
+        lambda layout: layout.item_path("ns", "a" * 64 + "\n"),
     ],
 )
 def test_invalid_components(tmp_path: Path, call: object) -> None:

@@ -170,6 +170,11 @@ class StageCache:
     def __init__(self, layout: StateLayout) -> None:
         self._layout = layout
 
+    @property
+    def layout(self) -> StateLayout:
+        """The state layout the records live in; the item memo (E04-22) uses the same one."""
+        return self._layout
+
     def _path(self, stage_key: str) -> Path:
         return self._layout.stage_record_path(stage_key)
 

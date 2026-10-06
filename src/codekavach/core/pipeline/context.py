@@ -3,7 +3,8 @@
 Owning epic: E04.
 
 ``RunContext`` carries configuration, the artefact store, the event bus, the cancellation token,
-the budget and the scan salt (ARCHITECTURE section 4). It carries no vault contents. The
+the budget, the scan salt and the per-item memo (ARCHITECTURE section 4). It carries no vault
+contents. The
 orchestrator derives one per stage with ``for_stage``.
 """
 
@@ -23,6 +24,7 @@ from codekavach.core.pipeline.events import (
     WarningRaised,
 )
 from codekavach.core.pipeline.items import ItemFailureLog
+from codekavach.core.pipeline.memo import ItemMemo, NullMemo
 from codekavach.core.pipeline.result import RunLog, StageRun
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.store.base import ArtefactStore
@@ -61,6 +63,7 @@ class RunContext:
     manifest_provider: "Callable[[], ScanManifest] | None" = None
     stage: str | None = None
     consent: ConsentDecision | None = None
+    memo: ItemMemo = field(default_factory=NullMemo)
 
     def for_stage(
         self,
@@ -68,13 +71,15 @@ class RunContext:
         *,
         artefacts: ArtefactStore | None = None,
         cancellation: CancellationToken | None = None,
+        memo: ItemMemo | None = None,
     ) -> "RunContext":
-        """A copy bound to ``stage``, optionally with a scoped store or a child token."""
+        """A copy bound to ``stage``, optionally with a scoped store, a child token or a memo."""
         return dataclasses.replace(
             self,
             stage=stage,
             artefacts=artefacts if artefacts is not None else self.artefacts,
             cancellation=cancellation if cancellation is not None else self.cancellation,
+            memo=memo if memo is not None else self.memo,
         )
 
     def fail_item(self, item_id: str, error_code: str) -> None:
