@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "seq": 1,
+  "timestamp": "2026-10-05T04:30:00.000000Z",
+  "scan_id": "scan_01ARYZ6S410000000000000000",
+  "candidate_id": "cand_01ARYZ6S410000000000000001",
+  "provider": "mock",
+  "model": "mock-1",
+  "task": "triage",
+  "level": "L3",
+  "payload_hash": "564f164d9b913418ddc386d366d422ebd5cb11cd0ff1469f6b3aed202849e847",
+  "request_hash": null,
+  "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "entry_hash": "5f8580ae81d45f1645ff37a6bb8d2272e1952e2a277bb703ff164184eeaad992",
+  "token_counts": {
+    "prompt": 120,
+    "completion": null,
+    "estimated": true
+  },
+  "outcome": "sent",
+  "block_code": null,
+  "ref_seq": null
+}

@@ -1,0 +1,14 @@
+{
+  "is_vulnerable": true,
+  "confidence": "high",
+  "cwe": [
+    89
+  ],
+  "reasoning": "param_3 flows into var_4.execute through string concatenation.",
+  "impact": "An attacker controlling param_3 can read every row of tbl_7.",
+  "remediation": "Use a parameterised query with param_3 as a bound value.",
+  "needs_context": [],
+  "cited_lines": [
+    3
+  ]
+}

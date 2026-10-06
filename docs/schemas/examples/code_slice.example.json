@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "slice_01ARYZ6S410000000000000002",
+  "candidate_id": "cand_01ARYZ6S410000000000000001",
+  "language": "python",
+  "strategy": "enclosing_function",
+  "segments": [
+    {
+      "path": "src/bank/accounts.py",
+      "region": {
+        "start_line": 86,
+        "end_line": 89,
+        "start_col": null,
+        "end_col": null
+      },
+      "text": "    def find_by_owner(self, owner):\n        cur = self.conn.cursor()\n        cur.execute(\"SELECT * FROM accounts WHERE owner = '\" + owner + \"'\")\n        return cur.fetchall()\n",
+      "role": "primary"
+    }
+  ],
+  "stubs": [],
+  "token_estimate": 64,
+  "truncated": false
+}

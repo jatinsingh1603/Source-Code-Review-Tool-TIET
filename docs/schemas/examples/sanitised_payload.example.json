@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "id": "pay_01ARYZ6S410000000000000003",
+  "candidate_id": "cand_01ARYZ6S410000000000000001",
+  "slice_id": "slice_01ARYZ6S410000000000000002",
+  "text": "def fn_2(self, param_3):\n    var_4 = self.field_5.fn_6()\n    var_4.execute(\"SELECT * FROM tbl_7 WHERE col_8 = '\" + param_3 + \"'\")\n    return var_4.fetchall()\n",
+  "level": "L3",
+  "placeholders": [],
+  "pseudonym_count": 7,
+  "line_map": [
+    {
+      "payload_start_line": 1,
+      "payload_end_line": 4,
+      "segment_index": 0,
+      "file_start_line": 86
+    }
+  ],
+  "payload_hash": "012b6171e42323578841ed38dd9ad9652bd45a18e416ccfef625959b63544a12"
+}

@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "id": "cand_01ARYZ6S410000000000000001",
+  "rule_id": "python.sqli.string-concat",
+  "engine": "codekavach-rules",
+  "cwe": [
+    89
+  ],
+  "locations": [
+    {
+      "path": "src/bank/accounts.py",
+      "start_line": 88,
+      "end_line": 88,
+      "start_col": null,
+      "end_col": null,
+      "symbol": "AccountRepo.find_by_owner"
+    }
+  ],
+  "taint_path": {
+    "steps": [
+      {
+        "location": {
+          "path": "src/bank/accounts.py",
+          "start_line": 86,
+          "end_line": 86,
+          "start_col": null,
+          "end_col": null,
+          "symbol": "AccountRepo.find_by_owner"
+        },
+        "role": "source",
+        "note": null
+      },
+      {
+        "location": {
+          "path": "src/bank/accounts.py",
+          "start_line": 88,
+          "end_line": 88,
+          "start_col": null,
+          "end_col": null,
+          "symbol": "AccountRepo.find_by_owner"
+        },
+        "role": "sink",
+        "note": null
+      }
+    ]
+  },
+  "engine_severity": "high",
+  "fingerprint": "ckfp1:58d192700c1c56f2f97f4e2ae1ec20ee",
+  "kind": "vulnerability",
+  "language": "python",
+  "message": "SQL query built by string concatenation",
+  "engine_version": null,
+  "engine_confidence": null,
+  "properties": []
+}

@@ -1,0 +1,8 @@
+{
+  "path": "src/bank/accounts.py",
+  "start_line": 88,
+  "end_line": 88,
+  "start_col": null,
+  "end_col": null,
+  "symbol": "AccountRepo.find_by_owner"
+}

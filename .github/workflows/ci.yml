@@ -45,6 +45,10 @@ jobs:
         run: uv run python -m codekavach.core.models.export --check --check-migrations
         env:
           UV_NO_SYNC: "1"
+      - name: Schema examples check
+        run: uv run python tools/schemas/build_examples.py --check
+        env:
+          UV_NO_SYNC: "1"
       - name: Schema compatibility
         # Compares the whole push with the commit main pointed at before it (E02-24); a breaking
         # schema change needs a SCHEMA_VERSION bump and a migration step.

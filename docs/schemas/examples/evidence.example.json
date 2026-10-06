@@ -1,0 +1,49 @@
+{
+  "location": {
+    "path": "src/bank/accounts.py",
+    "start_line": 88,
+    "end_line": 88,
+    "start_col": null,
+    "end_col": null,
+    "symbol": "AccountRepo.find_by_owner"
+  },
+  "language": "python",
+  "lines": [
+    {
+      "number": 86,
+      "text": "    def find_by_owner(self, owner):",
+      "truncated": false
+    },
+    {
+      "number": 87,
+      "text": "        cur = self.conn.cursor()",
+      "truncated": false
+    },
+    {
+      "number": 88,
+      "text": "        cur.execute(\"SELECT * FROM accounts WHERE owner = '\" + owner + \"'\")",
+      "truncated": false
+    },
+    {
+      "number": 89,
+      "text": "        return cur.fetchall()",
+      "truncated": false
+    },
+    {
+      "number": 90,
+      "text": "",
+      "truncated": false
+    }
+  ],
+  "highlights": [
+    {
+      "line": 88,
+      "start_col": 9,
+      "end_col": 76
+    }
+  ],
+  "role": "primary",
+  "caption": null,
+  "masked": false,
+  "clipped": false
+}

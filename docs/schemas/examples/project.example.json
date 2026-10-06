@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "id": "proj_01ARYZ6S410000000000000000",
+  "name": "KavachBank",
+  "root": null,
+  "repository_url": "https://example.test/kavachbank.git",
+  "default_privacy_level": "L3",
+  "created_at": "2026-10-05T04:30:00.000000Z"
+}
