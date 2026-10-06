@@ -88,7 +88,11 @@ def executable_name(args: Any) -> str:
     """The base name, without extension and in lower case, of the program ``args`` starts."""
     if isinstance(args, str | bytes | os.PathLike):
         text = os.fsdecode(args)
-        first = text.split()[0] if isinstance(args, str | bytes) and text.split() else text
+        # A shell-style command string is split on whitespace, but a path to an existing program
+        # may itself contain spaces ("C:\Program Files\...", "/home/u/my projects/...").
+        whole_path = Path(text).exists()
+        split = isinstance(args, str | bytes) and not whole_path and text.split()
+        first = text.split()[0] if split else text
     else:
         first = os.fsdecode(next(iter(args)))
     return Path(first).stem.lower()

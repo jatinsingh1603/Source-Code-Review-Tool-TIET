@@ -286,3 +286,11 @@ def test_executable_name() -> None:
     assert executable_name("/usr/bin/git") == "git"
     assert executable_name("git rev-parse HEAD") == "git"
     assert executable_name(b"/usr/bin/curl -s https://example.invalid") == "curl"
+
+
+def test_executable_name_keeps_a_program_path_with_spaces(tmp_path: Path) -> None:
+    program = tmp_path / "my tools" / "Python.exe"
+    program.parent.mkdir()
+    program.write_bytes(b"")
+    assert executable_name(str(program)) == "python"
+    assert executable_name(f"{tmp_path / 'my'} --flag") == "my"
