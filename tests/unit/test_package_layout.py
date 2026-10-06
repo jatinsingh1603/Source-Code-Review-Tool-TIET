@@ -182,6 +182,7 @@ ALLOWED_EXTRA_MODULES: frozenset[str] = frozenset(
         "codekavach.cli._version",
         "codekavach.cli.app",
         "codekavach.cli.backends",
+        "codekavach.cli.completion",
         "codekavach.cli.config",
         "codekavach.cli.consent",
         "codekavach.cli.console",

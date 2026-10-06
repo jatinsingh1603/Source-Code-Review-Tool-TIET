@@ -31,6 +31,7 @@ from rich.console import Console
 from rich.table import Table
 
 from codekavach.cli.backends import load_backend
+from codekavach.cli.completion import complete_report_format
 from codekavach.cli.consent import EgressConsent, ensure_egress_consent
 from codekavach.cli.context import CliContext, with_overrides, with_target
 from codekavach.cli.errors import (
@@ -414,7 +415,11 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     ] = False,
     formats: Annotated[
         list[str] | None,
-        typer.Option("--format", help="Report format(s); repeatable or comma-separated."),
+        typer.Option(
+            "--format",
+            autocompletion=complete_report_format,
+            help="Report format(s); repeatable or comma-separated.",
+        ),
     ] = None,
     output_dir: Annotated[
         Path | None, typer.Option("--output-dir", help="Directory for report files.")

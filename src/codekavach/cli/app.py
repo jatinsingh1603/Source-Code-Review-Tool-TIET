@@ -29,6 +29,7 @@ from typer._click.exceptions import NoArgsIsHelpError
 
 from codekavach.cli import output
 from codekavach.cli._version import get_version
+from codekavach.cli.completion import COMPLETE_VAR, completion_command, handle_request
 from codekavach.cli.console import get_err_console
 from codekavach.cli.doctor import doctor_command
 from codekavach.cli.errors import CliError, error_line, render_error
@@ -99,6 +100,7 @@ def version_command() -> None:
 app.command("scan")(scan_command)
 app.command("report")(report_command)
 app.command("doctor")(doctor_command)
+app.command("completion")(completion_command)
 app.add_typer(privacy_app, name="privacy")
 app.add_typer(providers_app, name="providers")
 app.add_typer(vault_app, name="vault")
@@ -231,6 +233,9 @@ def _command_from_argv(command: click.Command, argv: Sequence[str]) -> str:
 
 def run(command: click.Command, argv: Sequence[str]) -> int:
     """Execute ``command`` with ``argv``, write the JSON envelope if any, return the exit code."""
+    instruction = os.environ.get(COMPLETE_VAR)
+    if instruction:  # a shell asks for candidates: answer before any processing or config load
+        return handle_request(command, instruction)
     output.begin_invocation()
     argv = normalise_resume(argv)  # ``--resume`` without a value means the latest scan
     code = _execute(command, argv)

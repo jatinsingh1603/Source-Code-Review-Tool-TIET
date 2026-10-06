@@ -32,6 +32,7 @@ consumers tell "completed with findings" from "failed" by `exit_code`.
   requires `"2"`.
 - Consumers must ignore keys they do not know.
 - `--quiet` has no effect in JSON mode: the envelope is already the whole output.
+- **Exception:** `codekavach completion` ignores `--json`. A shell completion script is not a JSON document, so the command always prints the script ([cli-completion.md](cli-completion.md)).
 
 ## What never appears
 

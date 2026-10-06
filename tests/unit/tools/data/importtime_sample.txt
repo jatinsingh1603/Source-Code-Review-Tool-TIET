@@ -1,0 +1,12 @@
+import time: self [us] | cumulative | imported package
+import time:        95 |         95 | winreg
+import time:       202 |        202 |   _io
+import time:        29 |         29 |   marshal
+import time:       148 |        148 |   nt
+import time:       247 |        625 | _frozen_importlib_external
+import time:       571 |        571 |   time
+import time:        84 |        654 | zipimport
+import time:        50 |         50 |     _codecs
+import time:       237 |        286 |   codecs
+import time:      1147 |       1147 |   encodings.aliases
+import time:      1875 |       3307 | encodings

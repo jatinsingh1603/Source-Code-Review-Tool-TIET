@@ -23,6 +23,15 @@ from typer._click.core import ParameterSource
 from typer._click.exceptions import BadParameter
 from typer.core import TyperOption
 
+from codekavach.cli.completion import (
+    LOG_FORMATS as LOG_FORMAT_CHOICES,
+)
+from codekavach.cli.completion import (
+    complete_profile,
+    complete_provider,
+    fixed,
+)
+
 GLOBALS_KEY = "codekavach.globals"
 PANEL = "Global options"
 PRIVACY_LEVELS = ("L0", "L1", "L2", "L3", "L4")
@@ -114,15 +123,25 @@ def make_global_options() -> tuple[TyperOption, ...]:
             metavar="PATH",
             help="Configuration file to use instead of the discovered project file.",
         ),
-        _option("--profile", help="Profile to apply (for example demo or ci)."),
+        _option(
+            "--profile",
+            autocompletion=complete_profile,
+            help="Profile to apply (for example demo or ci).",
+        ),
         _option(
             "--privacy-level",
             convert=_privacy_level,
             metavar="[L0|L1|L2|L3|L4]",
+            autocompletion=fixed(PRIVACY_LEVELS),
             envvar="CODEKAVACH_PRIVACY_LEVEL",
             help="Privacy level for this run; cannot go below the configured floor.",
         ),
-        _option("--provider", envvar="CODEKAVACH_PROVIDER", help="LLM provider id to use."),
+        _option(
+            "--provider",
+            envvar="CODEKAVACH_PROVIDER",
+            autocompletion=complete_provider,
+            help="LLM provider id to use.",
+        ),
         _option("--model", envvar="CODEKAVACH_MODEL", help="Model of the selected provider."),
         _option(
             "--offline",
@@ -156,6 +175,7 @@ def make_global_options() -> tuple[TyperOption, ...]:
             "--log-level",
             convert=_one_of(LOG_LEVELS),
             metavar="[debug|info|warning|error]",
+            autocompletion=fixed(LOG_LEVELS),
             envvar="CODEKAVACH_LOG_LEVEL",
             help="Lowest level of log events on stderr; wins over --verbose and --quiet.",
         ),
@@ -163,6 +183,7 @@ def make_global_options() -> tuple[TyperOption, ...]:
             "--log-format",
             convert=_one_of(LOG_FORMATS),
             metavar="[console|json]",
+            autocompletion=fixed(LOG_FORMAT_CHOICES),
             envvar="CODEKAVACH_LOG_FORMAT",
             help="Format of log events on stderr.",
         ),

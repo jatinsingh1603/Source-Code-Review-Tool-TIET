@@ -169,6 +169,12 @@ def all_checks() -> tuple[Check, ...]:
     return tuple(_REGISTRY.values())
 
 
+def _complete_category(ctx: object, args: list[str], incomplete: str) -> list[str]:
+    """Shell completion of ``--category``: the categories of the registered checks."""
+    categories = sorted({check.category for check in all_checks()})
+    return [category for category in categories if category.startswith(incomplete)]
+
+
 # the runner
 
 
@@ -537,7 +543,12 @@ _register_local_checks()
 def doctor_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     ctx: typer.Context,
     category: Annotated[
-        list[str] | None, typer.Option("--category", help="Run this category only; repeatable.")
+        list[str] | None,
+        typer.Option(
+            "--category",
+            autocompletion=_complete_category,
+            help="Run this category only; repeatable.",
+        ),
     ] = None,
     check: Annotated[
         list[str] | None, typer.Option("--check", help="Run this check only; repeatable.")

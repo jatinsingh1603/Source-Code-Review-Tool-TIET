@@ -29,6 +29,7 @@ import typer
 from rich.console import Console
 
 from codekavach.cli.backends import load_backend
+from codekavach.cli.completion import complete_provider
 from codekavach.cli.consent import EgressConsent, ensure_egress_consent
 from codekavach.cli.context import CliContext, get_context
 from codekavach.cli.errors import (
@@ -427,7 +428,11 @@ def _targets(
 def test_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     ctx: typer.Context,
     provider_id: Annotated[
-        str | None, typer.Argument(help="Provider id; default: the provider a scan would use.")
+        str | None,
+        typer.Argument(
+            autocompletion=complete_provider,
+            help="Provider id; default: the provider a scan would use.",
+        ),
     ] = None,
     model: Annotated[
         str | None, typer.Option("--model", help="Model to use for this test.")
