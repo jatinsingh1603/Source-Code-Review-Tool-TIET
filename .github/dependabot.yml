@@ -13,8 +13,8 @@
 #   - docker        for /deploy              (E39)
 #
 # The devcontainer (E01-29) is covered below: the devcontainers ecosystem updates the features in
-# /.devcontainer/devcontainer.json and the docker ecosystem the digest-pinned images in its
-# Dockerfile.
+# .devcontainer/devcontainer.json and the docker ecosystem the digest-pinned images in
+# .devcontainer/Dockerfile.
 #
 # Security updates additionally need Dependabot alerts to be enabled in the repository settings
 # (E01-33). Pre-commit hook revisions are not covered here; run "make hooks-update" by hand.
@@ -55,7 +55,7 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: "devcontainers"
-    directory: "/.devcontainer"
+    directory: "/"  # this ecosystem looks for .devcontainer/devcontainer.json itself
     schedule:
       interval: "weekly"
       day: "monday"
@@ -77,3 +77,8 @@ updates:
     commit-message:
       prefix: "infra"
     labels: ["type:infra"]
+    ignore:
+      # The image tag carries the Python version (3.12, ADR-0001). Only digest and patch
+      # updates are taken; moving to another Python minor version is a deliberate change.
+      - dependency-name: "mcr.microsoft.com/devcontainers/python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]

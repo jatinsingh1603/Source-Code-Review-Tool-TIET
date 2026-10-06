@@ -12,7 +12,7 @@ CONFIG = REPO_ROOT / ".github" / "dependabot.yml"
 # Labels of the project that Dependabot may put on a pull request. A label that does not exist
 # in the repository is a configuration error on GitHub's side, so the list is kept here.
 ALLOWED_LABELS = frozenset({"type:infra", "area:packaging", "area:core", "area:hardening"})
-FUTURE_ECOSYSTEMS = ("/ui", "/extensions/vscode", "/deploy", "/.devcontainer")
+FUTURE_ECOSYSTEMS = ("/ui", "/extensions/vscode", "/deploy")
 
 
 @pytest.fixture(scope="module")
@@ -27,7 +27,7 @@ def test_version_and_ecosystems(config: dict[str, Any]) -> None:
     ecosystems = [entry["package-ecosystem"] for entry in config["updates"]]
     assert ecosystems == ["uv", "github-actions", "devcontainers", "docker"]
     directories = [entry["directory"] for entry in config["updates"]]
-    assert directories == ["/", "/", "/.devcontainer", "/.devcontainer"]
+    assert directories == ["/", "/", "/", "/.devcontainer"]
 
 
 def test_every_entry_is_weekly_prefixed_limited_and_labelled(config: dict[str, Any]) -> None:
@@ -83,3 +83,13 @@ def test_comment_block_names_future_ecosystems_and_the_guide_documents_handling(
     section = guide.split("## 9. Dependencies", 1)[1].split("\n## ", 1)[0]
     for phrase in ("Dependabot", "`infra:` prefix", "auto-merge", "upstream changelog"):
         assert phrase in section, phrase
+
+
+def test_devcontainer_image_keeps_its_python_version(config: dict[str, Any]) -> None:
+    docker = next(e for e in config["updates"] if e["package-ecosystem"] == "docker")
+    (rule,) = docker["ignore"]
+    assert rule["dependency-name"] == "mcr.microsoft.com/devcontainers/python"
+    assert set(rule["update-types"]) == {
+        "version-update:semver-major",
+        "version-update:semver-minor",
+    }
