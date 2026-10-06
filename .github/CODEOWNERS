@@ -1,0 +1,21 @@
+# Code owners (E01-27). Later patterns override earlier ones. CODEOWNERS takes effect on pull
+# requests, and enforces review only where a ruleset requires code-owner review (E01-33).
+
+# Default owner
+*                                   @jatinsingh1603
+
+# Privacy-critical: changes here can leak client code, secrets or PII (invariants I1 to I6).
+# When a reviewers team exists, replace the handle on these lines with the team.
+/src/codekavach/privacy/            @jatinsingh1603
+/src/codekavach/llm/                @jatinsingh1603
+/src/codekavach/core/log/           @jatinsingh1603
+/.importlinter                      @jatinsingh1603
+/tests/privacy/                     @jatinsingh1603
+
+# Governance and supply chain
+/docs/ARCHITECTURE.md               @jatinsingh1603
+/docs/adr/                          @jatinsingh1603
+/SECURITY.md                        @jatinsingh1603
+/.github/                           @jatinsingh1603
+/pyproject.toml                     @jatinsingh1603
+/uv.lock                            @jatinsingh1603
