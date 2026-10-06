@@ -161,6 +161,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.core.models.lifecycle",
         "codekavach.core.models.location",
         "codekavach.core.models.migrate",
+        "codekavach.core.no_telemetry",
         "codekavach.core.models.paths",
         "codekavach.core.models.payload",
         "codekavach.core.models.scan",

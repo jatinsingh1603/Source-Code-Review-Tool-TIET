@@ -128,6 +128,28 @@ through it, and it builds a new structure without mutating the caller's objects.
 
 ### Dependencies and child processes
 
+Implemented by E01-31. CodeKavach's own code sends nothing; this part covers what it depends on and what it launches.
+
+**Deny list for dependencies.** `tools/dev/check_no_telemetry.py` (`make telemetry-check`, CI `lint` job) reads every `[[package]]` in `uv.lock`, which covers the whole resolution: every extra and group, on every platform. It fails when a PEP 503 normalised name matches `[tool.codekavach.telemetry] deny` in `pyproject.toml`.
+
+- The list names error-reporting, product-analytics and APM agents: Sentry, PostHog, Segment, Mixpanel, Amplitude, RudderStack, Scarf, Bugsnag, Rollbar, New Relic, Datadog, Honeycomb, Logfire, Google Analytics, Statsig and LaunchDarkly.
+- It also denies `opentelemetry-exporter-*`. OpenTelemetry API and SDK packages are not denied, because libraries depend on them without sending anything; the exporters are what ship data off the machine.
+- An exception needs a `reason` (why the package is present and how it is kept silent), a `verified_by` test and an `approved_in` reference, or the check fails.
+- The check fails closed on an unparseable lockfile or a malformed policy.
+
+**Opt-out variables.** `codekavach.core.no_telemetry.OPT_OUT_ENV`, set by `apply_opt_outs()` as the first statement of the CLI's `main()`. Values a user set deliberately are kept, and child processes inherit the variables.
+
+| Variable | Value | Silences |
+|----------|-------|----------|
+| `DO_NOT_TRACK` | `1` | tools that honour the cross-tool convention |
+| `HF_HUB_DISABLE_TELEMETRY` | `1` | Hugging Face Hub client (E08, E22) |
+| `SEMGREP_SEND_METRICS` | `off` | Semgrep as an external engine (E15) |
+| `DOTNET_CLI_TELEMETRY_OPTOUT` | `1` | .NET command-line tools used by C# engines (E15) |
+| `SCARF_NO_ANALYTICS` | `true` | packages that embed Scarf install analytics |
+| `CHECKPOINT_DISABLE` | `1` | HashiCorp version and usage checks (IaC engines, E20) |
+
+Later epics extend the table when they add a tool with such a switch, naming the tool and the epic and confirming the variable in the tool's own documentation. Library users and the server (E32) call `apply_opt_outs()` at start-up themselves, because importing the package changes nothing. Tests: `tests/unit/tools/test_check_no_telemetry.py` and `tests/unit/core/test_no_telemetry.py`.
+
 ## Links
 
 - `docs/ARCHITECTURE.md` preamble, sections 2, 3, 6.3 (I3, I4) and 6.4 (insider with log access)

@@ -129,6 +129,7 @@ forbidden_modules =
     codekavach.cli
     codekavach.config
     codekavach.core.log
+    codekavach.core.no_telemetry
     codekavach.core.pipeline
     codekavach.core.plugins
     codekavach.core.store

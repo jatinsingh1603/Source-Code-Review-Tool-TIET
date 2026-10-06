@@ -41,6 +41,7 @@ from codekavach.cli.scan import scan_command
 from codekavach.cli.signals import normalise_resume
 from codekavach.cli.vault import vault_app
 from codekavach.core.log import configure_logging
+from codekavach.core.no_telemetry import apply_opt_outs
 
 # Typer 0.27 vendors Click as ``typer._click``; command objects and ``ClickException`` come from
 # there, while ``Exit`` and ``Abort`` are ``typer.Exit`` and ``typer.Abort``.
@@ -262,5 +263,6 @@ def _execute(command: click.Command, argv: Sequence[str]) -> int:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Console-script entry point: process-wide set-up, then run the command line."""
+    apply_opt_outs()  # first: before logging and before any engine or provider is touched
     configure_logging()
     return run(build_cli(), sys.argv[1:] if argv is None else argv)

@@ -15,7 +15,7 @@
 PYTEST_ARGS ?=
 
 .PHONY: help setup fmt fmt-check lint type contracts test test-unit test-integration test-e2e \
-	test-privacy cov check lock-check build adr clean hooks hooks-update schemas schemas-check licences \
+	test-privacy cov check lock-check build adr clean hooks hooks-update schemas schemas-check licences telemetry-check \
 	changelog-draft changelog-check docs-check claims
 
 help: ## Show this help
@@ -72,6 +72,9 @@ schemas: ## Re-export the JSON Schemas of the core models into docs/schemas
 
 schemas-check: ## Check docs/schemas for drift and the models for missing migration steps
 	uv run python -m codekavach.core.models.export --check --check-migrations
+
+telemetry-check: ## Check uv.lock for telemetry packages against the deny list in pyproject.toml
+	uv run python tools/dev/check_no_telemetry.py
 
 licences: ## Check dependency licences against the policy in pyproject.toml (E01-30)
 	uv run python tools/dev/check_licences.py

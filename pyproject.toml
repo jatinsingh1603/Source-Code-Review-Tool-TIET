@@ -289,3 +289,14 @@ denied = ["GPL-*", "AGPL-*", "SSPL-*", "BUSL-*", "CC-BY-NC-*", "CC-BY-SA-*", "El
 # are the three-clause BSD text (checked for E01-30).
 "colorama" = { licence = "BSD-3-Clause", reason = "metadata says only 'BSD License'; dist-info/licenses/LICENSE.txt is BSD-3-Clause", approved_in = "#41 (E01-30)" }
 "jinja2" = { licence = "BSD-3-Clause", reason = "metadata says only 'BSD License'; dist-info/licenses/LICENSE.txt is BSD-3-Clause", approved_in = "#41 (E01-30)" }
+
+# Telemetry-free guard (E01-31, tools/dev/check_no_telemetry.py, ADR-0005). Patterns match PEP 503
+# names in uv.lock. OpenTelemetry API and SDK are allowed; exporters ship data off the machine.
+[tool.codekavach.telemetry]
+deny = ["sentry-sdk", "posthog", "segment-analytics-python", "analytics-python", "mixpanel",
+        "amplitude-analytics", "rudder-sdk-python", "scarf-sdk", "bugsnag", "rollbar", "newrelic",
+        "ddtrace", "datadog", "honeycomb-beeline", "logfire", "opentelemetry-exporter-*",
+        "google-analytics-*", "statsig", "launchdarkly-server-sdk"]
+
+[tool.codekavach.telemetry.exceptions]
+# "package" = { reason = "transitive via X; never initialised; disabled by ENV=...", verified_by = "tests/...", approved_in = "#NNN" }
