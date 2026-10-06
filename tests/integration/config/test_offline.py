@@ -3,14 +3,20 @@
 ADR-0006 D9: no network access, no subprocess, no keyring activity. The explicit patches here
 cover more than ``pytest-socket`` does (``getaddrinfo``, process creation, ``os.system``), and
 keep the check meaningful for a test that is allowed loopback.
+
+The patches are a context manager used inside the test body, not a fixture. pytest-socket
+restores the real socket in its own teardown hook, which runs before fixture finalisers; a
+fixture that patched ``socket.socket`` would put the guarded class back afterwards and leave the
+next test, one that is allowed loopback, with sockets blocked.
 """
 
+import contextlib
 import json
 import os
 import socket
 import subprocess
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any, NoReturn
 
@@ -35,9 +41,9 @@ COMMANDS = (
 )
 
 
-@pytest.fixture
-def offline(monkeypatch: pytest.MonkeyPatch) -> list[str]:
-    """Make every network and process primitive raise; return the attempts that were made."""
+@contextlib.contextmanager
+def offline() -> Iterator[list[str]]:
+    """Make every network and process primitive raise; yield the attempts that were made."""
     attempts: list[str] = []
 
     def forbidden(name: str) -> Callable[..., NoReturn]:
@@ -47,17 +53,18 @@ def offline(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 
         return refuse
 
-    for owner, name in (
-        (socket, "socket"),
-        (socket, "create_connection"),
-        (socket, "getaddrinfo"),
-        (subprocess, "Popen"),
-        (os, "system"),
-    ):
-        monkeypatch.setattr(owner, name, forbidden(f"{owner.__name__}.{name}"))
-    if hasattr(os, "posix_spawn"):
-        monkeypatch.setattr(os, "posix_spawn", forbidden("os.posix_spawn"))
-    return attempts
+    with pytest.MonkeyPatch.context() as patch:
+        for owner, name in (
+            (socket, "socket"),
+            (socket, "create_connection"),
+            (socket, "getaddrinfo"),
+            (subprocess, "Popen"),
+            (os, "system"),
+        ):
+            patch.setattr(owner, name, forbidden(f"{owner.__name__}.{name}"))
+        if hasattr(os, "posix_spawn"):
+            patch.setattr(os, "posix_spawn", forbidden("os.posix_spawn"))
+        yield attempts
 
 
 def populated(sandbox: ConfigSandbox) -> None:
@@ -67,37 +74,65 @@ def populated(sandbox: ConfigSandbox) -> None:
     sandbox.env["CODEKAVACH_PROFILE"] = "ci"
 
 
-def test_loading_is_offline(config_sandbox: ConfigSandbox, offline: list[str]) -> None:
+def test_loading_is_offline(config_sandbox: ConfigSandbox) -> None:
     populated(config_sandbox)
-    loaded = config_sandbox.load()
+    with offline() as attempts:
+        loaded = config_sandbox.load()
     assert loaded.settings.scan.jobs == 2
-    assert offline == []
+    assert attempts == []
 
 
 @pytest.mark.parametrize("command", COMMANDS, ids=lambda command: " ".join(command[1:]))
-def test_commands_are_offline(
-    command: list[str], config_sandbox: ConfigSandbox, offline: list[str]
-) -> None:
+def test_commands_are_offline(command: list[str], config_sandbox: ConfigSandbox) -> None:
     populated(config_sandbox)
-    result: CliResult = run_cli(
-        command, cwd=config_sandbox.root, home=config_sandbox.home, env=config_sandbox.env
-    )
+    with offline() as attempts:
+        result: CliResult = run_cli(
+            command, cwd=config_sandbox.root, home=config_sandbox.home, env=config_sandbox.env
+        )
     assert result.exit_code == 0, result.stderr
-    assert offline == []
+    assert attempts == []
 
 
-def test_the_patches_are_live(offline: list[str]) -> None:
-    with pytest.raises(AssertionError, match=r"socket\.create_connection"):
-        socket.create_connection(("127.0.0.1", 9))
-    with pytest.raises(AssertionError, match="getaddrinfo"):
-        socket.getaddrinfo("example.invalid", 443)
-    with pytest.raises(AssertionError, match="Popen"):
-        subprocess.Popen(["true"])  # noqa: S607
-    assert {"socket.create_connection", "socket.getaddrinfo", "subprocess.Popen"} <= set(offline)
+def test_the_patches_are_live() -> None:
+    with offline() as attempts:
+        with pytest.raises(AssertionError, match=r"socket\.create_connection"):
+            socket.create_connection(("127.0.0.1", 9))
+        with pytest.raises(AssertionError, match="getaddrinfo"):
+            socket.getaddrinfo("example.invalid", 443)
+        with pytest.raises(AssertionError, match="Popen"):
+            subprocess.Popen(["true"])  # noqa: S607
+        with pytest.raises(AssertionError, match=r"socket\.socket"):
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    assert {
+        "socket.create_connection",
+        "socket.getaddrinfo",
+        "subprocess.Popen",
+        "socket.socket",
+    } <= set(attempts)
+
+
+def primitives() -> tuple[object, ...]:
+    return (
+        socket.socket,
+        socket.create_connection,
+        socket.getaddrinfo,
+        subprocess.Popen,
+        os.system,
+        getattr(os, "posix_spawn", None),
+    )
+
+
+def test_the_patches_are_undone_before_the_test_ends() -> None:
+    # Whatever this module leaves patched reaches the next test, because pytest-socket's teardown
+    # runs before fixture finalisers. Leaving the context must restore every primitive.
+    before = primitives()
+    with offline():
+        assert primitives() != before
+    assert primitives() == before
 
 
 def test_a_connection_in_the_loader_fails_the_test(
-    config_sandbox: ConfigSandbox, offline: list[str], monkeypatch: pytest.MonkeyPatch
+    config_sandbox: ConfigSandbox, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     real = toml_source.read_toml
 
@@ -108,9 +143,9 @@ def test_a_connection_in_the_loader_fails_the_test(
     # The loader imports the name, so the name in the loader is the one to replace.
     monkeypatch.setattr("codekavach.config.loader.read_toml", phoning_home)
     populated(config_sandbox)
-    with pytest.raises(AssertionError, match="create_connection"):
+    with offline() as attempts, pytest.raises(AssertionError, match="create_connection"):
         config_sandbox.load()
-    assert "socket.create_connection" in offline
+    assert "socket.create_connection" in attempts
 
 
 def test_loading_imports_no_network_client_or_keyring(tmp_path: Path) -> None:
@@ -143,3 +178,22 @@ def test_load_settings_signature_is_unchanged() -> None:
     # The offline tests call the public entry point; keep a cheap guard on its keyword names.
     names = load_settings.__code__.co_varnames[: load_settings.__code__.co_kwonlyargcount]
     assert {"target", "config_file", "profile", "env"} <= set(names)
+
+
+def test_the_patches_do_not_reach_the_next_test() -> None:
+    # The leak that this module once had only showed in a later test that is allowed loopback, in
+    # one particular order. Run exactly that order in a child pytest and expect it to pass.
+    root = Path(__file__).resolve().parents[3]
+    here = f"{Path(__file__).relative_to(root).as_posix()}::test_the_patches_are_live"
+    later = (
+        "tests/privacy/test_network_blocked.py::test_declared_loopback_is_allowed_and_nothing_else"
+    )
+    completed = subprocess.run(
+        [sys.executable, "-m", "pytest", here, later, "-p", "no:randomly", "-q", "--color=no"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout[-2000:]
+    assert "2 passed" in completed.stdout
