@@ -242,12 +242,12 @@ def test_three_violations_in_one_exception(config_sandbox: ConfigSandbox) -> Non
     assert len(info.value.issues) == 3
 
 
-def test_clamp_is_enforced_as_reject(config_sandbox: ConfigSandbox) -> None:
+def test_reject_mode_fails_where_clamp_would_clamp(config_sandbox: ConfigSandbox) -> None:
+    # Clamp mode is E03-30 (test_enforce_clamp.py); reject mode keeps failing the run.
     config_sandbox.write_policy(
-        to_toml({**BASE, "enforcement": "clamp", "privacy": {"min_level": "L3"}})
+        to_toml({**BASE, "enforcement": "reject", "privacy": {"min_level": "L3"}})
     )
-    loaded = config_sandbox.load()
-    assert [w.code.value for w in loaded.warnings] == ["CK-CFG-055"]
+    assert config_sandbox.load().warnings == ()
     config_sandbox.write_user('[privacy]\nlevel = "L2"\n')
     with pytest.raises(OrgPolicyError):
         config_sandbox.load()

@@ -51,7 +51,14 @@ from codekavach.config.merge import deep_merge
 from codekavach.config.models.base import split_csv
 from codekavach.config.models.root import Settings
 from codekavach.config.orgpolicy.discovery import LoadedOrgPolicy, discover_org_policies
-from codekavach.config.orgpolicy.enforce import apply_additions, check_policy, locked_keys_of
+from codekavach.config.orgpolicy.enforce import (
+    Violation,
+    apply_additions,
+    check_policy,
+    clamp_message,
+    clamp_policy,
+    locked_keys_of,
+)
 from codekavach.config.overrides import CliOverrides, cli_layer
 from codekavach.config.paths import (
     check_discovered_project_file,
@@ -484,24 +491,30 @@ def _check_layers(
     return tuple(warnings), granted
 
 
-def _apply_org_policy(
+def _apply_org_policy(  # noqa: PLR0912 - one pass per enforcement stage, kept together
     settings: Settings,
     merged: Mapping[str, Any],
     org_policies: tuple[LoadedOrgPolicy, ...],
     *,
     layers: Sequence[Layer] = (),
 ) -> tuple[Settings, frozenset[str], tuple[ConfigIssue, ...], dict[str, Origin]]:
-    """Enforce organisation policy floors, allow-lists and locks (E03-29; clamp mode is E03-30).
+    """Enforce organisation policy floors, allow-lists and locks (E03-29, E03-30).
 
-    Runs after every layer, so no layer can undo it. The additions (floor, never-send globs) are
-    applied first; the checks run on the result before it is re-validated, so a level below the
-    raised floor is reported as a policy violation (055) with the origin of the offending value.
-    Several policies are applied one after the other, each on the previous result.
+    Runs after every layer, so no layer can undo it. Every discovered policy applies:
+
+    1. the additions of every policy (floors combine to the strictest, never-send globs unite);
+    2. the policies in ``reject`` mode are checked before anything is clamped, so a violation of a
+       reject policy fails the run even when another policy would clamp it (the strictest mode
+       wins);
+    3. the policies in ``clamp`` mode clamp their clampable violations in discovery order, each
+       with a warning; their non-clampable violations are errors;
+    4. the result is re-validated, and every policy is checked again, which reports policies that
+       contradict each other (two locks of one key) naming both files.
 
     Returns the settings, the locked keys, warnings and the origins of keys the policy changed.
 
     Raises:
-        OrgPolicyError: CK-CFG-055, one issue per violation of every policy.
+        OrgPolicyError: CK-CFG-055, one issue per remaining violation.
     """
     if not org_policies:
         return settings, frozenset(), (), {}
@@ -511,43 +524,70 @@ def _apply_org_policy(
     changed_by: dict[str, Origin] = {}
     warnings: list[ConfigIssue] = []
     issues: list[ConfigIssue] = []
+
+    def error(violation: Violation, loaded: LoadedOrgPolicy, also: str | None = None) -> None:
+        origin = changed_by.get(violation.key) or origins_of(violation.key)
+        hint = f"policy file: {loaded.path}"
+        if also is not None and also != str(loaded.path):
+            hint += f"; the value was set by policy file {also}"
+        issues.append(
+            ConfigIssue(
+                code=ConfigErrorCode.CK_CFG_055,
+                severity="error",
+                message=violation.message,
+                key=violation.key,
+                source=origin.source,
+                line=origin.line,
+                hint=hint,
+            )
+        )
+
     for loaded in org_policies:
-        policy = loaded.policy
-        if policy.enforcement == "clamp":
+        data, changed = apply_additions(data, loaded.policy)
+        for key in changed:
+            changed_by[key] = Origin(layer="org-policy", source=str(loaded.path))
+        locked |= locked_keys_of(loaded.policy)
+    for loaded in org_policies:
+        if loaded.policy.enforcement != "clamp":
+            for violation in check_policy(data, loaded.policy):
+                error(violation, loaded)
+    if issues:
+        raise OrgPolicyError(issues)
+    for loaded in org_policies:
+        if loaded.policy.enforcement != "clamp":
+            continue
+        outcome = clamp_policy(data, loaded.policy)
+        for clamp in outcome.clamps:
+            origin = origins_of(clamp.violation.key)
             warnings.append(
                 ConfigIssue(
                     code=ConfigErrorCode.CK_CFG_055,
                     severity="warning",
-                    message=(
-                        f"organisation policy '{policy.organisation}' asks for clamp mode, which "
-                        "is not available yet; it is enforced in the stricter reject mode"
-                    ),
-                    source=str(loaded.path),
-                )
-            )
-        data, changed = apply_additions(data, policy)
-        for key in changed:
-            changed_by[key] = Origin(layer="org-policy", source=str(loaded.path))
-        locked |= locked_keys_of(policy)
-        for violation in check_policy(data, policy):
-            origin = origins_of(violation.key)
-            issues.append(
-                ConfigIssue(
-                    code=ConfigErrorCode.CK_CFG_055,
-                    severity="error",
-                    message=violation.message,
-                    key=violation.key,
+                    message=clamp_message(clamp),
+                    key=clamp.key,
                     source=origin.source,
                     line=origin.line,
                     hint=f"policy file: {loaded.path}",
                 )
             )
+        for key in outcome.changed:
+            changed_by[key] = Origin(layer="org-policy", source=str(loaded.path))
+        for violation in outcome.remaining:
+            error(violation, loaded)
+        data = outcome.data
     if issues:
         raise OrgPolicyError(issues)
     try:
         settings = Settings.model_validate(data)
     except ValidationError as exc:
         raise ConfigValidationError(convert_validation_error(exc, origins_of)) from None
+    final = settings.model_dump(mode="json")
+    for loaded in org_policies:
+        for violation in check_policy(final, loaded.policy):
+            setter = changed_by.get(violation.key)
+            error(violation, loaded, also=setter.source if setter else None)
+    if issues:
+        raise OrgPolicyError(issues)
     return settings, frozenset(locked), tuple(warnings), changed_by
 
 

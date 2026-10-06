@@ -8,8 +8,15 @@ result with every section validator. Two rules only ever tighten and are applied
 (``apply_additions``). Every other rule is a check (``check_policy``): a configuration that
 breaks it is a violation, reported with the origin of the offending value. Levels, booleans,
 provider ids, kinds and host names are printed; other free text is not (CWE-532).
+
+In ``enforcement = "clamp"`` mode (E03-30, ``clamp_policy``) clampable violations are fixed
+instead: a level is raised to the floor, an extra allow-list is emptied, remote use or the GitHub
+integration is switched off, a provider is disabled, or a locked key is set. Clamping only moves
+a value in the stricter direction and never enables anything. A provider that the configuration
+names as ``llm.default_provider`` is not clamped, because the operator asked for it by name.
 """
 
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
@@ -276,3 +283,117 @@ def check_policy(settings_data: Mapping[str, Any], policy: OrgPolicy) -> list[Vi
         *_integration_rules(settings_data, policy, name),
         *_lock_rules(settings_data, policy, name),
     ]
+
+
+# --- clamp mode (E03-30) ---------------------------------------------------------------------
+
+_PATH_INDEX = re.compile(r"^(?P<name>[^\[\]]+)\[(?P<index>\d+)\]$")
+
+
+@dataclass(frozen=True, slots=True)
+class Clamp:
+    """One value a clamp-mode policy changed: the violation and the key and value it set."""
+
+    violation: Violation
+    key: str
+    value: Any
+
+
+@dataclass(frozen=True, slots=True)
+class PolicyOutcome:
+    """The result of applying one policy in its own mode."""
+
+    data: dict[str, Any]
+    remaining: list[Violation]
+    changed: set[str]
+    clamps: list[Clamp]
+
+
+def _set(data: dict[str, Any], key: str, value: Any) -> dict[str, Any]:
+    """A copy of ``data`` with ``key`` (dotted, ``name[i]`` for list items) set to ``value``."""
+    parts = key.split(".")
+    head, rest = parts[0], ".".join(parts[1:])
+    match = _PATH_INDEX.match(head)
+    copy = dict(data)
+    if match:
+        items = list(copy.get(match["name"], []))
+        index = int(match["index"])
+        items[index] = _set(dict(items[index]), rest, value) if rest else value
+        copy[match["name"]] = items
+        return copy
+    if not rest:
+        copy[head] = value
+        return copy
+    child = copy.get(head)
+    copy[head] = _set(dict(child) if isinstance(child, Mapping) else {}, rest, value)
+    return copy
+
+
+def _provider_of(key: str) -> str | None:
+    parts = key.split(".")
+    if len(parts) >= 3 and parts[0] == "llm" and parts[1] == "providers":
+        return parts[2]
+    return None
+
+
+def _clamp_target(data: Mapping[str, Any], violation: Violation) -> tuple[str, Any] | None:
+    """The key and value that make ``violation`` go away, or None when it cannot be clamped."""
+    if not violation.clampable:
+        return None
+    provider_id = _provider_of(violation.key)
+    if provider_id is None:
+        return violation.key, violation.clamp_to
+    if provider_id == _get(data, "llm.default_provider"):
+        return None  # the operator asked for this provider by name: disabling it would be a lie
+    return f"llm.providers.{provider_id}.enabled", False
+
+
+def clamp_policy(settings_data: Mapping[str, Any], policy: OrgPolicy) -> PolicyOutcome:
+    """Apply ``policy`` in its own mode: additions always, then clamps in ``clamp`` mode.
+
+    Clamping only moves a value in the stricter direction or disables a provider or the GitHub
+    integration; it never enables anything. ``remaining`` lists the violations left afterwards:
+    every violation in ``reject`` mode, and the non-clampable ones in ``clamp`` mode.
+    """
+    data, changed = apply_additions(settings_data, policy)
+    violations = check_policy(data, policy)
+    if policy.enforcement != "clamp":
+        return PolicyOutcome(data, violations, changed, [])
+    clamps: list[Clamp] = []
+    for violation in violations:
+        target = _clamp_target(data, violation)
+        if target is None:
+            continue
+        key, value = target
+        if _get(data, key) != value:
+            data = _set(data, key, value)
+            changed.add(key)
+        clamps.append(Clamp(violation, key, value))
+    return PolicyOutcome(data, check_policy(data, policy), changed, clamps)
+
+
+def apply_policy(
+    settings_data: Mapping[str, Any], policy: OrgPolicy
+) -> tuple[dict[str, Any], list[Violation], set[str]]:
+    """New data, the violations that remain, and the keys that changed (see ``clamp_policy``)."""
+    outcome = clamp_policy(settings_data, policy)
+    return outcome.data, outcome.remaining, outcome.changed
+
+
+def clamp_message(clamp: Clamp) -> str:
+    """The warning text of one clamp: ``...; clamped to L3 (configured: L2)``."""
+    value = clamp.value
+    shown = "disabled" if value is False and clamp.key.endswith(".enabled") else _show(value)
+    message = clamp.violation.message
+    configured = message.rfind(" (configured: ")
+    if configured != -1 and message.endswith(")"):
+        return f"{message[:configured]}; clamped to {shown}{message[configured:]}"
+    return f"{message}; clamped to {shown}"
+
+
+def _show(value: Any) -> str:
+    if isinstance(value, bool):
+        return str(value).lower()
+    if value == []:
+        return "an empty list"
+    return str(value)
