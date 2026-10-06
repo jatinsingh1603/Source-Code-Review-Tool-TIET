@@ -34,3 +34,9 @@ To relax the budgets locally, set `CODEKAVACH_PERF_FACTOR` (for example `CODEKAV
 When a budget fails, the cause is almost always an eager import. Find it with `python tools/dev/importtime_report.py --target codekavach.config`, and make the import lazy (inside the function that needs it), as `keys.py` does for `keyring` and `orgpolicy/signature.py` does for `cryptography`.
 
 When a new URL is truly needed in the package, add its host to `ALLOWED_HOSTS` with a reason in the same commit; the telemetry guard then stays a statement of what the package may name.
+
+### The precedence matrix
+
+`tests/integration/config/test_precedence_matrix.py` loads every one of the 64 subsets of the six sources (user file, project file, profile, `CODEKAVACH_*` environment, CLI flags and the organisation policy lock) for a scalar (`scan.max_file_size_kb`), a replaced list (`reporting.formats`) and a union-merged list (`privacy.never_send`), and asserts the winning value and its `Origin`. A test id lists the sources present, for example `scalar-U-P-pr-E-C`, so a failure names the combination. `tests/support/config_matrix.py` holds `build_layers(mask, sandbox, kind)`, which writes the files from `tests/fixtures/config/precedence/` and returns the keywords for `load_settings`.
+
+A locked key must already hold the locked value. In reject mode every subset that contains the lock therefore fails with `CK-CFG-055`, including the lock alone (the default is not the locked value); in clamp mode the locked value wins and the origin is `org-policy`. When you add a layer or change the order, extend `SOURCES` in the helper and the expected order in `expected_winner`; the module is the place that must fail first.

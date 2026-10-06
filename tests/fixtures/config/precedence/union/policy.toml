@@ -1,0 +1,5 @@
+policy_version = 1
+organisation = "Matrix Ltd"
+
+[privacy]
+never_send = ["l/**"]

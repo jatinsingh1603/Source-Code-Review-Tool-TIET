@@ -1,0 +1,2 @@
+[profiles.matrix.privacy]
+never_send = ["pr/**"]

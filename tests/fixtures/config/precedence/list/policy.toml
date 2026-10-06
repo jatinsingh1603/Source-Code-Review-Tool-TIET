@@ -1,0 +1,5 @@
+policy_version = 1
+organisation = "Matrix Ltd"
+
+[lock]
+"reporting.formats" = ["json"]
