@@ -63,3 +63,38 @@ Rewriting a hash-bearing document would break its chain, so models such as `Egre
 ## Tests
 
 Tests that need throw-away models register their steps inside `temporary_registry()`, which restores the registry on exit. See `tests/unit/core/models/test_migrate.py`.
+
+## What the compatibility gate checks
+
+`python -m codekavach.core.models.export --compat-base REF` compares every freshly built schema with the committed one at git revision `REF`. CI runs it on every push to `main`, against the commit `main` pointed at before the push, so that a push of several commits is judged as a whole. Each file is classified as `none`, `additive` or `breaking`, and the gate exits 1 when a file changes in a breaking way while its schema version (from `index.json`) stays the same.
+
+| Observation (old to new) | Level |
+|--------------------------|-------|
+| Property removed | breaking |
+| Property added and not required, or required with a `default` | additive |
+| Property added and required, without a `default` | breaking |
+| Property becomes required | breaking |
+| Property becomes optional | additive |
+| `type` changed, or a member removed from a `type` list or from `anyOf` | breaking |
+| `enum` member removed | breaking |
+| `enum` member added | additive |
+| A bound (`minLength`, `maxLength`, `minimum`, `maximum`, `minItems`, `maxItems`) made stricter, or `pattern` changed | breaking |
+| The same bounds loosened | additive |
+| Only `description`, `title`, `examples` or `default` changed | none |
+| A `$defs` entry renamed | none when the structure is the same, otherwise breaking ("definition renamed") |
+| Any other keyword changed | breaking ("unrecognised change at `<pointer>`") |
+
+The rules apply recursively through `properties`, `items`, `prefixItems`, `$defs` and `anyOf`/`oneOf`/`allOf` branches (matched by position). Every reason names a JSON pointer. In detail:
+
+- A new schema file is `additive`.
+- A deleted file is `breaking`, unless a commit message in the pushed range contains `[schema-remove]`.
+
+**A heuristic.** When in doubt the gate reports `breaking`: a false alarm costs one version bump plus an identity migration, while a miss can corrupt stored experiment data. There is deliberately no skip flag. A false positive is resolved by raising `SCHEMA_VERSION` and registering an identity migration, which also records the boundary.
+
+**Fail-safe edges:**
+
+- If git is missing, or the base revision is not in the clone, the check prints a notice and exits 0, so that a source archive without git, such as the air-gapped bundle, is not blocked.
+- A git call that takes longer than 10 seconds exits 2.
+- `REF` must match `^[A-Za-z0-9._/~^-]{1,100}$` and must not start with `-`.
+
+Tests: `tests/unit/core/models/test_compat.py`.

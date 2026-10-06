@@ -18,13 +18,15 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
 from codekavach.core.models.base import KavachModel, VersionedModel
 from codekavach.core.models.candidate import Candidate
+from codekavach.core.models.compat import classify_change
 from codekavach.core.models.egress import EgressRecord
 from codekavach.core.models.evidence import Evidence
 from codekavach.core.models.finding import Finding
@@ -171,6 +173,107 @@ def _missing_migrations() -> bool:
     return bool(problems)
 
 
+# --- compatibility gate against a git revision (E02-24) ---------------------------------------
+
+GIT_TIMEOUT_SECONDS = 10
+REMOVE_MARKER = "[schema-remove]"
+_REF = re.compile(r"^[A-Za-z0-9._/~^-]{1,100}$")
+
+
+class _GitTimeoutError(Exception):
+    """A git call took longer than ``GIT_TIMEOUT_SECONDS``."""
+
+
+def _git(args: Sequence[str], cwd: Path | None) -> "subprocess.CompletedProcess[str]":
+    """Run git without a shell; ``FileNotFoundError`` when git is missing."""
+    try:
+        return subprocess.run(
+            ["git", *args],  # noqa: S607 - git from PATH is the intent
+            capture_output=True,
+            text=True,
+            timeout=GIT_TIMEOUT_SECONDS,
+            check=False,
+            cwd=cwd,
+        )
+    except subprocess.TimeoutExpired:
+        raise _GitTimeoutError from None
+
+
+def _versions(index_text: str) -> dict[str, int]:
+    return {entry["file"]: entry["schema_version"] for entry in json.loads(index_text)["models"]}
+
+
+def _git_path(out_dir: Path, name: str, cwd: Path | None) -> str:
+    target = out_dir / name
+    if target.is_absolute():
+        target = target.relative_to((cwd or Path.cwd()).resolve())
+    return "./" + target.as_posix()
+
+
+def compat_check(
+    base: str,
+    out_dir: Path,
+    *,
+    build: Callable[[], dict[str, str]] = build_schemas,
+    cwd: Path | None = None,
+) -> tuple[int, list[str]]:
+    """Compare the built schemas with those of revision ``base``: ``(exit code, lines)``.
+
+    Exit 1 when a file changes in a breaking way and keeps its schema version, or is deleted
+    without a ``[schema-remove]`` commit message; 0 otherwise. A missing git executable or base
+    revision skips the check with a notice (exit 0), an invalid reference is a usage error
+    (exit 2), and a git call that times out exits 2.
+    """
+    if not _REF.match(base) or base.startswith("-"):
+        return 2, ["invalid --compat-base reference"]
+    try:
+        verified = _git(["rev-parse", "--verify", "--quiet", f"{base}^{{commit}}"], cwd)
+        if verified.returncode != 0:
+            return 0, [f"notice: base revision {base} is not in this clone; check skipped"]
+        old_index = _git(["show", f"{base}:{_git_path(out_dir, INDEX_FILE, cwd)}"], cwd)
+        if old_index.returncode != 0:
+            return 0, [f"notice: {base} has no {INDEX_FILE}; nothing to compare"]
+        old_versions = _versions(old_index.stdout)
+        built = build()
+        new_versions = _versions(built[INDEX_FILE])
+        lines: list[str] = []
+        failed = False
+        for name in sorted(set(built) - {INDEX_FILE}):
+            shown = _git(["show", f"{base}:{_git_path(out_dir, name, cwd)}"], cwd)
+            if shown.returncode != 0:
+                lines.append(f"{name}: additive (new file)")
+                continue
+            report = classify_change(json.loads(shown.stdout), json.loads(built[name]))
+            bumped = new_versions.get(name) != old_versions.get(name)
+            lines.append(f"{name}: {report.level}" + (" (schema version raised)" if bumped else ""))
+            if report.level == "breaking" and not bumped:
+                failed = True
+                lines.extend(f"  - {reason}" for reason in report.reasons)
+                _annotate(
+                    f"breaking schema change without a version bump: {report.reasons[0]}",
+                    _git_path(out_dir, name, cwd)[2:],
+                )
+        removed = sorted(set(old_versions) - set(new_versions))
+        if removed:
+            log = _git(["log", "--format=%B", f"{base}..HEAD"], cwd)
+            allowed = log.returncode == 0 and REMOVE_MARKER in log.stdout
+            for name in removed:
+                lines.append(f"{name}: breaking (file removed)")
+                if not allowed:
+                    failed = True
+                    lines.append(f"  - add {REMOVE_MARKER} to a commit message to remove a schema")
+    except FileNotFoundError:
+        return 0, ["notice: git is not available; compatibility check skipped"]
+    except _GitTimeoutError:
+        return 2, [f"git did not answer within {GIT_TIMEOUT_SECONDS} seconds"]
+    if failed:
+        lines.append(
+            "a breaking change needs SCHEMA_VERSION raised and a migration step; "
+            "see docs/reference/model-versioning.md"
+        )
+    return (1 if failed else 0), lines
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Command line entry point."""
     parser = argparse.ArgumentParser(description="Export the JSON Schemas of the core models.")
@@ -181,7 +284,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="report missing migration steps and exit 1; no writes",
     )
+    parser.add_argument(
+        "--compat-base",
+        metavar="REF",
+        help="classify changes against git revision REF; exit 1 on an unversioned break",
+    )
     args = parser.parse_args(argv)
+    if args.compat_base is not None:
+        code, lines = compat_check(args.compat_base, args.out)
+        for line in lines:
+            sys.stdout.write(line + "\n")
+        return code
     if args.check or args.check_migrations:
         failed = _drift(args.out) if args.check else False
         if args.check_migrations:

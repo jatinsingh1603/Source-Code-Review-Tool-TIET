@@ -150,6 +150,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.core.models.base",
         "codekavach.core.models.candidate",
         "codekavach.core.models.canonical",
+        "codekavach.core.models.compat",
         "codekavach.core.models.egress",
         "codekavach.core.models.enums",
         "codekavach.core.models.errors",

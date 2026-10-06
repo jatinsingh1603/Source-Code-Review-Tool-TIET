@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 2
+          fetch-depth: 0  # the schema compatibility gate reads the pushed range
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: true
@@ -45,6 +45,19 @@ jobs:
         run: uv run python -m codekavach.core.models.export --check --check-migrations
         env:
           UV_NO_SYNC: "1"
+      - name: Schema compatibility
+        # Compares the whole push with the commit main pointed at before it (E02-24); a breaking
+        # schema change needs a SCHEMA_VERSION bump and a migration step.
+        if: github.event_name == 'push'
+        run: |
+          base="$BEFORE"
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            base="HEAD~1"
+          fi
+          uv run python -m codekavach.core.models.export --compat-base "$base"
+        env:
+          UV_NO_SYNC: "1"
+          BEFORE: ${{ github.event.before }}
 
   typecheck:
     runs-on: ubuntu-latest
