@@ -70,7 +70,7 @@ CodeKavach reduces and measures disclosure; it does not make disclosure impossib
 |------|----------|
 | `REFERENCE.md` | Frameworks, standards and methodologies the tool is built on |
 | `RESOURCE.md` | Research papers, datasets, open-source tools and documentation links |
-| `docs/` | Plan, architecture, [decision records](docs/adr/README.md), threat model, research notes, status notes, schemas, demo runbooks, sample reports |
+| `docs/` | Plan, architecture, [decision records](docs/adr/README.md), [domain model reference](docs/reference/domain-model.md), threat model, research notes, status notes, schemas, demo runbooks, sample reports |
 | `src/codekavach/` | Python core; package tree as in `docs/ARCHITECTURE.md` section 3 |
 | `tests/` | Unit, integration, end-to-end and privacy (property-based) tests |
 | `ui/` | Web dashboard |

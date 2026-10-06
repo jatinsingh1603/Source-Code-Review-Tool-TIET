@@ -144,7 +144,7 @@ Optional stage metadata, the failure policy, caching and the threading model are
 | `EgressRecord` | One ledger entry | `seq`, `timestamp`, `provider`, `model`, `level`, `payload_hash`, `prev_hash`, `entry_hash`, `token_counts`, `candidate_id` |
 
 All models are Pydantic v2, frozen where practical, and export JSON Schema into `docs/schemas/`.
-Field-level detail, conventions and extensions to this table are recorded in ADR 0009 ([adr/0009-domain-model-conventions.md](adr/0009-domain-model-conventions.md)).
+Field-level detail, conventions and extensions to this table are recorded in ADR 0009 ([adr/0009-domain-model-conventions.md](adr/0009-domain-model-conventions.md)); the [domain model reference](reference/domain-model.md) explains how the models fit together.
 
 ## 6. Privacy layer
 

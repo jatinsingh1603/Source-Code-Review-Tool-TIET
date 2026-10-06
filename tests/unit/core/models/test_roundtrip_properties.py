@@ -10,6 +10,26 @@ from hypothesis.strategies import SearchStrategy
 from pydantic import AwareDatetime, PlainSerializer
 
 from codekavach.core import models
+from codekavach.core.models import (
+    ContextRequest,
+    EngineRef,
+    FingerprintParts,
+    HighlightRange,
+    Impact,
+    Likelihood,
+    LineMapEntry,
+    LLMReviewRef,
+    PlaceholderRef,
+    Provenance,
+    Reference,
+    SnippetLine,
+    StageResult,
+    StatusChange,
+    Stub,
+    TaintStep,
+    TaxonomyRef,
+    TokenCounts,
+)
 from codekavach.core.models.base import KavachModel, VersionedModel
 from codekavach.core.models.candidate import Candidate
 from codekavach.core.models.egress import EgressRecord
@@ -50,13 +70,50 @@ MODEL_STRATEGIES: dict[type[KavachModel], SearchStrategy[Any]] = {
     Scan: s.scans(),
     ScanSummary: s.summaries(),
     EgressTotals: s.egress_totals(),
+    # Component models, drawn from the strategy of the document that contains them.
+    TaintStep: s.taint_paths().map(lambda path: path.steps[0]),
+    SnippetLine: s.evidences().map(lambda evidence: evidence.lines[0]),
+    HighlightRange: s.evidences()
+    .filter(lambda evidence: evidence.highlights)
+    .map(lambda evidence: evidence.highlights[0]),
+    SliceSegment: s.code_slices().map(lambda code_slice: code_slice.segments[0]),
+    LineMapEntry: s.sanitised_payloads()
+    .filter(lambda payload: payload.line_map)
+    .map(lambda payload: payload.line_map[0]),
+    PlaceholderRef: s.sanitised_payloads()
+    .filter(lambda payload: payload.placeholders)
+    .map(lambda payload: payload.placeholders[0]),
+    ContextRequest: s.verdicts()
+    .filter(lambda verdict: verdict.needs_context)
+    .map(lambda verdict: verdict.needs_context[0]),
+    TokenCounts: s.egress_chains(max_size=3).map(lambda chain: chain[0].token_counts),
+    StatusChange: s.status_histories().filter(lambda pair: pair[1]).map(lambda pair: pair[1][-1]),
+    Impact: s.findings().map(lambda finding: finding.impact),
+    Likelihood: s.findings().map(lambda finding: finding.likelihood),
+    Provenance: s.findings().map(lambda finding: finding.provenance),
+    EngineRef: s.findings()
+    .filter(lambda finding: finding.provenance.engines)
+    .map(lambda finding: finding.provenance.engines[0]),
+    LLMReviewRef: s.findings()
+    .filter(lambda finding: finding.provenance.llm_reviews)
+    .map(lambda finding: finding.provenance.llm_reviews[0]),
+    TaxonomyRef: s.findings()
+    .filter(lambda finding: finding.owasp)
+    .map(lambda finding: finding.owasp[0]),
+    Reference: s.findings()
+    .filter(lambda finding: finding.references)
+    .map(lambda finding: finding.references[0]),
 }
 EXEMPT: dict[type[KavachModel], str] = {
     KavachModel: "abstract base class; covered through every concrete model",
     VersionedModel: "abstract base class; covered through every versioned model",
+    FingerprintParts: "input value object of compute_fingerprint; never persisted or exchanged",
+    Stub: "no strategy produces stubs yet; the slicer (E10) adds them with its own strategy",
+    StageResult: "only reachable through the slow scans() strategy; covered by the Scan round trip",
 }
-# Scans and summaries embed several findings, so they get a smaller share of the budget.
-MAX_EXAMPLES = {Scan: 60, ScanSummary: 60, Finding: 120}
+# Documents that embed several findings get a smaller share of the budget.
+FINDING_PARTS = (Impact, Likelihood, Provenance, EngineRef, LLMReviewRef, TaxonomyRef, Reference)
+MAX_EXAMPLES = {Scan: 60, ScanSummary: 60, Finding: 120, **dict.fromkeys(FINDING_PARTS, 60)}
 
 
 @pytest.mark.parametrize("model", list(MODEL_STRATEGIES), ids=lambda model: model.__name__)
@@ -231,7 +288,7 @@ def test_edge_cases(name: str, instance: KavachModel) -> None:
 
 def test_edge_cases_cover_every_strategy_model() -> None:
     covered = {type(instance) for _, instance in edge_cases()}
-    assert covered >= set(MODEL_STRATEGIES)
+    assert covered >= {*EXPORTED_MODELS, EgressTotals}
 
 
 # --- the checks are live: broken toy models must fail -------------------------------------
