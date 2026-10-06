@@ -11,8 +11,9 @@ the system path list. Every problem with a configured policy aborts the run (fai
 What path pinning defends: the scanned repository and project-level configuration cannot supply
 or weaken the policy. What it does not defend: a local administrator, or whoever controls the
 process environment. ``CODEKAVACH_ORG_POLICY_SHA256``, set by a pipeline template, narrows the
-second case; E03-31 adds detached signatures. On Windows the POSIX owner and mode-bit checks are
-skipped; every other check applies.
+second case. When a policy public key is configured, every policy must also carry a valid
+detached Ed25519 signature (E03-31, ``signature.py``). On Windows the POSIX owner and mode-bit
+checks are skipped; every other check applies.
 """
 
 import hmac
@@ -20,15 +21,19 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import ValidationError
 
 from codekavach.config import paths
 from codekavach.config.errors import ConfigError, ConfigErrorCode, ConfigIssue, OrgPolicyError
+from codekavach.config.orgpolicy import signature
 from codekavach.config.orgpolicy.model import OrgPolicy
 from codekavach.config.plaintext import find_plaintext_secrets
-from codekavach.config.toml_source import read_toml
+from codekavach.config.toml_source import parse_toml_bytes, read_bounded_bytes
+
+if TYPE_CHECKING:
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 ORG_POLICY_ENV = "CODEKAVACH_ORG_POLICY"
 ORG_POLICY_SHA256_ENV = "CODEKAVACH_ORG_POLICY_SHA256"
@@ -43,6 +48,7 @@ class LoadedOrgPolicy:
     sha256: str
     origin: Literal["system", "env"]
     signature: Literal["not-checked", "valid"] = "not-checked"
+    warnings: tuple[ConfigIssue, ...] = ()
 
 
 def _error(
@@ -101,12 +107,37 @@ def _load_one(
     project_root: Path,
     today: date,
     pinned_sha256: str | None,
+    public_key: "Ed25519PublicKey | None" = None,
 ) -> LoadedOrgPolicy:
     if not path.is_file():
         raise _error(ConfigErrorCode.CK_CFG_050, path, "organisation policy file does not exist")
     check_policy_file_trust(path, project_root=project_root)
+    warnings: list[ConfigIssue] = []
+    # One read: the bytes that are verified are the bytes that are parsed (CWE-367).
     try:
-        document = read_toml(path)
+        raw = read_bounded_bytes(path)
+    except ConfigError as error:
+        raise _as_policy_error(error, path, ConfigErrorCode.CK_CFG_050) from None
+    checked: Literal["not-checked", "valid"] = "not-checked"
+    if public_key is not None:
+        try:
+            signature.verify_policy(raw, signature.read_signature(path), public_key)
+        except OrgPolicyError as error:
+            raise _as_policy_error(error, path, ConfigErrorCode.CK_CFG_054) from None
+        checked = "valid"
+    elif signature.signature_path(path).exists():
+        warnings.append(
+            ConfigIssue(
+                code=ConfigErrorCode.CK_CFG_054,
+                severity="warning",
+                message="organisation policy has a signature file, but it is not being verified",
+                source=str(path),
+                hint=f"configure the public key in {signature.PUBKEY_ENV} or as "
+                f"{signature.PUBKEY_FILE_NAME} next to the system policy",
+            )
+        )
+    try:
+        document = parse_toml_bytes(raw, path)
     except ConfigError as error:
         raise _as_policy_error(error, path, ConfigErrorCode.CK_CFG_050) from None
     if pinned_sha256 is not None and not hmac.compare_digest(
@@ -132,7 +163,39 @@ def _load_one(
             f"organisation policy expired on {policy.expires.isoformat()}",
             "ask the issuing security team for a current policy",
         )
-    return LoadedOrgPolicy(policy=policy, path=path, sha256=document.sha256, origin=origin)
+    return LoadedOrgPolicy(
+        policy=policy,
+        path=path,
+        sha256=document.sha256,
+        origin=origin,
+        signature=checked,
+        warnings=tuple(warnings),
+    )
+
+
+def _public_key(
+    env: Mapping[str, str], system_dirs: Sequence[Path], *, project_root: Path
+) -> "Ed25519PublicKey | None":
+    """The configured policy public key, checked like a policy file (051, 052), or None."""
+    path = signature.find_public_key(env, system_dirs)
+    if path is None:
+        return None
+    if not path.is_file():
+        raise _error(
+            ConfigErrorCode.CK_CFG_054, path, "the configured policy public key does not exist"
+        )
+    if path.resolve().is_relative_to(project_root.resolve()):
+        raise _error(
+            ConfigErrorCode.CK_CFG_051,
+            path,
+            "policy public key is located inside the project root",
+            "the trust anchor must come from a location the repository cannot write",
+        )
+    try:
+        paths.check_trusted_file(path, what="policy public key", code=ConfigErrorCode.CK_CFG_052)
+    except ConfigError as error:
+        raise _as_policy_error(error, path, ConfigErrorCode.CK_CFG_052) from None
+    return signature.load_public_key(path)
 
 
 def discover_org_policies(
@@ -151,8 +214,16 @@ def discover_org_policies(
     """
     candidates = paths.system_policy_paths() if system_paths is None else tuple(system_paths)
     today = today or date.today()  # noqa: DTZ011 - policy dates are calendar dates
+    key = _public_key(env, [path.parent for path in candidates], project_root=project_root)
     loaded = [
-        _load_one(path, "system", project_root=project_root, today=today, pinned_sha256=None)
+        _load_one(
+            path,
+            "system",
+            project_root=project_root,
+            today=today,
+            pinned_sha256=None,
+            public_key=key,
+        )
         for path in candidates
         if path.exists()
     ]
@@ -166,6 +237,7 @@ def discover_org_policies(
                 project_root=project_root,
                 today=today,
                 pinned_sha256=pin,
+                public_key=key,
             )
         )
     return tuple(loaded)

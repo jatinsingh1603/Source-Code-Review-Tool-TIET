@@ -1179,6 +1179,7 @@ Runtime dependencies of the `codekavach` package itself (`[project.dependencies]
 | Alembic | MIT | [GitHub: sqlalchemy/alembic](https://github.com/sqlalchemy/alembic); [alembic.sqlalchemy.org](https://alembic.sqlalchemy.org/en/latest/) | [integrated] | Schema migrations of the local database, run programmatically from the installed package (no `alembic.ini` needed) and offline. One migration tree for local and server mode (ADR-0007 D14). Added by E04-26. |
 | structlog | MIT or Apache-2.0 (dual) | [GitHub: hynek/structlog](https://github.com/hynek/structlog); [structlog.org](https://www.structlog.org/) | [integrated] | Structured logging with a processor chain in which redaction is a fixed step (ADR-0005). Added by E01-20. |
 | platformdirs | MIT | [GitHub: tox-dev/platformdirs](https://github.com/tox-dev/platformdirs); [platformdirs.readthedocs.io](https://platformdirs.readthedocs.io/) | [integrated] | Per-platform location of the user configuration directory when neither `CODEKAVACH_HOME` nor `XDG_CONFIG_HOME` is set. Added by E03-12. |
+| cryptography | Apache-2.0 OR BSD-3-Clause | [GitHub: pyca/cryptography](https://github.com/pyca/cryptography); [cryptography.io](https://cryptography.io/) | [integrated] | Ed25519 verification of detached organisation policy signatures (ADR decision D7) and signing for `config policy sign`. Imported lazily, only when a policy public key is configured. Added by E03-31. |
 
 Development-only libraries are not shipped in the wheel. The following one is recorded here because its issue asked for it:
 

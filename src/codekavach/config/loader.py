@@ -543,6 +543,7 @@ def _apply_org_policy(  # noqa: PLR0912 - one pass per enforcement stage, kept t
         )
 
     for loaded in org_policies:
+        warnings.extend(loaded.warnings)  # for example an unverified signature file (E03-31)
         data, changed = apply_additions(data, loaded.policy)
         for key in changed:
             changed_by[key] = Origin(layer="org-policy", source=str(loaded.path))

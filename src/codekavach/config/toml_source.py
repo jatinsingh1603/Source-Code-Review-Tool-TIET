@@ -131,6 +131,34 @@ def read_bounded_text(
     return text, raw
 
 
+def read_bounded_bytes(path: Path, *, max_bytes: int = MAX_CONFIG_BYTES) -> bytes:
+    """Read one file once, bounded; for callers that must verify the exact bytes they parse.
+
+    Raises:
+        ConfigError: code CK-CFG-005 when the file is missing, not a regular file or larger
+            than ``max_bytes``.
+    """
+    return _read_bytes(path, max_bytes)
+
+
+def parse_toml_bytes(raw: bytes, path: Path) -> TomlDocument:
+    """Parse bytes already read from ``path`` (used to verify and parse one single read).
+
+    Raises:
+        ConfigError: code CK-CFG-005 when the bytes are not UTF-8.
+        ConfigSyntaxError: code CK-CFG-001 when they are not valid TOML.
+    """
+    try:
+        text = raw.removeprefix(codecs.BOM_UTF8).decode("utf-8")
+    except UnicodeDecodeError:
+        raise _refuse(path, "file is not valid UTF-8") from None
+    try:
+        data = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as error:
+        raise _syntax_error(path, error) from None
+    return TomlDocument(path=path, data=data, text=text, sha256=hashlib.sha256(raw).hexdigest())
+
+
 def read_toml(
     path: Path, *, max_bytes: int = MAX_CONFIG_BYTES, confine_to: Path | None = None
 ) -> TomlDocument:
@@ -141,12 +169,9 @@ def read_toml(
             ``max_bytes``, not UTF-8, or resolves outside ``confine_to``.
         ConfigSyntaxError: code CK-CFG-001 when the file is not valid TOML.
     """
-    text, raw = read_bounded_text(path, max_bytes=max_bytes, confine_to=confine_to)
-    try:
-        data = tomllib.loads(text)
-    except tomllib.TOMLDecodeError as error:
-        raise _syntax_error(path, error) from None
-    return TomlDocument(path=path, data=data, text=text, sha256=hashlib.sha256(raw).hexdigest())
+    if confine_to is not None:
+        _check_confined(path, confine_to)
+    return parse_toml_bytes(_read_bytes(path, max_bytes), path)
 
 
 def _parse_key(text: str, position: int) -> tuple[list[str], int] | None:
