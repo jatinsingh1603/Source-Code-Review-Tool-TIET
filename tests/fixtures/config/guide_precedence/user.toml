@@ -1,0 +1,6 @@
+[scan]
+fail_on = "critical"
+jobs = 4
+
+[privacy]
+never_send = ["**/secrets/**"]

@@ -1,0 +1,13 @@
+config_version = 1
+profile = "ci"
+
+[project]
+name = "payments-api"
+client = "Example Bank"
+
+[scan]
+fail_on = "medium"
+exclude = ["vendor/**", "generated/**"]
+
+[privacy]
+never_send = ["config/prod/**"]

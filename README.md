@@ -82,6 +82,10 @@ CodeKavach reduces and measures disclosure; it does not make disclosure impossib
 | `deploy/` | Docker, Compose, Helm and the air-gapped bundle |
 | `tools/` | Project tooling that is not part of the shipped package |
 
+## Configuration
+
+Settings come from a project file (`codekavach.toml`), a per-user file, `CODEKAVACH_*` environment variables, CLI flags and named profiles, in that order of increasing precedence. API keys are given as references (`env:`, `keyring:` or `file:`) and not written into a file; the loader refuses a plaintext key (E03-19). Start with `codekavach init`, then read the [configuration guide](docs/configuration/README.md); the [key reference](docs/configuration/reference.md) and the [error codes](docs/configuration/error-codes.md) are generated from the code.
+
 ## Development
 
 Requires [uv](https://docs.astral.sh/uv/); it installs Python 3.12 if needed.
