@@ -26,6 +26,18 @@ With `persist=True` (the default) `run_scan` finds or creates the project by its
 
 Findings hold real paths and evidence text, so the database is confidential client data. It holds no scan salt and no vault contents (tested in `tests/privacy/test_pipeline_salt_locality.py`).
 
+## Inspecting the database
+
+The file is an ordinary SQLite database, so the `sqlite3` shell reads it. Open it read-only so that an inspection cannot change a scan's history:
+
+```bash
+sqlite3 -readonly .codekavach/codekavach.db ".tables"
+sqlite3 -readonly .codekavach/codekavach.db   "select id, status, started_at, findings_total from scans order by started_at desc limit 5;"
+sqlite3 -readonly .codekavach/codekavach.db   "select position, name, outcome, duration_ms, error_code from stage_runs where scan_id = 'scan_...' order by position;"
+```
+
+The tables are `projects`, `scans`, `stage_runs` and `findings`. A row keeps a few scalar columns for filtering (`status`, `severity`, `cwe`, `primary_path`) and the authoritative `document_json`; read a document with `json_extract(document_json, '$.title')`. The `findings` table holds real paths and evidence text, so treat a copy of the file, and the output of a query on it, as confidential client data: do not attach either to an issue or a bug report. The state directory's `.gitignore` keeps the file out of git, and it is created with mode `0o600`.
+
 ## Adding a revision
 
 1. Change the tables in `src/codekavach/core/store/orm.py`.
