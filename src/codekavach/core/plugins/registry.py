@@ -115,8 +115,7 @@ class PluginRegistry:
             dist=spec.dist_name,
             failure_stage=stage,
             error_type=type(error).__name__,
-            exc_info=True,
-        )
+        )  # no traceback: its text is untrusted and may hold paths
 
     def _load(self, spec: PluginSpec) -> None:
         key = (spec.group, spec.name)

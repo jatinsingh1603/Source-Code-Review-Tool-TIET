@@ -1,11 +1,11 @@
 
- Usage: codekavach [OPTIONS] COMMAND [ARGS]...
+ Usage: codekavach plugins check [OPTIONS]
 
- Privacy-preserving, LLM-assisted secure source code review.
+ Check that the installed stages resolve into a valid order. Loads every installed plugin.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --version  -V        Show the version and exit.                                                  │
-│ --help     -h        Show this message and exit.                                                 │
+│ --strict            Also fail when two plugins share a name.                                     │
+│ --help    -h        Show this message and exit.                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮
 │ --config                        PATH                        Configuration file to use instead of │
@@ -40,25 +40,3 @@
 │ --set                           KEY=VALUE                   Override one setting; may be         │
 │                                                             repeated.                            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
-│ version     Show the version and exit.                                                           │
-│ scan        Scan a code base and print a severity summary.                                       │
-│ report      Render the report of a stored scan.                                                  │
-│ doctor      Check that this machine is ready to scan.                                            │
-│ completion  Print a shell completion script.                                                     │
-│ init        Write a commented starter codekavach.toml rendered from the settings models.         │
-│ privacy     Inspect what is prepared for, and recorded as sent to, LLM providers.                │
-│ providers   Inspect and test LLM providers.                                                      │
-│ plugins     Inspect installed plugins and check that their stages form a pipeline.               │
-│ vault       Manage the local mapping vault. Its contents never appear in any output.             │
-│ config      Inspect and manage configuration.                                                    │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
- Exit codes:
-   0    OK             completed; nothing at or above the threshold
-   1    FINDINGS       completed; problems at or above the threshold
-   2    USAGE          cannot run as invoked (options, configuration, input, missing back end)
-   3    PRIVACY_BLOCK  a privacy control refused the operation
-   4    INTERNAL       unexpected failure inside CodeKavach
-   130  CANCELLED      interrupted by the user
- Precedence at the end of a command: 4 over 3 over 1 over 0; 2 only before work starts.

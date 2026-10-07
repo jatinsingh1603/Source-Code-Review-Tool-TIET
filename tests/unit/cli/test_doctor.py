@@ -53,6 +53,7 @@ LOCAL_NAMES = [
     "parsing:grammar:javascript",
     "secrets:keyring",
     "plugins:load",
+    "plugins:pipeline",
 ]
 
 

@@ -483,6 +483,27 @@ def _plugins(ctx: CliContext) -> Outcome:
     return Outcome(CheckStatus.WARN, f"{len(broken)} plugin(s) failed to load", {"broken": broken})
 
 
+def _plugin_pipeline(ctx: CliContext) -> Outcome:
+    from codekavach.cli.plugins import build_registry, check_registry  # noqa: PLC0415
+    from codekavach.config.errors import ConfigError  # noqa: PLC0415
+
+    try:
+        registry = build_registry(ctx)
+    except ConfigError:
+        return Outcome(CheckStatus.WARN, "plugins not checked: the configuration is invalid")
+    report = check_registry(registry)
+    if report.failed():
+        problems = len(report.unsatisfied) + len(report.duplicate_providers)
+        problems += len(report.load_errors) + (1 if report.cycle else 0)
+        return Outcome(
+            CheckStatus.WARN,
+            f"the installed plugins do not form a runnable pipeline ({problems} problem(s))",
+            {"order": list(report.order), "problems": problems},
+        )
+    summary = f"{len(report.order)} stage(s) resolve into a valid order"
+    return Outcome(CheckStatus.PASS, summary, {"order": list(report.order)})
+
+
 def _register_local_checks() -> None:
     register_check(
         LocalCheck(
@@ -540,6 +561,12 @@ def _register_local_checks() -> None:
         LocalCheck(
             "plugins:load", "plugins", _plugins,
             remediation="reinstall or remove the named plugin",
+        )
+    )  # fmt: skip
+    register_check(
+        LocalCheck(
+            "plugins:pipeline", "plugins", _plugin_pipeline,
+            remediation="run `codekavach plugins check` for the details",
         )
     )  # fmt: skip
 

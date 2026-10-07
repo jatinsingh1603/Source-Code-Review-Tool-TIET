@@ -192,6 +192,8 @@ LAZY_COMMANDS: tuple[LazyEntry, ...] = (
               "Inspect what is prepared for, and recorded as sent to, LLM providers."),
     LazyEntry("providers", "codekavach.cli.providers:providers_app", "group",
               "Inspect and test LLM providers."),
+    LazyEntry("plugins", "codekavach.cli.plugins:plugins_app", "group",
+              "Inspect installed plugins and check that their stages form a pipeline."),
     LazyEntry("vault", "codekavach.cli.vault:vault_app", "group",
               "Manage the local mapping vault. Its contents never appear in any output."),
     LazyEntry("config", "codekavach.cli.config:config_app", "group",

@@ -1,0 +1,5 @@
+order: none
+load errors: 1
+  codekavach.engines / semgrep-bridge (ck-broken 0.3.1): ImportError
+unsatisfied:
+  stage stage-c requires z
