@@ -1,0 +1,88 @@
+# TEMPORARY (E01-34, issue #45): the clean-room quickstart on macOS. Deleted by the commit that
+# records the result; nothing else refers to it. Hardening follows E01-18: read-only token,
+# SHA-pinned actions, no secrets, no cache.
+name: Clean-room macOS (temporary)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DO_NOT_TRACK: "1"
+  PYTHONUTF8: "1"
+  # Shared runners are noisy; the macOS cells of ci.yml deselect the budgets altogether.
+  CODEKAVACH_PERF_FACTOR: "3.0"
+
+jobs:
+  clean-room:
+    runs-on: macos-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+      - name: The documented sequence, timed
+        shell: bash
+        run: |
+          set -u
+          # Empty tool caches: the runner image is fresh, and these make that explicit.
+          export UV_CACHE_DIR="$RUNNER_TEMP/uv-cache"
+          export PRE_COMMIT_HOME="$RUNNER_TEMP/pre-commit"
+          mkdir -p "$UV_CACHE_DIR" "$PRE_COMMIT_HOME"
+          summary="$GITHUB_STEP_SUMMARY"
+          failed=0
+          {
+            echo "### Clean-room run on macOS"
+            echo
+            sw_vers | sed 's/^/    /'
+            echo "    uv $(uv --version | cut -d' ' -f2)"
+            echo "    make $(make --version | head -1)"
+            echo "    git $(git --version)"
+            echo "    tools on PATH before sync: $(command -v ruff mypy pytest || echo none)"
+            echo
+            echo "| Command | Exit | Seconds |"
+            echo "|---|---|---|"
+          } >> "$summary"
+          step() {
+            label="$1"; shift
+            echo "::group::$label"
+            start=$(date +%s)
+            "$@"; code=$?
+            end=$(date +%s)
+            echo "::endgroup::"
+            echo "=== $label: exit $code in $((end - start)) s"
+            printf '| `%s` | %s | %s |\n' "$label" "$code" "$((end - start))" >> "$summary"
+            if [ "$code" -ne 0 ]; then failed=1; fi
+          }
+          step "uv sync --all-extras" uv sync --all-extras
+          step "uv run pre-commit install" uv run pre-commit install
+          step "uv run pytest" uv run pytest
+          step "uv run codekavach --help" uv run codekavach --help
+          step "make check" make check
+          step "make cov" make cov
+          step "make hooks" make hooks
+          step "make docs-check" make docs-check
+          step "make changelog-check" make changelog-check
+          step "make changelog-draft" make changelog-draft
+          step "make licences" make licences
+          step "make telemetry-check" make telemetry-check
+          step "uv build" uv build
+          step "make prepush" make prepush
+          step "uv run pytest -p no:randomly" uv run pytest -p no:randomly
+          step "uv run pytest -n 2" uv run pytest -n 2
+          step "HYPOTHESIS_PROFILE=ci uv run pytest" env HYPOTHESIS_PROFILE=ci uv run pytest
+          step "uv run pytest --durations=15 -m unit" uv run pytest --durations=15 -m unit
+          echo "git status --porcelain after the sequence:"
+          porcelain="$(git status --porcelain)"
+          echo "[$porcelain]"
+          {
+            echo
+            echo "git status --porcelain: \`${porcelain:-<empty>}\`"
+          } >> "$summary"
+          if [ -n "$porcelain" ]; then failed=1; fi
+          exit "$failed"
