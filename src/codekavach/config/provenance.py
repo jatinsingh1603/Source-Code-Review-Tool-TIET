@@ -3,8 +3,10 @@
 Owning epic: E03.
 
 Every leaf key of the validated settings has an ``Origin``: the highest layer whose data contains
-the key or a parent table of it, the file or source that layer came from, and the line of the key
-when the layer has text. Keys set by no layer come from the built-in defaults. For union-merged
+the key or a parent value of it, the file or source that layer came from, and the line of the key
+when the layer has text. Keys set by no layer come from the built-in defaults. A table written
+with nothing in it (the starter file has a ``[logging]`` header with every key commented out) sets
+no key, so it is not a parent value: the merge adds nothing from it either. For union-merged
 keys, ``contributors`` lists every layer that added elements, in order, with ``"<layer>:file"``
 for elements read from a file such as ``privacy.domain_terms_file``.
 """
@@ -52,11 +54,19 @@ def _prefixes(key: str) -> list[str]:
 
 
 def _layer_key(flat: Mapping[str, Any], key: str) -> str | None:
-    """The key or nearest parent of ``key`` that the layer sets, if any."""
+    """The key or nearest parent of ``key`` that the layer sets, if any.
+
+    An empty table above ``key`` sets nothing below it. An empty table that is ``key`` itself is
+    a written value: ``[llm.providers]`` for a map-valued setting.
+    """
     for candidate in _prefixes(key):
-        if candidate in flat:
+        if candidate in flat and (candidate == key or not _is_empty_table(flat[candidate])):
             return candidate
     return None
+
+
+def _is_empty_table(value: Any) -> bool:
+    return isinstance(value, Mapping) and not value
 
 
 def origin_in(layer: Layer, key: str, matched: str | None = None) -> Origin:
