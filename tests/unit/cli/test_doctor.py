@@ -86,9 +86,10 @@ def fake(
 
 @pytest.fixture
 def registry(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
-    """An empty check registry for this test."""
+    """An empty check registry for this test, without the checks built from the settings."""
     checks: dict[str, Any] = {}
     monkeypatch.setattr(doctor, "_REGISTRY", checks)
+    monkeypatch.setattr(doctor, "_external_checks", lambda *_arguments: [])
     return checks
 
 
@@ -310,7 +311,10 @@ def test_everything_passes_or_is_skipped_on_a_clean_machine(cli: Cli, project: P
     result = cli(["doctor"], cwd=project)
     assert result.exit_code == 0, result.stdout
     statuses = {line.split()[1]: line.split()[0] for line in result.stdout.splitlines()[:-1]}
-    assert list(statuses) == LOCAL_NAMES
+    # the default settings enable the mock provider only: no engine, no report prerequisite
+    assert list(statuses) == [*LOCAL_NAMES, "provider:mock:configured", "provider:mock:reachable"]
+    assert statuses["provider:mock:configured"] == "PASS"
+    assert statuses["provider:mock:reachable"] == "SKIP"  # needs --probe-providers
     assert statuses["storage:artefacts"] == "SKIP"
     assert statuses["parsing:grammar:python"] == "SKIP"
     assert "not available in this build" in result.stdout

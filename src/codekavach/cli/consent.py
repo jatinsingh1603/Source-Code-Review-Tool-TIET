@@ -288,12 +288,15 @@ def ensure_egress_consent(
     provider: ProviderSettings,
     level: PrivacyLevel,
     accept: bool,
+    interactive: bool = True,
 ) -> EgressConsent:
     """Establish consent for this run or refuse it.
 
     Order: not required; a matching stored grant; ``accept`` (the flag) or
     ``CODEKAVACH_ACCEPT_EGRESS=1``, which store nothing; a question on a terminal, which stores a
-    grant on yes; otherwise the refusal.
+    grant on yes; otherwise the refusal. With ``interactive=False`` the question is never asked
+    and nothing is stored (``doctor`` diagnoses and changes nothing): without a grant, the flag or
+    the variable the result is the refusal.
 
     Raises:
         PrivacyBlockError: ``consent_required`` (exit 3); nothing has run.
@@ -308,7 +311,7 @@ def ensure_egress_consent(
         return EgressConsent("flag")
     if os.environ.get(ACCEPT_VARIABLE) == "1":
         return EgressConsent("env")
-    if not is_interactive(ctx):
+    if not interactive or not is_interactive(ctx):
         raise refusal(provider_id, level)
     model = cli_ctx.settings.llm.model or provider.model
     get_err_console().print(

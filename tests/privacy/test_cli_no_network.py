@@ -35,7 +35,7 @@ from tests.support.no_network import (
 Cli = Callable[..., CliResult]
 
 # Switched to true by the last E05 command issue to land (completion, plugins, doctor probes).
-EXPECT_ALL_COMMANDS = False
+EXPECT_ALL_COMMANDS = True
 PROJECT = "<project>"
 HOST = "example.invalid"
 OK = 0

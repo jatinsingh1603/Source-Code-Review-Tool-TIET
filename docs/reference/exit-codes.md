@@ -21,7 +21,7 @@ Precedence at the end of a command: 4 over 3 over 1 over 0; 2 only before work s
 | Code | Name | When |
 |---|---|---|
 | 0 | `OK` | The command completed and found nothing at or above its threshold. |
-| 1 | `FINDINGS` | `scan` found a finding at or above `--fail-on`; `doctor` has a failed required check (or a warning under `--strict`); `providers test` found an unreachable provider or rejected credentials; `config validate --strict` has warnings. |
+| 1 | `FINDINGS` | `scan` found a finding at or above `--fail-on`; `doctor` has a failed required check (or a warning under `--strict`; the checks are listed in [cli-doctor.md](cli-doctor.md)); `providers test` found an unreachable provider or rejected credentials; `config validate --strict` has warnings. |
 | 2 | `USAGE` | Unknown option or bad value, invalid or untrusted configuration, missing input, contradictory flags, or a back end that this build does not contain (`backend_unavailable`). |
 | 3 | `PRIVACY_BLOCK` | A privacy control refused the operation: no consent for remote egress, an egress guard refusal, a broken ledger chain or payload mismatch, a listed term found in a ledger payload, or a vault that cannot be unlocked. |
 | 4 | `INTERNAL` | A defect or an unexpected environment failure inside CodeKavach. The message names the exception type only; run again with `--debug` for a traceback on stderr. |

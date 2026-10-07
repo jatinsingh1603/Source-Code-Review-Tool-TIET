@@ -4,12 +4,17 @@
  Check that this machine is ready to scan.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --category          <str>                   Run this category only; repeatable.                  │
-│ --check             <str>                   Run this check only; repeatable.                     │
-│ --strict                                    Warnings count as failures.                          │
-│ --list                                      List the checks and run nothing.                     │
-│ --timeout           <float range> [x>=0.1]  Seconds allowed per check. [default: 10.0]           │
-│ --help      -h                              Show this message and exit.                          │
+│ --category                 <str>                   Run this category only; repeatable.           │
+│ --check                    <str>                   Run this check only; repeatable.              │
+│ --strict                                           Warnings count as failures.                   │
+│ --list                                             List the checks and run nothing.              │
+│ --timeout                  <float range> [x>=0.1]  Seconds allowed per check. [default: 10.0]    │
+│ --probe-providers                                  Also send a constant probe to each enabled    │
+│                                                    provider (a few tokens on a paid API); remote │
+│                                                    providers need consent.                       │
+│ --accept-egress                                    Approve contacting remote providers for the   │
+│                                                    probe in this run.                            │
+│ --help             -h                              Show this message and exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮
 │ --config                        PATH                        Configuration file to use instead of │

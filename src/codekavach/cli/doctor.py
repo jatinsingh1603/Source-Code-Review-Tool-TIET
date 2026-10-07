@@ -25,9 +25,17 @@ A probe that belongs to an epic that has not landed is obtained with ``load_back
 resulting ``BackendUnavailableError`` is shown as ``SKIP not available in this build``.
 
 Output is routinely pasted into public issue trackers, so it holds versions, paths and statuses
-only: no environment variable values, key names, configuration values or exception messages. A
-crashed check is reported by its exception class. The keyring check looks at the backend only and
-never reads an entry, which could trigger an unlock prompt. No check here uses the network.
+only: no environment variable values, configuration values or exception messages, and secret
+references only by name (``env:NAME``), as ``providers list`` shows them. A crashed check is
+reported by its exception class. The keyring check looks at the backend only and never reads an
+entry, which could trigger an unlock prompt.
+
+Checks that depend on the settings (external engines, LLM providers, report prerequisites) are
+built when the command starts and live in ``codekavach.cli.doctor_checks``; the page
+``docs/reference/cli-doctor.md`` lists every check. Of all checks only
+``provider:<id>:reachable`` can use the network, and only with ``--probe-providers``: it sends a
+constant probe through the egress transport, follows the consent gate of a scan and never asks a
+question itself. The other checks open no connection.
 """
 
 import importlib.metadata
@@ -60,6 +68,7 @@ NOT_IN_BUILD: Final = "not available in this build"
 MINIMUM_PYTHON: Final = (3, 12)
 STATE_DIR_MODE: Final = 0o700
 REQUIRED_GRAMMARS: Final = ("python", "javascript")
+EXTERNAL_CATEGORIES: Final = ("engines", "providers", "report")  # built from the settings
 
 
 class CheckStatus(StrEnum):
@@ -128,6 +137,7 @@ class Outcome:
     status: CheckStatus
     summary: str
     details: Mapping[str, JsonValue] = field(default_factory=dict)
+    remediation: str | None = None  # overrides the hint of the check for this outcome
 
 
 @dataclass(frozen=True)
@@ -145,12 +155,13 @@ class LocalCheck:
         """Run the probe and attach the remediation hint to a result that did not pass."""
         outcome = self.probe(ctx)
         passed = outcome.status in {CheckStatus.PASS, CheckStatus.SKIP}
+        hint = outcome.remediation or (None if passed else self.remediation)
         return CheckResult(
             name=self.name,
             category=self.category,
             status=outcome.status,
             summary=outcome.summary,
-            remediation=None if passed else self.remediation,
+            remediation=hint,
             details=outcome.details,
             required=self.required,
         )
@@ -170,8 +181,8 @@ def all_checks() -> tuple[Check, ...]:
 
 
 def _complete_category(ctx: object, args: list[str], incomplete: str) -> list[str]:
-    """Shell completion of ``--category``: the categories of the registered checks."""
-    categories = sorted({check.category for check in all_checks()})
+    """Shell completion of ``--category``: the categories of the checks doctor can run."""
+    categories = sorted({check.category for check in all_checks()} | set(EXTERNAL_CATEGORIES))
     return [category for category in categories if category.startswith(incomplete)]
 
 
@@ -300,7 +311,7 @@ def render_lines(results: Sequence[CheckResult]) -> list[str]:
     lines.extend(
         f"hint  {result.name:<{width}}  {result.remediation}"
         for result in results
-        if result.remediation and result.status in {CheckStatus.WARN, CheckStatus.FAIL}
+        if result.remediation and result.status is not CheckStatus.PASS
     )
     lines.append(totals_line(results))
     return lines
@@ -594,11 +605,28 @@ def doctor_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     timeout: Annotated[
         float, typer.Option("--timeout", min=0.1, help="Seconds allowed per check.")
     ] = DEFAULT_TIMEOUT_SECONDS,
+    probe_providers: Annotated[
+        bool,
+        typer.Option(
+            "--probe-providers",
+            help=(
+                "Also send a constant probe to each enabled provider (a few tokens on a paid API); "
+                "remote providers need consent."
+            ),
+        ),
+    ] = False,
+    accept_egress: Annotated[
+        bool,
+        typer.Option(
+            "--accept-egress", help="Approve contacting remote providers for the probe in this run."
+        ),
+    ] = False,
 ) -> None:
     """Check that this machine is ready to scan."""
     cli_ctx = get_context(ctx)
     out = get_output(ctx)
-    selected = select_checks(all_checks(), categories=category or (), names=check or ())
+    checks = [*all_checks(), *_external_checks(ctx, probe_providers, accept_egress, timeout)]
+    selected = select_checks(checks, categories=category or (), names=check or ())
     if list_checks:
         listing: list[JsonValue] = [
             {"name": item.name, "category": item.category, "required": item.required}
@@ -619,6 +647,25 @@ def doctor_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     out.result(data, human=lambda console: _print_lines(console, render_lines(results)))
     if has_failed(results, strict=strict):
         raise ThresholdExceeded(f"doctor found problems: {totals_line(results)}")
+
+
+def _external_checks(
+    ctx: typer.Context, probe_providers: bool, accept_egress: bool, timeout: float
+) -> list[Check]:
+    """The checks that depend on the settings; placeholders when the configuration cannot load."""
+    from codekavach.cli.doctor_checks import (  # noqa: PLC0415
+        ProbePlan,
+        external_checks,
+        settings_unavailable,
+    )
+    from codekavach.config.errors import ConfigError  # noqa: PLC0415
+
+    try:
+        settings = get_context(ctx).settings
+    except ConfigError:
+        return settings_unavailable()
+    plan = ProbePlan(ctx=ctx, enabled=probe_providers, accept=accept_egress, timeout=timeout)
+    return external_checks(settings, plan)
 
 
 def _print_lines(console: Console, lines: Sequence[str]) -> None:

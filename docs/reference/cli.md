@@ -514,6 +514,8 @@ Usage: codekavach doctor [OPTIONS]
 | `--strict` | flag | off | Warnings count as failures. |
 | `--list` | flag | off | List the checks and run nothing. |
 | `--timeout` | FLOAT >= 0.1 | 10.0 | Seconds allowed per check. |
+| `--probe-providers` | flag | off | Also send a constant probe to each enabled provider (a few tokens on a paid API); remote providers need consent. |
+| `--accept-egress` | flag | off | Approve contacting remote providers for the probe in this run. |
 
 Global options apply.
 

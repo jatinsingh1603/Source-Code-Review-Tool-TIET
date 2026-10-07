@@ -16,7 +16,7 @@ This page states which `codekavach` commands can use the network, through which 
 |---------|------|-------------------------|
 | `codekavach scan` | A remote LLM provider is selected, remote use is allowed and consent was given. Not with `--no-llm`, `--offline`, or a local provider or test double. | `codekavach.privacy.egress.transport` |
 | `codekavach providers test` | The tested provider is remote; same conditions as a scan. `mock` and `replay` are local test doubles. | `codekavach.privacy.egress.transport` |
-| `codekavach doctor --probe-providers` (planned) | Only when the option is given; not with `--offline`. | `codekavach.privacy.egress.transport` |
+| `codekavach doctor --probe-providers` | Only when the option is given, for a remote provider that is allowed, whose privacy level sends something and that has consent (`docs/reference/cli-doctor.md`). Not with `--offline` for a remote provider. A local provider is probed also with `--offline`. | `codekavach.privacy.egress.transport` |
 | `codekavach sync github` (planned, integrations epic) | Always; it is the purpose of the command. | The named, allow-listed non-LLM transport that the owning epic defines under the ADR-0003 exception procedure |
 | SCA advisory database updates (planned, E19) | When an update is requested. | As for `sync github`: the non-LLM transport of the owning epic's ADR-0003 exception |
 
@@ -26,7 +26,7 @@ A send to an LLM provider is recorded in the egress ledger (`codekavach privacy 
 
 ## Local commands
 
-`--version`, `--help`, `doctor` (without `--probe-providers`), `providers list` (also with `--check-secrets`, which reads the local keyring), `vault status`, `vault rotate`, `vault destroy`, `privacy notice`, `privacy consent ...`, `privacy inspect`, `privacy ledger show`, `privacy ledger verify`, `config ...`, `init`, `report`, and `scan` with `--no-llm`, `--offline` or a local provider.
+`--version`, `--help`, `doctor` (without `--probe-providers`; it starts the version command of an enabled external engine through that engine's adapter, once epic E14 provides adapters), `providers list` (also with `--check-secrets`, which reads the local keyring), `vault status`, `vault rotate`, `vault destroy`, `privacy notice`, `privacy consent ...`, `privacy inspect`, `privacy ledger show`, `privacy ledger verify`, `config ...`, `init`, `report`, and `scan` with `--no-llm`, `--offline` or a local provider.
 
 `scan` may start `git` to read the repository. No other local command starts a program.
 
