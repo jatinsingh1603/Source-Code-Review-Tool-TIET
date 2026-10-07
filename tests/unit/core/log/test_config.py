@@ -172,6 +172,13 @@ def test_third_party_loggers_are_clamped(log_output: io.StringIO) -> None:
     assert log_output.getvalue() == ""
 
 
+def test_the_migration_tool_is_clamped_too(log_output: io.StringIO) -> None:
+    """Alembic narrates every migration at INFO; that is not a diagnostic for the user (#301)."""
+    assert "alembic" in config.THIRD_PARTY_LOGGERS
+    logging.getLogger("alembic.runtime.migration").info("Running upgrade")
+    assert log_output.getvalue() == ""
+
+
 def test_escape_hatch_lifts_clamp(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(config.THIRD_PARTY_VARIABLE, "1")
     buffer = io.StringIO()

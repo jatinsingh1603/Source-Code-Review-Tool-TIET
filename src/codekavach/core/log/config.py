@@ -37,6 +37,7 @@ THIRD_PARTY_LOGGERS = (
     "anthropic",
     "botocore",
     "asyncio",
+    "alembic",
 )
 LEVEL_VARIABLE = "CODEKAVACH_LOG_LEVEL"
 FORMAT_VARIABLE = "CODEKAVACH_LOG_FORMAT"

@@ -47,7 +47,7 @@ Local variables are not rendered in any format, including Typer's and Rich's pre
 
 ### 5. Third-party loggers
 
-HTTP client and SDK loggers are held at `WARNING`, because their debug output contains request headers and bodies. The environment switch `CODEKAVACH_LOG_THIRD_PARTY` lifts this for debugging and announces itself with a warning event.
+HTTP client and SDK loggers are held at `WARNING`, because their debug output contains request headers and bodies. The logger of the migration tool (`alembic`) is held there as well, because its progress messages are not diagnostics for the user (issue 301). The environment switch `CODEKAVACH_LOG_THIRD_PARTY` lifts this for debugging and announces itself with a warning event.
 
 ### 6. Redaction
 
