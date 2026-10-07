@@ -4,7 +4,7 @@
 |---|---|
 | Project | CodeKavach: privacy-preserving, LLM-assisted secure source code review |
 | Institution | Thapar Institute of Engineering and Technology |
-| Repository | https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIT |
+| Repository | https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET |
 | Licence | MIT |
 | Plan version | 1.0 (2026-09-21) |
 | First demo | 2026-10-05 (privacy-layer proof) |
