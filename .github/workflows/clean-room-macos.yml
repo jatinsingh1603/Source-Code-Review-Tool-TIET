@@ -29,6 +29,7 @@ jobs:
       - name: The documented sequence, timed
         shell: bash
         run: |
+          set +e  # the runner starts bash with -e; every step must run and be recorded
           set -u
           # Empty tool caches: the runner image is fresh, and these make that explicit.
           export UV_CACHE_DIR="$RUNNER_TEMP/uv-cache"

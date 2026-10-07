@@ -56,8 +56,10 @@ test-e2e: ## Run the end-to-end tier
 test-privacy: ## Run the privacy invariant tier
 	uv run pytest -m privacy $(PYTEST_ARGS)
 
+# Coverage tracing slows the code the performance budgets time (E01-34: two budgets failed under
+# make cov on a clean Linux machine), so cov uses the factor CI uses unless one is already set.
 cov: ## Run the tests with branch coverage (terminal, XML and HTML reports)
-	uv run pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html $(PYTEST_ARGS)
+	CODEKAVACH_PERF_FACTOR=$${CODEKAVACH_PERF_FACTOR:-3.0} uv run pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html $(PYTEST_ARGS)
 
 check: fmt-check lint type contracts test ## Run every gate CI runs, stopping at the first failure
 

@@ -29,7 +29,7 @@ Loading configuration is offline (ADR-0006 D9) and runs at the start of every in
 
 Measured at the time of writing: `load_settings()` takes about 5 ms and the package imports in about 360 ms on Windows; roughly 4 ms and 250 ms on Linux. The load budget leaves about ten times headroom. The import budget leaves little (about 1.6 times on Linux), so the test takes the best of three fresh interpreters, and CI relies on its `CODEKAVACH_PERF_FACTOR` of 3.0. A slow laptop that fails only this test needs a factor, not a code change.
 
-To relax the budgets locally, set `CODEKAVACH_PERF_FACTOR` (for example `CODEKAVACH_PERF_FACTOR=3`), skip the timing tests with `-m "not perf"` or `CODEKAVACH_SKIP_PERF=1`. The macOS CI cells deselect `perf` tests.
+`make cov` sets the factor to 3.0 when none is set, because coverage tracing slows the timed code (on a clean Linux machine two budgets failed under `make cov` and passed under `make check`). To relax the budgets locally, set `CODEKAVACH_PERF_FACTOR` (for example `CODEKAVACH_PERF_FACTOR=3`), skip the timing tests with `-m "not perf"` or `CODEKAVACH_SKIP_PERF=1`. The macOS CI cells deselect `perf` tests.
 
 When a budget fails, the cause is almost always an eager import. Find it with `python tools/dev/importtime_report.py --target codekavach.config`, and make the import lazy (inside the function that needs it), as `keys.py` does for `keyring` and `orgpolicy/signature.py` does for `cryptography`.
 

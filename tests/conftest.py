@@ -22,10 +22,14 @@ pytest_plugins = [
 PROFILE_VARIABLE = "HYPOTHESIS_PROFILE"
 PROFILES = ("dev", "ci", "nightly")
 
-# E02 extends this registration; never register a profile name twice.
-settings.register_profile("dev", max_examples=50, deadline=timedelta(milliseconds=500))
+# E02 extends this registration; never register a profile name twice. Unnamed settings are
+# inherited from hypothesis' own defaults, and with CI=true in the environment (a CI runner, some
+# dev containers) those defaults are already derandomised, so every profile states it.
+settings.register_profile(
+    "dev", max_examples=50, deadline=timedelta(milliseconds=500), derandomize=False
+)
 settings.register_profile("ci", max_examples=200, deadline=None, derandomize=True, print_blob=True)
-settings.register_profile("nightly", max_examples=2000, deadline=None)
+settings.register_profile("nightly", max_examples=2000, deadline=None, derandomize=False)
 
 
 def pytest_configure(config: pytest.Config) -> None:

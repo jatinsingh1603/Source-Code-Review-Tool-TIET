@@ -102,6 +102,14 @@ def test_agents_md_names_prepush_in_its_checklist() -> None:
 
 
 @needs_make
+def test_cov_relaxes_the_perf_budgets_unless_a_factor_is_set() -> None:
+    """Coverage tracing slows the timed code; found by the clean-room run of E01-34."""
+    output = _make("-n", "cov")
+    assert "CODEKAVACH_PERF_FACTOR=${CODEKAVACH_PERF_FACTOR:-3.0}" in output
+    assert output.index("CODEKAVACH_PERF_FACTOR") < output.index("pytest --cov")
+
+
+@needs_make
 def test_clean_never_touches_client_data() -> None:
     output = _make("-n", "clean")
     for protected in (".venv", ".codekavach", "vault", "ledger"):
