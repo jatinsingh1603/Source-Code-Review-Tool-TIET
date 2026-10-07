@@ -2,7 +2,8 @@
 
 Every `codekavach` invocation ends with exactly one of these exit codes. They are a public
 contract: pipelines, the GitHub Action and the pre-commit hook act on them. The table below is the
-text that `codekavach --help` prints as its epilog; a test keeps the two identical.
+text that `codekavach --help` prints as its epilog; a test keeps the two identical. The
+generated [command-line reference](cli.md) repeats it with every command and option.
 
 ```text
 Exit codes:

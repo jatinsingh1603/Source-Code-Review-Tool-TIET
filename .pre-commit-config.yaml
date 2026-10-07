@@ -87,6 +87,12 @@ repos:
         language: system
         pass_filenames: false
         files: ^(src/codekavach/core/models/|docs/schemas/|tests/support/factories\.py|tools/schemas/)
+      - id: codekavach-cli-reference
+        name: command-line reference (E05-29)
+        entry: uv run python tools/gen_cli_docs.py --check
+        language: system
+        pass_filenames: false
+        files: ^(src/codekavach/cli/|tools/gen_cli_docs\.py|docs/reference/cli\.md)
       - id: docs-check
         name: documentation check (links, anchors, style)
         entry: uv run python tools/dev/check_docs.py
