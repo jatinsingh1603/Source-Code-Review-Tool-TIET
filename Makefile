@@ -9,14 +9,14 @@
 # every recipe goes through uv run; logic belongs in tools/dev/ where it can be tested; check never
 # rewrites files; clean deletes only named build and cache artefacts and never touches .venv/,
 # .codekavach/, vaults or ledgers. Later issues add: changelog-draft (E01-22),
-# docs-check (E01-23), licences (E01-30), telemetry-check (E01-31).
+# docs-check (E01-23), licences (E01-30), telemetry-check (E01-31), prepush (E01-34).
 
 .DEFAULT_GOAL := help
 PYTEST_ARGS ?=
 
 .PHONY: help setup fmt fmt-check lint type contracts test test-unit test-integration test-e2e \
 	test-privacy cov check lock-check build adr clean hooks hooks-update schemas schemas-check licences telemetry-check \
-	changelog-draft changelog-check docs-check claims
+	changelog-draft changelog-check docs-check claims prepush
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "} {printf "  %-18s %s\n", $$1, $$2}'
@@ -95,6 +95,11 @@ changelog-draft: ## Print the upcoming changelog section; changes no file
 
 changelog-check: ## Check the names of the changelog fragments
 	uv run python tools/dev/check_changelog_fragments.py
+
+# The six parts run one after another in the documented order, even under make -j: the hooks can
+# rewrite files that check reads, and a failure should name the first broken gate.
+.NOTPARALLEL: prepush
+prepush: check hooks docs-check changelog-check licences telemetry-check ## Run check, hooks, docs-check, changelog-check, licences and telemetry-check in that order
 
 build: ## Build the wheel and the sdist
 	uv build

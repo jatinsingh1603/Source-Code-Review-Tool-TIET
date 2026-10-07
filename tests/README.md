@@ -13,6 +13,15 @@ Privacy invariants I1 to I6 (`docs/ARCHITECTURE.md` section 6.3) are enforced by
 
 The tier marker is applied automatically from the directory (`tests/conftest.py`, `tests/support/tiers.py`); do not add it by hand. Top-level test directories that are not tiers (for example `tests/process/` or `tests/perf/`) are collected normally and get no tier marker.
 
+| Other directory | What belongs there |
+|-----------------|--------------------|
+| `tests/perf/` | Performance budgets, collected with the `perf` marker |
+| `tests/process/` | Tests of the project's working documents and scripts: board, sprint cadence, status notes and reports, risk log |
+| `tests/docs/` | Tests that keep the reference documentation in step with the code |
+| `tests/typing/` | Files that `mypy` must accept or reject, used by the typing tests |
+| `tests/support/` | Shared helpers (tiers, strategies, synthetic values, golden files, performance) |
+| `tests/fixtures/`, `tests/golden/` | Small static inputs and expected outputs shared by several tests |
+
 ## Markers
 
 | Marker | Meaning |
@@ -51,11 +60,14 @@ you do. When you add a `TID251` ban in `pyproject.toml`, add its import to the r
 
 ## Running
 
+The Makefile wraps the common runs: `make test` (narrow it with `PYTEST_ARGS="-k name"`), `make test-unit`, `make test-integration`, `make test-e2e`, `make test-privacy` and `make cov`; `make check` runs the tests after the format, lint, type and import-contract gates.
+
 ```bash
 uv run pytest                          # everything except network tests
 uv run pytest -m unit                  # one tier (unit, integration, e2e, privacy)
 uv run pytest -m "not network and not perf"   # skip performance budgets on a slow machine
 uv run pytest -n auto                  # in parallel (pytest-xdist)
+HYPOTHESIS_PROFILE=ci uv run pytest    # the property-based settings CI uses
 uv run pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html
 ```
 

@@ -5,7 +5,7 @@
 **Privacy-preserving, LLM-assisted secure source code review.**
 *Kavach* (कवच) means armour: CodeKavach lets an organisation get a standards-based security review of its source code from any large language model, **while keeping secrets and personal data local, and minimising and measuring how much business logic is disclosed to the LLM provider.**
 
-> Status: planning and foundations. Follow progress on the [project board](../../projects) and in the [issue tracker](../../issues).
+> Status: foundations in place: packaging, quality gates, the test harness, CI and the contributor documents are set up, and the product is built milestone by milestone on top of them. Follow progress on the [project board](../../projects) and in the [issue tracker](../../issues).
 
 ## The problem
 
@@ -72,7 +72,7 @@ CodeKavach reduces and measures disclosure; it does not make disclosure impossib
 | `RESOURCE.md` | Research papers, datasets, open-source tools and documentation links |
 | `docs/` | Plan, architecture, [decision records](docs/adr/README.md), [domain model reference](docs/reference/domain-model.md), threat model, research notes, status notes, schemas, demo runbooks, sample reports |
 | `src/codekavach/` | Python core; package tree as in `docs/ARCHITECTURE.md` section 3 |
-| `tests/` | Unit, integration, end-to-end and privacy (property-based) tests |
+| `tests/` | Unit, integration, end-to-end and privacy (property-based) tests; how they are organised: [`tests/README.md`](tests/README.md) |
 | `ui/` | Web dashboard |
 | `extensions/vscode/` | VS Code extension |
 | `action/` | GitHub Action |
@@ -81,6 +81,10 @@ CodeKavach reduces and measures disclosure; it does not make disclosure impossib
 | `fixtures/kavachbank/` | Deliberately vulnerable sample application with fake planted secrets |
 | `deploy/` | Docker, Compose, Helm and the air-gapped bundle |
 | `tools/` | Project tooling that is not part of the shipped package |
+| `tools/dev/` | Developer scripts behind the Makefile targets and the pre-commit hooks; every script has a row in [`tools/dev/README.md`](tools/dev/README.md) |
+| `docs/adr/` | Architecture decision records, numbered and indexed: [`docs/adr/README.md`](docs/adr/README.md) |
+| `changelog.d/` | One changelog fragment per user-visible change, assembled by towncrier into `CHANGELOG.md` |
+| `.devcontainer/` | Development container with Python, `uv`, `make` and the report libraries |
 
 ## Configuration
 
@@ -88,7 +92,7 @@ Settings come from a project file (`codekavach.toml`), a per-user file, `CODEKAV
 
 ## Development
 
-Requires [uv](https://docs.astral.sh/uv/); it installs Python 3.12 if needed.
+Requires [uv](https://docs.astral.sh/uv/) and `make`; uv installs Python 3.12 if needed. No API key, token or login is needed.
 
 ```bash
 uv sync --all-extras
@@ -97,7 +101,7 @@ uv run pytest
 uv run codekavach --help
 ```
 
-`pre-commit` is configured by a later scaffolding issue; the other commands work now. The full quickstart follows in E01-34.
+`make setup` runs the first two commands and `make check` runs every gate CI runs on the code; `make help` lists the other targets, and `make prepush` adds the documentation, changelog, licence and telemetry checks. [`CONTRIBUTING.md`](CONTRIBUTING.md) goes from a clone to a first commit.
 
 Work is planned in one-week sprints on the project board; the rhythm and the rules for moving a card are in [`docs/process/sprint-cadence.md`](docs/process/sprint-cadence.md).
 

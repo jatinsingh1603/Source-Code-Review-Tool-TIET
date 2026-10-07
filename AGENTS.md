@@ -67,7 +67,7 @@ Tick the acceptance-criteria checkboxes in the issue body. Close the issue with 
 
 - [ ] All acceptance criteria met and ticked
 - [ ] Unit tests, and integration tests where specified, written and passing
-- [ ] `ruff`, `mypy --strict` and the import-linter contracts pass
+- [ ] `make check` passes: `ruff` format and lint, `mypy --strict`, the import-linter contracts and the tests
 - [ ] Documentation updated: docstrings, `docs/`, CLI help, and a `changelog.d/` fragment for user-visible changes
 - [ ] No privacy invariant weakened; new outbound calls go through the egress guard
 - [ ] Board card moved, closing comment written
@@ -83,7 +83,7 @@ uv run pytest
 uv run codekavach --help
 ```
 
-Until issue scaffolding (epic E01) lands these commands will not work; E01 creates them.
+The recommended pair is `make setup` (the first two commands) and `make check` (every gate CI runs on the code: format check, lint, `mypy --strict`, import contracts and the tests). `make help` lists every target. The set-up needs no API key, token or login. Windows contributors use the devcontainer (`.devcontainer/`) or WSL 2.
 
 ## 9. Before every push
 
@@ -95,5 +95,5 @@ Run this checklist; if any item fails, fix it before pushing.
 4. **Secrets.** A secret scan of the staged changes is clean; anything under `fixtures/` is synthetic and listed in its manifest.
 5. **Architecture.** New modules use the paths and names in `docs/ARCHITECTURE.md` section 3, or the change includes an ADR.
 6. **Licences.** New dependencies and bundled rule packs are compatible with MIT distribution and with scanning proprietary code.
-7. **Quality.** `ruff`, `mypy --strict`, import-linter contracts and `pytest` (including the `privacy` marker) pass locally.
+7. **Quality.** `ruff`, `mypy --strict`, import-linter contracts and `pytest` (including the `privacy` marker) pass locally. `make prepush` runs `check`, `hooks`, `docs-check`, `changelog-check`, `licences` and `telemetry-check`, in that order.
 8. **Size.** The push is one focused change, not a day's work in one commit.

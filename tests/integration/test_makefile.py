@@ -29,6 +29,7 @@ REQUIRED_TARGETS = (
     "clean",
     "hooks",
     "hooks-update",
+    "prepush",
 )
 
 needs_make = pytest.mark.skipif(MAKE is None, reason="make is not on PATH")
@@ -60,6 +61,44 @@ def test_check_runs_gates_in_order() -> None:
     gates = ["ruff format --check", "ruff check", "mypy", "lint-imports", "pytest"]
     positions = [output.index(gate) for gate in gates]
     assert positions == sorted(positions)
+
+
+@needs_make
+def test_prepush_shows_its_six_parts_in_the_documented_order() -> None:
+    output = _make("-n", "prepush")
+    parts = [
+        "ruff format --check",  # check
+        "pre-commit run --all-files",  # hooks
+        "tools/dev/check_docs.py",  # docs-check
+        "tools/dev/check_changelog_fragments.py",  # changelog-check
+        "tools/dev/check_licences.py",  # licences
+        "tools/dev/check_no_telemetry.py",  # telemetry-check
+    ]
+    positions = [output.index(part) for part in parts]
+    assert positions == sorted(positions)
+    assert len(set(positions)) == len(parts)
+    assert output.index("pytest") < positions[1]  # check ends with the tests, hooks come after
+
+
+def test_prepush_names_exactly_the_documented_targets_in_order() -> None:
+    text = MAKEFILE.read_text(encoding="utf-8")
+    line = re.search(r"^prepush:([^#\n]*?)\s*##", text, re.MULTILINE)
+    assert line is not None
+    assert line.group(1).split() == [
+        "check",
+        "hooks",
+        "docs-check",
+        "changelog-check",
+        "licences",
+        "telemetry-check",
+    ]
+    assert re.search(r"^\.NOTPARALLEL:", text, re.MULTILINE)
+
+
+def test_agents_md_names_prepush_in_its_checklist() -> None:
+    agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    quality = next(line for line in agents.splitlines() if line.startswith("7. **Quality.**"))
+    assert "make prepush" in quality
 
 
 @needs_make
