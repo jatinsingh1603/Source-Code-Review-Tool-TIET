@@ -4,7 +4,7 @@ Owning epic: E05 (issue E05-33). Related: the generated [command-line reference]
 
 This guide takes you from an installed tool to an audited report, and from there to a gated pipeline. It is written for two readers: a security engineer at a client (sections 1 to 6, 9 and 10) and a DevOps engineer (sections 7 and 8). Every section can be read on its own, so a command is repeated where it is needed instead of pointing back. The reference pages list every option; this page says which ones to reach for.
 
-In the examples the program is called `codekavach`. From a checkout without an activated environment, put `uv run` in front of it. The examples use synthetic values only (`kavachbank`, `accrue_premium_interest`, `AKIAIOSFODNN7EXAMPLE`).
+In the examples the program is called `codekavach`. From a checkout without an activated environment, put `uv run` in front of it. The examples use synthetic values only (`kavachbank`, `accrue_premium_interest`).
 
 ## What CodeKavach does and does not do
 
@@ -154,7 +154,7 @@ A provider and its key belong in your user configuration file, not in the projec
 [llm.providers.primary]
 kind = "anthropic"
 model = "claude-sonnet-5-5"
-api_key = "env:ANTHROPIC_API_KEY"
+api_key = "env:ANTHROPIC_API_KEY" # pragma: allowlist secret
 ```
 
 `codekavach config path` shows where the user file is, and `codekavach config key status` says whether a reference resolves.
@@ -307,7 +307,7 @@ codekavach:
           [llm.providers.primary]
           kind = "anthropic"
           model = "claude-sonnet-5-5"
-          api_key = "env:ANTHROPIC_API_KEY"
+          api_key = "env:ANTHROPIC_API_KEY" # pragma: allowlist secret
           EOF
           codekavach scan . --profile ci --provider primary --config "$RUNNER_TEMP/codekavach.toml" --json > result.json
 ```
