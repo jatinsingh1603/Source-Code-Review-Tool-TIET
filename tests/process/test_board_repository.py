@@ -64,4 +64,4 @@ def test_the_checks_are_live(tmp_path: Path) -> None:
     assert URL.search("see https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIT/x")
     match = URL.search("https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIT/x")
     assert match is not None and match.group(1) != REPOSITORY
-    assert SLUG == "jatinsingh1603/Source-Code-Review-Tool-TIET"
+    assert SLUG == "jatinsingh1603/Source-Code-Review-Tool-TIET"  # pragma: allowlist secret
