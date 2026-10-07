@@ -301,7 +301,8 @@ def render_reference(root: click.Command) -> str:
         NOTICE,
         "",
         "Every command accepts `--help` / `-h`. The global options below are accepted before or"
-        " after the sub-command.",
+        " after the sub-command. For a walk-through by task, see the"
+        " [CLI user guide](../guide/cli.md).",
         "",
         "## Contents",
         "",

@@ -2,7 +2,7 @@
 
 This page is produced by tools/gen_cli_docs.py from the command tree. Do not edit it by hand.
 
-Every command accepts `--help` / `-h`. The global options below are accepted before or after the sub-command.
+Every command accepts `--help` / `-h`. The global options below are accepted before or after the sub-command. For a walk-through by task, see the [CLI user guide](../guide/cli.md).
 
 ## Contents
 

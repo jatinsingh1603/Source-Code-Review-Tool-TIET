@@ -88,7 +88,7 @@ CodeKavach reduces and measures disclosure; it does not make disclosure impossib
 
 ## Configuration
 
-Settings come from a project file (`codekavach.toml`), a per-user file, `CODEKAVACH_*` environment variables, CLI flags and named profiles, in that order of increasing precedence. API keys are given as references (`env:`, `keyring:` or `file:`) and not written into a file; the loader refuses a plaintext key (E03-19). Start with `codekavach init`, then read the [configuration guide](docs/configuration/README.md); every command and option is in the [command-line reference](docs/reference/cli.md); the [key reference](docs/configuration/reference.md) and the [error codes](docs/configuration/error-codes.md) are generated from the code.
+Settings come from a project file (`codekavach.toml`), a per-user file, `CODEKAVACH_*` environment variables, CLI flags and named profiles, in that order of increasing precedence. API keys are given as references (`env:`, `keyring:` or `file:`) and not written into a file; the loader refuses a plaintext key (E03-19). Start with `codekavach init`, then read the [CLI user guide](docs/guide/cli.md) and the [configuration guide](docs/configuration/README.md); every command and option is in the [command-line reference](docs/reference/cli.md); the [key reference](docs/configuration/reference.md) and the [error codes](docs/configuration/error-codes.md) are generated from the code.
 
 ## Development
 
