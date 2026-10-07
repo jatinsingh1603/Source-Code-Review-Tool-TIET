@@ -1,11 +1,19 @@
 
- Usage: codekavach [OPTIONS] COMMAND [ARGS]...
+ Usage: codekavach eval detection [OPTIONS]
 
- Privacy-preserving, LLM-assisted secure source code review.
+ Measure detection quality (precision, recall) on a benchmark dataset.
+
+ Runs the scan on a labelled dataset at each requested privacy level and with each requested
+ provider, and compares the findings with the labels. Delivered by epic E36.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --version  -V        Show the version and exit.                                                  │
-│ --help     -h        Show this message and exit.                                                 │
+│ *  --dataset           NAME_OR_PATH        Benchmark dataset to evaluate on. [required]          │
+│    --level             Lx                  Privacy level to evaluate; repeat for several (L0 to  │
+│                                            L4).                                                  │
+│    --provider          ID                  Provider to evaluate; repeat for several.             │
+│    --out               PATH                Where to write the results.                           │
+│    --limit             <int range> [x>=1]  Evaluate at most this many cases.                     │
+│    --help      -h                          Show this message and exit.                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮
 │ --config                        PATH                        Configuration file to use instead of │
@@ -14,7 +22,6 @@
 │                                                             or ci).                              │
 │ --privacy-level                 [L0|L1|L2|L3|L4]            Privacy level for this run; cannot   │
 │                                                             go below the configured floor.       │
-│ --provider                      <str>                       LLM provider id to use.              │
 │ --model                         <str>                       Model of the selected provider.      │
 │ --offline                                                   Open no connection outside this      │
 │                                                             machine (no remote provider or       │
@@ -40,28 +47,3 @@
 │ --set                           KEY=VALUE                   Override one setting; may be         │
 │                                                             repeated.                            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
-│ version     Show the version and exit.                                                           │
-│ scan        Scan a code base and print a severity summary.                                       │
-│ report      Render the report of a stored scan.                                                  │
-│ doctor      Check that this machine is ready to scan.                                            │
-│ completion  Print a shell completion script.                                                     │
-│ init        Write a commented starter codekavach.toml rendered from the settings models.         │
-│ privacy     Inspect what is prepared for, and recorded as sent to, LLM providers.                │
-│ providers   Inspect and test LLM providers.                                                      │
-│ plugins     Inspect installed plugins and check that their stages form a pipeline.               │
-│ sync        Send findings to a client system.                                                    │
-│ eval        Run the detection and leakage evaluations.                                           │
-│ demo        Run the Demo 1 sequence offline on the mock provider.                                │
-│ vault       Manage the local mapping vault. Its contents never appear in any output.             │
-│ config      Inspect and manage configuration.                                                    │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
- Exit codes:
-   0    OK             completed; nothing at or above the threshold
-   1    FINDINGS       completed; problems at or above the threshold
-   2    USAGE          cannot run as invoked (options, configuration, input, missing back end)
-   3    PRIVACY_BLOCK  a privacy control refused the operation
-   4    INTERNAL       unexpected failure inside CodeKavach
-   130  CANCELLED      interrupted by the user
- Precedence at the end of a command: 4 over 3 over 1 over 0; 2 only before work starts.

@@ -1,11 +1,28 @@
 
- Usage: codekavach [OPTIONS] COMMAND [ARGS]...
+ Usage: codekavach sync github [OPTIONS] [target]
 
- Privacy-preserving, LLM-assisted secure source code review.
+ Create or update GitHub issues for a scan's findings and place them on a board.
 
+ Creates or updates one issue per finding in the client's repository and places the items on
+ the client's Projects v2 board. It does not modify code, open pull requests or push commits.
+ The token comes from the secret reference integrations.github.token, never from an option.
+ It needs the network and refuses --offline. Delivered by epic E34.
+
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│   target      <str>  Project directory. [default: .]                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --version  -V        Show the version and exit.                                                  │
-│ --help     -h        Show this message and exit.                                                 │
+│ --scan                           [SCAN_ID|latest]    The scan to send. [default: latest]         │
+│ --repo                           OWNER/NAME          Repository for the issues; default:         │
+│                                                      integrations.github.repository.             │
+│ --project                        NUMBER_OR_URL       Projects v2 board to update.                │
+│ --issues          --no-issues                        Create or update one issue per finding.     │
+│                                                      [default: issues]                           │
+│ --board           --no-board                         Place the items on the project board.       │
+│                                                      [default: board]                            │
+│ --dry-run                                            Show what would change; change nothing.     │
+│ --max-issues                     <int range> [x>=1]  Create or update at most this many issues.  │
+│ --help        -h                                     Show this message and exit.                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮
 │ --config                        PATH                        Configuration file to use instead of │
@@ -40,28 +57,3 @@
 │ --set                           KEY=VALUE                   Override one setting; may be         │
 │                                                             repeated.                            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
-│ version     Show the version and exit.                                                           │
-│ scan        Scan a code base and print a severity summary.                                       │
-│ report      Render the report of a stored scan.                                                  │
-│ doctor      Check that this machine is ready to scan.                                            │
-│ completion  Print a shell completion script.                                                     │
-│ init        Write a commented starter codekavach.toml rendered from the settings models.         │
-│ privacy     Inspect what is prepared for, and recorded as sent to, LLM providers.                │
-│ providers   Inspect and test LLM providers.                                                      │
-│ plugins     Inspect installed plugins and check that their stages form a pipeline.               │
-│ sync        Send findings to a client system.                                                    │
-│ eval        Run the detection and leakage evaluations.                                           │
-│ demo        Run the Demo 1 sequence offline on the mock provider.                                │
-│ vault       Manage the local mapping vault. Its contents never appear in any output.             │
-│ config      Inspect and manage configuration.                                                    │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
- Exit codes:
-   0    OK             completed; nothing at or above the threshold
-   1    FINDINGS       completed; problems at or above the threshold
-   2    USAGE          cannot run as invoked (options, configuration, input, missing back end)
-   3    PRIVACY_BLOCK  a privacy control refused the operation
-   4    INTERNAL       unexpected failure inside CodeKavach
-   130  CANCELLED      interrupted by the user
- Precedence at the end of a command: 4 over 3 over 1 over 0; 2 only before work starts.

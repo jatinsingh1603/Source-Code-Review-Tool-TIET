@@ -87,3 +87,25 @@ No environment variable and no configuration key means "yes". Pre-approval is al
 - `--quiet` and `--verbose` contradict each other (`error[quiet_verbose_conflict]`, exit 2).
 - `--help`, `--version` and `completion` read no configuration, so they are safe to run inside an
   untrusted repository.
+
+## Commands delivered by later milestones
+
+Four commands exist now, with their full option surface, although the code behind them belongs to later epics. Their grammar is fixed early so that the GitHub Action, the evaluation scripts and the demo runbook can be written against it, and so that the reference and the help snapshots show it.
+
+| Command | What it will do | Back end | Epic |
+|---------|-----------------|----------|------|
+| `sync github` | Create or update one issue per finding in the client's repository and place the items on the client's Projects v2 board. It does not modify code, open pull requests or push commits. | `codekavach.integrations.github.run_github_sync` | E34 |
+| `eval detection` | Measure detection quality on a labelled dataset, per privacy level and provider. | `codekavach.eval.run_detection_eval` | E36 |
+| `eval leakage` | Attack the prepared payloads of a scan or dataset and report what an attacker recovers. | `codekavach.eval.run_leakage_eval` | E37 |
+| `demo` | Run the Demo 1 sequence offline on the mock provider: scan, `privacy inspect --list`, `privacy ledger verify --check-terms`, report. | `codekavach.cli.demo_runner.run_demo` | E13 |
+
+Each command validates its arguments first (a repository must look like `OWNER/NAME`, a level is `L0` to `L4`, a dataset path must exist, `sync github` refuses `--offline`), and then looks for its back end. While the owning epic has not landed, the outcome is the same for all four, in both output modes:
+
+```text
+error[backend_unavailable]: GitHub sync is not available in this build
+hint: delivered by epic E34
+```
+
+The exit code is 2. Under `--json` the result is one envelope with `"ok": false`, `"data": null` and the same code, message and hint in `errors`. The commands do not pretend: they print no invented metric, write no placeholder file and open no connection. When the back end is present the command calls it once with the parsed arguments and prints its report.
+
+`sync github` takes no token option. The token comes from the secret reference `integrations.github.token` (for example `env:GITHUB_TOKEN`), and the repository defaults to `integrations.github.repository`. `demo` uses the mock provider, so no consent is involved.
