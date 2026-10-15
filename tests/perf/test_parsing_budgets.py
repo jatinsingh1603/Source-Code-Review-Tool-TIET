@@ -25,6 +25,7 @@ def _sample_file_text() -> str:
 
 
 @pytest.mark.perf
+@pytest.mark.timeout(400)  # well past BUDGET_SECONDS x CODEKAVACH_PERF_FACTOR; 120 s is too tight
 def test_parsing_5000_files_of_200_lines_stays_within_budget() -> None:
     text = _sample_file_text()
 
