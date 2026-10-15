@@ -65,6 +65,17 @@ def in_range(low: int, high: int, key: str) -> AfterValidator:
     return AfterValidator(check)
 
 
+def float_in_range(low: float, high: float, key: str) -> AfterValidator:
+    """A validator that rejects floats outside ``[low, high]`` with a CK-CFG-003 message."""
+
+    def check(value: float) -> float:
+        if not low <= value <= high:
+            raise ValueError(f"{INVALID} {key} must be between {low} and {high}")
+        return value
+
+    return AfterValidator(check)
+
+
 def bounds(low: int, high: int) -> dict[str, Any]:
     """JSON Schema bounds that document an ``in_range`` validator."""
     return {"minimum": low, "maximum": high}

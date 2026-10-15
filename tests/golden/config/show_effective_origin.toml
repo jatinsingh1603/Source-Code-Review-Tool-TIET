@@ -40,6 +40,11 @@ cache_keep_scans = 5      # default
 
 [scan.stage_timeouts]
 
+[parsing]
+timeout_seconds = 5.0     # default
+max_source_bytes = 2000000  # default
+max_node_count = 2000000  # default
+
 [privacy]
 level = "L4"              # user: /home/u/config.toml:2
 min_level = "L1"          # default

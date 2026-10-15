@@ -58,6 +58,16 @@ Defaults too long for the table:
 
 1. `scan.exclude`: `[".git/**", ".codekavach/**", "node_modules/**", ".venv/**", "venv/**", "__pycache__/**", "dist/**", "build/**", "target/**", "vendor/**"]`
 
+## `[parsing]`
+
+Resource guards applied while parsing.
+
+| Key | Type | Default | Environment variable | Markers | Description |
+|-----|------|---------|----------------------|---------|-------------|
+| `parsing.timeout_seconds` | float | `5.0` | `CODEKAVACH_PARSING__TIMEOUT_SECONDS` |  | Per-file tree-sitter parse timeout, in seconds. |
+| `parsing.max_source_bytes` | int | `2000000` | `CODEKAVACH_PARSING__MAX_SOURCE_BYTES` |  | Largest source file, in bytes, that is parsed. |
+| `parsing.max_node_count` | int | `2000000` | `CODEKAVACH_PARSING__MAX_NODE_COUNT` |  | Largest number of AST nodes a parsed file may have. |
+
 ## `[privacy]`
 
 What may leave the machine.

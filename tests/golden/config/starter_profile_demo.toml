@@ -57,6 +57,15 @@ name = "payments-api"
 #~ Number of most recent scans whose cache entries survive pruning.
 # cache_keep_scans = 5
 
+#~ Resource guards applied while parsing.
+[parsing]
+#~ Per-file tree-sitter parse timeout, in seconds.
+# timeout_seconds = 5.0
+#~ Largest source file, in bytes, that is parsed.
+# max_source_bytes = 2000000
+#~ Largest number of AST nodes a parsed file may have.
+# max_node_count = 2000000
+
 #~ What may leave the machine. L3 sends a redacted, pseudonymised minimal slice.
 #~ What may leave the machine.
 [privacy]

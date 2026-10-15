@@ -37,6 +37,11 @@ cache_keep_scans = 5
 
 [scan.stage_timeouts]
 
+[parsing]
+timeout_seconds = 5.0
+max_source_bytes = 2000000
+max_node_count = 2000000
+
 [privacy]
 level = "L4"
 min_level = "L1"

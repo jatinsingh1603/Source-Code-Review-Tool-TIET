@@ -1,0 +1,14 @@
+"""A fixed sample file for the parsing golden test (E07-01)."""
+
+
+def greet(name: str) -> str:
+    # a comment, so the golden file pins comment node types too
+    return f"hello {name}"
+
+
+class Greeter:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def greet(self) -> str:
+        return greet(self.name)

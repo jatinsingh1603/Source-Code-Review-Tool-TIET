@@ -13,6 +13,7 @@ from codekavach.config.models.engines import EnginesSettings
 from codekavach.config.models.integrations import IntegrationsSettings
 from codekavach.config.models.llm import LLMSettings
 from codekavach.config.models.log import LoggingSettings
+from codekavach.config.models.parsing import ParsingSettings
 from codekavach.config.models.plugins import PluginsSettings
 from codekavach.config.models.privacy import PrivacySettings
 from codekavach.config.models.project import ProjectSettings
@@ -48,6 +49,9 @@ class Settings(BaseSettings):
         default_factory=ProjectSettings, description="Identity of the scanned project."
     )
     scan: ScanSettings = Field(default_factory=ScanSettings, description="What to scan and how.")
+    parsing: ParsingSettings = Field(
+        default_factory=ParsingSettings, description="Resource guards applied while parsing."
+    )
     privacy: PrivacySettings = Field(
         default_factory=PrivacySettings, description="What may leave the machine."
     )

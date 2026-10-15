@@ -41,6 +41,11 @@
       "cache_max_size_mb": 2048,
       "cache_keep_scans": 5
     },
+    "parsing": {
+      "timeout_seconds": 5.0,
+      "max_source_bytes": 2000000,
+      "max_node_count": 2000000
+    },
     "privacy": {
       "level": "L4",
       "min_level": "L1",
@@ -555,6 +560,24 @@
       "contributors": []
     },
     "logging.level": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "parsing.max_node_count": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "parsing.max_source_bytes": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "parsing.timeout_seconds": {
       "layer": "default",
       "source": null,
       "line": null,

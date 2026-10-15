@@ -41,7 +41,12 @@ ORG_POLICY_ENV = "CODEKAVACH_ORG_POLICY"
 # Variables of the test harness, not settings: the loader recognises them (``RESERVED_ENV``) and
 # the budget tests need CI's ``CODEKAVACH_PERF_FACTOR``, so isolation leaves them alone.
 HARNESS_VARIABLES = frozenset(
-    {"CODEKAVACH_PERF_FACTOR", "CODEKAVACH_SKIP_PERF", "CODEKAVACH_UPDATE_SNAPSHOTS"}
+    {
+        "CODEKAVACH_PERF_FACTOR",
+        "CODEKAVACH_SKIP_PERF",
+        "CODEKAVACH_UPDATE_SNAPSHOTS",
+        "CODEKAVACH_UPDATE_GOLDEN",
+    }
 )
 FILE_MODE = 0o644
 DIR_MODE = 0o755

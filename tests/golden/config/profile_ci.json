@@ -87,6 +87,11 @@
     "format": "console",
     "level": "info"
   },
+  "parsing": {
+    "max_node_count": 2000000,
+    "max_source_bytes": 2000000,
+    "timeout_seconds": 5.0
+  },
   "plugins": {
     "allow_distributions": [],
     "disable": []

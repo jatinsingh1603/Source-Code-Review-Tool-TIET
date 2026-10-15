@@ -610,6 +610,38 @@
       "title": "NativeEngines",
       "type": "object"
     },
+    "ParsingSettings": {
+      "additionalProperties": false,
+      "description": "Resource guards applied to every file the parsing layer parses.",
+      "properties": {
+        "max_node_count": {
+          "default": 2000000,
+          "description": "Largest number of AST nodes a parsed file may have.",
+          "maximum": 50000000,
+          "minimum": 1,
+          "title": "Max Node Count",
+          "type": "integer"
+        },
+        "max_source_bytes": {
+          "default": 2000000,
+          "description": "Largest source file, in bytes, that is parsed.",
+          "maximum": 100000000,
+          "minimum": 1,
+          "title": "Max Source Bytes",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 5.0,
+          "description": "Per-file tree-sitter parse timeout, in seconds.",
+          "maximum": 300,
+          "minimum": 0,
+          "title": "Timeout Seconds",
+          "type": "number"
+        }
+      },
+      "title": "ParsingSettings",
+      "type": "object"
+    },
     "PartialSettings": {
       "additionalProperties": false,
       "description": "A profile overlay: any settings sections, all optional.",
@@ -638,6 +670,10 @@
         "logging": {
           "$ref": "#/$defs/LoggingSettings",
           "description": "Diagnostic logging on stderr."
+        },
+        "parsing": {
+          "$ref": "#/$defs/ParsingSettings",
+          "description": "Resource guards applied while parsing."
         },
         "plugins": {
           "$ref": "#/$defs/PluginsSettings",
@@ -1461,6 +1497,10 @@
     "logging": {
       "$ref": "#/$defs/LoggingSettings",
       "description": "Diagnostic logging on stderr."
+    },
+    "parsing": {
+      "$ref": "#/$defs/ParsingSettings",
+      "description": "Resource guards applied while parsing."
     },
     "plugins": {
       "$ref": "#/$defs/PluginsSettings",
