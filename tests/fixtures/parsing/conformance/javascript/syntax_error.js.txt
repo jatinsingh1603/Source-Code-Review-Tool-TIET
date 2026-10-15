@@ -1,0 +1,7 @@
+function broken(a, b {
+  return a + b;
+}
+
+function stillParseable(x) {
+  return x + 1;
+}

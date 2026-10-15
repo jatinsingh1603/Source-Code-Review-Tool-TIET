@@ -1,0 +1,37 @@
+// line comment above a class
+class Account {
+  #balance = 0;
+  static version = "1.0";
+
+  constructor(owner, { currency = "usd" } = {}) {
+    this.owner = owner;
+    this.currency = currency;
+  }
+
+  /* block comment above a method */
+  deposit(amount) {
+    this.#balance += amount;
+    return this.#balance;
+  }
+
+  get balance() {
+    return this.#balance;
+  }
+}
+
+function topLevel(x, ...rest) {
+  const { a, b } = x;
+  return a + b + rest.length;
+}
+
+const arrow = (y) => y * 2;
+const Klass = class {
+  run() {
+    return 1;
+  }
+};
+
+const obj = { key: 1, shorthand, [computed]: 2 };
+const name = "world";
+const greeting = `hello ${name}, total ${1 + 2}`;
+const pattern = /^[a-z]+$/gi;

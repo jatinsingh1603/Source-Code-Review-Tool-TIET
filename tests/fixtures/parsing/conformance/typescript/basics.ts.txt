@@ -1,0 +1,31 @@
+interface Account {
+  id: number;
+  owner: string;
+}
+
+type AccountId = number | string;
+
+enum Currency {
+  USD,
+  EUR,
+}
+
+abstract class Repository<T> {
+  abstract find(id: AccountId): T;
+}
+
+class AccountRepository extends Repository<Account> {
+  private cache: Map<AccountId, Account> = new Map();
+
+  find(id: AccountId): Account {
+    const existing = this.cache.get(id);
+    if (existing) {
+      return existing;
+    }
+    throw new Error("not found: " + id);
+  }
+}
+
+function describe<T extends Account>(account: T): string {
+  return `account ${account.id} owned by ${account.owner}`;
+}

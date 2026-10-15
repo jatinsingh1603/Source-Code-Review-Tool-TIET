@@ -1,7 +1,11 @@
-"""Performance budget: parsing 5 000 files of 200 lines each (E07-01).
+"""Performance budget: parsing 5 000 files of 200 lines each (E07-01, E07-02).
 
-Measured at roughly 20 s single-threaded on a development machine; the 60 s budget in the issue
-is kept as the committed number, with headroom for a slower CI runner.
+Measured at roughly 20 s single-threaded (E07-01, before any ``LanguageSpec`` was registered).
+E07-02 registers the Python spec at import time, so ``parse()`` now also extracts identifiers,
+string content and comments for every one of these files; measured again at roughly 65 s, this
+raises the budget to 100 s rather than keeping the original 60 s and papering over a real,
+expected increase. See ``tests/perf/test_extraction_overhead.py`` for the overhead that
+registering a spec adds, measured and budgeted on its own.
 """
 
 import pytest
@@ -12,7 +16,7 @@ from tests.support.perf import assert_within_budget, measure
 
 FILE_COUNT = 5_000
 LINES_PER_FILE = 200
-BUDGET_SECONDS = 60.0
+BUDGET_SECONDS = 100.0
 
 
 def _sample_file_text() -> str:

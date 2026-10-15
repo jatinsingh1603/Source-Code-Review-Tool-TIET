@@ -1,0 +1,17 @@
+import re
+
+SQL_QUERY = (
+    "SELECT * "
+    "FROM premium_accounts "
+    "WHERE id = %s"
+)
+
+URL = "https://example.com/api/v1/accounts"
+LOCAL_PATH = "/etc/codekavach/config.toml"
+GREETING = "Hello, {name}! You have {count} new messages."
+PATTERN = re.compile(r"^[a-z0-9_]+$")
+NATURAL_TEXT = "the quarterly report is attached for review"
+
+
+def run_query(cursor, account_id):
+    cursor.execute("SELECT balance FROM accounts WHERE id = %s" % account_id)

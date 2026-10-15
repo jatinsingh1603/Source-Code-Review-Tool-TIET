@@ -1,0 +1,16 @@
+import { readFile } from "fs";
+import * as path from "path";
+
+export const CONFIG_PATH = "./config/app.toml";
+
+export function loadConfig(name) {
+  const full = "SELECT * FROM configs WHERE name = " + name + " LIMIT 1";
+  return full;
+}
+
+export default class Service {
+  async start() {
+    const data = await readFile(path.join(".", "data.json"));
+    return data;
+  }
+}

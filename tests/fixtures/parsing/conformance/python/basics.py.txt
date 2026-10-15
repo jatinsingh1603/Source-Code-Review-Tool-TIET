@@ -1,0 +1,39 @@
+"""Module docstring: covers the pseudonymiser's removal of a bare leading string."""
+
+import os
+from typing import List
+
+GLOBAL_CONST = 42
+
+
+class Greeter:
+    """Class docstring."""
+
+    greeting: str = "hello"
+
+    def __init__(self, name, *args, suffix="!", **kwargs):
+        # inline comment inside __init__
+        self.name = name
+        self.suffix = suffix
+
+    @staticmethod
+    def shout(text):
+        """Method docstring, not a string literal."""
+        return text.upper()
+
+    async def greet_async(self):
+        return f"{self.greeting}, {self.name}{self.suffix}"
+
+
+def top_level(values: "List[int]") -> int:
+    return sum(v for v in values if v > 0)
+
+
+def make_adder(amount):
+    def adder(value):
+        return value + amount
+
+    return adder
+
+
+lambda_fn = lambda x: x * 2

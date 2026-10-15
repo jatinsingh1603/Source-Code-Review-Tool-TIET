@@ -9,6 +9,11 @@ only the shape this issue is responsible for: the file's identity, its raw sourc
 parse errors it had, which characters were hidden, and the three kinds of span every language
 can report through the ``LanguageSpec`` protocol (``identifiers``, ``string_literals``,
 ``comments``); a later epic that needs the tree itself extends this module, not this issue.
+
+``identifiers()`` pairs each ``Location`` with its text (E07-02): the pseudonymiser renames
+exactly these occurrences and needs the text to decide how (``docs/ARCHITECTURE.md`` section
+6.2 step 4), and re-reading it from the source by location is exactly the kind of per-node
+string slicing ``LineIndex`` exists to avoid doing repeatedly.
 """
 
 from dataclasses import dataclass, field
@@ -56,12 +61,12 @@ class ParsedFile:
     source: RawCode
     error_count: int
     hidden_chars: HiddenCharReport = field(default=EMPTY_HIDDEN_CHAR_REPORT)
-    identifier_locations: tuple[Location, ...] = field(default=())
+    identifier_locations: tuple[tuple[Location, str], ...] = field(default=())
     literal_spans: tuple[LiteralSpan, ...] = field(default=())
     comment_locations: tuple[Location, ...] = field(default=())
 
-    def identifiers(self) -> tuple[Location, ...]:
-        """Every identifier location found while parsing, in source order."""
+    def identifiers(self) -> tuple[tuple[Location, str], ...]:
+        """Every ``(location, text)`` identifier occurrence found while parsing, in source order."""
         return self.identifier_locations
 
     def string_literals(self) -> tuple[LiteralSpan, ...]:

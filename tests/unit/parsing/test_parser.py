@@ -1,6 +1,4 @@
-"""The ``parse`` entry point (E07-01)."""
-
-from collections.abc import Iterator
+"""The ``parse`` entry point (E07-01, E07-02)."""
 
 import pytest
 
@@ -8,19 +6,6 @@ from codekavach.config.models.parsing import ParsingSettings
 from codekavach.core.models import Language, RawCode
 from codekavach.parsing.models import TIMED_OUT
 from codekavach.parsing.parser import ParseUnavailableError, SourceTooLargeError, parse
-from codekavach.parsing.spec import REGISTRY
-from tests.support.parsing import TrivialSpec
-
-
-@pytest.fixture
-def trivial_spec() -> Iterator[TrivialSpec]:
-    """Register the test-only Python spec for the duration of one test, then remove it."""
-    spec = TrivialSpec()
-    REGISTRY.register(spec)
-    try:
-        yield spec
-    finally:
-        REGISTRY._specs.pop(Language.PYTHON, None)
 
 
 def test_parse_a_clean_file_has_no_errors() -> None:
@@ -60,20 +45,21 @@ def test_parse_raises_parse_unavailable_for_an_unpinned_language() -> None:
 
 
 def test_parse_without_a_registered_spec_extracts_nothing() -> None:
-    result = parse("a.py", Language.PYTHON, "x = 'hello'\n# comment\n")
+    """Go has a pinned grammar (parses fine) but no registered LanguageSpec (E07-05's job)."""
+    result = parse("a.go", Language.GO, "package main\n")
     assert result.identifiers() == ()
     assert result.string_literals() == ()
     assert result.comments() == ()
 
 
-def test_parse_with_a_registered_spec_extracts_identifiers_strings_and_comments(
-    trivial_spec: TrivialSpec,
-) -> None:
+def test_parse_with_a_registered_spec_extracts_identifiers_strings_and_comments() -> None:
     result = parse("a.py", Language.PYTHON, "x = 'hello'\n# comment\n")
     identifiers = result.identifiers()
     assert len(identifiers) == 1
-    assert identifiers[0].symbol is None
-    assert identifiers[0].start_line == 1
+    location, text = identifiers[0]
+    assert text == "x"
+    assert location.symbol is None
+    assert location.start_line == 1
 
     literals = result.string_literals()
     assert len(literals) == 1

@@ -18,9 +18,10 @@ yet; this is the one well-defined choice and the property test pins it.
 """
 
 import bisect
+from collections.abc import Iterable
 from dataclasses import dataclass
 
-from codekavach.core.models import CodeRegion, Location
+from codekavach.core.models import CodeRegion, Location, normalise_repo_path
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +101,39 @@ class LineIndex:
             end_col=end_col,
             symbol=symbol,
         )
+
+    def locations(self, path: str, spans: Iterable[tuple[int, int]]) -> list[Location]:
+        """Build a ``Location`` for each ``(start_byte, end_byte)`` of ``spans``, efficiently.
+
+        Equivalent to calling ``location(path, start, end)`` once per span, except ``path`` is
+        validated once rather than by every one of pydantic's otherwise-identical re-runs of
+        ``normalise_repo_path`` and its character-category scan; a file with thousands of
+        identifiers, which is what E07-02's extractors produce, made that redundant cost the
+        dominant one. Each ``Location`` is still built from fully valid data: ``model_construct``
+        skips re-validating what this method and ``position`` already guarantee are correct
+        (the path, and the span ordering ``LineIndex`` always produces), it does not skip
+        checking any of it. Builds a plain ``Location`` with ``symbol=None``; use ``location``
+        instead when a symbol is needed.
+
+        Raises:
+            ValueError: ``path`` is not a valid repository-relative path.
+        """
+        normalised_path = normalise_repo_path(path)
+        results: list[Location] = []
+        for start_byte, end_byte in spans:
+            start_line, start_col = self.position(start_byte)
+            end_line, end_col = self.position(end_byte)
+            results.append(
+                Location.model_construct(
+                    path=normalised_path,
+                    start_line=start_line,
+                    end_line=end_line,
+                    start_col=start_col,
+                    end_col=end_col,
+                    symbol=None,
+                )
+            )
+        return results
 
     def region(self, start_byte: int, end_byte: int) -> CodeRegion:
         """The path-free ``CodeRegion`` spanning ``[start_byte, end_byte)`` of the indexed text."""

@@ -1,0 +1,36 @@
+import asyncio
+
+
+async def fetch_all(urls):
+    results = []
+    async for url in urls:
+        async with asyncio.timeout(5):
+            results.append(url)
+    return results
+
+
+def squares(n):
+    return [i * i for i in range(n) if i % 2 == 0]
+
+
+def generator(n):
+    for i in range(n):
+        yield i
+
+
+def with_match(value):
+    match value:
+        case 0:
+            return "zero"
+        case _:
+            return "other"
+
+
+def with_walrus(items):
+    if (count := len(items)) > 0:
+        return count
+    return 0
+
+
+with open("report.txt") as handle:
+    data = handle.read()

@@ -32,6 +32,7 @@ EXPECTED_PACKAGES: frozenset[str] = frozenset(
         "codekavach.ingest",
         "codekavach.parsing",
         "codekavach.parsing.queries",
+        "codekavach.parsing.specs",
         "codekavach.analysis",
         "codekavach.analysis.engines",
         "codekavach.analysis.rules",
@@ -180,6 +181,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.core.models.text",
         "codekavach.core.models.timeutil",
         "codekavach.core.models.verdict",
+        "codekavach.parsing.literals",
         "codekavach.parsing.loader",
         "codekavach.parsing.models",
         "codekavach.parsing.normalise",
@@ -187,6 +189,8 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.parsing.positions",
         "codekavach.parsing.queries.loader",
         "codekavach.parsing.spec",
+        "codekavach.parsing.specs.javascript",
+        "codekavach.parsing.specs.python",
     }
 )
 
@@ -239,6 +243,7 @@ INIT_IMPORT_ALLOWLIST: frozenset[str] = frozenset(
         "codekavach.core.models",
         "codekavach.parsing",
         "codekavach.parsing.queries",
+        "codekavach.parsing.specs",
     }
 )
 

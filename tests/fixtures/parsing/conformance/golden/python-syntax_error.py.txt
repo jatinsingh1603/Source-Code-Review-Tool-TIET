@@ -1,0 +1,13 @@
+identifiers:
+  syntax_error.py.txt:1:5 'broken'
+  syntax_error.py.txt:1:12 'a'
+  syntax_error.py.txt:1:15 'b'
+  syntax_error.py.txt:2:5 'return'
+  syntax_error.py.txt:2:12 'a'
+  syntax_error.py.txt:2:16 'b'
+  syntax_error.py.txt:5:5 'still_parseable'
+  syntax_error.py.txt:5:21 'x'
+  syntax_error.py.txt:6:12 'x'
+strings:
+comments:
+error_count: 2

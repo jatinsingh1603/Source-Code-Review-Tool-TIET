@@ -62,7 +62,7 @@ src/codekavach/
     log/               structured logging setup and redaction
     no_telemetry.py    opt-out environment defaults for third-party tools
   ingest/              sources (path, git, archive), discovery, language detection, filters, safety limits
-  parsing/             tree-sitter loader, LanguageSpec, queries/, symbols, scopes, imports, call graph
+  parsing/             tree-sitter loader, LanguageSpec, specs/ (per-language LanguageSpec implementations), queries/, symbols, scopes, imports, call graph
   analysis/
     engines/           adapter base class + one module per external engine
     rules/             native rule DSL, matcher, pack loader

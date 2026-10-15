@@ -11,6 +11,7 @@ bump (E07-01's own drift test) gets a fresh compile instead of a stale cached on
 """
 
 import importlib.resources
+from collections.abc import Sequence
 from threading import Lock
 
 from tree_sitter import Query as TSQuery
@@ -47,6 +48,7 @@ class QueryNotFoundError(FileNotFoundError):
 
 _lock = Lock()
 _cache: dict[tuple[Language, str, str], TSQuery] = {}
+_combined_cache: dict[tuple[Language, tuple[str, ...], str], TSQuery] = {}
 
 
 def _read_query_source(language: Language, name: str) -> str:
@@ -77,4 +79,38 @@ def load_query(language: Language, name: str) -> TSQuery:
         except _TreeSitterQueryError as error:
             raise QueryError(language, name, version, str(error)) from error
         _cache[key] = query
+        return query
+
+
+def load_combined_query(language: Language, names: Sequence[str]) -> TSQuery:
+    """One compiled query of every ``<name>.scm`` of ``names`` that exists for ``language``.
+
+    Each query file stays small, separately readable and separately compile-checked
+    (``load_query`` on any one of them still reports its own errors precisely), but extraction
+    needs their captures together, and a ``QueryCursor.captures`` call has a real fixed cost of
+    its own: running it once per file instead of once per kind is why this exists. A name with
+    no file for ``language`` (``"docstrings"`` has one only for Python) is silently left out,
+    not an error, because the caller is asking for whichever of these kinds this language has.
+
+    Raises:
+        QueryError: a file that does exist does not compile against the pinned grammar.
+    """
+    version = grammar_version(language)
+    key = (language, tuple(names), version)
+    with _lock:
+        cached = _combined_cache.get(key)
+        if cached is not None:
+            return cached
+        sources = []
+        for name in names:
+            try:
+                sources.append(_read_query_source(language, name))
+            except QueryNotFoundError:
+                continue
+        grammar = load_language(language)
+        try:
+            query = TSQuery(grammar, "\n".join(sources))
+        except _TreeSitterQueryError as error:
+            raise QueryError(language, "+".join(names), version, str(error)) from error
+        _combined_cache[key] = query
         return query

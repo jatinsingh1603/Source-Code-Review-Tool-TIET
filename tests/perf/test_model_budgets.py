@@ -41,6 +41,13 @@ MODEL_CONSTRUCT_ALLOWED = {
         "seal() builds an unvalidated draft only to compute entry_hash; the record it returns "
         "is created with model_validate, so every check runs"
     ),
+    "codekavach/parsing/positions.py": (
+        "LineIndex.locations() validates path once with normalise_repo_path and builds every "
+        "Location's start/end line and column from its own already-correct position() "
+        "arithmetic; re-running pydantic's full validation, including the path's "
+        "character-category scan, for every one of a file's identifiers (sometimes thousands) "
+        "was the dominant cost of E07-02's extractors"
+    ),
 }
 
 

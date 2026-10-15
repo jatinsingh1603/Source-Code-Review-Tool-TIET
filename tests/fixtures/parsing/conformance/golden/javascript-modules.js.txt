@@ -1,0 +1,26 @@
+identifiers:
+  modules.js.txt:1:10 'readFile'
+  modules.js.txt:2:13 'path'
+  modules.js.txt:4:14 'CONFIG_PATH'
+  modules.js.txt:6:17 'loadConfig'
+  modules.js.txt:6:28 'name'
+  modules.js.txt:7:9 'full'
+  modules.js.txt:7:56 'name'
+  modules.js.txt:8:10 'full'
+  modules.js.txt:11:22 'Service'
+  modules.js.txt:12:9 'start'
+  modules.js.txt:13:11 'data'
+  modules.js.txt:13:24 'readFile'
+  modules.js.txt:13:33 'path'
+  modules.js.txt:13:38 'join'
+  modules.js.txt:14:12 'data'
+strings:
+  modules.js.txt:1:27 natural 'fs'
+  modules.js.txt:2:24 natural 'path'
+  modules.js.txt:4:29 path './config/app.toml'
+  modules.js.txt:7:17 sql 'SELECT * FROM configs WHERE name = '
+  modules.js.txt:7:64 sql ' LIMIT 1'
+  modules.js.txt:13:44 natural '.'
+  modules.js.txt:13:49 natural 'data.json'
+comments:
+error_count: 0
