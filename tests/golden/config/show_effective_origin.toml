@@ -40,6 +40,24 @@ cache_keep_scans = 5      # default
 
 [scan.stage_timeouts]
 
+[ingest]
+max_file_size_bytes = 5000000  # default
+max_files = 50000         # default
+max_total_bytes = 2000000000  # default
+max_archive_ratio = 100   # default
+max_depth = 25            # default
+follow_symlinks = false   # default
+respect_gitignore = true  # default
+excludes = [
+    "node_modules",
+    "vendor",
+    "build",
+    "dist",
+    ".git",
+    "**/*.min.js",
+]  # default
+legacy_encoding = "cp1252"  # default
+
 [parsing]
 timeout_seconds = 5.0     # default
 max_source_bytes = 2000000  # default

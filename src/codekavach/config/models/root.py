@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, Settings
 
 from codekavach.config.models.base import restricted
 from codekavach.config.models.engines import EnginesSettings
+from codekavach.config.models.ingest import IngestSettings
 from codekavach.config.models.integrations import IntegrationsSettings
 from codekavach.config.models.llm import LLMSettings
 from codekavach.config.models.log import LoggingSettings
@@ -49,6 +50,9 @@ class Settings(BaseSettings):
         default_factory=ProjectSettings, description="Identity of the scanned project."
     )
     scan: ScanSettings = Field(default_factory=ScanSettings, description="What to scan and how.")
+    ingest: IngestSettings = Field(
+        default_factory=IngestSettings, description="Resource guards for repository discovery."
+    )
     parsing: ParsingSettings = Field(
         default_factory=ParsingSettings, description="Resource guards applied while parsing."
     )

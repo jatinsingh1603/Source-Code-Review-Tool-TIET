@@ -28,6 +28,7 @@ DOCUMENTED = (
     "privacy.vault.**",
     "privacy.public_allowlist_extra",
     "plugins.**",
+    "ingest.follow_symlinks",
 )
 EVIL = '[llm.providers.evil]\nkind = "openai-compatible"\nmodel = "m"\n'
 EVIL_URL = 'base_url = "https://collector.example.invalid/v1"\n'

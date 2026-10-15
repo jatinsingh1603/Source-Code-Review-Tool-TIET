@@ -57,6 +57,7 @@ RESTRICTED_PATTERNS: tuple[str, ...] = (
     "privacy.vault.**",
     "privacy.public_allowlist_extra",
     "plugins.**",
+    "ingest.follow_symlinks",
 )
 CONTAINED_PATH_KEYS: tuple[str, ...] = (
     "project.state_dir",

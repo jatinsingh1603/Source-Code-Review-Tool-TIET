@@ -355,6 +355,82 @@
       "title": "GitHubSettings",
       "type": "object"
     },
+    "IngestSettings": {
+      "additionalProperties": false,
+      "description": "Resource guards and exclusions applied while discovering repository files.",
+      "properties": {
+        "excludes": {
+          "description": "Glob patterns excluded from discovery in addition to .gitignore.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Excludes",
+          "type": "array",
+          "x-ck-merge": "union"
+        },
+        "follow_symlinks": {
+          "default": false,
+          "description": "Follow symbolic links while discovering files.",
+          "title": "Follow Symlinks",
+          "type": "boolean",
+          "x-ck-restricted": true
+        },
+        "legacy_encoding": {
+          "default": "cp1252",
+          "description": "Fallback text encoding tried after UTF-8 and UTF-16 fail to decode a file.",
+          "title": "Legacy Encoding",
+          "type": "string"
+        },
+        "max_archive_ratio": {
+          "default": 100,
+          "description": "Largest decompressed-to-compressed size ratio an archive source may have.",
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Max Archive Ratio",
+          "type": "integer"
+        },
+        "max_depth": {
+          "default": 25,
+          "description": "Deepest directory, in path segments below the root, that is walked.",
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Max Depth",
+          "type": "integer"
+        },
+        "max_file_size_bytes": {
+          "default": 5000000,
+          "description": "Largest single file, in bytes, that is read.",
+          "maximum": 1000000000,
+          "minimum": 1,
+          "title": "Max File Size Bytes",
+          "type": "integer"
+        },
+        "max_files": {
+          "default": 50000,
+          "description": "Largest number of files that discovery returns.",
+          "maximum": 10000000,
+          "minimum": 1,
+          "title": "Max Files",
+          "type": "integer"
+        },
+        "max_total_bytes": {
+          "default": 2000000000,
+          "description": "Largest total size, in bytes, of every file discovery accepts.",
+          "maximum": 1000000000000,
+          "minimum": 1,
+          "title": "Max Total Bytes",
+          "type": "integer"
+        },
+        "respect_gitignore": {
+          "default": true,
+          "description": "Skip files that a .gitignore in the tree ignores.",
+          "title": "Respect Gitignore",
+          "type": "boolean"
+        }
+      },
+      "title": "IngestSettings",
+      "type": "object"
+    },
     "IntegrationsSettings": {
       "additionalProperties": false,
       "description": "External systems that receive findings.",
@@ -657,6 +733,10 @@
         "extends": {
           "description": "Name of the profile this profile builds on.",
           "type": "string"
+        },
+        "ingest": {
+          "$ref": "#/$defs/IngestSettings",
+          "description": "Resource guards for repository discovery."
         },
         "integrations": {
           "$ref": "#/$defs/IntegrationsSettings",
@@ -1484,6 +1564,10 @@
     "engines": {
       "$ref": "#/$defs/EnginesSettings",
       "description": "Which analysers run and how."
+    },
+    "ingest": {
+      "$ref": "#/$defs/IngestSettings",
+      "description": "Resource guards for repository discovery."
     },
     "integrations": {
       "$ref": "#/$defs/IntegrationsSettings",

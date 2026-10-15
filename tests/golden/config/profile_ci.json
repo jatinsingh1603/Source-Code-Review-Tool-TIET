@@ -17,6 +17,24 @@
     "rule_paths": [],
     "timeout_seconds": 600
   },
+  "ingest": {
+    "excludes": [
+      "node_modules",
+      "vendor",
+      "build",
+      "dist",
+      ".git",
+      "**/*.min.js"
+    ],
+    "follow_symlinks": false,
+    "legacy_encoding": "cp1252",
+    "max_archive_ratio": 100,
+    "max_depth": 25,
+    "max_file_size_bytes": 5000000,
+    "max_files": 50000,
+    "max_total_bytes": 2000000000,
+    "respect_gitignore": true
+  },
   "integrations": {
     "github": {
       "api_url": "https://api.github.com/",

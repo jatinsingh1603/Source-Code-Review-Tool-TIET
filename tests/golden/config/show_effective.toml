@@ -37,6 +37,24 @@ cache_keep_scans = 5
 
 [scan.stage_timeouts]
 
+[ingest]
+max_file_size_bytes = 5000000
+max_files = 50000
+max_total_bytes = 2000000000
+max_archive_ratio = 100
+max_depth = 25
+follow_symlinks = false
+respect_gitignore = true
+excludes = [
+    "node_modules",
+    "vendor",
+    "build",
+    "dist",
+    ".git",
+    "**/*.min.js",
+]
+legacy_encoding = "cp1252"
+
 [parsing]
 timeout_seconds = 5.0
 max_source_bytes = 2000000

@@ -11,9 +11,12 @@ Rules (AGENTS.md section 3):
 Nothing under src/ may import this module.
 """
 
+import contextlib
 import re
 import string
+import tempfile
 from dataclasses import dataclass, field
+from pathlib import Path
 
 # Source: AWS documentation, "Managing access keys for IAM users" (example key pair).
 AWS_EXAMPLE_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
@@ -199,3 +202,91 @@ def build_secret(kind: str, body: str) -> str:
 def example_secret(kind: str) -> str:
     """Return the fixed example value for ``kind``; the same on every call."""
     return build_secret(kind, SECRET_SHAPES[kind].example())
+
+
+def make_tree(spec: dict[str, bytes | str]) -> Path:
+    """Build a fresh directory from ``spec`` (relative POSIX path -> file content).
+
+    A parent directory is created as needed. Returns the new, otherwise-empty root; the caller
+    is responsible for cleaning it up (or lets the OS temp-directory cleanup do it).
+    """
+    root = Path(tempfile.mkdtemp(prefix="codekavach-tree-"))
+    for rel_path, content in spec.items():
+        full_path = root / rel_path
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        if isinstance(content, str):
+            full_path.write_text(content, encoding="utf-8")
+        else:
+            full_path.write_bytes(content)
+    return root
+
+
+def make_hostile_tree() -> Path:
+    """Build, on demand, a small tree exercising every ingest discovery safety limit (E06-01).
+
+    Not committed as static fixtures under ``tests/fixtures/``: a 12 MB file and a 200 000-line
+    bundle would both be rejected by the ``check-added-large-files`` pre-commit hook
+    (512 KB limit), so this factory builds them fresh in a temporary directory instead. Returns
+    the tree's root; the caller is responsible for cleanup.
+    """
+    root = Path(tempfile.mkdtemp(prefix="codekavach-hostile-"))
+
+    (root / "normal.py").write_text("x = 1\n", encoding="utf-8")
+
+    # A file over any plausible max_file_size_bytes default.
+    large = root / "huge.bin"
+    with large.open("wb") as handle:
+        handle.write(b"A" * (12 * 1024 * 1024))
+
+    # A path far longer than the 4096-byte cap.
+    try:
+        long_dir = root / ("d" * 200)
+        long_dir.mkdir()
+        remaining = 5000 - len(str(long_dir))
+        long_name = "f" * max(remaining, 1) + ".txt"
+        (long_dir / long_name).write_text("x\n", encoding="utf-8")
+    except OSError:
+        pass  # the host file system itself refuses the name; the walk never sees it either
+
+    # 40 levels of nested, otherwise-ordinary directories.
+    try:
+        deep = root
+        for level in range(40):
+            deep = deep / f"level{level}"
+        deep.mkdir(parents=True)
+        (deep / "bottom.py").write_text("y = 2\n", encoding="utf-8")
+    except OSError:
+        pass  # the host's own path-length limit (e.g. Windows without long-path support)
+
+    # A symlinked directory pointing outside the root.
+    outside = Path(tempfile.mkdtemp(prefix="codekavach-outside-"))
+    (outside / "secret.py").write_text("z = 3\n", encoding="utf-8")
+    with contextlib.suppress(OSError):
+        # symlinks need a privilege this host does not grant; the case is simply absent then
+        (root / "escape").symlink_to(outside, target_is_directory=True)
+
+    # A symlink loop (a directory symlinked to its own ancestor).
+    loop_parent = root / "loopy"
+    loop_parent.mkdir()
+    with contextlib.suppress(OSError):
+        (loop_parent / "self").symlink_to(loop_parent, target_is_directory=True)
+
+    # Invalid UTF-8 (a lone continuation byte, valid in no supported encoding's strict mode).
+    (root / "invalid.txt").write_bytes(b"\xff\xfe\x00bad")
+
+    # A file name containing a bidi override and a zero-width space (Trojan Source vectors).
+    bidi_name = "re\u202eadme\u200b.txt"
+    with contextlib.suppress(OSError):
+        (root / bidi_name).write_text("hidden name\n", encoding="utf-8")
+
+    # A 200 000-line minified-looking bundle.
+    minified = root / "bundle.min.js"
+    with minified.open("w", encoding="utf-8") as handle:
+        for i in range(200_000):
+            handle.write(f"var x{i}=1;")
+            handle.write("\n" if i % 1000 == 0 else "")
+
+    # A lockfile: returned by discovery (SCA needs it), classified as nothing special.
+    (root / "package-lock.json").write_text('{"lockfileVersion": 2}\n', encoding="utf-8")
+
+    return root

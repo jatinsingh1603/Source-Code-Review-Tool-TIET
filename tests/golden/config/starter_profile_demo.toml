@@ -57,6 +57,27 @@ name = "payments-api"
 #~ Number of most recent scans whose cache entries survive pruning.
 # cache_keep_scans = 5
 
+#~ Resource guards for repository discovery.
+[ingest]
+#~ Largest single file, in bytes, that is read.
+# max_file_size_bytes = 5000000
+#~ Largest number of files that discovery returns.
+# max_files = 50000
+#~ Largest total size, in bytes, of every file discovery accepts.
+# max_total_bytes = 2000000000
+#~ Largest decompressed-to-compressed size ratio an archive source may have.
+# max_archive_ratio = 100
+#~ Deepest directory, in path segments below the root, that is walked.
+# max_depth = 25
+#~ Follow symbolic links while discovering files.
+# follow_symlinks = false
+#~ Skip files that a .gitignore in the tree ignores.
+# respect_gitignore = true
+#~ Glob patterns excluded from discovery in addition to .gitignore.
+# excludes = ["node_modules", "vendor", "build", "dist", ".git", "**/*.min.js"]
+#~ Fallback text encoding tried after UTF-8 and UTF-16 fail to decode a file.
+# legacy_encoding = "cp1252"
+
 #~ Resource guards applied while parsing.
 [parsing]
 #~ Per-file tree-sitter parse timeout, in seconds.

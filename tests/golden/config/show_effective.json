@@ -41,6 +41,24 @@
       "cache_max_size_mb": 2048,
       "cache_keep_scans": 5
     },
+    "ingest": {
+      "max_file_size_bytes": 5000000,
+      "max_files": 50000,
+      "max_total_bytes": 2000000000,
+      "max_archive_ratio": 100,
+      "max_depth": 25,
+      "follow_symlinks": false,
+      "respect_gitignore": true,
+      "excludes": [
+        "node_modules",
+        "vendor",
+        "build",
+        "dist",
+        ".git",
+        "**/*.min.js"
+      ],
+      "legacy_encoding": "cp1252"
+    },
     "parsing": {
       "timeout_seconds": 5.0,
       "max_source_bytes": 2000000,
@@ -266,6 +284,62 @@
       "contributors": []
     },
     "engines.timeout_seconds": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "ingest.excludes": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": [
+        "default"
+      ]
+    },
+    "ingest.follow_symlinks": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "ingest.legacy_encoding": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "ingest.max_archive_ratio": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "ingest.max_depth": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "ingest.max_file_size_bytes": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "ingest.max_files": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "ingest.max_total_bytes": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "ingest.respect_gitignore": {
       "layer": "default",
       "source": null,
       "line": null,

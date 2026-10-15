@@ -58,6 +58,22 @@ Defaults too long for the table:
 
 1. `scan.exclude`: `[".git/**", ".codekavach/**", "node_modules/**", ".venv/**", "venv/**", "__pycache__/**", "dist/**", "build/**", "target/**", "vendor/**"]`
 
+## `[ingest]`
+
+Resource guards for repository discovery.
+
+| Key | Type | Default | Environment variable | Markers | Description |
+|-----|------|---------|----------------------|---------|-------------|
+| `ingest.max_file_size_bytes` | int | `5000000` | `CODEKAVACH_INGEST__MAX_FILE_SIZE_BYTES` |  | Largest single file, in bytes, that is read. |
+| `ingest.max_files` | int | `50000` | `CODEKAVACH_INGEST__MAX_FILES` |  | Largest number of files that discovery returns. |
+| `ingest.max_total_bytes` | int | `2000000000` | `CODEKAVACH_INGEST__MAX_TOTAL_BYTES` |  | Largest total size, in bytes, of every file discovery accepts. |
+| `ingest.max_archive_ratio` | int | `100` | `CODEKAVACH_INGEST__MAX_ARCHIVE_RATIO` |  | Largest decompressed-to-compressed size ratio an archive source may have. |
+| `ingest.max_depth` | int | `25` | `CODEKAVACH_INGEST__MAX_DEPTH` |  | Deepest directory, in path segments below the root, that is walked. |
+| `ingest.follow_symlinks` | bool | `false` | `CODEKAVACH_INGEST__FOLLOW_SYMLINKS` | restricted | Follow symbolic links while discovering files. |
+| `ingest.respect_gitignore` | bool | `true` | `CODEKAVACH_INGEST__RESPECT_GITIGNORE` |  | Skip files that a .gitignore in the tree ignores. |
+| `ingest.excludes` | list[str] | `["node_modules", "vendor", "build", "dist", ".git", "**/*.min.js"]` | `CODEKAVACH_INGEST__EXCLUDES` | union | Glob patterns excluded from discovery in addition to .gitignore. |
+| `ingest.legacy_encoding` | str | `"cp1252"` | `CODEKAVACH_INGEST__LEGACY_ENCODING` |  | Fallback text encoding tried after UTF-8 and UTF-16 fail to decode a file. |
+
 ## `[parsing]`
 
 Resource guards applied while parsing.
