@@ -5,7 +5,7 @@
 # bind-mounted workspace (UV_PROJECT_ENVIRONMENT) so host and container never share one.
 
 # mcr.microsoft.com/devcontainers/python:3.12-bookworm
-FROM mcr.microsoft.com/devcontainers/python:3.12-bookworm@sha256:edf22d42b215ab03876d5523aff0e31a0e0c69afb9bd05bc4e2724b2af697a65
+FROM mcr.microsoft.com/devcontainers/python:3.15-bookworm@sha256:25ac34e3c1a4c5b19a89ece73ed0278e92afc1cfd25ecb51714891e82bede421
 
 # Static uv binaries from the official image; no piped shell installer.
 COPY --from=ghcr.io/astral-sh/uv:0.12.23 /uv /uvx /bin/
