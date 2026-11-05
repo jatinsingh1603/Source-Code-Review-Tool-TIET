@@ -1,0 +1,34 @@
+{
+  "text": "{\"pan\": \"<PII:pan_number:1>\", \"ip\": \"<PII:ipv4:1>\", \"mac\": \"<PII:mac_address:1>\", \"iban\": \"<PII:iban:1>\"}\n",
+  "placeholders": [
+    {
+      "token": "<PII:pan_number:1>",
+      "kind": "PII",
+      "subtype": "pan_number",
+      "index": 1,
+      "occurrences": 1
+    },
+    {
+      "token": "<PII:ipv4:1>",
+      "kind": "PII",
+      "subtype": "ipv4",
+      "index": 1,
+      "occurrences": 1
+    },
+    {
+      "token": "<PII:mac_address:1>",
+      "kind": "PII",
+      "subtype": "mac_address",
+      "index": 1,
+      "occurrences": 1
+    },
+    {
+      "token": "<PII:iban:1>",
+      "kind": "PII",
+      "subtype": "iban",
+      "index": 1,
+      "occurrences": 1
+    }
+  ],
+  "spans_applied": 4
+}

@@ -1,0 +1,4 @@
+EMAIL={{pii:email}}
+PHONE={{pii:phone_intl}}
+CARD={{pii:credit_card}}
+HOST={{pii:ipv4}}

@@ -1,0 +1,34 @@
+{
+  "detected": [
+    {
+      "kind": "SECRET",
+      "subtype": "aws_access_key",
+      "start_byte": 34,
+      "end_byte": 54,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "email",
+      "start_byte": 60,
+      "end_byte": 83,
+      "confidence": "high"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "SECRET",
+      "subtype": "aws_access_key",
+      "start_byte": 34,
+      "end_byte": 54,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "email",
+      "start_byte": 60,
+      "end_byte": 83,
+      "confidence": "high"
+    }
+  ]
+}

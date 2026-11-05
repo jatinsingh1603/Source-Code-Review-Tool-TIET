@@ -28,7 +28,7 @@ from codekavach.config.models.base import (
     sensitive,
     union_merge,
 )
-from codekavach.core.models import PrivacyLevel, TrustTier
+from codekavach.core.models import Confidence, PrivacyLevel, TrustTier
 
 FLOOR_VIOLATION = "[CK-CFG-037]"
 BAD_RULE = "[CK-CFG-039]"
@@ -52,6 +52,7 @@ DEFAULT_NEVER_SEND = [
     "**/id_ed25519*",
 ]
 _IDENTIFIER = re.compile(r"^[A-Za-z_$][A-Za-z0-9_$]{1,63}$")
+_LOCALE = re.compile(r"^[a-z][a-z0-9_]{0,15}$")
 _DRIVE = re.compile(r"^[A-Za-z]:")
 
 
@@ -112,6 +113,19 @@ class VaultSettings(SectionModel):
         return self
 
 
+class DetectSettings(SectionModel):
+    """How the secret, PII and domain-term detectors run (E08)."""
+
+    min_confidence: Confidence = Field(
+        default=Confidence.LOW,
+        description=(
+            "Lowest detector confidence that is redacted. Low by default: a false positive "
+            "costs a placeholder, a false negative leaks a credential."
+        ),
+        json_schema_extra=restricted(),
+    )
+
+
 class PrivacySettings(SectionModel):
     """What may leave the machine, at which privacy level."""
 
@@ -150,6 +164,14 @@ class PrivacySettings(SectionModel):
         description="Extra identifiers kept un-pseudonymised; every entry weakens privacy.",
         json_schema_extra=restricted(),
     )
+    pii_locales: StrList = Field(
+        default_factory=lambda: ["intl", "in"],
+        description="Locales whose personal-data formats are detected (E08-03).",
+        json_schema_extra=restricted(),
+    )
+    detect: DetectSettings = Field(
+        default_factory=DetectSettings, description="How the redaction detectors run."
+    )
     vault: VaultSettings = Field(
         default_factory=VaultSettings, description="Where the vault key comes from."
     )
@@ -174,6 +196,14 @@ class PrivacySettings(SectionModel):
                 raise ValueError(
                     f"{INVALID} privacy.public_allowlist_extra entries must be identifiers"
                 )
+        return value
+
+    @field_validator("pii_locales")
+    @classmethod
+    def _check_locales(cls, value: list[str]) -> list[str]:
+        for locale in value:
+            if not _LOCALE.match(locale):
+                raise ValueError(f"{INVALID} privacy.pii_locales entries must be locale names")
         return value
 
     @model_validator(mode="after")

@@ -1,0 +1,62 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "pan_number",
+      "start_byte": 9,
+      "end_byte": 19,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "ipv4",
+      "start_byte": 29,
+      "end_byte": 39,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "mac_address",
+      "start_byte": 50,
+      "end_byte": 67,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "iban",
+      "start_byte": 79,
+      "end_byte": 101,
+      "confidence": "high"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "pan_number",
+      "start_byte": 9,
+      "end_byte": 19,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "ipv4",
+      "start_byte": 29,
+      "end_byte": 39,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "mac_address",
+      "start_byte": 50,
+      "end_byte": 67,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "iban",
+      "start_byte": 79,
+      "end_byte": 101,
+      "confidence": "high"
+    }
+  ]
+}

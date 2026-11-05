@@ -290,3 +290,116 @@ def make_hostile_tree() -> Path:
     (root / "package-lock.json").write_text('{"lockfileVersion": 2}\n', encoding="utf-8")
 
     return root
+
+
+@dataclass(frozen=True)
+class SyntheticValue:
+    """One value for the detector tests, with the reason it is safe to commit.
+
+    ``subtype`` is the placeholder subtype a detector should give it (the E08 vocabulary).
+    """
+
+    subtype: str
+    value: str
+    note: str
+
+
+def _secret(subtype: str, shape: str, note: str) -> SyntheticValue:
+    return SyntheticValue(subtype, example_secret(shape), note)
+
+
+# The connection string of the E08-01 worked example: an AWS documentation key inside a URL.
+EXAMPLE_CONNECTION_STRING = f"postgres://svc:{AWS_EXAMPLE_ACCESS_KEY_ID}@db.internal/app"
+
+SYNTHETIC_SECRETS: tuple[SyntheticValue, ...] = (
+    SyntheticValue(
+        "aws_access_key",
+        AWS_EXAMPLE_ACCESS_KEY_ID,
+        "The access key id AWS prints in its own documentation; not a live credential.",
+    ),
+    SyntheticValue(
+        "aws_secret_key",
+        AWS_EXAMPLE_SECRET_ACCESS_KEY,
+        "The secret access key AWS prints in its own documentation; not a live credential.",
+    ),
+    _secret(
+        "github_token",
+        "github_token",
+        "Matches the token shape; the trailing checksum characters are zeros, so it fails.",
+    ),
+    _secret(
+        "slack_token",
+        "slack_token",
+        "Matches the token shape with repeating digits and letters; never issued by Slack.",
+    ),
+    _secret(
+        "jwt",
+        "jwt",
+        "Three base64url segments assembled from fixed alphabets; the header is not JSON.",
+    ),
+    _secret(
+        "private_key_block",
+        "private_key",
+        "A PEM frame around repeating base64 characters; not a key of any algorithm.",
+    ),
+    _secret(
+        "basic_auth_url",
+        "basic_auth_url",
+        "A URL on the reserved .invalid top-level domain (RFC 2606) with a repeating password.",
+    ),
+    _secret(
+        "gcp_api_key",
+        "google_api_key",
+        "Matches the API key shape with repeating characters; never issued by Google.",
+    ),
+    SyntheticValue(
+        "connection_string",
+        EXAMPLE_CONNECTION_STRING,
+        "Uses the AWS documentation key id as the password and a non-resolving host name.",
+    ),
+)
+
+SYNTHETIC_PII: tuple[SyntheticValue, ...] = (
+    SyntheticValue("email", EXAMPLE_EMAIL, "Reserved .test top-level domain (RFC 2606, 6761)."),
+    SyntheticValue("phone_intl", EXAMPLE_PHONE, "UK Ofcom drama range 07700 900000 to 900999."),
+    SyntheticValue(
+        "pan_number",
+        "ABCPD1234K",
+        "Structurally valid (holder type P) but built from sequential letters and digits.",
+    ),
+    SyntheticValue(
+        "indian_mobile",
+        "9876543210",
+        "A descending-digit dummy that is the usual placeholder, not a number we know is assigned.",
+    ),
+    SyntheticValue("upi_id", "ravi@examplebank", "The handle is not a registered UPI handle."),
+    SyntheticValue(
+        "credit_card",
+        "4111 1111 1111 1111",  # pragma: allowlist secret
+        "The Visa test number published in payment-gateway documentation.",
+    ),
+    SyntheticValue(
+        "iban",
+        "GB82WEST12345698765432",
+        "The example IBAN used in the IBAN standard's own documentation.",
+    ),
+    SyntheticValue("ipv4", "192.0.2.17", "Documentation range TEST-NET-1 (RFC 5737)."),
+    SyntheticValue("ipv6", "2001:db8::17", "Documentation prefix (RFC 3849)."),
+    SyntheticValue(
+        "mac_address", "00:00:5e:00:53:af", "Documentation range for MAC addresses (RFC 7042)."
+    ),
+)
+
+SYNTHETIC_TERMS: tuple[SyntheticValue, ...] = (
+    SyntheticValue("domain", "festival bonus", "An invented business phrase."),
+    SyntheticValue("domain", "kisan credit", "An invented product name, not a real scheme code."),
+)
+
+
+def synthetic_value(kind: str, subtype: str, index: int = 0) -> str:
+    """The ``index``-th synthetic value of ``subtype`` in the table for ``kind``.
+
+    ``kind`` is ``"secret"``, ``"pii"`` or ``"term"``.
+    """
+    table = {"secret": SYNTHETIC_SECRETS, "pii": SYNTHETIC_PII, "term": SYNTHETIC_TERMS}[kind]
+    return [entry.value for entry in table if entry.subtype == subtype][index]

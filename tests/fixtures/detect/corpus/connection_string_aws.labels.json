@@ -1,0 +1,41 @@
+{
+  "detected": [
+    {
+      "kind": "SECRET",
+      "subtype": "connection_string",
+      "start_byte": 16,
+      "end_byte": 67,
+      "confidence": "medium"
+    },
+    {
+      "kind": "SECRET",
+      "subtype": "aws_access_key",
+      "start_byte": 31,
+      "end_byte": 51,
+      "confidence": "high"
+    },
+    {
+      "kind": "TERM",
+      "subtype": "domain",
+      "start_byte": 72,
+      "end_byte": 86,
+      "confidence": "medium"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "SECRET",
+      "subtype": "connection_string",
+      "start_byte": 16,
+      "end_byte": 67,
+      "confidence": "medium"
+    },
+    {
+      "kind": "TERM",
+      "subtype": "domain",
+      "start_byte": 72,
+      "end_byte": 86,
+      "confidence": "medium"
+    }
+  ]
+}

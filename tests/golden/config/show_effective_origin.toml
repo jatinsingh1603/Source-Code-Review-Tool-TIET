@@ -82,11 +82,18 @@ domain_terms = [
     "<2 hidden>",
 ]  # project: /repo/codekavach.toml:4
 public_allowlist_extra = []  # default
+pii_locales = [
+    "intl",
+    "in",
+]  # default
 
 [privacy.provider_tier_levels]
 local = "L1"              # default
 private = "L2"            # default
 public = "L3"             # default
+
+[privacy.detect]
+min_confidence = "low"    # default
 
 [privacy.vault]
 key_source = "keyring"    # default

@@ -1,0 +1,4 @@
+a = {{secret:aws_access_key}}
+b = {{secret:aws_access_key}}
+c = {{secret:aws_access_key}}
+d = {{secret:github_token}}

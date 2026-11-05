@@ -1,0 +1,20 @@
+{
+  "text": "a = <SECRET:aws_access_key:1>\nb = <SECRET:aws_access_key:1>\nc = <SECRET:aws_access_key:1>\nd = <SECRET:github_token:1>\n",
+  "placeholders": [
+    {
+      "token": "<SECRET:aws_access_key:1>",
+      "kind": "SECRET",
+      "subtype": "aws_access_key",
+      "index": 1,
+      "occurrences": 3
+    },
+    {
+      "token": "<SECRET:github_token:1>",
+      "kind": "SECRET",
+      "subtype": "github_token",
+      "index": 1,
+      "occurrences": 1
+    }
+  ],
+  "spans_applied": 4
+}

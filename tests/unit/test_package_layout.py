@@ -75,6 +75,16 @@ EXPECTED_PACKAGES: frozenset[str] = frozenset(
 
 EXPECTED_MODULES: frozenset[str] = frozenset(
     {
+        "codekavach.privacy.errors",
+        "codekavach.privacy.detect.base",
+        "codekavach.privacy.detect.mask",
+        "codekavach.privacy.detect.overlap",
+        "codekavach.privacy.detect.registry",
+        "codekavach.privacy.detect.runner",
+        "codekavach.privacy.detect.safe_regex",
+        "codekavach.privacy.detect.vocabulary",
+        "codekavach.privacy.redact.numbering",
+        "codekavach.privacy.redact.redactor",
         "codekavach.privacy.egress.guard",
         "codekavach.privacy.egress.ledger",
         "codekavach.privacy.egress.transport",

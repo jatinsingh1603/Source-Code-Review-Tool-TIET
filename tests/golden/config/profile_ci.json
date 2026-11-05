@@ -115,6 +115,9 @@
     "disable": []
   },
   "privacy": {
+    "detect": {
+      "min_confidence": "low"
+    },
     "domain_terms": [],
     "domain_terms_file": null,
     "level": "L3",
@@ -131,6 +134,10 @@
       "**/id_ed25519*"
     ],
     "paths": [],
+    "pii_locales": [
+      "intl",
+      "in"
+    ],
     "provider_tier_levels": {
       "local": "L1",
       "private": "L2",

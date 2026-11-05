@@ -89,6 +89,13 @@
       ],
       "domain_terms_file": null,
       "public_allowlist_extra": [],
+      "pii_locales": [
+        "intl",
+        "in"
+      ],
+      "detect": {
+        "min_confidence": "low"
+      },
       "vault": {
         "key_source": "keyring",
         "passphrase": null
@@ -669,6 +676,12 @@
       "line": null,
       "contributors": []
     },
+    "privacy.detect.min_confidence": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
     "privacy.domain_terms": {
       "layer": "project",
       "source": "/repo/codekavach.toml",
@@ -704,6 +717,12 @@
       ]
     },
     "privacy.paths": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.pii_locales": {
       "layer": "default",
       "source": null,
       "line": null,

@@ -1,0 +1,20 @@
+{
+  "text": "# naïve café 日本語 😀 key <SECRET:aws_access_key:1> mail <PII:email:1> 😀\n",
+  "placeholders": [
+    {
+      "token": "<SECRET:aws_access_key:1>",
+      "kind": "SECRET",
+      "subtype": "aws_access_key",
+      "index": 1,
+      "occurrences": 1
+    },
+    {
+      "token": "<PII:email:1>",
+      "kind": "PII",
+      "subtype": "email",
+      "index": 1,
+      "occurrences": 1
+    }
+  ],
+  "spans_applied": 2
+}

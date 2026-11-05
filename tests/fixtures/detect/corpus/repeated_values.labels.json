@@ -1,0 +1,62 @@
+{
+  "detected": [
+    {
+      "kind": "SECRET",
+      "subtype": "aws_access_key",
+      "start_byte": 4,
+      "end_byte": 24,
+      "confidence": "high"
+    },
+    {
+      "kind": "SECRET",
+      "subtype": "aws_access_key",
+      "start_byte": 29,
+      "end_byte": 49,
+      "confidence": "high"
+    },
+    {
+      "kind": "SECRET",
+      "subtype": "aws_access_key",
+      "start_byte": 54,
+      "end_byte": 74,
+      "confidence": "high"
+    },
+    {
+      "kind": "SECRET",
+      "subtype": "github_token",
+      "start_byte": 79,
+      "end_byte": 119,
+      "confidence": "high"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "SECRET",
+      "subtype": "aws_access_key",
+      "start_byte": 4,
+      "end_byte": 24,
+      "confidence": "high"
+    },
+    {
+      "kind": "SECRET",
+      "subtype": "aws_access_key",
+      "start_byte": 29,
+      "end_byte": 49,
+      "confidence": "high"
+    },
+    {
+      "kind": "SECRET",
+      "subtype": "aws_access_key",
+      "start_byte": 54,
+      "end_byte": 74,
+      "confidence": "high"
+    },
+    {
+      "kind": "SECRET",
+      "subtype": "github_token",
+      "start_byte": 79,
+      "end_byte": 119,
+      "confidence": "high"
+    }
+  ]
+}

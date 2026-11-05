@@ -100,6 +100,8 @@ What may leave the machine.
 | `privacy.domain_terms` | list[str] | `[]` | `CODEKAVACH_PRIVACY__DOMAIN_TERMS` | sensitive, union | Business words that must not appear verbatim in any payload. |
 | `privacy.domain_terms_file` | path \| unset | unset | `CODEKAVACH_PRIVACY__DOMAIN_TERMS_FILE` |  | File with one domain term per line; lines starting with # are comments. |
 | `privacy.public_allowlist_extra` | list[str] | `[]` | `CODEKAVACH_PRIVACY__PUBLIC_ALLOWLIST_EXTRA` | restricted | Extra identifiers kept un-pseudonymised; every entry weakens privacy. |
+| `privacy.pii_locales` | list[str] | `["intl", "in"]` | `CODEKAVACH_PRIVACY__PII_LOCALES` | restricted | Locales whose personal-data formats are detected (E08-03). |
+| `privacy.detect.min_confidence` | low \| medium \| high | `"low"` | `CODEKAVACH_PRIVACY__DETECT__MIN_CONFIDENCE` | restricted | Lowest detector confidence that is redacted. Low by default: a false positive costs a placeholder, a false negative leaks a credential. |
 | `privacy.vault.key_source` | keyring \| passphrase \| kms | `"keyring"` | `CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE` | restricted | Source of the vault key: OS keyring, passphrase or key-management service. |
 | `privacy.vault.passphrase` | secret reference \| unset | unset | `CODEKAVACH_PRIVACY__VAULT__PASSPHRASE` | restricted | Secret reference to the passphrase; required when key_source is passphrase. |
 

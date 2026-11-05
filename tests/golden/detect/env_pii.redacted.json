@@ -1,0 +1,34 @@
+{
+  "text": "EMAIL=<PII:email:1>\nPHONE=<PII:phone_intl:1>\nCARD=<PII:credit_card:1>\nHOST=<PII:ipv4:1>\n",
+  "placeholders": [
+    {
+      "token": "<PII:email:1>",
+      "kind": "PII",
+      "subtype": "email",
+      "index": 1,
+      "occurrences": 1
+    },
+    {
+      "token": "<PII:phone_intl:1>",
+      "kind": "PII",
+      "subtype": "phone_intl",
+      "index": 1,
+      "occurrences": 1
+    },
+    {
+      "token": "<PII:credit_card:1>",
+      "kind": "PII",
+      "subtype": "credit_card",
+      "index": 1,
+      "occurrences": 1
+    },
+    {
+      "token": "<PII:ipv4:1>",
+      "kind": "PII",
+      "subtype": "ipv4",
+      "index": 1,
+      "occurrences": 1
+    }
+  ],
+  "spans_applied": 4
+}

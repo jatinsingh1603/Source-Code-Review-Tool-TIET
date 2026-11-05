@@ -104,6 +104,8 @@ level = "L3"
 #? domain_terms_file = ""
 #~ Extra identifiers kept un-pseudonymised; every entry weakens privacy.
 # public_allowlist_extra = []
+#~ Locales whose personal-data formats are detected (E08-03).
+# pii_locales = ["intl", "in"]
 
 #~ example: privacy.paths
 #~ Per-path rules; later rules win on overlap.
@@ -118,6 +120,11 @@ level = "L3"
 # pattern = "config/hsm/**"
 # never_send = true
 #~ end of example
+
+#~ How the redaction detectors run.
+[privacy.detect]
+#~ Lowest detector confidence that is redacted. Low by default: a false positive costs a placeholder, a false negative leaks a credential.
+# min_confidence = "low"
 
 #~ Where the vault key comes from.
 [privacy.vault]

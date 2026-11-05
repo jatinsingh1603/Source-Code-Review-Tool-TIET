@@ -1,7 +1,7 @@
 {
   "codekavach_version": "0.0.0-test",
   "created_at": "2026-10-01T09:30:00Z",
-  "fingerprint": "a14cb50b666948179666d99b0f6906c307142a2c3f648b4a652b2ac7a716847a",
+  "fingerprint": "682a50e2e6701b1587cd13f9aa2e3a90232272201880313c18428b0d2e9e1cb1",
   "org_policies": [],
   "origins": {
     "config_version": {
@@ -444,6 +444,12 @@
       "line": null,
       "source": null
     },
+    "privacy.detect.min_confidence": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
     "privacy.domain_terms": {
       "contributors": [],
       "layer": "default",
@@ -477,6 +483,12 @@
       "source": null
     },
     "privacy.paths": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.pii_locales": {
       "contributors": [],
       "layer": "default",
       "line": null,
@@ -835,6 +847,9 @@
       "disable": []
     },
     "privacy": {
+      "detect": {
+        "min_confidence": "low"
+      },
       "domain_terms": [],
       "domain_terms_file": null,
       "level": "L3",
@@ -851,6 +866,10 @@
         "**/id_ed25519*"
       ],
       "paths": [],
+      "pii_locales": [
+        "intl",
+        "in"
+      ],
       "provider_tier_levels": {
         "local": "L1",
         "private": "L2",

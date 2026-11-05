@@ -27,6 +27,8 @@ DOCUMENTED = (
     "integrations.**",
     "privacy.vault.**",
     "privacy.public_allowlist_extra",
+    "privacy.pii_locales",
+    "privacy.detect.**",
     "plugins.**",
     "ingest.follow_symlinks",
 )

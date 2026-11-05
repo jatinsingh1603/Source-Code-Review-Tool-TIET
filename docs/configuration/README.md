@@ -256,7 +256,7 @@ And a terms file kept next to it, referenced from the same table:
 domain_terms_file = "domain-terms.txt"
 ```
 
-Paths that must not be disclosed in any form should be given L4, L0 or `never_send`, as the README says. The vault key source (`privacy.vault.key_source`) and the extra public allow-list are restricted settings: a project file may not set them unless it is trusted.
+Paths that must not be disclosed in any form should be given L4, L0 or `never_send`, as the README says. The vault key source (`privacy.vault.key_source`), the extra public allow-list, the detected locales (`privacy.pii_locales`) and the detector confidence floor (`privacy.detect.min_confidence`) are restricted settings: a project file may not set them unless it is trusted.
 
 There is no setting that turns off the egress guard, the ledger or redaction, and consent to send to a remote provider is not a setting either, because a scanned repository could set it. Consent is a per-user state, the `--accept-egress` flag, or `CODEKAVACH_ACCEPT_EGRESS=1` for CI (decision D8 of ADR-0006).
 

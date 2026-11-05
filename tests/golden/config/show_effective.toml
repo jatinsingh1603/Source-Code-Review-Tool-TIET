@@ -79,11 +79,18 @@ domain_terms = [
     "<2 hidden>",
 ]
 public_allowlist_extra = []
+pii_locales = [
+    "intl",
+    "in",
+]
 
 [privacy.provider_tier_levels]
 local = "L1"
 private = "L2"
 public = "L3"
+
+[privacy.detect]
+min_confidence = "low"
 
 [privacy.vault]
 key_source = "keyring"

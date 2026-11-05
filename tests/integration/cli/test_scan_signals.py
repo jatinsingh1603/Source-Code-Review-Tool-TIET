@@ -52,6 +52,9 @@ def scan(tmp_path: Path, repo: Path) -> Iterator[subprocess.Popen[str]]:
         "PYTHONPATH": os.pathsep.join([str(site), str(REPOSITORY)]),
         "PYTHONUNBUFFERED": "1",
         "CK_SLOW_SCAN_MODE": "cooperative",
+        # The real parse stage would finish before the signal arrives and become the "last
+        # completed stage"; this scan is about the fake stages only.
+        "CODEKAVACH_PLUGINS__DISABLE": "stage:parse",
         "CODEKAVACH_HOME": str(tmp_path / "home"),
     }
     process = subprocess.Popen(

@@ -1,0 +1,62 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "email",
+      "start_byte": 6,
+      "end_byte": 29,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "phone_intl",
+      "start_byte": 36,
+      "end_byte": 51,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "credit_card",
+      "start_byte": 57,
+      "end_byte": 76,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "ipv4",
+      "start_byte": 82,
+      "end_byte": 92,
+      "confidence": "medium"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "email",
+      "start_byte": 6,
+      "end_byte": 29,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "phone_intl",
+      "start_byte": 36,
+      "end_byte": 51,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "credit_card",
+      "start_byte": 57,
+      "end_byte": 76,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "ipv4",
+      "start_byte": 82,
+      "end_byte": 92,
+      "confidence": "medium"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"pan": "{{pii:pan_number}}", "ip": "{{pii:ipv4}}", "mac": "{{pii:mac_address}}", "iban": "{{pii:iban}}"}

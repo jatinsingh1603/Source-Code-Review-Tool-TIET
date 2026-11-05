@@ -76,6 +76,30 @@
       "title": "ComplianceFramework",
       "type": "string"
     },
+    "Confidence": {
+      "description": "Confidence in a candidate or verdict, in ascending order.",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "DetectSettings": {
+      "additionalProperties": false,
+      "description": "How the secret, PII and domain-term detectors run (E08).",
+      "properties": {
+        "min_confidence": {
+          "$ref": "#/$defs/Confidence",
+          "default": "low",
+          "description": "Lowest detector confidence that is redacted. Low by default: a false positive costs a placeholder, a false negative leaks a credential.",
+          "x-ck-restricted": true
+        }
+      },
+      "title": "DetectSettings",
+      "type": "object"
+    },
     "EngineOptions": {
       "additionalProperties": false,
       "description": "Per-engine overrides.",
@@ -855,6 +879,10 @@
       "additionalProperties": false,
       "description": "What may leave the machine, at which privacy level.",
       "properties": {
+        "detect": {
+          "$ref": "#/$defs/DetectSettings",
+          "description": "How the redaction detectors run."
+        },
         "domain_terms": {
           "description": "Business words that must not appear verbatim in any payload.",
           "items": {
@@ -906,6 +934,15 @@
           "maxItems": 500,
           "title": "Paths",
           "type": "array"
+        },
+        "pii_locales": {
+          "description": "Locales whose personal-data formats are detected (E08-03).",
+          "items": {
+            "type": "string"
+          },
+          "title": "Pii Locales",
+          "type": "array",
+          "x-ck-restricted": true
         },
         "provider_tier_levels": {
           "additionalProperties": {
