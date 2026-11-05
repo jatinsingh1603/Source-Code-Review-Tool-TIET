@@ -205,6 +205,26 @@ class EgressSettings(SectionModel):
         return value
 
 
+class PseudonymSettings(SectionModel):
+    """How identifiers are renamed (E09)."""
+
+    link_mode: Literal["per_scan", "per_request"] = Field(
+        default="per_scan",
+        description=(
+            "per_scan keeps one name for an identifier across a scan; per_request renames it "
+            "afresh in every request, which defeats the verdict cache and cross-slice reasoning."
+        ),
+    )
+    role_hints: bool = Field(
+        default=False,
+        description=(
+            "Append an analysis-derived role (cred, authz, sanitised, tainted, sink_arg) to a "
+            "pseudonym. Leave off in a client engagement until the leakage arm has measured it."
+        ),
+        json_schema_extra=restricted(),
+    )
+
+
 class PrivacySettings(SectionModel):
     """What may leave the machine, at which privacy level."""
 
@@ -256,6 +276,9 @@ class PrivacySettings(SectionModel):
     )
     egress: EgressSettings = Field(
         default_factory=EgressSettings, description="Limits the egress guard applies."
+    )
+    pseudonym: PseudonymSettings = Field(
+        default_factory=PseudonymSettings, description="How identifiers are renamed."
     )
 
     @field_validator("provider_tier_levels", mode="before")

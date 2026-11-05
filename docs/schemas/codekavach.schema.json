@@ -1028,6 +1028,10 @@
           "title": "Provider Tier Levels",
           "type": "object"
         },
+        "pseudonym": {
+          "$ref": "#/$defs/PseudonymSettings",
+          "description": "How identifiers are renamed."
+        },
         "public_allowlist_extra": {
           "description": "Extra identifiers kept un-pseudonymised; every entry weakens privacy.",
           "items": {
@@ -1316,6 +1320,31 @@
         "kind"
       ],
       "title": "ProviderSettings",
+      "type": "object"
+    },
+    "PseudonymSettings": {
+      "additionalProperties": false,
+      "description": "How identifiers are renamed (E09).",
+      "properties": {
+        "link_mode": {
+          "default": "per_scan",
+          "description": "per_scan keeps one name for an identifier across a scan; per_request renames it afresh in every request, which defeats the verdict cache and cross-slice reasoning.",
+          "enum": [
+            "per_scan",
+            "per_request"
+          ],
+          "title": "Link Mode",
+          "type": "string"
+        },
+        "role_hints": {
+          "default": false,
+          "description": "Append an analysis-derived role (cred, authz, sanitised, tainted, sink_arg) to a pseudonym. Leave off in a client engagement until the leakage arm has measured it.",
+          "title": "Role Hints",
+          "type": "boolean",
+          "x-ck-restricted": true
+        }
+      },
+      "title": "PseudonymSettings",
       "type": "object"
     },
     "ReportFormat": {

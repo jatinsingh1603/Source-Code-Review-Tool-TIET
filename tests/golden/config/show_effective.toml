@@ -104,6 +104,10 @@ encrypt_at_rest = true
 ticket_ttl_seconds = 60
 scanner_timeout_seconds = 5.0
 
+[privacy.pseudonym]
+link_mode = "per_scan"
+role_hints = false
+
 [llm]
 enabled = true
 default_provider = "auto"

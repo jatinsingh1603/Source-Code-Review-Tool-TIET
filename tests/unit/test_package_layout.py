@@ -98,6 +98,8 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.privacy.detect.terms",
         "codekavach.privacy.detect.safe_regex",
         "codekavach.privacy.detect.vocabulary",
+        "codekavach.privacy.pseudonymise.generator",
+        "codekavach.privacy.pseudonymise.mapping",
         "codekavach.privacy.redact.numbering",
         "codekavach.privacy.redact.redactor",
         "codekavach.privacy.egress.guard",

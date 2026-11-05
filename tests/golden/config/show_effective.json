@@ -108,6 +108,10 @@
         "encrypt_at_rest": true,
         "ticket_ttl_seconds": 60,
         "scanner_timeout_seconds": 5.0
+      },
+      "pseudonym": {
+        "link_mode": "per_scan",
+        "role_hints": false
       }
     },
     "llm": {
@@ -792,6 +796,18 @@
       "contributors": []
     },
     "privacy.provider_tier_levels.public": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.pseudonym.link_mode": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.pseudonym.role_hints": {
       "layer": "default",
       "source": null,
       "line": null,

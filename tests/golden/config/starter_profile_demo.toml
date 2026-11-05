@@ -150,6 +150,13 @@ level = "L3"
 #~ Time limit of one leak scanner; a scanner over it blocks the request.
 # scanner_timeout_seconds = 5.0
 
+#~ How identifiers are renamed.
+[privacy.pseudonym]
+#~ per_scan keeps one name for an identifier across a scan; per_request renames it afresh in every request, which defeats the verdict cache and cross-slice reasoning.
+# link_mode = "per_scan"
+#~ Append an analysis-derived role (cred, authz, sanitised, tainted, sink_arg) to a pseudonym. Leave off in a client engagement until the leakage arm has measured it.
+# role_hints = false
+
 #~ Language models. Keys are references, never values.
 #~ Language models and their providers.
 [llm]

@@ -13,3 +13,11 @@ this layer exists to hide.
 
 class RedactionError(Exception):
     """A detection or redaction step failed; the candidate must not be sent (I4)."""
+
+
+class PseudonymError(Exception):
+    """A pseudonym could not be made; the candidate must not be sent (I4).
+
+    Owning epic: E09. The message names the failed rule and never quotes an original, a token or
+    the salt.
+    """

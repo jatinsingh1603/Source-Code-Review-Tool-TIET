@@ -111,6 +111,8 @@ What may leave the machine.
 | `privacy.egress.encrypt_at_rest` | bool | `true` | `CODEKAVACH_PRIVACY__EGRESS__ENCRYPT_AT_REST` | restricted | Encrypt the stored payloads of the egress ledger. |
 | `privacy.egress.ticket_ttl_seconds` | int | `60` | `CODEKAVACH_PRIVACY__EGRESS__TICKET_TTL_SECONDS` | restricted | How long an egress ticket stays valid, in seconds. |
 | `privacy.egress.scanner_timeout_seconds` | float | `5.0` | `CODEKAVACH_PRIVACY__EGRESS__SCANNER_TIMEOUT_SECONDS` | restricted | Time limit of one leak scanner; a scanner over it blocks the request. |
+| `privacy.pseudonym.link_mode` | per_scan \| per_request | `"per_scan"` | `CODEKAVACH_PRIVACY__PSEUDONYM__LINK_MODE` |  | per_scan keeps one name for an identifier across a scan; per_request renames it afresh in every request, which defeats the verdict cache and cross-slice reasoning. |
+| `privacy.pseudonym.role_hints` | bool | `false` | `CODEKAVACH_PRIVACY__PSEUDONYM__ROLE_HINTS` | restricted | Append an analysis-derived role (cred, authz, sanitised, tainted, sink_arg) to a pseudonym. Leave off in a client engagement until the leakage arm has measured it. |
 
 Defaults too long for the table:
 

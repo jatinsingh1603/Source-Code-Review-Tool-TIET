@@ -152,6 +152,10 @@
       "private": "L2",
       "public": "L3"
     },
+    "pseudonym": {
+      "link_mode": "per_scan",
+      "role_hints": false
+    },
     "public_allowlist_extra": [],
     "vault": {
       "key_source": "keyring",
