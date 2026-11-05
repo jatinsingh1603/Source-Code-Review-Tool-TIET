@@ -82,6 +82,10 @@ VIOLATIONS = {
         {"codekavach/core/store/bad.py": "from codekavach.llm import client\n"},
         "core-is-bottom-layer",
     ),
+    "egress-imports-llm": (
+        {"codekavach/privacy/egress/bad.py": "from codekavach.llm import client\n"},
+        "egress-no-llm",
+    ),
     "cli-scan-imports-transport": (
         {"codekavach/cli/scan.py": "from codekavach.privacy.egress import transport\n"},
         "cli-no-direct-egress",

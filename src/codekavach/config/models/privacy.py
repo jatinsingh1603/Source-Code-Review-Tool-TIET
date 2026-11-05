@@ -14,7 +14,7 @@ process variable owned by E05-13.
 
 import re
 from pathlib import Path
-from typing import Any, Final, Literal, Self
+from typing import Annotated, Any, Final, Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 
@@ -24,6 +24,9 @@ from codekavach.config.models.base import (
     PrivacyLevelField,
     SectionModel,
     StrList,
+    bounds,
+    float_in_range,
+    in_range,
     restricted,
     sensitive,
     union_merge,
@@ -57,6 +60,11 @@ _LOCALE = re.compile(r"^[a-z][a-z0-9_]{0,15}$")
 # to the conservative passport-number detector. An entry outside this list is a load-time error.
 PII_LOCALES: Final = ("intl", "in", "passport")
 _DRIVE = re.compile(r"^[A-Za-z]:")
+# A host name or address, or ``*.`` and a domain of at least two labels: ``*`` and ``*.com`` would
+# turn the allow-list into a formality.
+_ALLOWED_HOST = re.compile(
+    r"^(?:\*\.[A-Za-z0-9-]+\.[A-Za-z0-9.-]+|[A-Za-z0-9:][A-Za-z0-9.:-]{0,252})$"
+)
 
 
 def check_pattern(key: str, pattern: str) -> str:
@@ -129,6 +137,74 @@ class DetectSettings(SectionModel):
     )
 
 
+class EgressSettings(SectionModel):
+    """Limits the egress guard applies to every request (E12).
+
+    Every key bounds a check; none switches one off. The numeric keys have a lower bound above
+    zero so that no value can mean "unlimited", and the guard's scanners are registered in code
+    with no key that names them. The whole section is restricted: a scanned repository must not
+    be able to add a host or relax a budget for itself.
+    """
+
+    max_payload_bytes: Annotated[
+        int, in_range(1_024, 16_777_216, "privacy.egress.max_payload_bytes")
+    ] = Field(
+        default=262_144,
+        description="Largest serialised request body the guard lets out, in bytes.",
+        json_schema_extra=bounds(1_024, 16_777_216) | restricted(),
+    )
+    aggregation_budget_pct: Annotated[
+        float, float_in_range(0.1, 100.0, "privacy.egress.aggregation_budget_pct")
+    ] = Field(
+        default=100.0,
+        description="Share of a repository that may be disclosed across one scan, in percent.",
+        json_schema_extra={"minimum": 0.1, "maximum": 100.0} | restricted(),
+    )
+    rate_per_minute: Annotated[int, in_range(1, 100_000, "privacy.egress.rate_per_minute")] = Field(
+        default=60,
+        description="Most requests the guard lets out in any one minute.",
+        json_schema_extra=bounds(1, 100_000) | restricted(),
+    )
+    provider_host_allowlist: StrList = Field(
+        default_factory=list,
+        description=(
+            "Hosts a remote provider may be reached on (exact, or *.example.com for subdomains). "
+            "Empty allows no remote host."
+        ),
+        json_schema_extra=restricted(),
+    )
+    encrypt_at_rest: bool = Field(
+        default=True,
+        description="Encrypt the stored payloads of the egress ledger.",
+        json_schema_extra=restricted(),
+    )
+    ticket_ttl_seconds: Annotated[int, in_range(1, 3_600, "privacy.egress.ticket_ttl_seconds")] = (
+        Field(
+            default=60,
+            description="How long an egress ticket stays valid, in seconds.",
+            json_schema_extra=bounds(1, 3_600) | restricted(),
+        )
+    )
+    scanner_timeout_seconds: Annotated[
+        float, float_in_range(0.05, 60.0, "privacy.egress.scanner_timeout_seconds")
+    ] = Field(
+        default=5.0,
+        description="Time limit of one leak scanner; a scanner over it blocks the request.",
+        json_schema_extra={"minimum": 0.05, "maximum": 60.0} | restricted(),
+    )
+
+    @field_validator("provider_host_allowlist")
+    @classmethod
+    def _check_hosts(cls, value: list[str]) -> list[str]:
+        for host in value:
+            if not _ALLOWED_HOST.match(host):
+                raise ValueError(
+                    f"{INVALID} privacy.egress.provider_host_allowlist entries are host names "
+                    "or *.example.com"
+                )
+        return value
+
+
 class PrivacySettings(SectionModel):
     """What may leave the machine, at which privacy level."""
 
@@ -177,6 +253,9 @@ class PrivacySettings(SectionModel):
     )
     vault: VaultSettings = Field(
         default_factory=VaultSettings, description="Where the vault key comes from."
+    )
+    egress: EgressSettings = Field(
+        default_factory=EgressSettings, description="Limits the egress guard applies."
     )
 
     @field_validator("provider_tier_levels", mode="before")

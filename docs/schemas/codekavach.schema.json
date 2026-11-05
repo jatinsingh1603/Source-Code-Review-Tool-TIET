@@ -100,6 +100,75 @@
       "title": "DetectSettings",
       "type": "object"
     },
+    "EgressSettings": {
+      "additionalProperties": false,
+      "description": "Limits the egress guard applies to every request (E12).\n\nEvery key bounds a check; none switches one off. The numeric keys have a lower bound above\nzero so that no value can mean \"unlimited\", and the guard's scanners are registered in code\nwith no key that names them. The whole section is restricted: a scanned repository must not\nbe able to add a host or relax a budget for itself.",
+      "properties": {
+        "aggregation_budget_pct": {
+          "default": 100.0,
+          "description": "Share of a repository that may be disclosed across one scan, in percent.",
+          "maximum": 100.0,
+          "minimum": 0.1,
+          "title": "Aggregation Budget Pct",
+          "type": "number",
+          "x-ck-restricted": true
+        },
+        "encrypt_at_rest": {
+          "default": true,
+          "description": "Encrypt the stored payloads of the egress ledger.",
+          "title": "Encrypt At Rest",
+          "type": "boolean",
+          "x-ck-restricted": true
+        },
+        "max_payload_bytes": {
+          "default": 262144,
+          "description": "Largest serialised request body the guard lets out, in bytes.",
+          "maximum": 16777216,
+          "minimum": 1024,
+          "title": "Max Payload Bytes",
+          "type": "integer",
+          "x-ck-restricted": true
+        },
+        "provider_host_allowlist": {
+          "description": "Hosts a remote provider may be reached on (exact, or *.example.com for subdomains). Empty allows no remote host.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Provider Host Allowlist",
+          "type": "array",
+          "x-ck-restricted": true
+        },
+        "rate_per_minute": {
+          "default": 60,
+          "description": "Most requests the guard lets out in any one minute.",
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Rate Per Minute",
+          "type": "integer",
+          "x-ck-restricted": true
+        },
+        "scanner_timeout_seconds": {
+          "default": 5.0,
+          "description": "Time limit of one leak scanner; a scanner over it blocks the request.",
+          "maximum": 60.0,
+          "minimum": 0.05,
+          "title": "Scanner Timeout Seconds",
+          "type": "number",
+          "x-ck-restricted": true
+        },
+        "ticket_ttl_seconds": {
+          "default": 60,
+          "description": "How long an egress ticket stays valid, in seconds.",
+          "maximum": 3600,
+          "minimum": 1,
+          "title": "Ticket Ttl Seconds",
+          "type": "integer",
+          "x-ck-restricted": true
+        }
+      },
+      "title": "EgressSettings",
+      "type": "object"
+    },
     "EngineOptions": {
       "additionalProperties": false,
       "description": "Per-engine overrides.",
@@ -906,6 +975,10 @@
           "default": null,
           "description": "File with one domain term per line; lines starting with # are comments.",
           "title": "Domain Terms File"
+        },
+        "egress": {
+          "$ref": "#/$defs/EgressSettings",
+          "description": "Limits the egress guard applies."
         },
         "level": {
           "$ref": "#/$defs/PrivacyLevel",

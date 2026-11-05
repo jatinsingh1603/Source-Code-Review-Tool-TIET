@@ -133,6 +133,23 @@ level = "L3"
 #~ Secret reference to the passphrase; required when key_source is passphrase.
 #? passphrase = "env:CODEKAVACH_VAULT_PASSPHRASE"
 
+#~ Limits the egress guard applies.
+[privacy.egress]
+#~ Largest serialised request body the guard lets out, in bytes.
+# max_payload_bytes = 262144
+#~ Share of a repository that may be disclosed across one scan, in percent.
+# aggregation_budget_pct = 100.0
+#~ Most requests the guard lets out in any one minute.
+# rate_per_minute = 60
+#~ Hosts a remote provider may be reached on (exact, or *.example.com for subdomains). Empty allows no remote host.
+# provider_host_allowlist = []
+#~ Encrypt the stored payloads of the egress ledger.
+# encrypt_at_rest = true
+#~ How long an egress ticket stays valid, in seconds.
+# ticket_ttl_seconds = 60
+#~ Time limit of one leak scanner; a scanner over it blocks the request.
+# scanner_timeout_seconds = 5.0
+
 #~ Language models. Keys are references, never values.
 #~ Language models and their providers.
 [llm]

@@ -102,6 +102,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.privacy.redact.redactor",
         "codekavach.privacy.egress.guard",
         "codekavach.privacy.egress.ledger",
+        "codekavach.privacy.egress.models",
         "codekavach.privacy.egress.transport",
         "codekavach.llm.budget",
         "codekavach.llm.cache",

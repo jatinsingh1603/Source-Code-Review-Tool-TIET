@@ -131,6 +131,7 @@ EXTRA_CANDIDATES: dict[str, list[Any]] = {
     "scan.stage_timeouts": [{"parse": 60}],
     "privacy.provider_tier_levels": [{"local": "L2", "private": "L2", "public": "L3"}],
     "privacy.public_allowlist_extra": [["PublicApiName"], ["public_api_name"]],
+    "privacy.egress.provider_host_allowlist": [["api.example.test"]],
     "llm.default_provider": ["mock"],
     "engines.enabled": [["semgrep"]],
     "engines.disabled": [["semgrep"]],

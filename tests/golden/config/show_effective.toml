@@ -95,6 +95,15 @@ min_confidence = "low"
 [privacy.vault]
 key_source = "keyring"
 
+[privacy.egress]
+max_payload_bytes = 262144
+aggregation_budget_pct = 100.0
+rate_per_minute = 60
+provider_host_allowlist = []
+encrypt_at_rest = true
+ticket_ttl_seconds = 60
+scanner_timeout_seconds = 5.0
+
 [llm]
 enabled = true
 default_provider = "auto"

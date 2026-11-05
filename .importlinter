@@ -22,6 +22,8 @@
 #                          "forbidden" rather than "layers" because config imports core.models and
 #                          core.pipeline imports config, which a layers contract would report as a
 #                          mutual dependency of the packages core and config.
+# egress-no-llm            Ruling O-12 (E12-01): the egress package imports nothing from the LLM
+#                          layer, so the LLM layer cannot reach into the guard to build a ticket.
 # cli-no-direct-egress     I1 at the command layer (E05-32): codekavach.cli does not import the
 #                          egress transport, the provider adapters or the vault. The CLI reaches
 #                          the vault's administrative facade and the provider probe at run time
@@ -184,6 +186,14 @@ forbidden_modules =
     codekavach.integrations
     codekavach.server
     codekavach.eval
+
+[importlinter:contract:egress-no-llm]
+name = The egress package imports nothing from the LLM layer (ruling O-12)
+type = forbidden
+source_modules =
+    codekavach.privacy.egress
+forbidden_modules =
+    codekavach.llm
 
 [importlinter:contract:cli-no-direct-egress]
 name = The CLI does not import the egress transport, adapters or the vault

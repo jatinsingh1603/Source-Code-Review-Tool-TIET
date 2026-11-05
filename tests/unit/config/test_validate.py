@@ -215,3 +215,26 @@ def test_generated_settings(data: dict[str, Any]) -> None:
     default = s.llm.default_provider
     if default == "auto" or not s.llm.providers[default].is_remote:
         assert not {"CK-CFG-031", "CK-CFG-032"} & {issue.code.value for issue in issues}
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "max_payload_bytes",
+        "aggregation_budget_pct",
+        "rate_per_minute",
+        "scanner_timeout_seconds",
+    ],
+)
+@pytest.mark.parametrize("value", [0, -1])
+def test_no_egress_limit_can_disable_a_scanner(key: str, value: int) -> None:
+    disabled = patch(Settings(), f"privacy.egress.{key}", value)
+    issues = semantic_checks(disabled, {}, project_root=ROOT)
+    assert [(issue.key, issue.code.value) for issue in issues] == [
+        (f"privacy.egress.{key}", "CK-CFG-003")
+    ]
+    assert "disable a leak scanner" in issues[0].message
+
+
+def test_the_default_egress_limits_pass() -> None:
+    assert codes(Settings()) == []

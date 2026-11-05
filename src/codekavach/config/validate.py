@@ -131,6 +131,28 @@ def _privacy_rules(settings: Settings, out: _Collector) -> None:
         )
 
 
+def _egress_rules(settings: Settings, out: _Collector) -> None:
+    """No value may switch off a scanner (E12-01); a limit of zero is what would read as "none".
+
+    The section model already refuses these values. This rule stands behind it, because it runs
+    on the merged result, after the organisation policy has had its turn.
+    """
+    egress = settings.privacy.egress
+    limits = {
+        "max_payload_bytes": egress.max_payload_bytes,
+        "aggregation_budget_pct": egress.aggregation_budget_pct,
+        "rate_per_minute": egress.rate_per_minute,
+        "scanner_timeout_seconds": egress.scanner_timeout_seconds,
+    }
+    for name, value in limits.items():
+        if value <= 0:
+            out.add(
+                ConfigErrorCode.CK_CFG_003,
+                f"privacy.egress.{name}",
+                f"privacy.egress.{name} must be above zero: no setting may disable a leak scanner",
+            )
+
+
 def _resolve(path: Path, project_root: Path) -> Path:
     expanded = path.expanduser()
     return (expanded if expanded.is_absolute() else project_root / expanded).resolve(strict=False)
@@ -187,6 +209,7 @@ def semantic_checks(
     out = _Collector(origins)
     _llm_rules(settings, out)
     _privacy_rules(settings, out)
+    _egress_rules(settings, out)
     _path_rules(settings, project_root, out)
     _stage_rules(settings, out)
     return out.issues

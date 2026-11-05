@@ -203,3 +203,61 @@ def test_validation_iff_levels_meet_floor(
     assert expected_ok
     for tier in TrustTier:
         assert privacy.floor_for_tier(tier).at_least(min_level)
+
+
+EGRESS_DEFAULTS = {
+    "max_payload_bytes": 262_144,
+    "aggregation_budget_pct": 100.0,
+    "rate_per_minute": 60,
+    "provider_host_allowlist": [],
+    "encrypt_at_rest": True,
+    "ticket_ttl_seconds": 60,
+    "scanner_timeout_seconds": 5.0,
+}
+
+
+def test_the_egress_defaults_are_the_documented_ones() -> None:
+    assert PrivacySettings().egress.model_dump() == EGRESS_DEFAULTS
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("max_payload_bytes", 0),
+        ("max_payload_bytes", 16_777_217),
+        ("aggregation_budget_pct", 0.0),
+        ("aggregation_budget_pct", 100.1),
+        ("rate_per_minute", 0),
+        ("ticket_ttl_seconds", 0),
+        ("ticket_ttl_seconds", 3_601),
+        ("scanner_timeout_seconds", 0.0),
+        ("scanner_timeout_seconds", 60.1),
+    ],
+)
+def test_an_egress_limit_outside_its_bounds_is_refused(key: str, value: float) -> None:
+    with pytest.raises(ValidationError):
+        PrivacySettings.model_validate({"egress": {key: value}})
+
+
+@pytest.mark.parametrize(
+    "key", ["disable_scanners", "scanners", "skip_guard", "enabled", "consent", "allow_all"]
+)
+def test_the_egress_section_has_no_key_that_switches_a_check_off(key: str) -> None:
+    with pytest.raises(ValidationError):
+        PrivacySettings.model_validate({"egress": {key: True}})
+
+
+@pytest.mark.parametrize(
+    "host", ["api.example.test", "internal-llm", "10.0.0.8", "2001:db8::1", "*.example.test"]
+)
+def test_an_allow_list_entry_names_a_host(host: str) -> None:
+    settings = PrivacySettings.model_validate({"egress": {"provider_host_allowlist": [host]}})
+    assert settings.egress.provider_host_allowlist == [host]
+
+
+@pytest.mark.parametrize(
+    "host", ["*", "*.com", "https://api.example.test", "api.example.test/v1", "a b", "-bad"]
+)
+def test_an_allow_list_entry_cannot_be_a_formality(host: str) -> None:
+    with pytest.raises(ValidationError):
+        PrivacySettings.model_validate({"egress": {"provider_host_allowlist": [host]}})

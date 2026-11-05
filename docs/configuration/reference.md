@@ -104,6 +104,13 @@ What may leave the machine.
 | `privacy.detect.min_confidence` | low \| medium \| high | `"low"` | `CODEKAVACH_PRIVACY__DETECT__MIN_CONFIDENCE` | restricted | Lowest detector confidence that is redacted. Low by default: a false positive costs a placeholder, a false negative leaks a credential. |
 | `privacy.vault.key_source` | keyring \| passphrase \| kms | `"keyring"` | `CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE` | restricted | Source of the vault key: OS keyring, passphrase or key-management service. |
 | `privacy.vault.passphrase` | secret reference \| unset | unset | `CODEKAVACH_PRIVACY__VAULT__PASSPHRASE` | restricted | Secret reference to the passphrase; required when key_source is passphrase. |
+| `privacy.egress.max_payload_bytes` | int | `262144` | `CODEKAVACH_PRIVACY__EGRESS__MAX_PAYLOAD_BYTES` | restricted | Largest serialised request body the guard lets out, in bytes. |
+| `privacy.egress.aggregation_budget_pct` | float | `100.0` | `CODEKAVACH_PRIVACY__EGRESS__AGGREGATION_BUDGET_PCT` | restricted | Share of a repository that may be disclosed across one scan, in percent. |
+| `privacy.egress.rate_per_minute` | int | `60` | `CODEKAVACH_PRIVACY__EGRESS__RATE_PER_MINUTE` | restricted | Most requests the guard lets out in any one minute. |
+| `privacy.egress.provider_host_allowlist` | list[str] | `[]` | `CODEKAVACH_PRIVACY__EGRESS__PROVIDER_HOST_ALLOWLIST` | restricted | Hosts a remote provider may be reached on (exact, or *.example.com for subdomains). Empty allows no remote host. |
+| `privacy.egress.encrypt_at_rest` | bool | `true` | `CODEKAVACH_PRIVACY__EGRESS__ENCRYPT_AT_REST` | restricted | Encrypt the stored payloads of the egress ledger. |
+| `privacy.egress.ticket_ttl_seconds` | int | `60` | `CODEKAVACH_PRIVACY__EGRESS__TICKET_TTL_SECONDS` | restricted | How long an egress ticket stays valid, in seconds. |
+| `privacy.egress.scanner_timeout_seconds` | float | `5.0` | `CODEKAVACH_PRIVACY__EGRESS__SCANNER_TIMEOUT_SECONDS` | restricted | Time limit of one leak scanner; a scanner over it blocks the request. |
 
 Defaults too long for the table:
 

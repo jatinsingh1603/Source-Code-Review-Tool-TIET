@@ -1,7 +1,7 @@
 {
   "codekavach_version": "0.0.0-test",
   "created_at": "2026-10-01T09:30:00Z",
-  "fingerprint": "682a50e2e6701b1587cd13f9aa2e3a90232272201880313c18428b0d2e9e1cb1",
+  "fingerprint": "4eb21982f317ee702613c6ba3801e34e67f3bb4860966d73fec9fe2bd6eaf135",
   "org_policies": [],
   "origins": {
     "config_version": {
@@ -462,6 +462,48 @@
       "line": null,
       "source": null
     },
+    "privacy.egress.aggregation_budget_pct": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.egress.encrypt_at_rest": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.egress.max_payload_bytes": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.egress.provider_host_allowlist": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.egress.rate_per_minute": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.egress.scanner_timeout_seconds": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.egress.ticket_ttl_seconds": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
     "privacy.level": {
       "contributors": [],
       "layer": "profile",
@@ -852,6 +894,15 @@
       },
       "domain_terms": [],
       "domain_terms_file": null,
+      "egress": {
+        "aggregation_budget_pct": 100.0,
+        "encrypt_at_rest": true,
+        "max_payload_bytes": 262144,
+        "provider_host_allowlist": [],
+        "rate_per_minute": 60,
+        "scanner_timeout_seconds": 5.0,
+        "ticket_ttl_seconds": 60
+      },
       "level": "L3",
       "min_level": "L1",
       "never_send": [

@@ -58,6 +58,7 @@ RESTRICTED_PATTERNS: tuple[str, ...] = (
     "privacy.public_allowlist_extra",
     "privacy.pii_locales",
     "privacy.detect.**",
+    "privacy.egress.**",
     "plugins.**",
     "ingest.follow_symlinks",
 )

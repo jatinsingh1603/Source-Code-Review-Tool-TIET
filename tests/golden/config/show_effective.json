@@ -99,6 +99,15 @@
       "vault": {
         "key_source": "keyring",
         "passphrase": null
+      },
+      "egress": {
+        "max_payload_bytes": 262144,
+        "aggregation_budget_pct": 100.0,
+        "rate_per_minute": 60,
+        "provider_host_allowlist": [],
+        "encrypt_at_rest": true,
+        "ticket_ttl_seconds": 60,
+        "scanner_timeout_seconds": 5.0
       }
     },
     "llm": {
@@ -691,6 +700,48 @@
       ]
     },
     "privacy.domain_terms_file": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.egress.aggregation_budget_pct": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.egress.encrypt_at_rest": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.egress.max_payload_bytes": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.egress.provider_host_allowlist": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.egress.rate_per_minute": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.egress.scanner_timeout_seconds": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.egress.ticket_ttl_seconds": {
       "layer": "default",
       "source": null,
       "line": null,
