@@ -37,6 +37,9 @@ eval = []        # E36/E37: dataset and metrics tooling
 [project.scripts]
 codekavach = "codekavach.cli.app:main"
 
+[project.entry-points."codekavach.stages"]
+ingest = "codekavach.ingest.stage:IngestStage"
+
 [dependency-groups]
 lint = ["ruff>=0.16", "import-linter"]
 typecheck = ["mypy>=2.3", "types-PyYAML", "types-jsonschema"]

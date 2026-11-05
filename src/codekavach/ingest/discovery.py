@@ -12,7 +12,7 @@ while following one, is also why a symlink loop cannot hang this walk.
 
 import hashlib
 import os
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -21,6 +21,7 @@ from codekavach.core.models import Language, split_lines
 from codekavach.ingest.classify import is_binary, is_generated, is_minified, is_vendored
 from codekavach.ingest.encoding import UndecodableFileError, decode
 from codekavach.ingest.filters import IgnoreSet
+from codekavach.ingest.langdetect import detect_language
 from codekavach.ingest.limits import (
     MAX_PATH_LENGTH,
     IngestLimits,
@@ -126,7 +127,7 @@ def _read_source_file(
         path=rel_path,
         sha256=sha256,
         size_bytes=size,
-        language=Language.UNKNOWN,
+        language=detect_language(rel_path, data[:HEAD_SNIFF_BYTES]),
         line_count=line_count,
         encoding=encoding,
         is_generated=is_generated(rel_path, "\n".join(text.split("\n")[:5])),
@@ -135,8 +136,17 @@ def _read_source_file(
     )
 
 
-def discover(root: Path, settings: Settings) -> list[SourceFile]:
+def discover(
+    root: Path,
+    settings: Settings,
+    *,
+    on_candidate: Callable[[int, int], None] | None = None,
+) -> list[SourceFile]:
     """Discover every readable, non-excluded text file under ``root``, sorted by path.
+
+    ``on_candidate(done, total)`` is called before each candidate file is read, with the number
+    of candidates handled so far and the number found by the walk. It carries counts only, and an
+    exception it raises (cancellation) propagates and stops the run.
 
     Raises:
         LimitExceededError: ``ingest.max_files`` or ``ingest.max_total_bytes`` was exceeded.
@@ -148,7 +158,9 @@ def discover(root: Path, settings: Settings) -> list[SourceFile]:
 
     files: list[SourceFile] = []
     total_bytes = 0
-    for path, rel_path in candidates:
+    for done, (path, rel_path) in enumerate(candidates):
+        if on_candidate is not None:
+            on_candidate(done, len(candidates))
         source_file = _read_source_file(path, rel_path, limits, report)
         if source_file is None:
             continue

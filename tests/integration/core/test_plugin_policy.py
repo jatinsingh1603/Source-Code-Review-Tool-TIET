@@ -34,6 +34,8 @@ class SampleStage:
         ctx.artefacts.put("sample.out", {"ok": True})
 """
 DETECTOR_MODULE = "class Foo:\n    pass\n"
+# Stages the codekavach distribution itself ships; they load whatever the allow-list says.
+BUILTIN_STAGES = frozenset({"ingest"})
 
 
 def settings(**plugins: Any) -> Settings:
@@ -65,6 +67,11 @@ def installed(fake_site: Path) -> Path:
         {"foo_bar_plugin.py": DETECTOR_MODULE},
     )
     return fake_site
+
+
+def third_party_stages(registry: Any) -> list[str]:
+    """The names of the loaded stages that the codekavach distribution does not ship."""
+    return [name for name in registry.stages() if name not in BUILTIN_STAGES]
 
 
 def statuses(registry: Any) -> dict[tuple[str, str], str]:
@@ -101,7 +108,7 @@ def test_an_empty_allow_list_allows_every_distribution(installed: Path) -> None:
 
 def test_an_allowed_distribution_loads_and_the_others_stay_out(installed: Path) -> None:
     registry = registry_from_environment(settings(allow_distributions=["ck-sample"]))
-    assert list(registry.stages()) == ["sample"]
+    assert third_party_stages(registry) == ["sample"]
     assert "ck_sample" in sys.modules
     assert "evil_plugin" not in sys.modules
     assert statuses(registry)[("evil-plugin", "foo")] == "disabled"
@@ -120,7 +127,7 @@ def test_distribution_names_are_normalised(installed: Path) -> None:
 
 def test_a_disabled_stage_is_not_in_the_registry_and_not_imported(installed: Path) -> None:
     registry = registry_from_environment(settings(disable=["stage:sample"]))
-    assert registry.stages() == {}
+    assert third_party_stages(registry) == []
     assert "ck_sample" not in sys.modules
     assert statuses(registry)[("ck-sample", "sample")] == "disabled"
     row = next(row for row in registry.rows() if row.name == "sample")
@@ -129,7 +136,7 @@ def test_a_disabled_stage_is_not_in_the_registry_and_not_imported(installed: Pat
 
 def test_the_kind_is_part_of_the_disable_entry(installed: Path) -> None:
     registry = registry_from_environment(settings(disable=["detector:sample"]))
-    assert list(registry.stages()) == ["sample"]
+    assert third_party_stages(registry) == ["sample"]
 
 
 def test_disabling_does_not_touch_other_plugins(installed: Path) -> None:

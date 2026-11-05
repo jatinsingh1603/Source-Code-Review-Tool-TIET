@@ -88,13 +88,46 @@ def test_discover_is_deterministic_across_runs() -> None:
 
 
 def test_build_inventory_sorts_languages_by_descending_line_count() -> None:
-    root = make_tree({"a.py": "x = 1\ny = 2\n", "b.py": "z = 3\n"})
+    root = make_tree(
+        {"a.py": "x = 1\ny = 2\n", "b.py": "z = 3\n", "c.go": "package c\n", "d.rb": "puts 1\n"}
+    )
     files = discover(root, _settings())
     inventory = build_inventory(files)
-    assert inventory.total_files == 2
-    assert inventory.total_lines == 3
-    # Both files are Language.UNKNOWN until E06-02; one entry, the sum of both line counts.
-    assert inventory.languages == ((Language.UNKNOWN, 3),)
+    assert inventory.total_files == 4
+    assert inventory.total_lines == 5
+    # Python has the most lines; go and ruby tie on one line and fall back to enum value order.
+    assert inventory.languages == (
+        (Language.PYTHON, 3),
+        (Language.GO, 1),
+        (Language.RUBY, 1),
+    )
+
+
+def test_discover_classifies_each_file_from_its_name_and_content() -> None:
+    root = make_tree({"app.ts": "let x = 1;\n", "tool": "#!/bin/bash\necho hi\n", "NOTES": "hi\n"})
+    by_path = {f.path: f.language for f in discover(root, _settings())}
+    assert by_path == {
+        "NOTES": Language.UNKNOWN,
+        "app.ts": Language.TYPESCRIPT,
+        "tool": Language.SHELL,
+    }
+
+
+def test_discover_reports_each_candidate_to_the_callback_before_reading_it() -> None:
+    root = make_tree({"a.py": "x\n", "b.py": "y\n", "c.py": "z\n"})
+    seen: list[tuple[int, int]] = []
+    discover(root, _settings(), on_candidate=lambda done, total: seen.append((done, total)))
+    assert seen == [(0, 3), (1, 3), (2, 3)]
+
+
+def test_an_exception_from_the_callback_stops_discovery() -> None:
+    root = make_tree({"a.py": "x\n", "b.py": "y\n"})
+
+    def stop(done: int, total: int) -> None:
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        discover(root, _settings(), on_candidate=stop)
 
 
 def test_hostile_tree_walk_completes_and_writes_nothing_outside_the_root() -> None:
