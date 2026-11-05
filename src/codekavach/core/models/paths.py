@@ -7,6 +7,7 @@ data, so error messages never contain the path.
 
 import re
 import unicodedata
+from functools import lru_cache
 from typing import Annotated
 
 from pydantic import AfterValidator
@@ -19,8 +20,14 @@ def _has_control_character(value: str) -> bool:
     return any(unicodedata.category(char) == "Cc" for char in value)
 
 
+@lru_cache(maxsize=16_384)
 def normalise_repo_path(value: str) -> str:
     """Return ``value`` as a normalised repository-relative POSIX path.
+
+    A pure function of its argument, cached: one file's path appears in hundreds of ``Location``
+    values (every symbol and call site), so validating each from scratch dominated the cost of
+    loading a memoised parse result. Only successful results are cached; a rejected path raises
+    again each time.
 
     Raises:
         ValueError: the path is empty, absolute, drive-relative, contains ``..``, a control
