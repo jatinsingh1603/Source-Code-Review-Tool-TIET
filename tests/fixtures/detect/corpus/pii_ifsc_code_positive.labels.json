@@ -1,0 +1,20 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "ifsc_code",
+      "start_byte": 5,
+      "end_byte": 16,
+      "confidence": "medium"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "ifsc_code",
+      "start_byte": 5,
+      "end_byte": 16,
+      "confidence": "medium"
+    }
+  ]
+}

@@ -104,7 +104,7 @@ level = "L3"
 #? domain_terms_file = ""
 #~ Extra identifiers kept un-pseudonymised; every entry weakens privacy.
 # public_allowlist_extra = []
-#~ Locales whose personal-data formats are detected (E08-03).
+#~ Personal-data locales to detect: intl, in, passport (E08-03).
 # pii_locales = ["intl", "in"]
 
 #~ example: privacy.paths

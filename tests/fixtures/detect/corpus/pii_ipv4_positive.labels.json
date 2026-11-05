@@ -1,0 +1,20 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "ipv4",
+      "start_byte": 7,
+      "end_byte": 17,
+      "confidence": "medium"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "ipv4",
+      "start_byte": 7,
+      "end_byte": 17,
+      "confidence": "medium"
+    }
+  ]
+}

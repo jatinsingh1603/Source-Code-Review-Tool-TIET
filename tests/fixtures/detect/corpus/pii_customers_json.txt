@@ -1,0 +1,1 @@
+{"pan": "{{pii:pan_number}}", "aadhaar": "{{pii:aadhaar_number}}", "upi": "{{pii:upi_id}}", "mobile": "{{pii:indian_mobile:1}}"}

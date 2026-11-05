@@ -231,6 +231,9 @@ The settings, in the order you will usually reach for them:
 - `privacy.paths` assigns a level, or a `never_send` rule, to files by glob. The stricter of the path rule and the provider tier applies.
 - `privacy.never_send` lists globs whose content is not prepared for egress at any level. It starts with `.env` files, keys and certificates, and it only grows: layers add entries and cannot remove them.
 - `privacy.domain_terms` lists business words that must not appear verbatim in any payload; `privacy.domain_terms_file` reads them from a file with one term per line and `#` comments. Terms are treated as sensitive: `config show` masks them unless you pass `--reveal-domain-terms`.
+- `privacy.pii_locales` chooses which personal-data formats are detected: `intl` (email, international phone, payment card, IBAN, IPv4, IPv6, MAC address and date of birth), `in` (Aadhaar, PAN, IFSC, UPI, Indian mobile and GSTIN) and `passport`, a conservative passport-number detector that is off unless it is listed. The default is `["intl", "in"]`. An entry that is not one of these three is a configuration error, not a silent no-op.
+
+**What `privacy.domain_terms` does and does not do.** A listed term is matched without regard to case or to the separators `-`, `_`, `.` and white space, so `festival-bonus` also matches `festivalBonusRate`, `calculate_festival_bonus` and the text `festival bonus`. Only the matched part of an identifier is replaced, by a `<TERM:domain:n>` placeholder, and a term shorter than four characters is ignored. The mechanism is verbatim and dictionary-driven: it removes the words you list and no others. It does not hide anything the list does not name, and it does not stop a reader inferring the business domain from structure, such as the shape of the call graph or the data fields that remain. The leakage harness measures that exposure.
 
 A project that protects its payments code more strictly and lists two business terms:
 

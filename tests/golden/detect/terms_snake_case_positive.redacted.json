@@ -1,0 +1,20 @@
+{
+  "text": "calculate_<TERM:domain:1>(x)\n<TERM:domain:2>_limit = 1\n",
+  "placeholders": [
+    {
+      "token": "<TERM:domain:1>",
+      "kind": "TERM",
+      "subtype": "domain",
+      "index": 1,
+      "occurrences": 1
+    },
+    {
+      "token": "<TERM:domain:2>",
+      "kind": "TERM",
+      "subtype": "domain",
+      "index": 2,
+      "occurrences": 1
+    }
+  ],
+  "spans_applied": 2
+}

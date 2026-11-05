@@ -1,0 +1,13 @@
+{
+  "text": "upi: <PII:upi_id:1>\n",
+  "placeholders": [
+    {
+      "token": "<PII:upi_id:1>",
+      "kind": "PII",
+      "subtype": "upi_id",
+      "index": 1,
+      "occurrences": 1
+    }
+  ],
+  "spans_applied": 1
+}

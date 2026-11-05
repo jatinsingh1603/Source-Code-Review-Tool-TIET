@@ -1,0 +1,20 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "aadhaar_number",
+      "start_byte": 9,
+      "end_byte": 21,
+      "confidence": "high"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "aadhaar_number",
+      "start_byte": 9,
+      "end_byte": 21,
+      "confidence": "high"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+festival-bonus: 12
+kisan-credit: 3

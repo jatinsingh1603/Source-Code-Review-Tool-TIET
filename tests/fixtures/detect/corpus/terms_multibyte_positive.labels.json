@@ -1,0 +1,20 @@
+{
+  "detected": [
+    {
+      "kind": "TERM",
+      "subtype": "domain",
+      "start_byte": 25,
+      "end_byte": 38,
+      "confidence": "high"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "TERM",
+      "subtype": "domain",
+      "start_byte": 25,
+      "end_byte": 38,
+      "confidence": "high"
+    }
+  ]
+}

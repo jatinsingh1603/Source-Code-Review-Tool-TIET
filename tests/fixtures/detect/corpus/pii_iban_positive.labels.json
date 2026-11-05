@@ -1,0 +1,20 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "iban",
+      "start_byte": 6,
+      "end_byte": 28,
+      "confidence": "high"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "iban",
+      "start_byte": 6,
+      "end_byte": 28,
+      "confidence": "high"
+    }
+  ]
+}

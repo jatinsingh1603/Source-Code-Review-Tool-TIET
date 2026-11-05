@@ -21,6 +21,8 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from codekavach.privacy.detect.pii.checksums import gstin_check_character, luhn, verhoeff
+
 # Source: AWS documentation, "Managing access keys for IAM users" (example key pair).
 AWS_EXAMPLE_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
 # Source: AWS documentation, "Managing access keys for IAM users" (example key pair).
@@ -390,6 +392,62 @@ SYNTHETIC_PII: tuple[SyntheticValue, ...] = (
     SyntheticValue("ipv6", "2001:db8::17", "Documentation prefix (RFC 3849)."),
     SyntheticValue(
         "mac_address", "00:00:5e:00:53:af", "Documentation range for MAC addresses (RFC 7042)."
+    ),
+)
+
+# --- E08-03: values for the Indian formats and the checksummed international ones ------------
+#
+# Every value below is built, not issued: the digits follow a visible pattern, and the check
+# digit or character is computed, so each passes the checksum and none belongs to a person.
+
+_AADHAAR_BODY = "23412341234"
+_GSTIN_BODY = "27ABCPD1234K1Z"
+_CARD_BODY = "499999999999999"
+
+
+def _verhoeff_check_digit(body: str) -> str:
+    """The digit that makes ``body`` + digit pass Verhoeff (found by trying all ten)."""
+    return next(str(d) for d in range(10) if verhoeff(body + str(d)))
+
+
+def _luhn_check_digit(body: str) -> str:
+    return next(str(d) for d in range(10) if luhn(body + str(d)))
+
+
+_CARD_NUMBER = _CARD_BODY + _luhn_check_digit(_CARD_BODY)
+
+SYNTHETIC_PII = (
+    *SYNTHETIC_PII,
+    SyntheticValue(
+        "aadhaar_number",
+        _AADHAAR_BODY + _verhoeff_check_digit(_AADHAAR_BODY),
+        "A repeating 2341 block with a computed Verhoeff digit; built here, not issued by UIDAI.",
+    ),
+    SyntheticValue(
+        "gstin",
+        _GSTIN_BODY + str(gstin_check_character(_GSTIN_BODY)),
+        "State 27, the synthetic PAN ABCPD1234K and a computed check character; not registered.",
+    ),
+    SyntheticValue(
+        "ifsc_code",
+        "ABCD0123456",  # pragma: allowlist secret
+        "ABCD is not an RBI bank code; the branch is 123456.",
+    ),
+    SyntheticValue("date_of_birth", "1990-05-14", "An arbitrary date; it identifies nobody."),
+    SyntheticValue("passport_number", "K1234567", "A letter and seven sequential digits."),
+    SyntheticValue(
+        "ipv4", "10.24.8.17", "A private (RFC 1918) address, outside the documentation ranges."
+    ),
+    SyntheticValue(
+        "ipv6", "fd00:1234:5678::17", "A unique-local address (RFC 4193), not documentation."
+    ),
+    SyntheticValue(
+        "indian_mobile", "+919812345678", "Not a digit run; the worked example of the issue."
+    ),
+    SyntheticValue(
+        "credit_card",
+        f"{_CARD_NUMBER[:4]} {_CARD_NUMBER[4:8]} {_CARD_NUMBER[8:12]} {_CARD_NUMBER[12:]}",
+        "A Visa-prefixed run of 9s with a computed Luhn digit; not a vendor test number.",
     ),
 )
 

@@ -14,7 +14,7 @@ process variable owned by E05-13.
 
 import re
 from pathlib import Path
-from typing import Any, Literal, Self
+from typing import Any, Final, Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 
@@ -53,6 +53,9 @@ DEFAULT_NEVER_SEND = [
 ]
 _IDENTIFIER = re.compile(r"^[A-Za-z_$][A-Za-z0-9_$]{1,63}$")
 _LOCALE = re.compile(r"^[a-z][a-z0-9_]{0,15}$")
+# The personal-data locales (E08-03): ``intl`` and ``in`` enable a format set, ``passport`` opts in
+# to the conservative passport-number detector. An entry outside this list is a load-time error.
+PII_LOCALES: Final = ("intl", "in", "passport")
 _DRIVE = re.compile(r"^[A-Za-z]:")
 
 
@@ -166,7 +169,7 @@ class PrivacySettings(SectionModel):
     )
     pii_locales: StrList = Field(
         default_factory=lambda: ["intl", "in"],
-        description="Locales whose personal-data formats are detected (E08-03).",
+        description="Personal-data locales to detect: intl, in, passport (E08-03).",
         json_schema_extra=restricted(),
     )
     detect: DetectSettings = Field(
@@ -204,6 +207,11 @@ class PrivacySettings(SectionModel):
         for locale in value:
             if not _LOCALE.match(locale):
                 raise ValueError(f"{INVALID} privacy.pii_locales entries must be locale names")
+            if locale not in PII_LOCALES:
+                raise ValueError(
+                    f"{INVALID} privacy.pii_locales has an unknown locale; "
+                    f"the known locales are {', '.join(PII_LOCALES)}"
+                )
         return value
 
     @model_validator(mode="after")

@@ -1,0 +1,20 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "phone_intl",
+      "start_byte": 5,
+      "end_byte": 20,
+      "confidence": "medium"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "phone_intl",
+      "start_byte": 5,
+      "end_byte": 20,
+      "confidence": "medium"
+    }
+  ]
+}

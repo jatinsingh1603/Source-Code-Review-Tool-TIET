@@ -1,0 +1,13 @@
+{
+  "text": "# the <TERM:domain:1> is paid in October\nlabel = \"<TERM:domain:1>\"\n",
+  "placeholders": [
+    {
+      "token": "<TERM:domain:1>",
+      "kind": "TERM",
+      "subtype": "domain",
+      "index": 1,
+      "occurrences": 2
+    }
+  ],
+  "spans_applied": 2
+}

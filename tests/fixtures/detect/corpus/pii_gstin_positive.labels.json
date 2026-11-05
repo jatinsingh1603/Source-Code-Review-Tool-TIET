@@ -1,0 +1,20 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "gstin",
+      "start_byte": 6,
+      "end_byte": 21,
+      "confidence": "high"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "gstin",
+      "start_byte": 6,
+      "end_byte": 21,
+      "confidence": "high"
+    }
+  ]
+}

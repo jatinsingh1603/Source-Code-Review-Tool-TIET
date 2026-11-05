@@ -1,4 +1,4 @@
-"""No secret detector performs a network operation (E08-02, I1).
+"""No secret, personal-data or term detector performs a network operation (E08-02, E08-03, I1).
 
 Two halves: a static check that nothing in ``codekavach.privacy.detect`` imports a network or
 process module, and a run of every detector over the whole corpus with every socket, DNS lookup
@@ -17,7 +17,9 @@ from codekavach.core.models import RawCode
 from codekavach.privacy.detect.registry import DetectorRegistry
 from codekavach.privacy.detect.runner import detect_all
 from codekavach.privacy.detect.secrets.builtin import register_secret_detectors
+from tests.support.corpus import case_names, load_case
 from tests.support.no_network import NetworkAttempts
+from tests.support.real_detectors import CORPUS_PREFIXES, real_detected
 from tests.support.secret_corpus import secret_cases
 
 FORBIDDEN = frozenset(
@@ -64,4 +66,16 @@ def test_every_detector_runs_over_the_whole_corpus_without_touching_the_network(
             )
         )
     assert total > 40
+    assert no_network.count == 0
+
+
+@pytest.mark.privacy
+def test_the_pii_and_term_detectors_run_over_their_corpus_without_touching_the_network(
+    no_network: NetworkAttempts,
+) -> None:
+    total = 0
+    for name in case_names():
+        if name.startswith(CORPUS_PREFIXES):
+            total += len(real_detected(load_case(name).text))
+    assert total > 30
     assert no_network.count == 0

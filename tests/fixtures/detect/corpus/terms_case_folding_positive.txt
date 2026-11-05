@@ -1,0 +1,2 @@
+FESTIVAL_BONUS = 1
+Kisan Credit

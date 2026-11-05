@@ -1,0 +1,20 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "credit_card",
+      "start_byte": 7,
+      "end_byte": 26,
+      "confidence": "high"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "credit_card",
+      "start_byte": 7,
+      "end_byte": 26,
+      "confidence": "high"
+    }
+  ]
+}

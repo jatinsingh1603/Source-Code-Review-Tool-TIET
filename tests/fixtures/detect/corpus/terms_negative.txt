@@ -1,0 +1,4 @@
+festivals = []
+bonus = 1
+kisan = 2
+credit = 3

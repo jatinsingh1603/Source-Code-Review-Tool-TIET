@@ -1,0 +1,20 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "email",
+      "start_byte": 7,
+      "end_byte": 30,
+      "confidence": "high"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "email",
+      "start_byte": 7,
+      "end_byte": 30,
+      "confidence": "high"
+    }
+  ]
+}

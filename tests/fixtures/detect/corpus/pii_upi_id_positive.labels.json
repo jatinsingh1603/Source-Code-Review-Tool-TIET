@@ -1,0 +1,20 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "upi_id",
+      "start_byte": 5,
+      "end_byte": 21,
+      "confidence": "medium"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "upi_id",
+      "start_byte": 5,
+      "end_byte": 21,
+      "confidence": "medium"
+    }
+  ]
+}

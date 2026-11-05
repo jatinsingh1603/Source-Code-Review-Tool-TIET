@@ -1,0 +1,41 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "indian_mobile",
+      "start_byte": 8,
+      "end_byte": 21,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "phone_intl",
+      "start_byte": 8,
+      "end_byte": 21,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "indian_mobile",
+      "start_byte": 27,
+      "end_byte": 37,
+      "confidence": "medium"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "indian_mobile",
+      "start_byte": 8,
+      "end_byte": 21,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "indian_mobile",
+      "start_byte": 27,
+      "end_byte": 37,
+      "confidence": "medium"
+    }
+  ]
+}

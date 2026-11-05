@@ -936,7 +936,7 @@
           "type": "array"
         },
         "pii_locales": {
-          "description": "Locales whose personal-data formats are detected (E08-03).",
+          "description": "Personal-data locales to detect: intl, in, passport (E08-03).",
           "items": {
             "type": "string"
           },

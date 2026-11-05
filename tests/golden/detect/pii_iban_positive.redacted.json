@@ -1,0 +1,13 @@
+{
+  "text": "iban: <PII:iban:1>\n",
+  "placeholders": [
+    {
+      "token": "<PII:iban:1>",
+      "kind": "PII",
+      "subtype": "iban",
+      "index": 1,
+      "occurrences": 1
+    }
+  ],
+  "spans_applied": 1
+}

@@ -1,0 +1,34 @@
+{
+  "detected": [
+    {
+      "kind": "TERM",
+      "subtype": "domain",
+      "start_byte": 10,
+      "end_byte": 24,
+      "confidence": "high"
+    },
+    {
+      "kind": "TERM",
+      "subtype": "domain",
+      "start_byte": 28,
+      "end_byte": 40,
+      "confidence": "high"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "TERM",
+      "subtype": "domain",
+      "start_byte": 10,
+      "end_byte": 24,
+      "confidence": "high"
+    },
+    {
+      "kind": "TERM",
+      "subtype": "domain",
+      "start_byte": 28,
+      "end_byte": 40,
+      "confidence": "high"
+    }
+  ]
+}

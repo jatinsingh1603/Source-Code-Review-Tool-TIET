@@ -1,0 +1,34 @@
+{
+  "text": "{\"pan\": \"<PII:pan_number:1>\", \"aadhaar\": \"<PII:aadhaar_number:1>\", \"upi\": \"<PII:upi_id:1>\", \"mobile\": \"<PII:indian_mobile:1>\"}\n",
+  "placeholders": [
+    {
+      "token": "<PII:pan_number:1>",
+      "kind": "PII",
+      "subtype": "pan_number",
+      "index": 1,
+      "occurrences": 1
+    },
+    {
+      "token": "<PII:aadhaar_number:1>",
+      "kind": "PII",
+      "subtype": "aadhaar_number",
+      "index": 1,
+      "occurrences": 1
+    },
+    {
+      "token": "<PII:upi_id:1>",
+      "kind": "PII",
+      "subtype": "upi_id",
+      "index": 1,
+      "occurrences": 1
+    },
+    {
+      "token": "<PII:indian_mobile:1>",
+      "kind": "PII",
+      "subtype": "indian_mobile",
+      "index": 1,
+      "occurrences": 1
+    }
+  ],
+  "spans_applied": 4
+}

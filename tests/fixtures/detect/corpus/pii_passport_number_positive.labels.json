@@ -1,0 +1,20 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "passport_number",
+      "start_byte": 14,
+      "end_byte": 22,
+      "confidence": "low"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "passport_number",
+      "start_byte": 14,
+      "end_byte": 22,
+      "confidence": "low"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "text": "mac = <PII:mac_address:1>\n",
+  "placeholders": [
+    {
+      "token": "<PII:mac_address:1>",
+      "kind": "PII",
+      "subtype": "mac_address",
+      "index": 1,
+      "occurrences": 1
+    }
+  ],
+  "spans_applied": 1
+}

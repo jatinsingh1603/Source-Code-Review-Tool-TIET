@@ -1,0 +1,69 @@
+{
+  "detected": [
+    {
+      "kind": "PII",
+      "subtype": "pan_number",
+      "start_byte": 9,
+      "end_byte": 19,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "aadhaar_number",
+      "start_byte": 34,
+      "end_byte": 46,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "upi_id",
+      "start_byte": 57,
+      "end_byte": 73,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "indian_mobile",
+      "start_byte": 87,
+      "end_byte": 100,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "phone_intl",
+      "start_byte": 87,
+      "end_byte": 100,
+      "confidence": "medium"
+    }
+  ],
+  "expected": [
+    {
+      "kind": "PII",
+      "subtype": "pan_number",
+      "start_byte": 9,
+      "end_byte": 19,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "aadhaar_number",
+      "start_byte": 34,
+      "end_byte": 46,
+      "confidence": "high"
+    },
+    {
+      "kind": "PII",
+      "subtype": "upi_id",
+      "start_byte": 57,
+      "end_byte": 73,
+      "confidence": "medium"
+    },
+    {
+      "kind": "PII",
+      "subtype": "indian_mobile",
+      "start_byte": 87,
+      "end_byte": 100,
+      "confidence": "medium"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "text": "host = <PII:ipv6:1>\n",
+  "placeholders": [
+    {
+      "token": "<PII:ipv6:1>",
+      "kind": "PII",
+      "subtype": "ipv6",
+      "index": 1,
+      "occurrences": 1
+    }
+  ],
+  "spans_applied": 1
+}
