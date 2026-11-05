@@ -195,16 +195,22 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.ingest.sources.local",
         "codekavach.ingest.sources.selection",
         "codekavach.ingest.stage",
+        "codekavach.parsing.functions",
         "codekavach.parsing.literals",
         "codekavach.parsing.loader",
         "codekavach.parsing.models",
         "codekavach.parsing.normalise",
         "codekavach.parsing.parser",
         "codekavach.parsing.positions",
+        "codekavach.parsing.scopes",
         "codekavach.parsing.queries.loader",
         "codekavach.parsing.spec",
         "codekavach.parsing.specs.javascript",
+        "codekavach.parsing.specs.javascript_scopes",
         "codekavach.parsing.specs.python",
+        "codekavach.parsing.specs.python_scopes",
+        "codekavach.parsing.subtokens",
+        "codekavach.parsing.symbols",
     }
 )
 

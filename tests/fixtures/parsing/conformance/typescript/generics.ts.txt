@@ -1,0 +1,29 @@
+// Generics, interfaces, aliases and enums for the symbol table (E07-03).
+interface Box<T> {
+  value: T;
+  map<U>(fn: (v: T) => U): Box<U>;
+}
+
+type Pair<A, B> = { first: A; second: B };
+
+class Stack<T> {
+  private items: T[] = [];
+  push(item: T): void {
+    this.items.push(item);
+  }
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+}
+
+enum Level {
+  Low,
+  High = 5,
+}
+
+function first<T>(xs: T[]): T | undefined {
+  return xs[0];
+}
+
+const level: Level = Level.High;
+const pair: Pair<string, number> = { first: "a", second: level };

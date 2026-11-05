@@ -17,7 +17,9 @@ from tree_sitter import Node as TSNode
 
 from codekavach.core.models import Language
 from codekavach.parsing.literals import LiteralContext
+from codekavach.parsing.scopes import ScopeBuilder
 from codekavach.parsing.spec import REGISTRY, NodeKind, NodeKindMap
+from codekavach.parsing.specs.python_scopes import bind_python
 
 # Built-in functions, exceptions and constants (True/False/None, NotImplemented, Ellipsis);
 # dunder module attributes (__name__, __loader__, ...) are excluded, they are not identifiers a
@@ -34,6 +36,16 @@ class PythonSpec:
     grammar_version = "tree-sitter-language-pack"
     keywords = frozenset(keyword.kwlist) | frozenset(keyword.softkwlist)
     builtins = BUILTINS
+    # In Python a class body sees its own names (``y = x + 1`` after ``x = 1``), its methods do not.
+    class_body_sees_members = True
+
+    def bind_scopes(self, root: object, builder: ScopeBuilder) -> None:
+        """Feed ``builder`` the scopes and identifier occurrences of the tree rooted at ``root``.
+
+        Not part of the ``LanguageSpec`` protocol; ``codekavach.parsing.symbols`` calls it
+        through ``getattr`` so that a language without scoping rules simply has no such method.
+        """
+        bind_python(cast(TSNode, root), builder)
 
     def node_kinds(self) -> NodeKindMap:
         """Map each ``NodeKind`` to the Python grammar's node-type names that mean it."""

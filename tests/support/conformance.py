@@ -14,6 +14,31 @@ from codekavach.parsing.models import ParsedFile
 from codekavach.parsing.parser import parse
 from codekavach.parsing.positions import LineIndex
 
+CORPUS_ROOT = Path(__file__).resolve().parents[1] / "fixtures" / "parsing" / "conformance"
+GOLDEN_ROOT = CORPUS_ROOT / "golden"
+
+# Every conformance fixture: the single list the identifier, symbol-table and function-range
+# tests all iterate, so a new fixture is covered by all of them at once.
+FIXTURES: list[tuple[Language, str]] = [
+    (Language.PYTHON, "basics.py.txt"),
+    (Language.PYTHON, "control_flow.py.txt"),
+    (Language.PYTHON, "strings.py.txt"),
+    (Language.PYTHON, "shadowing.py.txt"),
+    (Language.PYTHON, "syntax_error.py.txt"),
+    (Language.JAVASCRIPT, "basics.js.txt"),
+    (Language.JAVASCRIPT, "modules.js.txt"),
+    (Language.JAVASCRIPT, "shadowing.js.txt"),
+    (Language.JAVASCRIPT, "syntax_error.js.txt"),
+    (Language.TYPESCRIPT, "basics.ts.txt"),
+    (Language.TYPESCRIPT, "generics.ts.txt"),
+]
+
+
+def fixture_path(language: Language, name: str) -> Path:
+    """The path of one conformance fixture."""
+    return CORPUS_ROOT / language.value / name
+
+
 # Grammar node types whose occurrences identifiers() must report exactly once each, per
 # language: the same vocabulary the issue's technical notes name.
 IDENTIFIER_NODE_TYPES: dict[Language, frozenset[str]] = {

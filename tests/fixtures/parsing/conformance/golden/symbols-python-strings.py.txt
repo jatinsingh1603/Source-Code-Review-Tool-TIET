@@ -1,0 +1,34 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+symbols:
+  strings.py.txt:1:8 're' import scope=0 def
+  strings.py.txt:3:1 'SQL_QUERY' constant scope=0 def
+  strings.py.txt:9:1 'URL' constant scope=0 def
+  strings.py.txt:10:1 'LOCAL_PATH' constant scope=0 def
+  strings.py.txt:11:1 'GREETING' constant scope=0 def
+  strings.py.txt:12:1 'PATTERN' constant scope=0 def
+  strings.py.txt:12:11 're' import scope=0 ref
+  strings.py.txt:12:14 'compile' field scope=-1 ref
+  strings.py.txt:13:1 'NATURAL_TEXT' constant scope=0 def
+  strings.py.txt:16:5 'run_query' function scope=0 def
+  strings.py.txt:16:15 'cursor' parameter scope=1 def
+  strings.py.txt:16:23 'account_id' parameter scope=1 def
+  strings.py.txt:17:5 'cursor' parameter scope=1 ref
+  strings.py.txt:17:12 'execute' field scope=-1 ref
+  strings.py.txt:17:67 'account_id' parameter scope=1 ref
+extents:
+  'run_query' strings.py.txt:16-17
+references:
+  're' scope=0: 1, 12
+  'SQL_QUERY' scope=0: 3
+  'URL' scope=0: 9
+  'LOCAL_PATH' scope=0: 10
+  'GREETING' scope=0: 11
+  'PATTERN' scope=0: 12
+  'compile' scope=-1: 12
+  'NATURAL_TEXT' scope=0: 13
+  'run_query' scope=0: 16
+  'cursor' scope=1: 16, 17
+  'account_id' scope=1: 16, 17
+  'execute' scope=-1: 17

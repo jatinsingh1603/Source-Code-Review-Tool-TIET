@@ -1,0 +1,80 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+  2 parent=0 function
+  3 parent=2 function
+  4 parent=0 function
+  5 parent=0 function
+  6 parent=0 function
+symbols:
+  control_flow.py.txt:1:8 'asyncio' import scope=0 def
+  control_flow.py.txt:4:11 'fetch_all' function scope=0 def
+  control_flow.py.txt:4:21 'urls' parameter scope=1 def
+  control_flow.py.txt:5:5 'results' variable scope=1 def
+  control_flow.py.txt:6:15 'url' variable scope=1 def
+  control_flow.py.txt:6:22 'urls' parameter scope=1 ref
+  control_flow.py.txt:7:20 'asyncio' import scope=0 ref
+  control_flow.py.txt:7:28 'timeout' field scope=-1 ref
+  control_flow.py.txt:8:13 'results' variable scope=1 ref
+  control_flow.py.txt:8:21 'append' field scope=-1 ref
+  control_flow.py.txt:8:28 'url' variable scope=1 ref
+  control_flow.py.txt:9:12 'results' variable scope=1 ref
+  control_flow.py.txt:12:5 'squares' function scope=0 def
+  control_flow.py.txt:12:13 'n' parameter scope=2 def
+  control_flow.py.txt:13:13 'i' variable scope=3 ref
+  control_flow.py.txt:13:17 'i' variable scope=3 ref
+  control_flow.py.txt:13:23 'i' variable scope=3 def
+  control_flow.py.txt:13:28 'range' variable scope=-1 ref
+  control_flow.py.txt:13:34 'n' parameter scope=2 ref
+  control_flow.py.txt:13:40 'i' variable scope=3 ref
+  control_flow.py.txt:16:5 'generator' function scope=0 def
+  control_flow.py.txt:16:15 'n' parameter scope=4 def
+  control_flow.py.txt:17:9 'i' variable scope=4 def
+  control_flow.py.txt:17:14 'range' variable scope=-1 ref
+  control_flow.py.txt:17:20 'n' parameter scope=4 ref
+  control_flow.py.txt:18:15 'i' variable scope=4 ref
+  control_flow.py.txt:21:5 'with_match' function scope=0 def
+  control_flow.py.txt:21:16 'value' parameter scope=5 def
+  control_flow.py.txt:22:11 'value' parameter scope=5 ref
+  control_flow.py.txt:29:5 'with_walrus' function scope=0 def
+  control_flow.py.txt:29:17 'items' parameter scope=6 def
+  control_flow.py.txt:30:9 'count' variable scope=6 def
+  control_flow.py.txt:30:18 'len' variable scope=-1 ref
+  control_flow.py.txt:30:22 'items' parameter scope=6 ref
+  control_flow.py.txt:31:16 'count' variable scope=6 ref
+  control_flow.py.txt:35:6 'open' variable scope=-1 ref
+  control_flow.py.txt:35:28 'handle' variable scope=0 def
+  control_flow.py.txt:36:5 'data' variable scope=0 def
+  control_flow.py.txt:36:12 'handle' variable scope=0 ref
+  control_flow.py.txt:36:19 'read' field scope=-1 ref
+extents:
+  'fetch_all' control_flow.py.txt:4-9
+  'squares' control_flow.py.txt:12-13
+  'generator' control_flow.py.txt:16-18
+  'with_match' control_flow.py.txt:21-26
+  'with_walrus' control_flow.py.txt:29-32
+references:
+  'asyncio' scope=0: 1, 7
+  'fetch_all' scope=0: 4
+  'urls' scope=1: 4, 6
+  'results' scope=1: 5, 8, 9
+  'url' scope=1: 6, 8
+  'timeout' scope=-1: 7
+  'append' scope=-1: 8
+  'squares' scope=0: 12
+  'n' scope=2: 12, 13
+  'i' scope=3: 13, 13, 13, 13
+  'range' scope=-1: 13, 17
+  'generator' scope=0: 16
+  'n' scope=4: 16, 17
+  'i' scope=4: 17, 18
+  'with_match' scope=0: 21
+  'value' scope=5: 21, 22
+  'with_walrus' scope=0: 29
+  'items' scope=6: 29, 30
+  'count' scope=6: 30, 31
+  'len' scope=-1: 30
+  'open' scope=-1: 35
+  'handle' scope=0: 35, 36
+  'data' scope=0: 36
+  'read' scope=-1: 36

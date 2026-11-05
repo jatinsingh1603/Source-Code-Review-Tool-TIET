@@ -1,0 +1,8 @@
+function 'loadConfig' ('loadConfig')
+  header 6:8-6:33
+  body   6:34-9:2
+  full   6:8-9:2
+method 'Service.start' ('start')
+  header 12:3-12:16
+  body   12:17-15:4
+  full   12:3-15:4

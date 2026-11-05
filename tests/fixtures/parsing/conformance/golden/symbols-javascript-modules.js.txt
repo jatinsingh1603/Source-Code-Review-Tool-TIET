@@ -1,0 +1,36 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+  2 parent=0 class
+  3 parent=2 function
+symbols:
+  modules.js.txt:1:10 'readFile' import scope=0 def
+  modules.js.txt:2:13 'path' import scope=0 def
+  modules.js.txt:4:14 'CONFIG_PATH' constant scope=0 def
+  modules.js.txt:6:17 'loadConfig' function scope=0 def
+  modules.js.txt:6:28 'name' parameter scope=1 def
+  modules.js.txt:7:9 'full' variable scope=1 def
+  modules.js.txt:7:56 'name' parameter scope=1 ref
+  modules.js.txt:8:10 'full' variable scope=1 ref
+  modules.js.txt:11:22 'Service' class scope=0 def
+  modules.js.txt:12:9 'start' method scope=2 def
+  modules.js.txt:13:11 'data' variable scope=3 def
+  modules.js.txt:13:24 'readFile' import scope=0 ref
+  modules.js.txt:13:33 'path' import scope=0 ref
+  modules.js.txt:13:38 'join' field scope=-1 ref
+  modules.js.txt:14:12 'data' variable scope=3 ref
+extents:
+  'loadConfig' modules.js.txt:6-9
+  'Service' modules.js.txt:11-16
+  'start' modules.js.txt:12-15
+references:
+  'readFile' scope=0: 1, 13
+  'path' scope=0: 2, 13
+  'CONFIG_PATH' scope=0: 4
+  'loadConfig' scope=0: 6
+  'name' scope=1: 6, 7
+  'full' scope=1: 7, 8
+  'Service' scope=0: 11
+  'start' scope=2: 12
+  'data' scope=3: 13, 14
+  'join' scope=-1: 13

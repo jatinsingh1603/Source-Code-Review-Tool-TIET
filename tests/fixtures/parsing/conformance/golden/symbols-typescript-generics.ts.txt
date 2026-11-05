@@ -1,0 +1,103 @@
+scopes:
+  0 parent=None module
+  1 parent=0 block
+  2 parent=1 class
+  3 parent=2 function
+  4 parent=0 block
+  5 parent=0 block
+  6 parent=5 class
+  7 parent=6 function
+  8 parent=6 function
+  9 parent=0 class
+  10 parent=0 function
+symbols:
+  generics.ts.txt:2:11 'Box' class scope=0 def
+  generics.ts.txt:2:15 'T' class scope=1 def
+  generics.ts.txt:3:3 'value' field scope=2 def
+  generics.ts.txt:3:10 'T' class scope=1 ref
+  generics.ts.txt:4:3 'map' method scope=2 def
+  generics.ts.txt:4:7 'U' class scope=3 def
+  generics.ts.txt:4:10 'fn' parameter scope=3 def
+  generics.ts.txt:4:15 'v' variable scope=-1 ref
+  generics.ts.txt:4:18 'T' class scope=1 ref
+  generics.ts.txt:4:24 'U' class scope=3 ref
+  generics.ts.txt:4:28 'Box' class scope=0 ref
+  generics.ts.txt:4:32 'U' class scope=3 ref
+  generics.ts.txt:7:6 'Pair' class scope=0 def
+  generics.ts.txt:7:11 'A' class scope=4 def
+  generics.ts.txt:7:14 'B' class scope=4 def
+  generics.ts.txt:7:21 'first' field scope=-1 ref
+  generics.ts.txt:7:28 'A' class scope=4 ref
+  generics.ts.txt:7:31 'second' field scope=-1 ref
+  generics.ts.txt:7:39 'B' class scope=4 ref
+  generics.ts.txt:9:7 'Stack' class scope=0 def
+  generics.ts.txt:9:13 'T' class scope=5 def
+  generics.ts.txt:10:11 'items' field scope=6 def
+  generics.ts.txt:10:18 'T' class scope=5 ref
+  generics.ts.txt:11:3 'push' method scope=6 def
+  generics.ts.txt:11:8 'item' parameter scope=7 def
+  generics.ts.txt:11:14 'T' class scope=5 ref
+  generics.ts.txt:12:10 'items' field scope=-1 ref
+  generics.ts.txt:12:16 'push' field scope=-1 ref
+  generics.ts.txt:12:21 'item' parameter scope=7 ref
+  generics.ts.txt:14:3 'pop' method scope=6 def
+  generics.ts.txt:14:10 'T' class scope=5 ref
+  generics.ts.txt:15:17 'items' field scope=-1 ref
+  generics.ts.txt:15:23 'pop' field scope=-1 ref
+  generics.ts.txt:19:6 'Level' class scope=0 def
+  generics.ts.txt:20:3 'Low' field scope=9 def
+  generics.ts.txt:21:3 'High' field scope=9 def
+  generics.ts.txt:24:10 'first' function scope=0 def
+  generics.ts.txt:24:16 'T' class scope=10 def
+  generics.ts.txt:24:19 'xs' parameter scope=10 def
+  generics.ts.txt:24:23 'T' class scope=10 ref
+  generics.ts.txt:24:29 'T' class scope=10 ref
+  generics.ts.txt:25:10 'xs' parameter scope=10 ref
+  generics.ts.txt:28:7 'level' variable scope=0 def
+  generics.ts.txt:28:14 'Level' class scope=0 ref
+  generics.ts.txt:28:22 'Level' class scope=0 ref
+  generics.ts.txt:28:28 'High' field scope=-1 ref
+  generics.ts.txt:29:7 'pair' variable scope=0 def
+  generics.ts.txt:29:13 'Pair' class scope=0 ref
+  generics.ts.txt:29:38 'first' field scope=-1 ref
+  generics.ts.txt:29:50 'second' field scope=-1 ref
+  generics.ts.txt:29:58 'level' variable scope=0 ref
+extents:
+  'Box' generics.ts.txt:2-5
+  'map' generics.ts.txt:4:3
+  'Stack' generics.ts.txt:9-17
+  'push' generics.ts.txt:11-13
+  'pop' generics.ts.txt:14-16
+  'Level' generics.ts.txt:19-22
+  'first' generics.ts.txt:24-26
+references:
+  'Box' scope=0: 2, 4
+  'T' scope=1: 2, 3, 4
+  'value' scope=2: 3
+  'map' scope=2: 4
+  'U' scope=3: 4, 4, 4
+  'fn' scope=3: 4
+  'v' scope=-1: 4
+  'Pair' scope=0: 7, 29
+  'A' scope=4: 7, 7
+  'B' scope=4: 7, 7
+  'first' scope=-1: 7, 29
+  'second' scope=-1: 7, 29
+  'Stack' scope=0: 9
+  'T' scope=5: 9, 10, 11, 14
+  'items' scope=6: 10
+  'push' scope=6: 11
+  'item' scope=7: 11, 12
+  'items' scope=-1: 12, 15
+  'push' scope=-1: 12
+  'pop' scope=6: 14
+  'pop' scope=-1: 15
+  'Level' scope=0: 19, 28, 28
+  'Low' scope=9: 20
+  'High' scope=9: 21
+  'first' scope=0: 24
+  'T' scope=10: 24, 24, 24
+  'xs' scope=10: 24, 25
+  'level' scope=0: 28, 29
+  'High' scope=-1: 28
+  'pair' scope=0: 29

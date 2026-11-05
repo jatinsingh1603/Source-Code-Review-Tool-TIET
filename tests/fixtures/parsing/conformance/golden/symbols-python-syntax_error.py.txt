@@ -1,0 +1,22 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+symbols:
+  syntax_error.py.txt:1:5 'broken' function scope=0 def
+  syntax_error.py.txt:1:12 'a' parameter scope=1 def
+  syntax_error.py.txt:1:15 'b' variable scope=-1 ref
+  syntax_error.py.txt:2:5 'return' variable scope=-1 ref
+  syntax_error.py.txt:2:12 'a' parameter scope=1 ref
+  syntax_error.py.txt:2:16 'b' variable scope=-1 ref
+  syntax_error.py.txt:5:5 'still_parseable' variable scope=-1 ref
+  syntax_error.py.txt:5:21 'x' parameter scope=1 def
+  syntax_error.py.txt:6:12 'x' parameter scope=1 ref
+extents:
+  'broken' syntax_error.py.txt:1-6
+references:
+  'broken' scope=0: 1
+  'a' scope=1: 1, 2
+  'b' scope=-1: 1, 2
+  'return' scope=-1: 2
+  'still_parseable' scope=-1: 5
+  'x' scope=1: 5, 6

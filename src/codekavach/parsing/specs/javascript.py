@@ -15,7 +15,9 @@ from tree_sitter import Node as TSNode
 
 from codekavach.core.models import Language
 from codekavach.parsing.literals import LiteralContext
+from codekavach.parsing.scopes import ScopeBuilder
 from codekavach.parsing.spec import REGISTRY, NodeKind, NodeKindMap
+from codekavach.parsing.specs.javascript_scopes import bind_javascript
 
 # ECMAScript reserved words (ECMA-262); not grammar node types, just the vocabulary a reviewer
 # would recognise as "not a renameable identifier".
@@ -201,6 +203,17 @@ class JavaScriptSpec:
     grammar_version = "tree-sitter-language-pack"
     keywords = KEYWORDS
     builtins = BUILTINS
+    # A bare name inside a class body is never one of its members (``class A { x = 1; y = x }``
+    # reads an outer ``x``), so lexical lookup skips class scopes.
+    class_body_sees_members = False
+
+    def bind_scopes(self, root: object, builder: ScopeBuilder) -> None:
+        """Feed ``builder`` the scopes and identifier occurrences of the tree rooted at ``root``.
+
+        Not part of the ``LanguageSpec`` protocol; ``codekavach.parsing.symbols`` calls it
+        through ``getattr``. ``TypeScriptSpec`` inherits it.
+        """
+        bind_javascript(cast(TSNode, root), builder)
 
     def node_kinds(self) -> NodeKindMap:
         """Map each ``NodeKind`` to the JavaScript grammar's node-type names that mean it."""

@@ -244,6 +244,9 @@ ignore = [
 "src/codekavach/core/log/**" = ["TID251"]  # the only place that creates loggers (ADR-0005)
 "src/codekavach/privacy/egress/transport.py" = ["TID251"]
 "src/codekavach/privacy/egress/transport/**" = ["TID251"]
+# E07-03: every handler in a scope binder's dispatch table has the same
+# (node, scope, mode, bind, hint, builder, stack) signature, so the table stays uniform.
+"src/codekavach/parsing/specs/*_scopes.py" = ["PLR0917"]
 
 # I1 (ADR-0003): network modules that import-linter cannot distinguish, because it squashes
 # external packages to their top-level name (urllib.parse must stay allowed). Contracts for

@@ -1,0 +1,57 @@
+"""Shadowing and scoping cases for the symbol table (E07-03)."""
+
+total = 0
+
+
+def apply_fee(total, rate):
+    def inner():
+        nonlocal total
+        total += 1
+
+    inner()
+    return total
+
+
+class Counter:
+    count = 0
+
+    def count_up(self, count):
+        count = count + 1
+        return count
+
+
+def comprehension_scope(items):
+    i = len(items)
+    squares = [i * i for i in range(i)]
+    return i, squares
+
+
+def global_counter():
+    global total
+    total += 1
+    return total
+
+
+def handlers(path):
+    try:
+        with open(path) as handle:
+            return handle.read()
+    except OSError as error:
+        return str(error)
+
+
+def walrus(values):
+    if (size := len(values)) > 2:
+        return size
+    return [last := v for v in values] and last
+
+
+def reads_dynamic(obj, name):
+    return getattr(obj, name), obj.__dict__[name], missing_name
+
+
+helper_result = later_helper()
+
+
+def later_helper():
+    return total

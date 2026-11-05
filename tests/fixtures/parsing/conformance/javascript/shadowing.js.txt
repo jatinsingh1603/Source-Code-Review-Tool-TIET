@@ -1,0 +1,38 @@
+// Shadowing and scoping cases for the symbol table (E07-03).
+function pay(amount) {
+  if (amount > limit) { var fee = 1; }
+  return fee;
+}
+let limit = 10;
+
+function shadows() {
+  var x = 1;
+  { let x = 2; use(x); }
+  try { risky(); } catch (x) { log(x); }
+  return x;
+}
+
+const make = (a) => (b) => a + b + limit;
+
+class Account {
+  balance = 0;
+  deposit(amount) { this.balance += amount; return balance; }
+  static open(initial) { const acct = new Account(); acct.balance = initial; return acct; }
+}
+
+const Named = class Inner { again() { return new Inner(); } };
+
+function patterns(source) {
+  const { first, second: renamed = 1, ...others } = source;
+  let a, b;
+  [a, b] = [renamed, first];
+  return { a, b, others, first: a };
+}
+
+for (let i = 0; i < 3; i++) { use(i); }
+for (const key in limitMap) { use(key); }
+
+function dynamic(obj, key) { return obj[key] + eval("1") + globalThis.setting; }
+
+run();
+function run() { return helperLater(); function helperLater() { return 1; } }

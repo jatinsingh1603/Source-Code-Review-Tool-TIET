@@ -2,13 +2,16 @@
 
 Owning epic: E07.
 
-``ParsedFile`` is a plain class, not a ``KavachModel``: a later epic's scope resolver and call
-graph (E07-03, E07-04) need the underlying ``tree_sitter.Tree``, which wraps native memory and
-cannot be validated, hashed or JSON-serialised the way a Pydantic model is. This module ships
-only the shape this issue is responsible for: the file's identity, its raw source, how many
-parse errors it had, which characters were hidden, and the three kinds of span every language
-can report through the ``LanguageSpec`` protocol (``identifiers``, ``string_literals``,
-``comments``); a later epic that needs the tree itself extends this module, not this issue.
+``ParsedFile`` is a plain class, not a ``KavachModel``: the scope resolver and call graph
+(E07-03, E07-04) need the underlying ``tree_sitter.Tree``, which wraps native memory and cannot
+be validated, hashed or JSON-serialised the way a Pydantic model is. It carries the file's
+identity, its raw source, how many parse errors it had, which characters were hidden, the three
+kinds of span every language can report through the ``LanguageSpec`` protocol (``identifiers``,
+``string_literals``, ``comments``) and, for the epics that walk the syntax tree, the tree and the
+``LineIndex`` that converts its byte offsets. Both are excluded from equality and ``repr``: the
+tree is native memory, and a ``ParsedFile`` is compared and printed by what it says about the
+source. A consumer should build what it needs and drop the ``ParsedFile``, since holding every
+file's tree at once is what a large scan cannot afford.
 
 ``identifiers()`` pairs each ``Location`` with its text (E07-02): the pseudonymiser renames
 exactly these occurrences and needs the text to decide how (``docs/ARCHITECTURE.md`` section
@@ -19,8 +22,11 @@ string slicing ``LineIndex`` exists to avoid doing repeatedly.
 from dataclasses import dataclass, field
 from typing import ClassVar, Literal
 
+from tree_sitter import Tree
+
 from codekavach.core.models import DataClassification, Language, Location, RawCode
 from codekavach.parsing.normalise import EMPTY_HIDDEN_CHAR_REPORT, HiddenCharReport
+from codekavach.parsing.positions import LineIndex
 
 # The timeout sentinel: a parse that exceeded parsing.timeout_seconds reports this error_count,
 # distinct from a non-negative count of genuine ERROR/MISSING nodes.
@@ -64,6 +70,8 @@ class ParsedFile:
     identifier_locations: tuple[tuple[Location, str], ...] = field(default=())
     literal_spans: tuple[LiteralSpan, ...] = field(default=())
     comment_locations: tuple[Location, ...] = field(default=())
+    tree: Tree | None = field(default=None, repr=False, compare=False)
+    line_index: LineIndex | None = field(default=None, repr=False, compare=False)
 
     def identifiers(self) -> tuple[tuple[Location, str], ...]:
         """Every ``(location, text)`` identifier occurrence found while parsing, in source order."""

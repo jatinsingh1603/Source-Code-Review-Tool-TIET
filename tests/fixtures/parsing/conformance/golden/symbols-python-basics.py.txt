@@ -1,0 +1,104 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+  3 parent=1 function
+  4 parent=1 function
+  5 parent=0 function
+  6 parent=5 function
+  7 parent=0 function
+  8 parent=7 function
+  9 parent=0 function
+symbols:
+  basics.py.txt:3:8 'os' import scope=0 def
+  basics.py.txt:4:6 'typing' module scope=-1 ref
+  basics.py.txt:4:20 'List' import scope=0 def
+  basics.py.txt:6:1 'GLOBAL_CONST' constant scope=0 def
+  basics.py.txt:9:7 'Greeter' class scope=0 def
+  basics.py.txt:12:5 'greeting' field scope=1 def
+  basics.py.txt:12:15 'str' variable scope=-1 ref
+  basics.py.txt:14:9 '__init__' method scope=1 def
+  basics.py.txt:14:18 'self' parameter scope=2 def
+  basics.py.txt:14:24 'name' parameter scope=2 def
+  basics.py.txt:14:31 'args' parameter scope=2 def
+  basics.py.txt:14:37 'suffix' parameter scope=2 def
+  basics.py.txt:14:51 'kwargs' parameter scope=2 def
+  basics.py.txt:16:9 'self' parameter scope=2 ref
+  basics.py.txt:16:14 'name' field scope=-1 ref
+  basics.py.txt:16:21 'name' parameter scope=2 ref
+  basics.py.txt:17:9 'self' parameter scope=2 ref
+  basics.py.txt:17:14 'suffix' field scope=-1 ref
+  basics.py.txt:17:23 'suffix' parameter scope=2 ref
+  basics.py.txt:19:6 'staticmethod' variable scope=-1 ref
+  basics.py.txt:20:9 'shout' method scope=1 def
+  basics.py.txt:20:15 'text' parameter scope=3 def
+  basics.py.txt:22:16 'text' parameter scope=3 ref
+  basics.py.txt:22:21 'upper' field scope=-1 ref
+  basics.py.txt:24:15 'greet_async' method scope=1 def
+  basics.py.txt:24:27 'self' parameter scope=4 def
+  basics.py.txt:25:19 'self' parameter scope=4 ref
+  basics.py.txt:25:24 'greeting' field scope=-1 ref
+  basics.py.txt:25:36 'self' parameter scope=4 ref
+  basics.py.txt:25:41 'name' field scope=-1 ref
+  basics.py.txt:25:47 'self' parameter scope=4 ref
+  basics.py.txt:25:52 'suffix' field scope=-1 ref
+  basics.py.txt:28:5 'top_level' function scope=0 def
+  basics.py.txt:28:15 'values' parameter scope=5 def
+  basics.py.txt:28:39 'int' variable scope=-1 ref
+  basics.py.txt:29:12 'sum' variable scope=-1 ref
+  basics.py.txt:29:16 'v' variable scope=6 ref
+  basics.py.txt:29:22 'v' variable scope=6 def
+  basics.py.txt:29:27 'values' parameter scope=5 ref
+  basics.py.txt:29:37 'v' variable scope=6 ref
+  basics.py.txt:32:5 'make_adder' function scope=0 def
+  basics.py.txt:32:16 'amount' parameter scope=7 def
+  basics.py.txt:33:9 'adder' function scope=7 def
+  basics.py.txt:33:15 'value' parameter scope=8 def
+  basics.py.txt:34:16 'value' parameter scope=8 ref
+  basics.py.txt:34:24 'amount' parameter scope=7 ref
+  basics.py.txt:36:12 'adder' function scope=7 ref
+  basics.py.txt:39:1 'lambda_fn' variable scope=0 def
+  basics.py.txt:39:20 'x' parameter scope=9 def
+  basics.py.txt:39:23 'x' parameter scope=9 ref
+extents:
+  'Greeter' basics.py.txt:9-25
+  '__init__' basics.py.txt:14-17
+  'shout' basics.py.txt:19-22
+  'greet_async' basics.py.txt:24-25
+  'top_level' basics.py.txt:28-29
+  'make_adder' basics.py.txt:32-36
+  'adder' basics.py.txt:33-34
+references:
+  'os' scope=0: 3
+  'typing' scope=-1: 4
+  'List' scope=0: 4
+  'GLOBAL_CONST' scope=0: 6
+  'Greeter' scope=0: 9
+  'greeting' scope=1: 12
+  'str' scope=-1: 12
+  '__init__' scope=1: 14
+  'self' scope=2: 14, 16, 17
+  'name' scope=2: 14, 16
+  'args' scope=2: 14
+  'suffix' scope=2: 14, 17
+  'kwargs' scope=2: 14
+  'name' scope=-1: 16, 25
+  'suffix' scope=-1: 17, 25
+  'staticmethod' scope=-1: 19
+  'shout' scope=1: 20
+  'text' scope=3: 20, 22
+  'upper' scope=-1: 22
+  'greet_async' scope=1: 24
+  'self' scope=4: 24, 25, 25, 25
+  'greeting' scope=-1: 25
+  'top_level' scope=0: 28
+  'values' scope=5: 28, 29
+  'int' scope=-1: 28
+  'sum' scope=-1: 29
+  'v' scope=6: 29, 29, 29
+  'make_adder' scope=0: 32
+  'amount' scope=7: 32, 34
+  'adder' scope=7: 33, 36
+  'value' scope=8: 33, 34
+  'lambda_fn' scope=0: 39
+  'x' scope=9: 39, 39

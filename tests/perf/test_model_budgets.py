@@ -41,6 +41,13 @@ MODEL_CONSTRUCT_ALLOWED = {
         "seal() builds an unvalidated draft only to compute entry_hash; the record it returns "
         "is created with model_validate, so every check runs"
     ),
+    "codekavach/parsing/symbols.py": (
+        "Symbol is built once per identifier occurrence (about 10 000 for a 5 000-line file) from "
+        "values the binder has already classified and the parser has already validated "
+        "(a Location from identifiers(), a scope id and kind from the ScopeBuilder); full "
+        "validation of each cost roughly as much as the rest of build_symbol_table. The "
+        "SymbolTable that holds them is built with validation"
+    ),
     "codekavach/parsing/positions.py": (
         "LineIndex.locations() validates path once with normalise_repo_path and builds every "
         "Location's start/end line and column from its own already-correct position() "

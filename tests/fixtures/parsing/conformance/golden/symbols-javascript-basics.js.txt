@@ -1,0 +1,89 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+  3 parent=1 function
+  4 parent=1 function
+  5 parent=0 function
+  6 parent=0 function
+  7 parent=0 class
+  8 parent=7 function
+symbols:
+  basics.js.txt:2:7 'Account' class scope=0 def
+  basics.js.txt:3:3 '#balance' field scope=1 def
+  basics.js.txt:4:10 'version' field scope=1 def
+  basics.js.txt:6:3 'constructor' method scope=1 def
+  basics.js.txt:6:15 'owner' parameter scope=2 def
+  basics.js.txt:6:24 'currency' parameter scope=2 def
+  basics.js.txt:7:10 'owner' field scope=-1 ref
+  basics.js.txt:7:18 'owner' parameter scope=2 ref
+  basics.js.txt:8:10 'currency' field scope=-1 ref
+  basics.js.txt:8:21 'currency' parameter scope=2 ref
+  basics.js.txt:12:3 'deposit' method scope=1 def
+  basics.js.txt:12:11 'amount' parameter scope=3 def
+  basics.js.txt:13:10 '#balance' field scope=-1 ref
+  basics.js.txt:13:22 'amount' parameter scope=3 ref
+  basics.js.txt:14:17 '#balance' field scope=-1 ref
+  basics.js.txt:17:7 'balance' method scope=1 def
+  basics.js.txt:18:17 '#balance' field scope=-1 ref
+  basics.js.txt:22:10 'topLevel' function scope=0 def
+  basics.js.txt:22:19 'x' parameter scope=5 def
+  basics.js.txt:22:25 'rest' parameter scope=5 def
+  basics.js.txt:23:11 'a' variable scope=5 def
+  basics.js.txt:23:14 'b' variable scope=5 def
+  basics.js.txt:23:20 'x' parameter scope=5 ref
+  basics.js.txt:24:10 'a' variable scope=5 ref
+  basics.js.txt:24:14 'b' variable scope=5 ref
+  basics.js.txt:24:18 'rest' parameter scope=5 ref
+  basics.js.txt:24:23 'length' field scope=-1 ref
+  basics.js.txt:27:7 'arrow' variable scope=0 def
+  basics.js.txt:27:16 'y' parameter scope=6 def
+  basics.js.txt:27:22 'y' parameter scope=6 ref
+  basics.js.txt:28:7 'Klass' variable scope=0 def
+  basics.js.txt:29:3 'run' method scope=7 def
+  basics.js.txt:34:7 'obj' variable scope=0 def
+  basics.js.txt:34:15 'key' field scope=-1 ref
+  basics.js.txt:34:23 'shorthand' variable scope=-1 ref
+  basics.js.txt:34:35 'computed' variable scope=-1 ref
+  basics.js.txt:35:7 'name' variable scope=0 def
+  basics.js.txt:36:7 'greeting' variable scope=0 def
+  basics.js.txt:36:27 'name' variable scope=0 ref
+  basics.js.txt:37:7 'pattern' variable scope=0 def
+extents:
+  'Account' basics.js.txt:2-20
+  'constructor' basics.js.txt:6-9
+  'deposit' basics.js.txt:12-15
+  'balance' basics.js.txt:17-19
+  'topLevel' basics.js.txt:22-25
+  'arrow' basics.js.txt:27:15
+  'run' basics.js.txt:29-31
+references:
+  'Account' scope=0: 2
+  '#balance' scope=1: 3
+  'version' scope=1: 4
+  'constructor' scope=1: 6
+  'owner' scope=2: 6, 7
+  'currency' scope=2: 6, 8
+  'owner' scope=-1: 7
+  'currency' scope=-1: 8
+  'deposit' scope=1: 12
+  'amount' scope=3: 12, 13
+  '#balance' scope=-1: 13, 14, 18
+  'balance' scope=1: 17
+  'topLevel' scope=0: 22
+  'x' scope=5: 22, 23
+  'rest' scope=5: 22, 24
+  'a' scope=5: 23, 24
+  'b' scope=5: 23, 24
+  'length' scope=-1: 24
+  'arrow' scope=0: 27
+  'y' scope=6: 27, 27
+  'Klass' scope=0: 28
+  'run' scope=7: 29
+  'obj' scope=0: 34
+  'key' scope=-1: 34
+  'shorthand' scope=-1: 34
+  'computed' scope=-1: 34
+  'name' scope=0: 35, 36
+  'greeting' scope=0: 36
+  'pattern' scope=0: 37

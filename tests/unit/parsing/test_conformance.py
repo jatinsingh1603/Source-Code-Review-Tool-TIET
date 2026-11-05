@@ -8,43 +8,26 @@ grammar or a spec under, and the two property tests below are the corpus's real 
 file count.
 """
 
-from pathlib import Path
-
 import pytest
 
 from codekavach.core.models import Language
 from codekavach.parsing.models import ParsedFile
 from tests.support.conformance import (
+    FIXTURES,
+    GOLDEN_ROOT,
     assert_identifiers_exhaustive,
     assert_strings_and_comments_disjoint,
+    fixture_path,
     parse_fixture,
 )
 from tests.support.golden import assert_matches_golden
-
-CORPUS_ROOT = Path(__file__).resolve().parents[2] / "fixtures" / "parsing" / "conformance"
-GOLDEN_ROOT = CORPUS_ROOT / "golden"
-
-FIXTURES: list[tuple[Language, str]] = [
-    (Language.PYTHON, "basics.py.txt"),
-    (Language.PYTHON, "control_flow.py.txt"),
-    (Language.PYTHON, "strings.py.txt"),
-    (Language.PYTHON, "syntax_error.py.txt"),
-    (Language.JAVASCRIPT, "basics.js.txt"),
-    (Language.JAVASCRIPT, "modules.js.txt"),
-    (Language.JAVASCRIPT, "syntax_error.js.txt"),
-    (Language.TYPESCRIPT, "basics.ts.txt"),
-]
-
-
-def _fixture_path(language: Language, name: str) -> Path:
-    return CORPUS_ROOT / language.value / name
 
 
 @pytest.mark.parametrize(
     ("language", "name"), FIXTURES, ids=[f"{lang.value}-{n}" for lang, n in FIXTURES]
 )
 def test_identifiers_are_exhaustive(language: Language, name: str) -> None:
-    path = _fixture_path(language, name)
+    path = fixture_path(language, name)
     text = path.read_text(encoding="utf-8")
     parsed = parse_fixture(language, path)
     assert_identifiers_exhaustive(language, text, parsed)
@@ -54,7 +37,7 @@ def test_identifiers_are_exhaustive(language: Language, name: str) -> None:
     ("language", "name"), FIXTURES, ids=[f"{lang.value}-{n}" for lang, n in FIXTURES]
 )
 def test_strings_and_comments_never_overlap(language: Language, name: str) -> None:
-    parsed = parse_fixture(language, _fixture_path(language, name))
+    parsed = parse_fixture(language, fixture_path(language, name))
     assert_strings_and_comments_disjoint(parsed)
 
 
@@ -76,13 +59,13 @@ def _rendered(parsed: ParsedFile) -> str:
     ("language", "name"), FIXTURES, ids=[f"{lang.value}-{n}" for lang, n in FIXTURES]
 )
 def test_golden_output(language: Language, name: str) -> None:
-    parsed = parse_fixture(language, _fixture_path(language, name))
+    parsed = parse_fixture(language, fixture_path(language, name))
     golden = GOLDEN_ROOT / f"{language.value}-{name.replace('.txt', '')}.txt"
     assert_matches_golden(_rendered(parsed), golden)
 
 
 def test_a_syntax_error_still_yields_identifiers_for_the_parseable_region() -> None:
-    path = _fixture_path(Language.PYTHON, "syntax_error.py.txt")
+    path = fixture_path(Language.PYTHON, "syntax_error.py.txt")
     parsed = parse_fixture(Language.PYTHON, path)
     assert parsed.error_count > 0
     names = [text for _, text in parsed.identifiers()]
@@ -91,7 +74,7 @@ def test_a_syntax_error_still_yields_identifiers_for_the_parseable_region() -> N
 
 
 def test_a_js_syntax_error_still_yields_identifiers_for_the_parseable_region() -> None:
-    path = _fixture_path(Language.JAVASCRIPT, "syntax_error.js.txt")
+    path = fixture_path(Language.JAVASCRIPT, "syntax_error.js.txt")
     parsed = parse_fixture(Language.JAVASCRIPT, path)
     assert parsed.error_count > 0
     names = [text for _, text in parsed.identifiers()]
@@ -103,7 +86,7 @@ def test_a_js_syntax_error_still_yields_identifiers_for_the_parseable_region() -
 )
 def test_extraction_is_invariant_under_reparsing(language: Language, name: str) -> None:
     """Parsing the same text twice gives byte-for-byte identical identifiers/strings/comments."""
-    path = _fixture_path(language, name)
+    path = fixture_path(language, name)
     first = parse_fixture(language, path)
     second = parse_fixture(language, path)
     assert first.identifiers() == second.identifiers()

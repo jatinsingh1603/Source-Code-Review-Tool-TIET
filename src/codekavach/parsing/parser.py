@@ -264,4 +264,6 @@ def parse(
         identifier_locations=identifiers,
         literal_spans=literals,
         comment_locations=comments,
+        tree=tree,
+        line_index=line_index,
     )

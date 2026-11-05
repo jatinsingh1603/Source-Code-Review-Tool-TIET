@@ -1,0 +1,136 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+  2 parent=1 function
+  3 parent=0 class
+  4 parent=3 function
+  5 parent=0 function
+  6 parent=5 function
+  7 parent=0 function
+  8 parent=0 function
+  9 parent=0 function
+  10 parent=9 function
+  11 parent=0 function
+  12 parent=0 function
+symbols:
+  shadowing.py.txt:3:1 'total' variable scope=0 def
+  shadowing.py.txt:6:5 'apply_fee' function scope=0 def
+  shadowing.py.txt:6:15 'total' parameter scope=1 def
+  shadowing.py.txt:6:22 'rate' parameter scope=1 def
+  shadowing.py.txt:7:9 'inner' function scope=1 def
+  shadowing.py.txt:8:18 'total' parameter scope=1 ref
+  shadowing.py.txt:9:9 'total' parameter scope=1 ref
+  shadowing.py.txt:11:5 'inner' function scope=1 ref
+  shadowing.py.txt:12:12 'total' parameter scope=1 ref
+  shadowing.py.txt:15:7 'Counter' class scope=0 def
+  shadowing.py.txt:16:5 'count' field scope=3 def
+  shadowing.py.txt:18:9 'count_up' method scope=3 def
+  shadowing.py.txt:18:18 'self' parameter scope=4 def
+  shadowing.py.txt:18:24 'count' parameter scope=4 def
+  shadowing.py.txt:19:9 'count' parameter scope=4 def
+  shadowing.py.txt:19:17 'count' parameter scope=4 ref
+  shadowing.py.txt:20:16 'count' parameter scope=4 ref
+  shadowing.py.txt:23:5 'comprehension_scope' function scope=0 def
+  shadowing.py.txt:23:25 'items' parameter scope=5 def
+  shadowing.py.txt:24:5 'i' variable scope=5 def
+  shadowing.py.txt:24:9 'len' variable scope=-1 ref
+  shadowing.py.txt:24:13 'items' parameter scope=5 ref
+  shadowing.py.txt:25:5 'squares' variable scope=5 def
+  shadowing.py.txt:25:16 'i' variable scope=6 ref
+  shadowing.py.txt:25:20 'i' variable scope=6 ref
+  shadowing.py.txt:25:26 'i' variable scope=6 def
+  shadowing.py.txt:25:31 'range' variable scope=-1 ref
+  shadowing.py.txt:25:37 'i' variable scope=5 ref
+  shadowing.py.txt:26:12 'i' variable scope=5 ref
+  shadowing.py.txt:26:15 'squares' variable scope=5 ref
+  shadowing.py.txt:29:5 'global_counter' function scope=0 def
+  shadowing.py.txt:30:12 'total' variable scope=0 ref
+  shadowing.py.txt:31:5 'total' variable scope=0 ref
+  shadowing.py.txt:32:12 'total' variable scope=0 ref
+  shadowing.py.txt:35:5 'handlers' function scope=0 def
+  shadowing.py.txt:35:14 'path' parameter scope=8 def
+  shadowing.py.txt:37:14 'open' variable scope=-1 ref
+  shadowing.py.txt:37:19 'path' parameter scope=8 ref
+  shadowing.py.txt:37:28 'handle' variable scope=8 def
+  shadowing.py.txt:38:20 'handle' variable scope=8 ref
+  shadowing.py.txt:38:27 'read' field scope=-1 ref
+  shadowing.py.txt:39:12 'OSError' variable scope=-1 ref
+  shadowing.py.txt:39:23 'error' variable scope=8 def
+  shadowing.py.txt:40:16 'str' variable scope=-1 ref
+  shadowing.py.txt:40:20 'error' variable scope=8 ref
+  shadowing.py.txt:43:5 'walrus' function scope=0 def
+  shadowing.py.txt:43:12 'values' parameter scope=9 def
+  shadowing.py.txt:44:9 'size' variable scope=9 def
+  shadowing.py.txt:44:17 'len' variable scope=-1 ref
+  shadowing.py.txt:44:21 'values' parameter scope=9 ref
+  shadowing.py.txt:45:16 'size' variable scope=9 ref
+  shadowing.py.txt:46:13 'last' variable scope=9 def
+  shadowing.py.txt:46:21 'v' variable scope=10 ref
+  shadowing.py.txt:46:27 'v' variable scope=10 def
+  shadowing.py.txt:46:32 'values' parameter scope=9 ref
+  shadowing.py.txt:46:44 'last' variable scope=9 ref
+  shadowing.py.txt:49:5 'reads_dynamic' function scope=0 def
+  shadowing.py.txt:49:19 'obj' parameter scope=11 def
+  shadowing.py.txt:49:24 'name' parameter scope=11 def
+  shadowing.py.txt:50:12 'getattr' variable scope=-1 ref
+  shadowing.py.txt:50:20 'obj' parameter scope=11 ref
+  shadowing.py.txt:50:25 'name' parameter scope=11 ref
+  shadowing.py.txt:50:32 'obj' parameter scope=11 ref
+  shadowing.py.txt:50:36 '__dict__' field scope=-1 ref
+  shadowing.py.txt:50:45 'name' parameter scope=11 ref
+  shadowing.py.txt:50:52 'missing_name' variable scope=-1 ref
+  shadowing.py.txt:53:1 'helper_result' variable scope=0 def
+  shadowing.py.txt:53:17 'later_helper' function scope=0 ref
+  shadowing.py.txt:56:5 'later_helper' function scope=0 def
+  shadowing.py.txt:57:12 'total' variable scope=0 ref
+extents:
+  'apply_fee' shadowing.py.txt:6-12
+  'inner' shadowing.py.txt:7-9
+  'Counter' shadowing.py.txt:15-20
+  'count_up' shadowing.py.txt:18-20
+  'comprehension_scope' shadowing.py.txt:23-26
+  'global_counter' shadowing.py.txt:29-32
+  'handlers' shadowing.py.txt:35-40
+  'walrus' shadowing.py.txt:43-46
+  'reads_dynamic' shadowing.py.txt:49-50
+  'later_helper' shadowing.py.txt:56-57
+references:
+  'total' scope=0: 3, 30, 31, 32, 57
+  'apply_fee' scope=0: 6
+  'total' scope=1: 6, 8, 9, 12
+  'rate' scope=1: 6
+  'inner' scope=1: 7, 11
+  'Counter' scope=0: 15
+  'count' scope=3: 16
+  'count_up' scope=3: 18
+  'self' scope=4: 18
+  'count' scope=4: 18, 19, 19, 20
+  'comprehension_scope' scope=0: 23
+  'items' scope=5: 23, 24
+  'i' scope=5: 24, 25, 26
+  'len' scope=-1: 24, 44
+  'squares' scope=5: 25, 26
+  'i' scope=6: 25, 25, 25
+  'range' scope=-1: 25
+  'global_counter' scope=0: 29
+  'handlers' scope=0: 35
+  'path' scope=8: 35, 37
+  'open' scope=-1: 37
+  'handle' scope=8: 37, 38
+  'read' scope=-1: 38
+  'OSError' scope=-1: 39
+  'error' scope=8: 39, 40
+  'str' scope=-1: 40
+  'walrus' scope=0: 43
+  'values' scope=9: 43, 44, 46
+  'size' scope=9: 44, 45
+  'last' scope=9: 46, 46
+  'v' scope=10: 46, 46
+  'reads_dynamic' scope=0: 49
+  'obj' scope=11: 49, 50, 50
+  'name' scope=11: 49, 50, 50
+  'getattr' scope=-1: 50
+  '__dict__' scope=-1: 50
+  'missing_name' scope=-1: 50
+  'helper_result' scope=0: 53
+  'later_helper' scope=0: 53, 56

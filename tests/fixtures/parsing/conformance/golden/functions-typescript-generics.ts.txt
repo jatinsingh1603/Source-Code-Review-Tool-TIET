@@ -1,0 +1,12 @@
+method 'Stack.push' ('push')
+  header 11:3-11:22
+  body   11:23-13:4
+  full   11:3-13:4
+method 'Stack.pop' ('pop')
+  header 14:3-14:23
+  body   14:24-16:4
+  full   14:3-16:4
+function 'first' ('first')
+  header 24:1-24:42
+  body   24:43-26:2
+  full   24:1-26:2
