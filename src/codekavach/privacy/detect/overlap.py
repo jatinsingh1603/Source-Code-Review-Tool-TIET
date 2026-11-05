@@ -31,7 +31,7 @@ dropping a short remainder of a secret would leave part of it in the text. Only 
 
 from bisect import bisect_right
 from collections.abc import Iterable, Sequence
-from itertools import pairwise
+from itertools import islice, pairwise
 from typing import Final
 
 from codekavach.core.models import PlaceholderKind
@@ -159,11 +159,12 @@ def _greedy(spans: Sequence[TypedSpan]) -> list[TypedSpan]:
     ranking = sorted(spans, key=lambda s: (_KIND_RANK[s.kind], -s.confidence.rank, *_order_key(s)))
     for span in ranking:
         first = max(bisect_right(starts, span.start_byte) - 1, 0)
-        overlapping = [
-            (a.start_byte, a.end_byte)
-            for a in accepted[first:]
-            if a.start_byte < span.end_byte and span.start_byte < a.end_byte
-        ]
+        overlapping: list[Interval] = []
+        for other in islice(accepted, first, None):
+            if other.start_byte >= span.end_byte:
+                break  # sorted and disjoint: nothing after this one can overlap
+            if span.start_byte < other.end_byte:
+                overlapping.append((other.start_byte, other.end_byte))
         pieces = remainders(span, overlapping, minimum=1) if overlapping else [span]
         for piece in pieces:
             index = bisect_right(starts, piece.start_byte)
