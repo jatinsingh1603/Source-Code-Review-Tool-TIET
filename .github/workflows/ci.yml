@@ -142,7 +142,9 @@ jobs:
   test:
     name: test (${{ matrix.os }}, ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    # The Linux jobs run every test, the perf budgets and coverage in one process: about 14.5
+    # minutes at 6 500 tests, so 15 left no room (a run on 2026-11-05 was cancelled at the limit).
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
