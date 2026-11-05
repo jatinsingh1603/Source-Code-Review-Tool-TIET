@@ -1,0 +1,11 @@
+"""The billing engine."""
+
+RATE = 3
+
+
+def accrue(amount, digest):
+    return _scale(amount) + digest.digest_size
+
+
+def _scale(amount):
+    return amount * RATE

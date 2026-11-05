@@ -1,0 +1,12 @@
+import { Component } from "@angular/core"; // third_party: scoped package
+import { greet } from "@app/greet"; // internal: tsconfig paths alias
+import { createHash } from "node:crypto"; // stdlib: node: prefix
+import { helper } from "./util"; // internal: relative
+
+export function main(): void {
+  greet("a");
+  helper();
+  createHash("md5");
+  Component({});
+  missing();
+}

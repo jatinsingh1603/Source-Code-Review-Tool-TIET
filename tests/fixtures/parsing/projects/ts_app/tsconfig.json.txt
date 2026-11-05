@@ -1,0 +1,9 @@
+{
+  // comments and trailing commas are legal in tsconfig.json
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@app/*": ["src/app/*"],
+    },
+  },
+}

@@ -36,6 +36,7 @@ from codekavach.parsing.models import ParsedFile
 from codekavach.parsing.spec import LanguageSpec
 
 FunctionKind = Literal["function", "method"]
+DefinitionKind = Literal["function", "method", "class"]
 
 _PYTHON_SCOPES: Final = frozenset({"function_definition", "class_definition"})
 _JS_FUNCTION_DECLARATIONS: Final = frozenset(
@@ -68,7 +69,8 @@ class _Raw:
 
     name: str
     qualified: str
-    kind: FunctionKind
+    kind: DefinitionKind
+    name_start: int
     header_start: int
     header_end: int
     body: tuple[int, int]
@@ -90,6 +92,12 @@ def _qualify(prefix: str, name: str) -> str:
     return f"{prefix}.{name}" if prefix else name
 
 
+def _python_kind(node: Node, in_class: bool) -> DefinitionKind:
+    if node.type == "class_definition":
+        return "class"
+    return "method" if in_class else "function"
+
+
 def _python_functions(root: Node) -> list[_Raw]:
     found: list[_Raw] = []
     # node, qualified prefix, whether the nearest enclosing definition is a class
@@ -103,7 +111,7 @@ def _python_functions(root: Node) -> list[_Raw]:
         body = node.child_by_field_name("body")
         name = _text(name_node)
         qualified = _qualify(prefix, name)
-        if node.type == "function_definition" and body is not None and name:
+        if name_node is not None and body is not None and name:
             parent = node.parent
             wrapper = (
                 parent if parent is not None and parent.type == "decorated_definition" else node
@@ -117,7 +125,8 @@ def _python_functions(root: Node) -> list[_Raw]:
                 _Raw(
                     name=name,
                     qualified=qualified,
-                    kind="method" if in_class else "function",
+                    kind=_python_kind(node, in_class),
+                    name_start=name_node.start_byte,
                     header_start=node.start_byte,
                     header_end=_header_end(body),
                     body=(body.start_byte, body.end_byte),
@@ -130,12 +139,12 @@ def _python_functions(root: Node) -> list[_Raw]:
     return found
 
 
-def _assigned_name(left: Node | None) -> str:
+def _assigned_node(left: Node | None) -> Node | None:
     if left is None:
-        return ""
+        return None
     if left.type == "member_expression":
-        return _text(left.child_by_field_name("property"))
-    return _text(left) if left.type == "identifier" else ""
+        return left.child_by_field_name("property")
+    return left if left.type == "identifier" else None
 
 
 # parent node type -> (field holding the function value, field holding the name)
@@ -147,19 +156,19 @@ _BINDERS: Final = {
 }
 
 
-def _binding_name(node: Node) -> str:
-    """The name a function value is bound to: ``const f = ...``, ``a.b = ...``, ``key: ...``."""
+def _binding_node(node: Node) -> Node | None:
+    """The name node a function value is bound to: ``const f = ...``, ``a.b = ...``."""
     parent = node.parent
     if parent is None:
-        return ""
+        return None
     if parent.type == "assignment_expression":
         right = parent.child_by_field_name("right")
-        return _assigned_name(parent.child_by_field_name("left")) if right == node else ""
+        return _assigned_node(parent.child_by_field_name("left")) if right == node else None
     fields = _BINDERS.get(parent.type)
     if fields is None or parent.child_by_field_name(fields[0]) != node:
-        return ""
+        return None
     named = parent.child_by_field_name(fields[1])
-    return _text(named if named is not None else parent.child_by_field_name("property"))
+    return named if named is not None else parent.child_by_field_name("property")
 
 
 def _decorators_of(node: Node) -> list[tuple[int, int]]:
@@ -177,29 +186,32 @@ def _decorators_of(node: Node) -> list[tuple[int, int]]:
     return [*reversed(leading), *spans]
 
 
+def _javascript_name_node(node: Node) -> tuple[Node | None, DefinitionKind]:
+    """The node naming a JavaScript or TypeScript definition, and what kind of definition it is."""
+    kind = node.type
+    if kind in _JS_FUNCTION_DECLARATIONS:
+        return node.child_by_field_name("name"), "function"
+    if kind == "method_definition":
+        return node.child_by_field_name("name"), "method"
+    if kind in _JS_FUNCTION_VALUES:
+        parent = node.parent
+        in_field = parent is not None and parent.type in _JS_FIELDS
+        return _binding_node(node), "method" if in_field else "function"
+    if kind in _JS_CLASSES:
+        return node.child_by_field_name("name") or _binding_node(node), "class"
+    return None, "function"
+
+
 def _javascript_functions(root: Node) -> list[_Raw]:
     found: list[_Raw] = []
     stack: list[tuple[Node, str]] = [(root, "")]
     while stack:
         node, prefix = stack.pop()
-        kind = node.type
-        name = ""
-        function_kind: FunctionKind = "function"
-        if kind in _JS_FUNCTION_DECLARATIONS:
-            name = _text(node.child_by_field_name("name"))
-        elif kind == "method_definition":
-            name = _text(node.child_by_field_name("name"))
-            function_kind = "method"
-        elif kind in _JS_FUNCTION_VALUES:
-            name = _binding_name(node)
-            parent = node.parent
-            if parent is not None and parent.type in _JS_FIELDS:
-                function_kind = "method"
-        elif kind in _JS_CLASSES:
-            name = _text(node.child_by_field_name("name")) or _binding_name(node)
+        name_node, kind = _javascript_name_node(node)
+        name = _text(name_node)
         qualified = _qualify(prefix, name) if name else prefix
         body = node.child_by_field_name("body")
-        if name and kind not in _JS_CLASSES and body is not None:
+        if name_node is not None and name and body is not None:
             decorators = _decorators_of(node)
             header_start = next(
                 (child.start_byte for child in node.children if child.type != "decorator"),
@@ -210,7 +222,8 @@ def _javascript_functions(root: Node) -> list[_Raw]:
                 _Raw(
                     name=name,
                     qualified=qualified,
-                    kind=function_kind,
+                    kind=kind,
+                    name_start=name_node.start_byte,
                     header_start=header_start,
                     header_end=_header_end(body),
                     body=(body.start_byte, body.end_byte),
@@ -222,6 +235,40 @@ def _javascript_functions(root: Node) -> list[_Raw]:
     return found
 
 
+@dataclass(frozen=True, slots=True)
+class Definition:
+    """A named function, method or class with byte offsets (used by the call graph)."""
+
+    name: str
+    qualified: str
+    kind: DefinitionKind
+    name_start: int
+    full_start: int
+    full_end: int
+
+
+def _raws_of(parsed: ParsedFile) -> list[_Raw]:
+    if parsed.tree is None:
+        return []
+    root = parsed.tree.root_node
+    if parsed.language is Language.PYTHON:
+        raws = _python_functions(root)
+    elif parsed.language in (Language.JAVASCRIPT, Language.TYPESCRIPT):
+        raws = _javascript_functions(root)
+    else:
+        return []
+    raws.sort(key=lambda raw: (raw.full[0], -raw.full[1]))
+    return raws
+
+
+def definitions_of(parsed: ParsedFile) -> tuple[Definition, ...]:
+    """Every named function, method and class of ``parsed``, outermost first, in source order."""
+    return tuple(
+        Definition(r.name, r.qualified, r.kind, r.name_start, r.full[0], r.full[1])
+        for r in _raws_of(parsed)
+    )
+
+
 def function_ranges(parsed: ParsedFile, spec: LanguageSpec | None) -> tuple[FunctionRange, ...]:
     """Every named function and method of ``parsed`` with exact ranges, in source order.
 
@@ -231,14 +278,7 @@ def function_ranges(parsed: ParsedFile, spec: LanguageSpec | None) -> tuple[Func
     line_index = parsed.line_index
     if spec is None or parsed.tree is None or line_index is None:
         return ()
-    root = parsed.tree.root_node
-    if parsed.language is Language.PYTHON:
-        raws = _python_functions(root)
-    elif parsed.language in (Language.JAVASCRIPT, Language.TYPESCRIPT):
-        raws = _javascript_functions(root)
-    else:
-        return ()
-    raws.sort(key=lambda raw: (raw.full[0], -raw.full[1]))
+    raws = [raw for raw in _raws_of(parsed) if raw.kind != "class"]
     spans: list[tuple[int, int]] = []
     for raw in raws:
         spans.append((raw.header_start, raw.header_end))
@@ -257,7 +297,7 @@ def function_ranges(parsed: ParsedFile, spec: LanguageSpec | None) -> tuple[Func
             FunctionRange(
                 symbol_name=raw.name,
                 qualified_name=raw.qualified,
-                kind=raw.kind,
+                kind="function" if raw.kind == "function" else "method",
                 header=header,
                 body=body,
                 full=full,

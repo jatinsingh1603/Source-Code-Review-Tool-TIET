@@ -31,11 +31,12 @@ for a use, including a target that ``global`` or ``nonlocal`` redirects to an ou
 
 from typing import ClassVar, Final, Protocol, cast
 
-from pydantic import PrivateAttr
+from pydantic import Field, PrivateAttr
 from tree_sitter import Node
 
 from codekavach.core.log import get_logger
 from codekavach.core.models import DataClassification, KavachModel, Location, RepoPath
+from codekavach.parsing.imports import ImportRef
 from codekavach.parsing.models import ParsedFile
 from codekavach.parsing.scopes import (
     UNRESOLVED,
@@ -94,6 +95,7 @@ class SymbolTable(KavachModel):
     scopes: tuple[Scope, ...]
     symbols: tuple[Symbol, ...]
     extents: tuple[DefinitionExtent, ...] = ()
+    imports: tuple[ImportRef, ...] = ()
 
     _by_binding: dict[tuple[str, int], tuple[int, ...]] | None = PrivateAttr(default=None)
 
@@ -108,6 +110,21 @@ class SymbolTable(KavachModel):
     def references(self, name: str, scope_id: int) -> tuple[Location, ...]:
         """Every occurrence bound to ``(name, scope_id)``, definition included, in source order."""
         return tuple(self.symbols[i].location for i in self._index().get((name, scope_id), ()))
+
+    def import_origin(self, name: str, scope_id: int) -> str | None:
+        """Where the import that binds ``name`` in ``scope_id`` comes from, or ``None``.
+
+        ``internal``, ``third_party`` or ``stdlib``; ``None`` when no import binds that name there.
+        """
+        for ref in self.imports:
+            if ref.bound == name and ref.scope_id == scope_id:
+                return ref.origin
+        return None
+
+    @property
+    def conservative_import_count(self) -> int:
+        """How many imports are ``internal`` only because their module could not be classified."""
+        return sum(1 for ref in self.imports if ref.conservative)
 
     def unresolved(self) -> tuple[Symbol, ...]:
         """Occurrences with no visible binding (``scope_id == -1``), in source order."""
@@ -129,11 +146,16 @@ class SymbolTable(KavachModel):
 
 
 class SymbolsArtefact(KavachModel):
-    """The shape of the ``symbols`` artefact written by the parse stage: one table per file."""
+    """The ``symbols`` artefact of the parse stage: one table per file, and what it skipped.
+
+    ``skipped`` maps the path of each file the stage did not analyse to a machine reason, so a
+    report can say what was not covered rather than stay silent about it.
+    """
 
     DATA_CLASSIFICATION: ClassVar[DataClassification] = DataClassification.RAW
 
     tables: dict[RepoPath, SymbolTable]
+    skipped: dict[RepoPath, str] = Field(default_factory=dict)
 
 
 class ScopeBinder(Protocol):

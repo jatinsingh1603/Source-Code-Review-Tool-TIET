@@ -39,6 +39,7 @@ codekavach = "codekavach.cli.app:main"
 
 [project.entry-points."codekavach.stages"]
 ingest = "codekavach.ingest.stage:IngestStage"
+parse = "codekavach.parsing.stage:ParseStage"
 
 [dependency-groups]
 lint = ["ruff>=0.16", "import-linter"]

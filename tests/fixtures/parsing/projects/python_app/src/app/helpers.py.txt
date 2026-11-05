@@ -1,0 +1,5 @@
+"""Helpers used by main."""
+
+
+def log(item):
+    return str(item)

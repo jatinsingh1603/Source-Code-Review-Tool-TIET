@@ -1,0 +1,7 @@
+{
+  "name": "sample-ts-app",
+  "private": true,
+  "imports": {
+    "#config": "./src/config.ts"
+  }
+}

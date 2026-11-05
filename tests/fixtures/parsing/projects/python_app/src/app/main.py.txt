@@ -1,0 +1,15 @@
+"""Sample entry point: one import of each origin, and calls of each resolvable kind."""
+
+import hashlib  # stdlib
+import numpy as np  # third_party, alias np
+from billing.engine import accrue  # internal: billing/ is under src/
+from flask import request  # third_party
+
+from . import helpers  # internal: relative
+
+
+def handle():
+    helpers.log(request)
+    digest = hashlib.sha256()
+    total = accrue(np.zeros(1), digest)
+    return total, undefined_thing()
