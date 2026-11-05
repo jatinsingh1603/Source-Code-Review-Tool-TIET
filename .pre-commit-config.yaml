@@ -59,7 +59,11 @@ repos:
         # snapshot_demo.json holds the settings fingerprint, a SHA-256 in hex by design.
         # docs/schemas/examples/ are generated from the synthetic factories (payload and ledger
         # hashes in hex) and checked byte for byte by tools/schemas/build_examples.py --check.
-        exclude: ^(uv\.lock|docs/schemas/index\.json|docs/schemas/examples/.*|tests/golden/config/(show_effective(_origin)?|starter_full|starter_profile_demo)\.toml|tests/golden/config/snapshot_demo\.json)$
+        # Two JSON fixtures of the E08-02 secret-detector corpus cannot carry a pragma comment: a
+        # Google service-account key file (a marker that expands to synthetic JSON) and a
+        # package-lock integrity digest (a negative case). Every other corpus file allowlists
+        # its lines inline, and every planted value is listed in manifest.json.
+        exclude: ^(uv\.lock|docs/schemas/index\.json|docs/schemas/examples/.*|tests/golden/config/(show_effective(_origin)?|starter_full|starter_profile_demo)\.toml|tests/golden/config/snapshot_demo\.json|tests/fixtures/detect/secrets/(positive/gcp_service_account_json|negative/lock_sri)\.txt)$
 
   - repo: local
     hooks:

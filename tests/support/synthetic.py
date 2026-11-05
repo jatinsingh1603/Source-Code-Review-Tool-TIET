@@ -11,7 +11,10 @@ Rules (AGENTS.md section 3):
 Nothing under src/ may import this module.
 """
 
+import base64
 import contextlib
+import json
+import random
 import re
 import string
 import tempfile
@@ -403,3 +406,164 @@ def synthetic_value(kind: str, subtype: str, index: int = 0) -> str:
     """
     table = {"secret": SYNTHETIC_SECRETS, "pii": SYNTHETIC_PII, "term": SYNTHETIC_TERMS}[kind]
     return [entry.value for entry in table if entry.subtype == subtype][index]
+
+
+# --- E08-02: one value per provider subtype -------------------------------------------------
+#
+# Each value is assembled at import time from a vendor-documented prefix and a body of ordinary
+# letters, so no secret-shaped string is committed as a literal and none is a credential any
+# provider issued. The bodies are the alphabet in order, which no random generator produces.
+
+_ALPHA = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+
+_BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"  # pragma: allowlist secret
+
+
+def _random_string(alphabet: str, length: int, *, seed: int) -> str:
+    generator = random.Random(seed)  # noqa: S311 - fixed test data, not a secret
+    return "".join(generator.choice(alphabet) for _ in range(length))
+
+
+def _with_marks(text: str, first: str, second: str) -> str:
+    """``text`` with two fixed positions replaced, so the alphabet class is certain."""
+    return text[:5] + first + text[6:17] + second + text[18:]
+
+
+def _b64_json(document: dict[str, object]) -> str:
+    raw = json.dumps(document, separators=(",", ":")).encode()
+    return base64.urlsafe_b64encode(raw).decode().rstrip("=")
+
+
+def _pem(label: str) -> str:
+    body = "\n".join(_ALPHA + "+/" for _ in range(3))
+    return f"-----BEGIN {label}-----\n{body}\n-----END {label}-----"
+
+
+def _service_account_key() -> str:
+    document = {
+        "type": "service_account",
+        "project_id": "example-project",
+        "private_key": _pem("PRIVATE KEY") + "\n",
+        "client_email": "svc@example-project.iam.gserviceaccount.com",
+    }
+    return json.dumps(document, indent=2)
+
+
+PROVIDER_SECRETS: tuple[SyntheticValue, ...] = (
+    SyntheticValue(
+        "jwt",
+        ".".join(
+            [_b64_json({"alg": "HS256", "typ": "JWT"}), _b64_json({"sub": "synthetic"}), "x" * 22]
+        ),
+        "A well-formed token (header decodes, alg present) over a made-up subject and a signature "
+        "of repeated letters; it verifies against no key.",
+    ),
+    SyntheticValue(
+        "gcp_service_account_key",
+        _service_account_key(),
+        "A key file for the made-up project example-project; the key body is the alphabet.",
+    ),
+    SyntheticValue(
+        "azure_storage_connection_string",
+        "DefaultEndpointsProtocol=https;AccountName=examplestore;AccountKey="
+        + ((_ALPHA[:62] + "+/") * 2)[:86]
+        + "==",
+        "An account that does not exist and a key that is the alphabet in order.",
+    ),
+    SyntheticValue(
+        "azure_client_secret",
+        "abc8Q~" + _ALPHA[:32],
+        "Matches the marker layout; the body is the alphabet in order.",
+    ),
+    SyntheticValue(
+        "slack_webhook",
+        "https://hooks.slack.com/services/TABCDEFGHJ/BABCDEFGHJ/" + _ALPHA[:24],
+        "A path of letters in order; no Slack workspace issued it.",
+    ),
+    SyntheticValue(
+        "stripe_secret_key",
+        "sk_" + "test_" + _ALPHA[:24],
+        "A test-mode shape with the alphabet as body; Stripe never issued it.",
+    ),
+    SyntheticValue(
+        "stripe_restricted_key",
+        "rk_" + "test_" + _ALPHA[:24],
+        "A test-mode shape with the alphabet as body; Stripe never issued it.",
+    ),
+    SyntheticValue(
+        "razorpay_key_id",
+        "rzp_" + "test_" + _ALPHA[:14],
+        "A test-mode shape with the alphabet as body; Razorpay never issued it.",
+    ),
+    SyntheticValue(
+        "razorpay_key_secret",
+        _ALPHA[:24],
+        "24 letters in order; only detected next to a razorpay secret name.",
+    ),
+    SyntheticValue(
+        "paytm_merchant_key",
+        _ALPHA[:16],
+        "16 letters in order; only detected next to a paytm key name.",
+    ),
+    SyntheticValue(
+        "ssh_private_key",
+        _pem("OPENSSH PRIVATE KEY"),
+        "A PEM frame around repeating base64 characters; not a key of any algorithm.",
+    ),
+    SyntheticValue("npm_token", "npm_" + _ALPHA[:36], "The prefix and the alphabet in order."),
+    SyntheticValue(
+        "pypi_token",
+        "pypi-AgEIcHlwaS5vcmc" + _ALPHA[:56],
+        "The documented prefix and marker with a body of letters in order; not a macaroon.",
+    ),
+    SyntheticValue(
+        "docker_registry_auth",
+        base64.b64encode(b"svc:abcdefghijkl").decode(),
+        "Base64 of a made-up user and a password of letters in order.",
+    ),
+    SyntheticValue(
+        "twilio_api_key", "SK" + "0123456789abcdef" * 2, "SK and 32 hex digits in order."
+    ),
+    SyntheticValue(
+        "sendgrid_api_key",
+        "SG." + _ALPHA[:22] + "." + (_ALPHA + _ALPHA)[:43],
+        "The prefix, then ids made of the alphabet in order.",
+    ),
+    SyntheticValue(
+        "generic_credential",
+        "hunter2hunter2",
+        "A password that is a meme; not any system's real password.",
+    ),
+    SyntheticValue(
+        "generic_credential",
+        "short1",
+        "Six characters, so a credential-named assignment of it stays at LOW confidence.",
+    ),
+    SyntheticValue(
+        "high_entropy_string",
+        "3f9a1c7e5b2d8046a1c93e7f50b2d8a4",  # pragma: allowlist secret
+        "32 hexadecimal digits typed by hand; hashes nothing.",
+    ),
+    SyntheticValue(
+        "high_entropy_string",
+        _random_string(_ALPHA + "+/", 44, seed=1),
+        "44 base64 characters from a seeded generator; encodes nothing.",
+    ),
+    SyntheticValue(
+        "high_entropy_string",
+        _with_marks(_random_string(_ALPHA, 43, seed=2), "-", "_"),
+        "43 base64url characters from a seeded generator; encodes nothing.",
+    ),
+    SyntheticValue(
+        "high_entropy_string",
+        _random_string(_ALPHA, 24, seed=3),
+        "24 alphanumeric characters from a seeded generator.",
+    ),
+    SyntheticValue(
+        "high_entropy_string",
+        _random_string(_BASE58, 51, seed=4),
+        "51 base58 characters from a seeded generator; not a key of any chain.",
+    ),
+)
+SYNTHETIC_SECRETS = (*SYNTHETIC_SECRETS, *PROVIDER_SECRETS)

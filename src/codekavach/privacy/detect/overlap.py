@@ -109,6 +109,7 @@ def _clip(span: TypedSpan, start: int, end: int) -> TypedSpan:
         end_byte=end,
         confidence=span.confidence,
         detector=span.detector,
+        downgraded=span.downgraded,
     )
 
 

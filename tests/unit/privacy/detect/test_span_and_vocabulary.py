@@ -83,6 +83,7 @@ def test_repr_of_a_span_holds_no_value_text() -> None:
         "end_byte",
         "confidence",
         "detector",
+        "downgraded",
     }
 
 

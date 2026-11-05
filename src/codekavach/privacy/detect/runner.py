@@ -44,6 +44,7 @@ class DetectionReport(KavachModel):
 
     per_detector: tuple[tuple[str, int], ...] = ()
     below_floor: int = Field(default=0, ge=0)
+    downgraded: int = Field(default=0, ge=0)
     clipped_by_placeholders: int = Field(default=0, ge=0)
     spans_out: int = Field(default=0, ge=0)
 
@@ -87,10 +88,12 @@ def detect_with_report(
     counts: list[tuple[str, int]] = []
     kept: list[TypedSpan] = []
     below_floor = 0
+    downgraded = 0
     for detector in registry.all():
         found = _run_one(detector, seen, byte_length, path, language)
         counts.append((detector.id, len(found)))
         for span in found:
+            downgraded += span.downgraded
             if span.confidence < floor:
                 below_floor += 1
             else:
@@ -111,6 +114,7 @@ def detect_with_report(
     report = DetectionReport(
         per_detector=tuple(counts),
         below_floor=below_floor,
+        downgraded=downgraded,
         clipped_by_placeholders=clipped,
         spans_out=len(resolved),
     )

@@ -7,6 +7,11 @@ byte range, a confidence and its own id. A span carries **no matched text**, so 
 can be logged, compared and stored without exposing the value it points at; the value is read
 from the text again, by the redactor, at the moment it is replaced.
 
+``downgraded`` marks a span whose confidence a detector lowered on purpose, for instance a value
+that occurs so often in a scan that it is probably boilerplate. ``Confidence`` has no level below
+``LOW``, so the flag is how the lowering stays visible: the span is kept (recall first), it is
+counted in ``DetectionReport.downgraded``, and a raised floor drops it with the other ``LOW`` spans.
+
 Offsets are **byte offsets into the UTF-8 encoding** of the text, which is how tree-sitter and
 the regular-expression engines over bytes report them. The redactor checks that every boundary
 falls on a character boundary and fails closed otherwise.
@@ -44,6 +49,7 @@ class TypedSpan(KavachModel):
     end_byte: int
     confidence: Confidence
     detector: str
+    downgraded: bool = False
 
     @model_validator(mode="after")
     def _check(self) -> Self:

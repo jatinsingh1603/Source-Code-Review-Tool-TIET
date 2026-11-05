@@ -7,7 +7,13 @@ alphabetically, and refuse comparison with plain strings or other enums.
 
 import math
 from enum import StrEnum
+from functools import cache
 from typing import Self
+
+
+@cache
+def _rank_of(member: "_RankedStrEnum") -> int:
+    return list(type(member)).index(member) + 1
 
 
 class _RankedStrEnum(StrEnum):
@@ -15,8 +21,12 @@ class _RankedStrEnum(StrEnum):
 
     @property
     def rank(self) -> int:
-        """1-based position of the member in ascending order (the first member has rank 1)."""
-        return list(type(self)).index(self) + 1
+        """1-based position of the member in ascending order (the first member has rank 1).
+
+        Cached per member: sorting thousands of detected spans by confidence asked for it tens
+        of thousands of times, each time rebuilding a list of the members.
+        """
+        return _rank_of(self)
 
     def _other_rank(self, other: object) -> int:
         if type(other) is not type(self):
