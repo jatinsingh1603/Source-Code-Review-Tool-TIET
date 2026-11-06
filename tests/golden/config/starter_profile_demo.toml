@@ -132,6 +132,8 @@ level = "L3"
 # key_source = "keyring"
 #~ Secret reference to the passphrase; required when key_source is passphrase.
 #? passphrase = "env:CODEKAVACH_VAULT_PASSPHRASE"
+#~ Days after which a scan's mappings may be removed from the vault; unset keeps them. Not enforced yet: retention is applied by the vault tooling of E10-03.
+#? retention_days = 0
 
 #~ Limits the egress guard applies.
 [privacy.egress]

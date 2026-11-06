@@ -5,6 +5,7 @@ miniature ``codekavach`` package and runs the real ``.importlinter`` against it.
 an empty derived module list or analysing the wrong tree all fail the test.
 """
 
+import configparser
 import json
 import shutil
 import subprocess
@@ -86,6 +87,15 @@ VIOLATIONS = {
         {"codekavach/privacy/egress/bad.py": "from codekavach.llm import client\n"},
         "egress-no-llm",
     ),
+    "guard-imports-mapping-record": (
+        {
+            "codekavach/privacy/egress/guard.py": (
+                "from codekavach.privacy.vault.models import MappingRecord\n"
+            ),
+            "codekavach/privacy/vault/models.py": "MappingRecord = 1\n",
+        },
+        "vault-record-locality",
+    ),
     "cli-scan-imports-transport": (
         {"codekavach/cli/scan.py": "from codekavach.privacy.egress import transport\n"},
         "cli-no-direct-egress",
@@ -112,6 +122,11 @@ ALLOWED = {
         "codekavach/llm/ok.py": "import codekavach.privacy.egress.guard\n",
         "codekavach/privacy/egress/guard.py": "import codekavach.privacy.vault\n",
     },
+    "vault-and-restore-import-the-record": {
+        "codekavach/privacy/vault/store.py": "from codekavach.privacy.vault.models import M\n",
+        "codekavach/privacy/vault/models.py": "M = 1\n",
+        "codekavach/privacy/restore/engine.py": ("from codekavach.privacy.vault.models import M\n"),
+    },
     "cli-reads-the-ledger": {
         "codekavach/cli/privacy.py": "from codekavach.privacy.egress import ledger\n",
         "codekavach/privacy/egress/ledger.py": "import codekavach.privacy.egress.transport\n",
@@ -126,6 +141,28 @@ def fake(tmp_path: Path) -> Path:
 
 def test_every_contract_has_a_planted_violation() -> None:
     assert {contract for _, contract in VIOLATIONS.values()} == set(NAMES)
+
+
+def test_record_locality_lists_every_package() -> None:
+    """The contract names its sources one by one, so a new package must be added to it."""
+    source = REPO / "src" / "codekavach"
+    present = {
+        f"codekavach.{entry.stem}"
+        for entry in source.iterdir()
+        if (entry.is_dir() and (entry / "__init__.py").is_file()) or entry.suffix == ".py"
+    } - {"codekavach.__init__", "codekavach.__main__"}
+    present |= {
+        f"codekavach.privacy.{entry.stem}"
+        for entry in (source / "privacy").iterdir()
+        if (entry.is_dir() and (entry / "__init__.py").is_file()) or entry.suffix == ".py"
+    } - {"codekavach.privacy.__init__"}
+    exempt = {"codekavach.privacy", "codekavach.privacy.vault", "codekavach.privacy.restore"}
+    parser = configparser.ConfigParser()
+    parser.read(CONFIG, encoding="utf-8")
+    listed = set(
+        parser.get("importlinter:contract:vault-record-locality", "source_modules").split()
+    )
+    assert present - exempt == listed
 
 
 def test_tooling_is_installed() -> None:

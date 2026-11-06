@@ -116,6 +116,16 @@ class VaultSettings(SectionModel):
         description="Secret reference to the passphrase; required when key_source is passphrase.",
         json_schema_extra=restricted(),
     )
+    retention_days: Annotated[int, in_range(1, 36_500, "privacy.vault.retention_days")] | None = (
+        Field(
+            default=None,
+            description=(
+                "Days after which a scan's mappings may be removed from the vault; unset keeps "
+                "them. Not enforced yet: retention is applied by the vault tooling of E10-03."
+            ),
+            json_schema_extra=bounds(1, 36_500) | restricted(),
+        )
+    )
 
     @model_validator(mode="after")
     def _passphrase_present(self) -> Self:

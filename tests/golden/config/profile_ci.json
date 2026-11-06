@@ -159,7 +159,8 @@
     "public_allowlist_extra": [],
     "vault": {
       "key_source": "keyring",
-      "passphrase": null
+      "passphrase": null,
+      "retention_days": null
     }
   },
   "profile": "ci",

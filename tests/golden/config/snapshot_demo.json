@@ -1,7 +1,7 @@
 {
   "codekavach_version": "0.0.0-test",
   "created_at": "2026-10-01T09:30:00Z",
-  "fingerprint": "c7dfab75073d5979d6943995b96b2cbb311c03ce3e583055e55e8d35c03b5407",
+  "fingerprint": "2f47d5f09b49307b6fea5fe46023a9499aa84dd1be6d5ff1ce9963d445138638",
   "org_policies": [],
   "origins": {
     "config_version": {
@@ -578,6 +578,12 @@
       "line": null,
       "source": null
     },
+    "privacy.vault.retention_days": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
     "profile": {
       "contributors": [],
       "layer": "default",
@@ -944,7 +950,8 @@
       },
       "public_allowlist_extra": [],
       "vault": {
-        "key_source": "keyring"
+        "key_source": "keyring",
+        "retention_days": null
       }
     },
     "profile": "demo",

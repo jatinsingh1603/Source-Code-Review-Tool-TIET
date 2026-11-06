@@ -98,7 +98,8 @@
       },
       "vault": {
         "key_source": "keyring",
-        "passphrase": null
+        "passphrase": null,
+        "retention_days": null
       },
       "egress": {
         "max_payload_bytes": 262144,
@@ -826,6 +827,12 @@
       "contributors": []
     },
     "privacy.vault.passphrase": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.vault.retention_days": {
       "layer": "default",
       "source": null,
       "line": null,

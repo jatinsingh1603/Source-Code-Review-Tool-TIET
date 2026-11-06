@@ -30,6 +30,10 @@
 #                          through codekavach.cli.backends.load_backend, which this contract does
 #                          not see; tests/privacy/test_cli_no_network.py is the runtime half.
 #
+# vault-record-locality    I3 (E10-01): only the vault and the restore engine import MappingRecord,
+#                          the raw original-bearing record, so no other module can hold one. Sources
+#                          are listed one by one (see the contract); a test keeps the list complete.
+#
 # Rule: never widen a contract (a new ignore_imports line, a removed forbidden module, a new
 # source exemption) without an ADR. ADR-0003 describes the exception procedure for I1.
 #
@@ -207,3 +211,33 @@ forbidden_modules =
 # Direct imports only: the CLI imports the egress ledger reader and the consent types, and the
 # egress package reaches the transport and the vault on its own.
 allow_indirect_imports = True
+
+[importlinter:contract:vault-record-locality]
+name = Only the vault and the restore engine import MappingRecord (I3)
+type = forbidden
+# Every package except privacy.vault and privacy.restore is listed: import-linter does not check
+# a source that is the root of the forbidden module. tests/privacy/test_import_contracts.py fails
+# when a package is added and not listed here.
+source_modules =
+    codekavach.analysis
+    codekavach.cli
+    codekavach.config
+    codekavach.core
+    codekavach.eval
+    codekavach.ingest
+    codekavach.integrations
+    codekavach.llm
+    codekavach.parsing
+    codekavach.report
+    codekavach.risk
+    codekavach.server
+    codekavach.privacy.detect
+    codekavach.privacy.egress
+    codekavach.privacy.errors
+    codekavach.privacy.ir
+    codekavach.privacy.policy
+    codekavach.privacy.pseudonymise
+    codekavach.privacy.redact
+    codekavach.privacy.slicing
+forbidden_modules =
+    codekavach.privacy.vault.models

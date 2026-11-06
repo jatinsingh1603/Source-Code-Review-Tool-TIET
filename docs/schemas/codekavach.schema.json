@@ -1682,6 +1682,22 @@
           "description": "Secret reference to the passphrase; required when key_source is passphrase.",
           "title": "Passphrase",
           "x-ck-restricted": true
+        },
+        "retention_days": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Days after which a scan's mappings may be removed from the vault; unset keeps them. Not enforced yet: retention is applied by the vault tooling of E10-03.",
+          "maximum": 36500,
+          "minimum": 1,
+          "title": "Retention Days",
+          "x-ck-restricted": true
         }
       },
       "title": "VaultSettings",

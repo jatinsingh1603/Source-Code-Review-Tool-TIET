@@ -65,6 +65,7 @@ def test_documented_list_is_the_union_of_patterns_and_markers() -> None:
         "integrations.github.repository",
         "integrations.mcp.bind",
         "privacy.vault.key_source",
+        "privacy.vault.retention_days",
         "privacy.public_allowlist_extra",
         "privacy.egress.provider_host_allowlist",
         "privacy.pseudonym.role_hints",
