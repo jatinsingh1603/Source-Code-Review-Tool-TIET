@@ -1,0 +1,14 @@
+status: slice
+truncated: False
+tokens: 23
+segments:
+  primary file_1 1-2
+  context file_2 1-2
+---
+# file_1
+def one(x):
+    return eval(x)
+
+# file_2
+def two(y):
+    return exec(y)

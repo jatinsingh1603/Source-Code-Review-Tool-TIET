@@ -1,0 +1,18 @@
+status: slice
+truncated: False
+tokens: 40
+segments:
+  primary file_1 1-11
+---
+# file_1
+import os
+
+DEBUG = True
+SIGNING_MODE = 'hmac'
+DATABASE = os.environ.get('DB')
+
+TIMEOUT = 30
+RETRIES = 3
+
+def helper():
+    return 1

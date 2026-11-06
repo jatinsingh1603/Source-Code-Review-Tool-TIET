@@ -1,0 +1,13 @@
+{
+  "locations": [
+    [
+      "a/one.py",
+      2
+    ],
+    [
+      "b/two.py",
+      2
+    ]
+  ],
+  "budget": 2048
+}

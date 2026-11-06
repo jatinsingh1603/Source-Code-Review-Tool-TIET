@@ -1,0 +1,12 @@
+{
+  "locations": [
+    [
+      "gen/pb2.py",
+      2
+    ]
+  ],
+  "budget": 2048,
+  "generated": [
+    "gen/pb2.py"
+  ]
+}

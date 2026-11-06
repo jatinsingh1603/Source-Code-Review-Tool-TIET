@@ -1,0 +1,16 @@
+status: slice
+truncated: False
+tokens: 48
+segments:
+  primary file_1 1-9
+---
+// file_1
+function parse(text, log) {
+  log.info('parse');
+  try {
+    return eval('(' + text + ')');
+  } catch (error) {
+    log.error('bad');
+    return null;
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "locations": [
+    [
+      "vendor/lib.py",
+      2
+    ]
+  ],
+  "budget": 2048,
+  "vendored": [
+    "vendor/lib.py"
+  ]
+}

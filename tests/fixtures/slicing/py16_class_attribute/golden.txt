@@ -1,0 +1,14 @@
+status: slice
+truncated: False
+tokens: 36
+segments:
+  primary file_1 1-7
+---
+# file_1
+class User:
+    role = 'admin'
+    status_flag = 'pending'
+    active = True
+
+    def name(self):
+        return 'x'

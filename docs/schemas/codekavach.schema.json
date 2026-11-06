@@ -1041,6 +1041,10 @@
           "type": "array",
           "x-ck-restricted": true
         },
+        "slice": {
+          "$ref": "#/$defs/SliceSettings",
+          "description": "How much code is cut out around a candidate."
+        },
         "vault": {
           "$ref": "#/$defs/VaultSettings",
           "description": "Where the vault key comes from."
@@ -1628,6 +1632,35 @@
       ],
       "title": "Severity",
       "type": "string"
+    },
+    "SliceSettings": {
+      "additionalProperties": false,
+      "description": "How much code is cut out around a candidate (E11).\n\nBoth keys are restricted: a larger budget or a wider strategy discloses more code, so a\nproject file may not loosen them unless it is trusted.",
+      "properties": {
+        "default_strategy": {
+          "default": "enclosing_function",
+          "description": "Slice strategy used when nothing more specific applies. The path-based strategies need a taint engine and fall back to the enclosing function without one.",
+          "enum": [
+            "enclosing_function",
+            "taint_path",
+            "backward_slice"
+          ],
+          "title": "Default Strategy",
+          "type": "string",
+          "x-ck-restricted": true
+        },
+        "max_tokens": {
+          "default": 2048,
+          "description": "Token budget of one slice, estimated locally (about 3.5 characters per token). A slice that cannot fit is shrunk in a fixed order and, failing that, refused.",
+          "maximum": 200000,
+          "minimum": 64,
+          "title": "Max Tokens",
+          "type": "integer",
+          "x-ck-restricted": true
+        }
+      },
+      "title": "SliceSettings",
+      "type": "object"
     },
     "TaskName": {
       "description": "The LLM tasks a scan may run.",

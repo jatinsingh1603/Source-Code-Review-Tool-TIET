@@ -157,6 +157,10 @@
       "role_hints": false
     },
     "public_allowlist_extra": [],
+    "slice": {
+      "default_strategy": "enclosing_function",
+      "max_tokens": 2048
+    },
     "vault": {
       "key_source": "keyring",
       "passphrase": null,

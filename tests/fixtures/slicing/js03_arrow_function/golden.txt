@@ -1,0 +1,11 @@
+status: slice
+truncated: False
+tokens: 32
+segments:
+  primary file_1 1-4
+---
+// file_1
+const render = (req, res) => {
+  const name = req.query.name;
+  res.send('<h1>' + name + '</h1>');
+};

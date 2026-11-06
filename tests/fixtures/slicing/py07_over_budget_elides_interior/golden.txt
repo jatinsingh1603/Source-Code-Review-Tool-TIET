@@ -1,0 +1,13 @@
+status: slice
+truncated: True
+tokens: 50
+segments:
+  context file_1 5-5
+  primary file_1 17-19
+---
+# file_1
+def settle(batch, ledger, audit):
+# ... elided ...
+    if ledger.is_open():
+        if total > 0:
+            ledger.append("INSERT INTO settled VALUES (%s)" % total)

@@ -128,7 +128,7 @@ plugins = ["pydantic.mypy"]
 mypy_path = ["src", "."]
 explicit_package_bases = true
 files = ["src/codekavach", "tests", "tools"]
-exclude = ["^fixtures/", "^build/", "^dist/", "^ui/", "^extensions/", '^tests/typing/fail_.*\.py$']
+exclude = ["^fixtures/", "^tests/fixtures/", "^build/", "^dist/", "^ui/", "^extensions/", '^tests/typing/fail_.*\.py$']
 show_error_codes = true
 pretty = true
 

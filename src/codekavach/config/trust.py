@@ -60,6 +60,7 @@ RESTRICTED_PATTERNS: tuple[str, ...] = (
     "privacy.detect.**",
     "privacy.egress.**",
     "privacy.pseudonym.role_hints",
+    "privacy.slice.**",
     "plugins.**",
     "ingest.follow_symlinks",
 )

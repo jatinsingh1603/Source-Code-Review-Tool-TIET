@@ -1,0 +1,16 @@
+status: slice
+truncated: True
+tokens: 60
+segments:
+  primary file_1 4-12
+---
+# file_1
+def load(blob, log):
+    log.info('loading')
+    try:
+        value = pickle.loads(blob)
+    except Exception:
+        log.error('bad blob')
+        value = None
+    log.info('loaded')
+    return value

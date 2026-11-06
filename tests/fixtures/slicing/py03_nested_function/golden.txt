@@ -1,0 +1,13 @@
+status: slice
+truncated: False
+tokens: 36
+segments:
+  context file_1 1-1
+  primary file_1 4-6
+---
+# file_1
+def schedule(queue):
+# ... elided ...
+    def worker(item):
+        name = prefix + item
+        return eval(name)

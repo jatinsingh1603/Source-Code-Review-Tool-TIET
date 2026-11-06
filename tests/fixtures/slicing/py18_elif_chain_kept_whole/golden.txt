@@ -1,0 +1,16 @@
+status: slice
+truncated: True
+tokens: 52
+segments:
+  context file_1 1-1
+  primary file_1 4-9
+---
+# file_1
+def route(kind, value, log):
+# ... elided ...
+    if kind == 'a':
+        log.info('a')
+    elif kind == 'b':
+        return eval(value)
+    else:
+        log.info('other')

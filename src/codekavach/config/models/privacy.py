@@ -235,6 +235,31 @@ class PseudonymSettings(SectionModel):
     )
 
 
+class SliceSettings(SectionModel):
+    """How much code is cut out around a candidate (E11).
+
+    Both keys are restricted: a larger budget or a wider strategy discloses more code, so a
+    project file may not loosen them unless it is trusted.
+    """
+
+    default_strategy: Literal["enclosing_function", "taint_path", "backward_slice"] = Field(
+        default="enclosing_function",
+        description=(
+            "Slice strategy used when nothing more specific applies. The path-based strategies "
+            "need a taint engine and fall back to the enclosing function without one."
+        ),
+        json_schema_extra=restricted(),
+    )
+    max_tokens: Annotated[int, in_range(64, 200_000, "privacy.slice.max_tokens")] = Field(
+        default=2048,
+        description=(
+            "Token budget of one slice, estimated locally (about 3.5 characters per token). "
+            "A slice that cannot fit is shrunk in a fixed order and, failing that, refused."
+        ),
+        json_schema_extra=bounds(64, 200_000) | restricted(),
+    )
+
+
 class PrivacySettings(SectionModel):
     """What may leave the machine, at which privacy level."""
 
@@ -289,6 +314,9 @@ class PrivacySettings(SectionModel):
     )
     pseudonym: PseudonymSettings = Field(
         default_factory=PseudonymSettings, description="How identifiers are renamed."
+    )
+    slice: SliceSettings = Field(
+        default_factory=SliceSettings, description="How much code is cut out around a candidate."
     )
 
     @field_validator("provider_tier_levels", mode="before")

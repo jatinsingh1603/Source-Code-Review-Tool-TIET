@@ -113,6 +113,10 @@
       "pseudonym": {
         "link_mode": "per_scan",
         "role_hints": false
+      },
+      "slice": {
+        "default_strategy": "enclosing_function",
+        "max_tokens": 2048
       }
     },
     "llm": {
@@ -815,6 +819,18 @@
       "contributors": []
     },
     "privacy.public_allowlist_extra": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.slice.default_strategy": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.slice.max_tokens": {
       "layer": "default",
       "source": null,
       "line": null,

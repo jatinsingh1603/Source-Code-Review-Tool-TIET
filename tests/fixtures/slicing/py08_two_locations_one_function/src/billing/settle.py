@@ -1,0 +1,25 @@
+import hashlib
+import json
+
+
+def settle(batch, ledger, audit):
+    """Settle a batch of premium payments."""
+    total = 0
+    fees = 0
+    for item in batch:
+        total += item.amount
+        fees += item.fee
+        audit.record(item.id, item.amount)
+        audit.record(item.id, item.fee)
+        audit.flush()
+    summary = {'total': total, 'fees': fees}
+    audit.record('summary', json.dumps(summary))
+    if ledger.is_open():
+        if total > 0:
+            ledger.append("INSERT INTO settled VALUES (%s)" % total)
+        else:
+            ledger.skip()
+    audit.record('done', hashlib.md5(b'x').hexdigest())
+    audit.flush()
+    audit.close()
+    return summary

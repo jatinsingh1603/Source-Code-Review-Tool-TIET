@@ -1,0 +1,15 @@
+status: slice
+truncated: False
+tokens: 32
+segments:
+  imports file_1 1-1
+  primary file_1 4-8
+---
+# file_1
+import math
+# ... elided ...
+from decimal import Decimal
+
+
+def rate(x):
+    return Decimal(x) * math.pi

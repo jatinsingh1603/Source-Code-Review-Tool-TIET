@@ -1,0 +1,13 @@
+status: slice
+truncated: False
+tokens: 42
+segments:
+  primary file_1 1-6
+---
+// file_1
+const path = require('path');
+
+function exportFile(req, res) {
+  const file = path.join('/data', req.query.name);
+  res.sendFile(file);
+}

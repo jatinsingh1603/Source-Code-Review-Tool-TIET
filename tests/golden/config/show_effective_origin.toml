@@ -111,6 +111,10 @@ scanner_timeout_seconds = 5.0  # default
 link_mode = "per_scan"    # default
 role_hints = false        # default
 
+[privacy.slice]
+default_strategy = "enclosing_function"  # default
+max_tokens = 2048         # default
+
 [llm]
 enabled = true            # default
 default_provider = "auto"  # default

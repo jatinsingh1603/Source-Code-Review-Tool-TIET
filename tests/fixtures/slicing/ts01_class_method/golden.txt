@@ -1,0 +1,14 @@
+status: slice
+truncated: False
+tokens: 37
+segments:
+  primary file_1 1-7
+---
+// file_1
+import { exec } from 'child_process';
+
+export class Runner {
+  run(cmd: string): void {
+    exec('sh -c ' + cmd);
+  }
+}

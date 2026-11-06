@@ -31,6 +31,7 @@ DOCUMENTED = (
     "privacy.detect.**",
     "privacy.egress.**",
     "privacy.pseudonym.role_hints",
+    "privacy.slice.**",
     "plugins.**",
     "ingest.follow_symlinks",
 )
@@ -69,6 +70,8 @@ def test_documented_list_is_the_union_of_patterns_and_markers() -> None:
         "privacy.public_allowlist_extra",
         "privacy.egress.provider_host_allowlist",
         "privacy.pseudonym.role_hints",
+        "privacy.slice.max_tokens",
+        "privacy.slice.default_strategy",
         "plugins.disable",
         "plugins.allow_distributions",
     ],

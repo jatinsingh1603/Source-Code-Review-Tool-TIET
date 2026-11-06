@@ -1,0 +1,15 @@
+status: slice
+truncated: False
+tokens: 51
+segments:
+  primary file_1 1-8
+---
+# file_1
+from web import app, login_required
+
+
+@app.route('/export')
+@login_required
+def export(request):
+    path = request.args['file']
+    return open('/data/' + path).read()

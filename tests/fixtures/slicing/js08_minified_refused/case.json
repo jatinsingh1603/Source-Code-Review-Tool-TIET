@@ -1,0 +1,12 @@
+{
+  "locations": [
+    [
+      "static/app.min.js",
+      1
+    ]
+  ],
+  "budget": 2048,
+  "minified": [
+    "static/app.min.js"
+  ]
+}

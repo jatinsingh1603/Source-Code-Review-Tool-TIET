@@ -1,0 +1,18 @@
+status: slice
+truncated: True
+tokens: 60
+segments:
+  context file_1 1-1
+  primary file_1 10-14
+  context file_1 19-19
+---
+// file_1
+function settle(batch, ledger, audit) {
+// ... elided ...
+  if (ledger.isOpen()) {
+    if (total > 0) {
+      ledger.append('INSERT INTO settled VALUES (' + total + ')');
+    }
+  }
+// ... elided ...
+}

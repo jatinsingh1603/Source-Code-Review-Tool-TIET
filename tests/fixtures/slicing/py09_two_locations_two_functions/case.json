@@ -1,0 +1,13 @@
+{
+  "locations": [
+    [
+      "svc/pair.py",
+      2
+    ],
+    [
+      "svc/pair.py",
+      10
+    ]
+  ],
+  "budget": 2048
+}

@@ -114,6 +114,8 @@ What may leave the machine.
 | `privacy.egress.scanner_timeout_seconds` | float | `5.0` | `CODEKAVACH_PRIVACY__EGRESS__SCANNER_TIMEOUT_SECONDS` | restricted | Time limit of one leak scanner; a scanner over it blocks the request. |
 | `privacy.pseudonym.link_mode` | per_scan \| per_request | `"per_scan"` | `CODEKAVACH_PRIVACY__PSEUDONYM__LINK_MODE` |  | per_scan keeps one name for an identifier across a scan; per_request renames it afresh in every request, which defeats the verdict cache and cross-slice reasoning. |
 | `privacy.pseudonym.role_hints` | bool | `false` | `CODEKAVACH_PRIVACY__PSEUDONYM__ROLE_HINTS` | restricted | Append an analysis-derived role (cred, authz, sanitised, tainted, sink_arg) to a pseudonym. Leave off in a client engagement until the leakage arm has measured it. |
+| `privacy.slice.default_strategy` | enclosing_function \| taint_path \| backward_slice | `"enclosing_function"` | `CODEKAVACH_PRIVACY__SLICE__DEFAULT_STRATEGY` | restricted | Slice strategy used when nothing more specific applies. The path-based strategies need a taint engine and fall back to the enclosing function without one. |
+| `privacy.slice.max_tokens` | int | `2048` | `CODEKAVACH_PRIVACY__SLICE__MAX_TOKENS` | restricted | Token budget of one slice, estimated locally (about 3.5 characters per token). A slice that cannot fit is shrunk in a fixed order and, failing that, refused. |
 
 Defaults too long for the table:
 

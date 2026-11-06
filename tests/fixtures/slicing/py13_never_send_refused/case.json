@@ -1,0 +1,12 @@
+{
+  "locations": [
+    [
+      "secrets/keys.py",
+      2
+    ]
+  ],
+  "budget": 2048,
+  "never_send": [
+    "secrets/**"
+  ]
+}

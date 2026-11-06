@@ -1,0 +1,19 @@
+status: slice
+truncated: False
+tokens: 59
+segments:
+  imports file_1 1-1
+  context file_1 4-4
+  primary file_1 9-11
+  context file_1 16-16
+---
+// file_1
+import crypto from 'crypto';
+// ... elided ...
+export class SessionStore {
+// ... elided ...
+  token(user) {
+    return crypto.createHash('md5').update(user).digest('hex');
+  }
+// ... elided ...
+}

@@ -1,0 +1,187 @@
+"""The per-scan, read-only view of the parsed repository that a slicing strategy works on.
+
+Owning epic: E11.
+
+``ParseIndex`` holds references to what the earlier stages produced (files, syntax trees, symbol
+tables, the call graph) and copies none of it; it is built once per scan. Its accessors answer the
+questions a strategy asks: the source of a file, the functions it defines with exact ranges, the
+function around a location, where a name is defined, and whether a file may be sliced at all.
+
+``is_excluded`` consults three sources and returns the reason, so a slice can record why a callee
+was not expanded and a refusal can name its cause: the ``never-send`` rules, the ingestion flags
+for vendored, generated and minified files, and the file inventory itself (a path the scan never
+saw is excluded). Sending third-party code is a free re-identification for an adversary, which is
+why vendored files are excluded and not merely deprioritised.
+"""
+
+import fnmatch
+from collections.abc import Callable, Mapping
+from typing import Any, Final
+
+from codekavach.config import Settings
+from codekavach.core.models import Location, RawCode, RepoPath
+from codekavach.ingest.models import SourceFile
+from codekavach.parsing.functions import FunctionRange, function_ranges
+from codekavach.parsing.models import ParsedFile
+from codekavach.parsing.spec import REGISTRY, UnknownLanguageError
+from codekavach.parsing.symbols import SymbolTable
+
+NeverSend = Callable[[str], bool]
+_EMPTY_TABLE: Final = SymbolTable(scopes=(), symbols=())
+
+
+def _segments_match(pattern: list[str], parts: list[str]) -> bool:
+    if not pattern:
+        return not parts
+    head, rest = pattern[0], pattern[1:]
+    if head == "**":
+        return any(_segments_match(rest, parts[skip:]) for skip in range(len(parts) + 1))
+    if not parts:
+        return False
+    return fnmatch.fnmatchcase(parts[0], head) and _segments_match(rest, parts[1:])
+
+
+def never_send_matcher(settings: Settings) -> NeverSend:
+    """A predicate over repository paths built from the ``never_send`` settings.
+
+    This is the conservative interim reading; the policy layer (E25) owns the final resolver.
+    A pattern without ``/`` matches a file or directory of that name at any depth; a pattern with
+    ``/`` is anchored at the project root; ``*`` and ``?`` stay inside one path segment and ``**``
+    spans segments. A pattern that matches a directory also matches everything below it. Both
+    ``privacy.never_send`` and the ``privacy.paths`` rules with ``never_send = true`` count.
+    """
+    patterns = [*settings.privacy.never_send]
+    patterns += [rule.pattern for rule in settings.privacy.paths if rule.never_send]
+    compiled = [(pattern.strip("/").split("/"), "/" in pattern.strip("/")) for pattern in patterns]
+
+    def matches(path: str) -> bool:
+        parts = path.split("/")
+        for pattern, anchored in compiled:
+            starts = [0] if anchored else range(len(parts))
+            for start in starts:
+                for end in range(start + 1, len(parts) + 1):
+                    if _segments_match(pattern, parts[start:end]):
+                        return True
+        return False
+
+    return matches
+
+
+class ParseIndex:
+    """Read-only access to files, symbols, syntax trees and the call graph of one scan."""
+
+    def __init__(
+        self,
+        *,
+        files: Mapping[str, SourceFile],
+        ast: Mapping[str, ParsedFile],
+        symbols: Mapping[str, SymbolTable] | None = None,
+        callgraph: Any = None,
+        never_send: NeverSend | None = None,
+    ) -> None:
+        self._files = files
+        self._ast = ast
+        self._symbols = symbols or {}
+        self._callgraph = callgraph
+        self._never_send: NeverSend = never_send or (lambda _path: False)
+        self._ranges: dict[str, tuple[FunctionRange, ...]] = {}
+
+    @property
+    def callgraph(self) -> Any:
+        """The call graph of the scan, or ``None`` when the stage was not run."""
+        return self._callgraph
+
+    def is_excluded(self, path: str) -> tuple[bool, str]:
+        """Whether ``path`` must not be sliced, and the reason (``""`` when it may be)."""
+        if self._never_send(path):
+            return True, "policy_never_send"
+        file = self._files.get(path)
+        if file is None:
+            return True, "unknown_file"
+        if file.is_vendored:
+            return True, "vendored"
+        if file.is_generated:
+            return True, "generated"
+        if file.is_minified:
+            return True, "minified"
+        return False, ""
+
+    def parsed_of(self, path: str) -> ParsedFile:
+        """The parsed file; ``KeyError`` when the scan did not parse it."""
+        return self._ast[path]
+
+    def source_of(self, path: RepoPath) -> RawCode:
+        """The text of ``path``."""
+        return self._ast[path].source
+
+    def symbols_of(self, path: RepoPath) -> SymbolTable:
+        """The symbol table of ``path``; an empty table when the scan built none."""
+        return self._symbols.get(path, _EMPTY_TABLE)
+
+    def function_ranges_of(self, path: RepoPath) -> tuple[FunctionRange, ...]:
+        """Every named function and method of ``path`` with exact ranges, in source order."""
+        cached = self._ranges.get(path)
+        if cached is None:
+            parsed = self._ast[path]
+            try:
+                spec = REGISTRY.get(parsed.language)
+            except UnknownLanguageError:
+                spec = None
+            cached = function_ranges(parsed, spec)
+            self._ranges[path] = cached
+        return cached
+
+    def enclosing_function(self, location: Location) -> FunctionRange | None:
+        """The innermost function or method whose full range contains the lines of ``location``."""
+        best: FunctionRange | None = None
+        for candidate in self.function_ranges_of(location.path):
+            if not (
+                candidate.full.start_line <= location.start_line
+                and location.end_line <= candidate.full.end_line
+            ):
+                continue
+            if best is None or (
+                candidate.full.start_line >= best.full.start_line
+                and candidate.full.end_line <= best.full.end_line
+            ):
+                best = candidate
+        return best
+
+    def definition_of(
+        self, symbol_name: str, from_path: RepoPath
+    ) -> tuple[RepoPath, FunctionRange] | None:
+        """Where the function ``symbol_name`` used in ``from_path`` is defined, if it is known.
+
+        The file itself is searched first; otherwise the import that binds the name is followed
+        to an internal module whose path ends with the module's path. The answer is a best
+        effort by name (see the call graph's own caveat) and ``None`` when it is not unique.
+        """
+        local = [r for r in self.function_ranges_of(from_path) if r.symbol_name == symbol_name]
+        if len(local) == 1:
+            return from_path, local[0]
+        if local:
+            return None
+        for ref in self.symbols_of(from_path).imports:
+            if ref.bound != symbol_name or ref.origin != "internal":
+                continue
+            suffix = ref.module.lstrip(".").replace(".", "/")
+            matches = [
+                path
+                for path in self._files
+                if suffix and path in self._ast and _is_module(path, suffix)
+            ]
+            found = [
+                (path, r)
+                for path in sorted(matches)
+                for r in self.function_ranges_of(path)
+                if r.symbol_name == (ref.imported or symbol_name)
+            ]
+            if len(found) == 1:
+                return found[0]
+        return None
+
+
+def _is_module(path: str, module_path: str) -> bool:
+    """Whether ``path`` (with its extension) is the file of the module ``module_path``."""
+    stem = path.rsplit(".", 1)[0]
+    return stem == module_path or stem.endswith("/" + module_path)

@@ -1,0 +1,16 @@
+status: slice
+truncated: False
+tokens: 40
+segments:
+  context file_1 1-1
+  primary file_1 3-5
+  context file_1 7-7
+---
+// file_1
+function charge(items) {
+// ... elided ...
+  function total(list) {
+    return eval(list.join('+')) + fee;
+  }
+// ... elided ...
+}

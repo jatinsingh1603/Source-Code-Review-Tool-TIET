@@ -1,0 +1,13 @@
+status: slice
+truncated: False
+tokens: 44
+segments:
+  imports file_1 1-1
+  primary file_1 4-6
+---
+// file_1
+import crypto from 'crypto';
+// ... elided ...
+export function digest(value) {
+  return crypto.createHash('md5').update(value).digest('hex');
+}
