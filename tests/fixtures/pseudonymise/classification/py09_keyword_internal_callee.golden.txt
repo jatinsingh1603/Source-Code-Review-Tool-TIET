@@ -1,0 +1,15 @@
+file: py09_keyword_internal_callee.py
+allowlist: python-2026.11.06.1
+1:6 billing module -> internal unlisted_import
+1:14 engine module -> internal default_internal
+1:28 accrue_interest import -> internal unlisted_import
+4:5 charge function -> internal default_internal
+4:12 account parameter -> internal default_internal
+4:21 rate parameter -> internal default_internal
+5:12 accrue_interest import -> internal unlisted_import
+5:28 account parameter -> internal default_internal
+5:37 rate parameter -> internal keyword_of_internal
+5:42 rate parameter -> internal default_internal
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: 
+kept_dynamic: 

@@ -1,0 +1,18 @@
+file: js22_http_server_members.js
+allowlist: javascript-2026.11.06.1
+1:7 http variable -> public stdlib_import
+1:14 require variable -> public keyword_or_builtin
+3:7 server variable -> public well_known
+3:16 http variable -> public stdlib_import
+3:21 createServer field -> public member_of_public
+3:35 request parameter -> internal default_internal
+3:44 response parameter -> internal default_internal
+4:3 response parameter -> internal default_internal
+4:12 writeHead field -> public member_name
+5:3 response parameter -> internal default_internal
+5:12 end field -> public member_name
+7:1 server variable -> public well_known
+7:8 listen field -> public member_name
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: createServer, end, http, listen, require, server, writeHead
+kept_dynamic: 

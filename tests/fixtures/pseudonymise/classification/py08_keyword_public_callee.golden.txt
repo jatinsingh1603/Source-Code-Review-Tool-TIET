@@ -1,0 +1,18 @@
+file: py08_keyword_public_callee.py
+allowlist: python-2026.11.06.1
+1:8 sqlite3 import -> public stdlib_import
+4:5 find function -> internal default_internal
+4:10 conn parameter -> internal default_internal
+4:16 values parameter -> internal default_internal
+5:5 cur variable -> internal default_internal
+5:11 conn parameter -> internal default_internal
+5:16 cursor field -> public member_name
+6:5 cur variable -> internal default_internal
+6:9 execute field -> public well_known
+6:29 params parameter -> public keyword_of_public
+6:36 values parameter -> internal default_internal
+7:12 cur variable -> internal default_internal
+7:16 fetchall field -> public member_name
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: cursor, execute, fetchall, params, sqlite3
+kept_dynamic: 

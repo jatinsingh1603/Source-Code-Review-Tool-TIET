@@ -1,0 +1,14 @@
+file: js11_promise_protocol.js
+allowlist: javascript-2026.11.06.1
+1:16 fetchAccount function -> internal default_internal
+1:29 id parameter -> internal default_internal
+2:10 fetch variable -> public keyword_or_builtin
+2:29 id parameter -> internal default_internal
+2:35 then field -> public framework_contract
+2:41 r parameter -> internal default_internal
+2:47 r parameter -> internal default_internal
+2:49 json field -> public member_name
+2:57 catch field -> public keyword_or_builtin
+counts: unresolved_base=2 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: catch, fetch, json, then
+kept_dynamic: 

@@ -1,0 +1,13 @@
+file: py13_serialisation_field.py
+allowlist: python-2026.11.06.1
+1:6 dataclasses module -> public stdlib_import
+1:25 dataclass import -> public stdlib_import
+4:2 dataclass import -> public stdlib_import
+5:7 Account class -> internal default_internal
+6:5 festival_bonus_rate field -> internal default_internal [serialisation_field]
+6:26 float variable -> public keyword_or_builtin
+7:5 owner_name field -> internal default_internal [serialisation_field]
+7:17 str variable -> public keyword_or_builtin
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: dataclass, dataclasses, float, str
+kept_dynamic: 

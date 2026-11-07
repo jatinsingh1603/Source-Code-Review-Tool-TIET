@@ -1,0 +1,253 @@
+# Public-name allowlist for JavaScript and TypeScript (E09-02). Read by
+# codekavach.privacy.pseudonymise.allowlist; TypeScript uses this file as well.
+#
+# Source: compiled by hand from the maintainers' working knowledge of the Node.js built-in modules
+#   (node:fs, node:crypto, node:child_process, node:path, node:http, node:https, node:os,
+#   node:url), the ECMAScript built-in objects, and the third-party packages named below. Limited
+#   to the security-relevant surface of the web, database, crypto, serialisation, HTTP-client,
+#   subprocess and file APIs. No package source code was copied. The list has NOT yet been checked
+#   name by name against the upstream documentation; that check is a follow-up before a client
+#   engagement relies on it.
+# Generated: 2026-11-06 (first curated version; edit by issue, and bump the version below).
+# Version: javascript-2026.11.06.1
+#
+# Reading rules (the classifier in codekavach.privacy.pseudonymise.classify):
+#   * [packages.<name>] lists the members of a package. A member is public when it is accessed
+#     on a value known to come from that package (for example req.query or fs.readFileSync).
+#   * A package with kind "third_party" is public as an import only when listed here. kind
+#     "stdlib" packages (Node built-in modules) are public as imports by origin (E07-04), and
+#     their members are listed here so that chains through them stay recognisable. kind "builtin"
+#     is the ECMAScript and browser global namespace.
+#   * A name listed under several packages is public by name (the conservative reading).
+#   * Every entry under [framework_contracts] and [framework_decorators] names its framework in
+#     the value. Renaming these names changes behaviour as well as hiding the framework contract.
+#   * Only the names here, the reserved words and builtins, and the user's public_allowlist_extra
+#     are ever public. Adding a name here is a disclosure decision.
+
+version = "javascript-2026.11.06.1"
+language = "javascript"
+
+[packages.builtins]
+kind = "builtin"
+# ECMAScript and browser globals a reviewer reads without a binding, and the methods of the
+# built-in objects and types.
+members = [
+    "parse", "stringify", "keys", "values", "entries", "assign", "freeze", "create", "defineProperty",
+    "getOwnPropertyNames", "fromEntries", "then", "catch", "finally", "resolve", "reject", "all",
+    "allSettled", "race", "push", "pop", "map", "filter", "reduce", "forEach", "find", "includes",
+    "join", "split", "slice", "splice", "replace", "replaceAll", "match", "test", "exec", "trim",
+    "toLowerCase", "toUpperCase", "startsWith", "endsWith", "get", "set", "has", "delete", "add",
+    "clear", "encode", "decode", "fetch", "json", "text", "send", "headers", "method", "body",
+    "signal", "credentials", "mode", "cache", "redirect", "encodeURIComponent", "encodeURI",
+    "decodeURIComponent", "parseInt", "parseFloat", "isNaN", "setTimeout", "setInterval",
+    "clearTimeout", "queueMicrotask", "structuredClone", "addEventListener", "removeEventListener",
+    "dispatchEvent", "innerHTML", "textContent", "outerHTML", "insertAdjacentHTML", "createElement",
+    "setAttribute", "getAttribute", "querySelector", "querySelectorAll", "cookie", "location", "href",
+    "search", "hash", "pathname", "origin", "protocol", "hostname", "port", "localStorage",
+    "sessionStorage", "postMessage", "open", "close", "write", "log", "error", "warn", "info",
+]
+
+[packages.fs]
+kind = "stdlib"
+# node:fs and node:fs/promises: file-system access.
+members = [
+    "readFile", "readFileSync", "writeFile", "writeFileSync", "appendFile", "appendFileSync",
+    "unlink", "unlinkSync", "readdir", "readdirSync", "existsSync", "exists", "stat", "statSync",
+    "lstat", "mkdir", "mkdirSync", "rm", "rmSync", "rmdir", "rename", "renameSync", "access",
+    "accessSync", "createReadStream", "createWriteStream", "chmod", "chmodSync", "open", "openSync",
+    "close", "closeSync", "copyFile", "copyFileSync", "realpath", "promises", "constants",
+    "readlink", "symlink", "mkdtemp", "mkdtempSync", "truncate", "utimes", "watch",
+]
+
+[packages.path]
+kind = "stdlib"
+# node:path: path manipulation, which a traversal check reads.
+members = [
+    "join", "resolve", "normalize", "relative", "basename", "dirname", "extname", "isAbsolute",
+    "parse", "format", "sep", "delimiter", "posix", "win32",
+]
+
+[packages.crypto]
+kind = "stdlib"
+# node:crypto: hashing, HMAC, ciphers, random values and key derivation.
+members = [
+    "createHash", "createHmac", "createCipheriv", "createDecipheriv", "createSign", "createVerify",
+    "createSecretKey", "createPrivateKey", "createPublicKey", "generateKeyPairSync",
+    "generateKeyPair", "randomBytes", "randomUUID", "randomInt", "randomFillSync", "pbkdf2",
+    "pbkdf2Sync", "scrypt", "scryptSync", "timingSafeEqual", "getRandomValues", "update", "digest",
+    "final", "setAutoPadding", "setAAD", "getAuthTag", "setAuthTag", "sign", "verify", "hash",
+    "algorithm", "iv", "key", "webcrypto", "subtle", "constants",
+]
+
+[packages.child_process]
+kind = "stdlib"
+# node:child_process: process creation. The command and its arguments are a command-injection sink.
+members = [
+    "exec", "execSync", "execFile", "execFileSync", "spawn", "spawnSync", "fork", "stdout",
+    "stderr", "stdin", "pid", "kill", "on", "shell", "cwd", "env", "timeout", "encoding",
+    "maxBuffer", "windowsHide", "detached",
+]
+
+[packages.http]
+kind = "stdlib"
+# node:http: server and client. The request and response objects of a handler.
+members = [
+    "createServer", "request", "get", "Agent", "STATUS_CODES", "METHODS", "IncomingMessage",
+    "ServerResponse", "statusCode", "statusMessage", "setHeader", "getHeader", "removeHeader",
+    "writeHead", "end", "write", "listen", "headers", "method", "url", "params", "query", "body",
+    "setTimeout", "on",
+]
+
+[packages.https]
+kind = "stdlib"
+# node:https: TLS server and client; the options of createServer carry key and certificate.
+members = ["createServer", "request", "get", "Agent", "key", "cert", "ca", "rejectUnauthorized"]
+
+[packages.os]
+kind = "stdlib"
+# node:os: host information. Its environment is a source.
+members = ["tmpdir", "homedir", "hostname", "platform", "userInfo", "EOL", "cpus", "networkInterfaces"]
+
+[packages.url]
+kind = "stdlib"
+# node:url: URL parsing, which a redirect or SSRF check reads.
+members = ["URL", "URLSearchParams", "parse", "format", "resolve", "searchParams", "hostname", "pathname", "protocol", "host", "href", "origin", "get", "set", "has", "append", "toString"]
+
+[packages.express]
+kind = "third_party"
+# Express: the request and response objects of a handler, the application and router.
+members = [
+    "query", "params", "body", "headers", "cookies", "signedCookies", "ip", "ips", "method",
+    "path", "originalUrl", "baseUrl", "hostname", "protocol", "secure", "xhr", "get", "accepts",
+    "send", "json", "status", "sendStatus", "redirect", "render", "cookie", "clearCookie", "set",
+    "setHeader", "end", "write", "sendFile", "download", "locals", "app", "use", "listen", "Router",
+    "router", "static", "urlencoded", "raw", "text", "route", "all", "post", "put", "delete",
+    "patch", "options", "head", "param", "engine", "type", "format", "attachment", "vary",
+]
+
+[packages.pg]
+kind = "third_party"
+# node-postgres: query API and connection pool.
+members = [
+    "query", "connect", "end", "Pool", "Client", "release", "rows", "rowCount", "fields",
+    "command", "connectionString", "ssl", "user", "password", "database", "host", "port",
+    "idleTimeoutMillis", "max", "text", "values", "name",
+]
+
+[packages.mysql2]
+kind = "third_party"
+# mysql2: MySQL driver with a promise and a callback API.
+members = [
+    "createConnection", "createPool", "query", "execute", "getConnection", "release", "end",
+    "escape", "format", "connect", "beginTransaction", "commit", "rollback", "promise", "pool",
+    "Connection", "Pool", "ssl", "multipleStatements",
+]
+
+[packages.sqlite3]
+kind = "third_party"
+# node-sqlite3: the Database object and its query methods.
+members = [
+    "Database", "run", "get", "all", "each", "prepare", "serialize", "parallelize", "finalize",
+    "exec", "close", "lastID", "changes", "bind", "stmt",
+]
+
+[packages.axios]
+kind = "third_party"
+# axios: HTTP client.
+members = [
+    "get", "post", "put", "delete", "patch", "request", "create", "defaults", "headers", "data",
+    "params", "baseURL", "interceptors", "response", "status", "statusText", "timeout", "auth",
+    "withCredentials", "maxRedirects", "validateStatus", "responseType", "all", "spread",
+]
+
+[packages.jsonwebtoken]
+kind = "third_party"
+# jsonwebtoken: JSON Web Token signing and verification.
+members = [
+    "sign", "verify", "decode", "algorithms", "algorithm", "expiresIn", "audience", "issuer",
+    "secret", "TokenExpiredError", "JsonWebTokenError", "NotBeforeError", "none", "HS256", "RS256",
+]
+
+[packages.bcrypt]
+kind = "third_party"
+# bcrypt (and bcryptjs): password hashing.
+members = ["hash", "hashSync", "compare", "compareSync", "genSalt", "genSaltSync", "getRounds"]
+
+[framework_contracts]
+# Object protocol and magic methods: the language contract a class overrides.
+constructor = "ecmascript"
+toString = "ecmascript"
+valueOf = "ecmascript"
+toJSON = "ecmascript"
+# Express middleware and router hooks.
+use = "express"
+handle = "express"
+handleEvent = "dom"
+# React class components: lifecycle and render.
+render = "react"
+componentDidMount = "react"
+componentDidUpdate = "react"
+componentWillUnmount = "react"
+shouldComponentUpdate = "react"
+getDerivedStateFromProps = "react"
+# Web Components lifecycle.
+connectedCallback = "web-components"
+disconnectedCallback = "web-components"
+attributeChangedCallback = "web-components"
+adoptedCallback = "web-components"
+# Promise and thenable protocol.
+then = "ecmascript"
+catch = "ecmascript"
+finally = "ecmascript"
+# Iterator and async-iterator protocol.
+next = "ecmascript"
+return = "ecmascript"
+throw = "ecmascript"
+# Common handler and model names of server frameworks (NestJS, Koa, Fastify, Mongoose).
+validate = "nestjs,class-validator,joi"
+save = "mongoose"
+serialize = "fastify"
+dispatch = "redux"
+
+[framework_decorators]
+# NestJS and class-validator decorators that bind a method or a field to a request or a rule.
+Get = "nestjs"
+Post = "nestjs"
+Put = "nestjs"
+Delete = "nestjs"
+Controller = "nestjs"
+Body = "nestjs"
+Param = "nestjs"
+Query = "nestjs"
+IsString = "class-validator"
+IsEmail = "class-validator"
+IsInt = "class-validator"
+
+[well_known]
+# Names that mark a taint source, a sink or a sanitiser in JavaScript code, and the conventional
+# name of a web application object. Kept because a reviewer and the triage model need them.
+sources = [
+    "process", "argv", "env", "location", "document", "query", "params", "body", "cookies",
+    "headers", "hash", "search", "referrer", "localStorage", "sessionStorage", "stdin",
+]
+sinks = [
+    "eval", "Function", "exec", "execSync", "execFile", "spawn", "innerHTML", "outerHTML",
+    "insertAdjacentHTML", "writeFile", "writeFileSync", "query", "execute", "unlink", "redirect",
+    "send", "render", "write", "setTimeout", "setInterval", "document",
+]
+sanitisers = [
+    "escape", "encodeURIComponent", "encodeURI", "sanitizeHtml", "sanitize", "DOMPurify",
+    "parseInt", "Number", "validator", "escapeHtml", "normalize", "resolve",
+]
+# Conventional names of a framework application object (Express: const app = express()).
+conventional_instances = ["app", "application", "router", "server"]
+
+[reflection]
+# Plain calls that take an attribute name as a string argument: none in JavaScript.
+attribute_calls = []
+# Reflection objects whose method takes a property name as its second argument.
+reflect_objects = { Reflect = ["get", "set", "has", "deleteProperty", "defineProperty"] }
+
+[dynamic_code]
+# Calls that execute text the classifier cannot see: a file that calls one is opaque to renaming.
+calls = ["eval", "Function"]

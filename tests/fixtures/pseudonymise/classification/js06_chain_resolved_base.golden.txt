@@ -1,0 +1,24 @@
+file: js06_chain_resolved_base.js
+allowlist: javascript-2026.11.06.1
+1:7 express variable -> public allowlisted_import
+1:17 require variable -> public keyword_or_builtin
+2:7 router variable -> public well_known
+2:16 express variable -> public allowlisted_import
+2:24 Router field -> public member_of_public
+4:1 router variable -> public well_known
+4:8 get field -> public keyword_or_builtin
+4:27 req parameter -> internal default_internal
+4:32 res parameter -> internal default_internal
+5:3 res parameter -> internal default_internal
+5:7 json field -> public member_name
+5:14 id field -> internal default_internal
+5:18 req parameter -> internal default_internal
+5:22 params field -> public well_known
+5:29 id field -> internal default_internal
+5:33 note field -> internal default_internal
+5:39 req parameter -> internal default_internal
+5:43 query field -> public well_known
+5:49 note field -> internal default_internal
+counts: unresolved_base=2 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: Router, express, get, json, params, query, require, router
+kept_dynamic: 

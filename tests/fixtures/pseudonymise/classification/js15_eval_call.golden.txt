@@ -1,0 +1,9 @@
+file: js15_eval_call.js
+allowlist: javascript-2026.11.06.1
+1:10 evaluate function -> internal default_internal
+1:19 expression parameter -> internal default_internal
+2:10 eval variable -> public well_known [dynamic_code]
+2:15 expression parameter -> internal default_internal
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=1
+kept_public: eval
+kept_dynamic: 

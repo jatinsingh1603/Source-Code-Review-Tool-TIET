@@ -1,0 +1,10 @@
+file: js07_chain_unresolved_base.js
+allowlist: javascript-2026.11.06.1
+1:10 totalFor function -> internal default_internal
+1:19 order parameter -> internal default_internal
+2:10 ledger variable -> internal default_internal
+2:17 festivalBonusRate field -> internal default_internal
+2:35 order parameter -> internal default_internal
+counts: unresolved_base=1 unresolved_name=1 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: 
+kept_dynamic: 

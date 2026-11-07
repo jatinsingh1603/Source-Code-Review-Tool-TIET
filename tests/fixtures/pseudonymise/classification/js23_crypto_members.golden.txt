@@ -1,0 +1,16 @@
+file: js23_crypto_members.js
+allowlist: javascript-2026.11.06.1
+1:7 crypto variable -> public stdlib_import
+1:16 require variable -> public keyword_or_builtin
+3:10 digest function -> internal default_internal
+3:17 secret parameter -> internal default_internal
+3:25 message parameter -> internal default_internal
+4:10 crypto variable -> public stdlib_import
+4:17 createHmac field -> public member_of_public
+4:38 secret parameter -> internal default_internal
+4:46 update field -> public member_name
+4:53 message parameter -> internal default_internal
+4:62 digest field -> public member_name
+counts: unresolved_base=2 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: createHmac, crypto, digest, require, update
+kept_dynamic: 

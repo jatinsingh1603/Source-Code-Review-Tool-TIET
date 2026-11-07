@@ -1,0 +1,14 @@
+file: js03_allowlisted_import.js
+allowlist: javascript-2026.11.06.1
+1:8 express import -> public allowlisted_import
+3:7 app variable -> public well_known
+3:13 express import -> public allowlisted_import
+4:1 app variable -> public well_known
+4:5 get field -> public keyword_or_builtin
+4:21 req parameter -> internal default_internal
+4:26 res parameter -> internal default_internal
+4:34 res parameter -> internal default_internal
+4:38 send field -> public well_known
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: app, express, get, send
+kept_dynamic: 

@@ -1,0 +1,13 @@
+file: js20_internal_class_field.js
+allowlist: javascript-2026.11.06.1
+1:7 Account class -> internal default_internal
+2:3 constructor method -> public framework_contract
+2:15 id parameter -> internal default_internal
+3:10 festivalRate field -> internal default_internal
+4:10 id field -> internal default_internal
+4:15 id parameter -> internal default_internal
+7:3 bonus method -> internal default_internal
+8:17 festivalRate field -> internal default_internal
+counts: unresolved_base=3 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: constructor
+kept_dynamic: 

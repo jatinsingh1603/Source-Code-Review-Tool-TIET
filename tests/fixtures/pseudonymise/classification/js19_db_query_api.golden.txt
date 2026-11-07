@@ -1,0 +1,17 @@
+file: js19_db_query_api.js
+allowlist: javascript-2026.11.06.1
+1:9 Pool variable -> public allowlisted_import
+1:18 require variable -> public keyword_or_builtin
+3:7 pool variable -> internal default_internal
+3:18 Pool variable -> public allowlisted_import
+5:16 listUsers function -> internal default_internal
+5:26 limit parameter -> internal default_internal
+6:9 result variable -> internal default_internal
+6:24 pool variable -> internal default_internal
+6:29 query field -> public well_known
+6:57 limit parameter -> internal default_internal
+7:10 result variable -> internal default_internal
+7:17 rows field -> public member_name
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: Pool, query, require, rows
+kept_dynamic: 

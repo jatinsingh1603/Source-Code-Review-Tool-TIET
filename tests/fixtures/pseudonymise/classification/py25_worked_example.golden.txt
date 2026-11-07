@@ -1,0 +1,24 @@
+file: py25_worked_example.py
+allowlist: python-2026.11.06.1
+1:6 flask module -> public allowlisted_import
+1:19 request import -> public allowlisted_import
+2:6 billing module -> internal unlisted_import
+2:14 engine module -> internal default_internal
+2:28 accrue_interest import -> internal unlisted_import
+5:2 app variable -> public well_known
+5:6 route field -> public framework_decorator
+6:5 get_account function -> internal default_internal
+6:17 aid parameter -> internal default_internal
+7:5 rate variable -> internal default_internal
+7:12 request import -> public allowlisted_import
+7:20 args field -> public member_of_public
+7:25 get field -> public member_of_public
+7:37 type parameter -> public keyword_of_public
+7:42 float variable -> public keyword_or_builtin
+8:12 accrue_interest import -> internal unlisted_import
+8:28 aid parameter -> internal default_internal
+8:33 rate parameter -> internal keyword_of_internal
+8:38 rate variable -> internal default_internal
+counts: unresolved_base=1 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: app, args, flask, float, get, request, route, type
+kept_dynamic: 

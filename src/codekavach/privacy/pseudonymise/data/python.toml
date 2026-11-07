@@ -1,0 +1,426 @@
+# Public-name allowlist for Python (E09-02). Read by codekavach.privacy.pseudonymise.allowlist.
+#
+# Source: compiled by hand from the maintainers' working knowledge of each package and of the
+#   Python 3.12 standard library, limited to the security-relevant surface that the rule matchers
+#   and the triage model need to recognise (sources, sinks, sanitisers, crypto, serialisation, HTTP,
+#   SQL). No package source code was copied. Names are listed by package, not exhaustively. The
+#   list has NOT yet been checked name by name against the upstream documentation; that check is
+#   a follow-up before a client engagement relies on it.
+# Generated: 2026-11-06 (first curated version; edit by issue, and bump the version below).
+# Version: python-2026.11.06.1
+#
+# Reading rules (the classifier in codekavach.privacy.pseudonymise.classify):
+#   * [packages.<name>] lists the members of a package. A member is public when it is accessed
+#     on a value that is known to come from that package (for example request.args.get).
+#   * A package with kind "third_party" is public as an import only when listed here. kind
+#     "stdlib" packages are public as imports by origin (E07-04), and their members are listed
+#     here so that chains through them stay recognisable. kind "pseudo" is a shared API that is
+#     not a module (PEP 249 cursors). kind "builtin" is the language's built-in namespace.
+#   * Member names are not sealed to one package: a name listed under several packages is public
+#     by name, which is the conservative reading for a name that a provider may already know.
+#   * Every entry under [framework_contracts] and [framework_decorators] names its framework in
+#     the comment above it. Renaming these names changes behaviour as well as hiding the
+#     framework contract, so they are kept.
+#   * Only the names here, the keywords and builtins of the language, dunder names and the
+#     user's public_allowlist_extra are ever public. Adding a name here is a disclosure decision.
+
+version = "python-2026.11.06.1"
+language = "python"
+
+[packages.builtins]
+kind = "builtin"
+# Keyword arguments of common built-in functions (open, sorted, print, int, max) and the methods
+# of built-in types a reviewer reads without a binding (dict.get, str.join, list.append).
+members = [
+    "mode", "encoding", "errors", "newline", "buffering", "key", "reverse", "default", "sep",
+    "end", "file", "flush", "base", "start", "get", "items", "keys", "values", "join", "split",
+    "strip", "lower", "upper", "format", "append", "extend", "encode", "decode", "read", "write",
+    "close", "replace", "startswith", "endswith", "update", "pop",
+]
+
+[packages.dbapi]
+kind = "pseudo"
+# PEP 249 (Database API 2.0) cursor and connection surface shared by sqlite3, psycopg2, pymysql,
+# SQLAlchemy's DBAPI layer and every other DB-API driver. Not an importable module.
+members = [
+    "execute", "executemany", "executescript", "fetchone", "fetchall", "fetchmany", "callproc",
+    "cursor", "commit", "rollback", "close", "params", "description", "rowcount", "lastrowid",
+    "arraysize", "connection", "connect", "nextset", "setinputsizes", "paramstyle",
+]
+
+[packages.os]
+kind = "stdlib"
+# Operating-system interfaces: process environment, file system, process control.
+members = [
+    "environ", "getenv", "putenv", "system", "popen", "path", "walk", "listdir", "remove",
+    "unlink", "rename", "makedirs", "mkdir", "rmdir", "getcwd", "chdir", "stat", "chmod",
+    "access", "sep", "linesep", "getpid", "kill", "urandom", "open", "read", "write", "close",
+    "exec", "execv", "execvp", "spawnv", "fork", "scandir", "symlink", "readlink", "realpath",
+    "abspath", "join", "exists", "isfile", "isdir", "basename", "dirname", "splitext",
+]
+
+[packages.subprocess]
+kind = "stdlib"
+# Process creation. The arguments of run and Popen are a common command-injection sink.
+members = [
+    "run", "Popen", "call", "check_call", "check_output", "getoutput", "getstatusoutput", "PIPE",
+    "STDOUT", "DEVNULL", "args", "shell", "stdin", "stdout", "stderr", "text", "capture_output",
+    "input", "timeout", "cwd", "env", "communicate", "returncode", "wait", "kill", "terminate",
+    "universal_newlines", "encoding", "errors", "check", "CompletedProcess", "SubprocessError",
+    "CalledProcessError", "TimeoutExpired",
+]
+
+[packages.shlex]
+kind = "stdlib"
+# Shell-word quoting and splitting: sanitisers for command arguments.
+members = ["quote", "split", "join"]
+
+[packages.hashlib]
+kind = "stdlib"
+# Message digests and key derivation.
+members = [
+    "md5", "sha1", "sha224", "sha256", "sha384", "sha512", "sha3_256", "blake2b", "blake2s",
+    "new", "pbkdf2_hmac", "scrypt", "digest", "hexdigest", "update", "copy", "digest_size",
+    "algorithms_available", "algorithms_guaranteed", "file_digest",
+]
+
+[packages.hmac]
+kind = "stdlib"
+# Keyed message authentication. compare_digest is the constant-time comparison.
+members = ["new", "digest", "compare_digest", "update", "hexdigest", "HMAC"]
+
+[packages.secrets]
+kind = "stdlib"
+# Cryptographically strong random values for tokens and passwords.
+members = [
+    "token_bytes", "token_hex", "token_urlsafe", "choice", "randbelow", "compare_digest",
+    "SystemRandom", "randbits",
+]
+
+[packages.random]
+kind = "stdlib"
+# Pseudo-random numbers. Not for secrets; listed so that misuse stays recognisable.
+members = ["random", "randint", "choice", "choices", "randrange", "shuffle", "sample", "seed", "Random"]
+
+[packages.base64]
+kind = "stdlib"
+# Binary-to-text encodings, frequently used around tokens and serialised payloads.
+members = [
+    "b64encode", "b64decode", "urlsafe_b64encode", "urlsafe_b64decode", "b32encode", "b32decode",
+    "b16encode", "b16decode", "encodebytes", "decodebytes", "standard_b64encode",
+]
+
+[packages.json]
+kind = "stdlib"
+# JSON serialisation. The argument names of dumps and loads are part of the API.
+members = [
+    "dumps", "loads", "dump", "load", "JSONDecoder", "JSONEncoder", "JSONDecodeError", "indent",
+    "sort_keys", "separators", "default", "object_hook", "parse_float", "parse_int", "ensure_ascii",
+    "cls",
+]
+
+[packages.pickle]
+kind = "stdlib"
+# Object serialisation. loads and load on untrusted input execute code: a sink.
+members = ["dumps", "loads", "dump", "load", "Pickler", "Unpickler", "HIGHEST_PROTOCOL"]
+
+[packages.sqlite3]
+kind = "stdlib"
+# The standard-library database driver (DB-API 2.0).
+members = [
+    "connect", "Connection", "Cursor", "Row", "row_factory", "text_factory", "execute",
+    "executemany", "executescript", "fetchone", "fetchall", "fetchmany", "cursor", "commit",
+    "rollback", "close", "Error", "OperationalError", "IntegrityError", "DatabaseError",
+    "isolation_level", "check_same_thread", "PARSE_DECLTYPES",
+]
+
+[packages.urllib]
+kind = "stdlib"
+# URL handling and the HTTP client of the standard library (urllib.request).
+members = [
+    "request", "parse", "error", "urlopen", "Request", "build_opener", "install_opener",
+    "urlencode", "quote", "quote_plus", "unquote", "unquote_plus", "urlparse", "urlsplit",
+    "urljoin", "parse_qs", "parse_qsl", "data", "headers", "full_url", "timeout", "method",
+    "HTTPError", "URLError",
+]
+
+[packages.http]
+kind = "stdlib"
+# HTTP client and status codes of the standard library.
+members = [
+    "client", "HTTPConnection", "HTTPSConnection", "HTTPStatus", "HTTPResponse", "request",
+    "getresponse", "read", "status", "reason", "getheader", "getheaders", "putrequest",
+    "endheaders", "send", "OK", "FORBIDDEN", "UNAUTHORIZED",
+]
+
+[packages.tempfile]
+kind = "stdlib"
+# Temporary files and directories: a common insecure-file race.
+members = [
+    "mkstemp", "mkdtemp", "NamedTemporaryFile", "TemporaryFile", "TemporaryDirectory",
+    "gettempdir", "SpooledTemporaryFile", "name", "suffix", "prefix", "dir", "delete",
+]
+
+[packages.html]
+kind = "stdlib"
+# HTML escaping, the standard-library sanitiser for markup.
+members = ["escape", "unescape"]
+
+[packages.flask]
+kind = "third_party"
+# Flask: request and response objects, routing, rendering and session state.
+members = [
+    "request", "args", "form", "values", "json", "get_json", "files", "cookies", "headers",
+    "method", "path", "url", "data", "remote_addr", "get", "type", "Flask", "route",
+    "render_template", "render_template_string", "redirect", "url_for", "abort", "jsonify",
+    "make_response", "Response", "session", "g", "current_app", "Blueprint", "send_file",
+    "send_from_directory", "escape", "methods", "stream", "status", "mimetype", "content_type",
+    "add_url_rule", "before_request", "after_request", "errorhandler", "register_blueprint",
+]
+
+[packages.django]
+kind = "third_party"
+# Django: HTTP request and response objects, shortcuts and the ORM manager surface.
+members = [
+    "http", "HttpRequest", "HttpResponse", "JsonResponse", "GET", "POST", "FILES", "COOKIES",
+    "META", "user", "body", "method", "path", "render", "redirect", "get_object_or_404",
+    "reverse", "objects", "filter", "exclude", "get", "all", "exists", "values", "save",
+    "delete", "raw", "cursor", "extra", "annotate", "select_related", "prefetch_related",
+    "order_by", "first", "last", "create", "update", "order", "content_type", "status_code",
+]
+
+[packages.rest_framework]
+kind = "third_party"
+# Django REST Framework: serializers, views and responses.
+members = [
+    "serializers", "viewsets", "views", "generics", "Response", "Serializer", "ModelSerializer",
+    "APIView", "ViewSet", "permissions", "IsAuthenticated", "authentication", "validated_data",
+    "data", "errors", "is_valid", "request", "query_params", "status", "HTTP_200_OK",
+    "HTTP_403_FORBIDDEN", "HTTP_404_NOT_FOUND",
+]
+
+[packages.requests]
+kind = "third_party"
+# The requests HTTP client.
+members = [
+    "get", "post", "put", "delete", "patch", "head", "options", "request", "Session", "session",
+    "Response", "verify", "timeout", "headers", "data", "json", "params", "auth", "cookies",
+    "proxies", "allow_redirects", "status_code", "text", "content", "raise_for_status", "ok",
+    "url", "files", "stream", "adapters", "mount", "HTTPError", "ConnectionError",
+]
+
+[packages.httpx]
+kind = "third_party"
+# The httpx HTTP client.
+members = [
+    "get", "post", "put", "delete", "patch", "request", "Client", "AsyncClient", "verify",
+    "timeout", "headers", "content", "json", "params", "status_code", "text", "raise_for_status",
+    "stream", "auth", "follow_redirects", "Response",
+]
+
+[packages.sqlalchemy]
+kind = "third_party"
+# SQLAlchemy: engines, sessions, the Core expression language and the DB-API layer.
+members = [
+    "create_engine", "text", "select", "insert", "update", "delete", "bindparam", "Session",
+    "session", "sessionmaker", "execute", "engine", "connect", "connection", "query", "filter",
+    "filter_by", "all", "first", "one", "scalar", "commit", "rollback", "where", "values",
+    "column", "table", "Column", "String", "Integer", "ForeignKey", "relationship", "raw_connection",
+]
+
+[packages.psycopg2]
+kind = "third_party"
+# psycopg2: PostgreSQL DB-API driver.
+members = [
+    "connect", "cursor", "execute", "executemany", "fetchone", "fetchall", "fetchmany", "commit",
+    "rollback", "close", "extras", "sql", "Json", "RealDictCursor", "DictCursor", "autocommit",
+    "cursor_factory", "mogrify", "callproc", "Error", "OperationalError",
+]
+
+[packages.pymysql]
+kind = "third_party"
+# PyMySQL: MySQL DB-API driver.
+members = [
+    "connect", "cursor", "execute", "executemany", "fetchone", "fetchall", "fetchmany", "commit",
+    "rollback", "close", "cursorclass", "DictCursor", "escape_string", "Error", "OperationalError",
+]
+
+[packages.cryptography]
+kind = "third_party"
+# The cryptography package: high-level Fernet recipes and low-level primitives.
+members = [
+    "fernet", "Fernet", "generate_key", "encrypt", "decrypt", "hazmat", "primitives", "hashes",
+    "ciphers", "Cipher", "algorithms", "AES", "modes", "CBC", "GCM", "CTR", "padding", "PKCS7",
+    "sign", "verify", "public_key", "private_key", "load_pem_private_key", "load_pem_public_key",
+    "digest", "finalize", "update", "SHA256", "SHA512", "HMAC", "PBKDF2HMAC", "Scrypt",
+    "InvalidTag", "InvalidSignature", "AESGCM", "ChaCha20Poly1305", "Ed25519PrivateKey",
+]
+
+[packages.Crypto]
+kind = "third_party"
+# pycryptodome, imported as Crypto: block ciphers, hashes and random number generation.
+members = [
+    "Cipher", "AES", "DES", "RSA", "SHA256", "SHA1", "MD5", "Random", "new", "MODE_CBC",
+    "MODE_GCM", "MODE_ECB", "encrypt", "decrypt", "digest", "hexdigest", "verify", "sign",
+    "encrypt_and_digest", "decrypt_and_verify", "nonce", "iv", "key", "block_size", "Util",
+    "Padding", "pad", "unpad", "get_random_bytes",
+]
+
+[packages.nacl]
+kind = "third_party"
+# PyNaCl: libsodium bindings for secret-key and public-key boxes and signatures.
+members = [
+    "secret", "public", "SecretBox", "Box", "encrypt", "decrypt", "Signer", "VerifyKey",
+    "SigningKey", "PrivateKey", "PublicKey", "box", "sign", "verify", "utils", "random",
+    "crypto_secretbox", "crypto_box", "nonce",
+]
+
+[packages.jwt]
+kind = "third_party"
+# PyJWT: JSON Web Token encoding and verification.
+members = [
+    "encode", "decode", "algorithms", "algorithm", "options", "verify", "key", "HS256", "RS256",
+    "ES256", "none", "PyJWTError", "InvalidTokenError", "ExpiredSignatureError", "verify_signature",
+    "exp", "iat", "sub", "aud", "iss",
+]
+
+[packages.bcrypt]
+kind = "third_party"
+# bcrypt: password hashing.
+members = ["hashpw", "gensalt", "checkpw", "rounds", "prefix"]
+
+[packages.yaml]
+kind = "third_party"
+# PyYAML: loading and dumping. load without a safe Loader executes constructors: a sink.
+members = [
+    "safe_load", "load", "dump", "safe_dump", "safe_load_all", "load_all", "FullLoader",
+    "SafeLoader", "Loader", "UnsafeLoader", "BaseLoader", "YAMLError", "Dumper", "SafeDumper",
+    "add_constructor", "add_representer", "Node", "ScalarNode",
+]
+
+[packages.pydantic]
+kind = "third_party"
+# Pydantic: validated models. Their field declarations are serialisation fields (see classify).
+members = [
+    "BaseModel", "Field", "validator", "field_validator", "model_validator", "model_validate",
+    "model_dump", "model_dump_json", "dict", "json", "parse_obj", "parse_raw", "ConfigDict",
+    "ValidationError", "computed_field", "SecretStr", "EmailStr", "HttpUrl", "AnyUrl",
+]
+
+[packages.jinja2]
+kind = "third_party"
+# Jinja2 templates: the autoescape setting decides whether output is escaped.
+members = [
+    "Environment", "Template", "render", "from_string", "autoescape", "select_autoescape",
+    "FileSystemLoader", "PackageLoader", "DictLoader", "Markup", "escape", "get_template",
+    "StrictUndefined",
+]
+
+[packages.marshmallow]
+kind = "third_party"
+# Marshmallow schemas: the field declarations of a schema are serialisation fields.
+members = [
+    "Schema", "fields", "Str", "Int", "Email", "Nested", "load", "dump", "validate", "loads",
+    "dumps", "ValidationError", "post_load", "pre_load", "validates", "validates_schema",
+    "many", "partial", "unknown", "EXCLUDE", "RAISE",
+]
+
+[framework_contracts]
+# Django and Flask-style views, DRF viewsets and APIView: the HTTP handler names of a view.
+get = "flask,django,rest_framework"
+post = "flask,django,rest_framework"
+put = "flask,django,rest_framework"
+delete = "flask,django,rest_framework"
+patch = "flask,django,rest_framework"
+head = "django,rest_framework"
+options = "django,rest_framework"
+dispatch = "django,rest_framework"
+handle = "django,rest_framework"
+# DRF viewset actions and serializer hooks.
+list = "rest_framework"
+retrieve = "rest_framework"
+create = "rest_framework"
+update = "rest_framework"
+partial_update = "rest_framework"
+destroy = "rest_framework"
+perform_create = "rest_framework"
+perform_update = "rest_framework"
+get_queryset = "django,rest_framework"
+to_representation = "rest_framework"
+to_internal_value = "rest_framework"
+validate_empty_values = "rest_framework"
+# Django model and form lifecycle.
+save = "django"
+clean = "django"
+clean_fields = "django"
+full_clean = "django"
+validate = "django,marshmallow,pydantic"
+form_valid = "django"
+form_invalid = "django"
+get_context_data = "django"
+get_object = "django,rest_framework"
+# Django middleware hooks.
+process_request = "django"
+process_response = "django"
+process_view = "django"
+process_exception = "django"
+# Serialisers, deserialisers and resource hooks.
+serialize = "marshmallow,pydantic"
+deserialize = "marshmallow"
+# unittest lifecycle hooks.
+setUp = "unittest"
+tearDown = "unittest"
+
+[framework_decorators]
+# Flask application and blueprint routing decorators: the entry points of a web handler.
+route = "flask"
+before_request = "flask"
+after_request = "flask"
+errorhandler = "flask"
+# Django REST Framework decorators on view functions.
+api_view = "rest_framework"
+action = "rest_framework"
+permission_classes = "rest_framework"
+authentication_classes = "rest_framework"
+# Pydantic and marshmallow validators.
+field_validator = "pydantic"
+model_validator = "pydantic"
+validator = "pydantic"
+validates = "marshmallow"
+post_load = "marshmallow"
+# Standard-library and common decorators with a security meaning.
+login_required = "django"
+csrf_exempt = "django"
+staticmethod = "python"
+classmethod = "python"
+property = "python"
+dataclass = "dataclasses"
+lru_cache = "functools"
+
+[well_known]
+# Names that mark a taint source, a sink or a sanitiser in Python code, and the conventional
+# name of a web application object. Kept because a reviewer and the triage model need them.
+sources = [
+    "input", "argv", "environ", "stdin", "getenv", "request", "GET", "POST", "FILES", "COOKIES",
+    "headers", "args", "form", "json", "cookies", "files", "query_params", "body",
+]
+sinks = [
+    "eval", "exec", "system", "popen", "execute", "executemany", "executescript", "run", "call",
+    "check_output", "Popen", "open", "write", "send", "redirect", "render_template_string",
+    "loads", "load", "unsafe_load", "mark_safe", "raw", "extra", "send_file",
+]
+sanitisers = [
+    "escape", "quote", "escape_string", "clean", "sanitize", "sanitise", "mark_safe",
+    "strip_tags", "urlencode", "html", "bleach", "markupsafe", "secure_filename",
+]
+# Conventional names of a framework application object (Flask: app = Flask(__name__)).
+conventional_instances = ["app", "application", "blueprint", "router"]
+
+[reflection]
+# Calls that take an attribute name as a string argument (the string is an identifier in
+# disguise). The second argument is the name.
+attribute_calls = ["getattr", "setattr", "hasattr", "delattr"]
+
+[dynamic_code]
+# Calls that execute text the classifier cannot see: a file that calls one is opaque to renaming.
+calls = ["eval", "exec", "compile", "__import__"]

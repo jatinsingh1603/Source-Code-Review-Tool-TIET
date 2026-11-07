@@ -1,0 +1,9 @@
+file: py24_unbound_plain_reference.py
+allowlist: python-2026.11.06.1
+1:5 notify function -> internal default_internal
+1:12 customer parameter -> internal default_internal
+2:12 dispatch_festival_notice variable -> internal default_internal
+2:37 customer parameter -> internal default_internal
+counts: unresolved_base=0 unresolved_name=1 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: 
+kept_dynamic: 

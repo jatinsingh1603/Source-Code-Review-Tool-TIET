@@ -1,0 +1,14 @@
+file: js21_internal_function_exports.js
+allowlist: javascript-2026.11.06.1
+1:10 accrueInterest function -> internal default_internal
+1:25 account parameter -> internal default_internal
+1:34 rate parameter -> internal default_internal
+2:10 account parameter -> internal default_internal
+2:18 balance field -> internal default_internal
+2:28 rate parameter -> internal default_internal
+5:1 module variable -> public keyword_or_builtin
+5:8 exports field -> public keyword_or_builtin
+5:20 accrueInterest function -> internal default_internal
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: exports, module
+kept_dynamic: 

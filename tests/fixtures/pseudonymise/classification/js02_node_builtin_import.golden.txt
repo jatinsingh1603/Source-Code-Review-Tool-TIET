@@ -1,0 +1,17 @@
+file: js02_node_builtin_import.js
+allowlist: javascript-2026.11.06.1
+1:7 fs variable -> public stdlib_import
+1:12 require variable -> public keyword_or_builtin
+2:7 path variable -> public stdlib_import
+2:14 require variable -> public keyword_or_builtin
+4:10 readConfig function -> internal default_internal
+4:21 name parameter -> internal default_internal
+5:10 fs variable -> public stdlib_import
+5:13 readFileSync field -> public member_of_public
+5:26 path variable -> public stdlib_import
+5:31 join field -> public member_of_public
+5:36 __dirname variable -> internal default_internal
+5:47 name parameter -> internal default_internal
+counts: unresolved_base=0 unresolved_name=1 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: fs, join, path, readFileSync, require
+kept_dynamic: 

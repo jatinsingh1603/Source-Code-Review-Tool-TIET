@@ -1,0 +1,16 @@
+file: js24_public_member_unlisted.js
+allowlist: javascript-2026.11.06.1
+1:7 axios variable -> public allowlisted_import
+1:15 require variable -> public keyword_or_builtin
+3:16 load function -> internal default_internal
+3:21 url parameter -> internal default_internal
+4:9 response variable -> internal default_internal
+4:26 axios variable -> public allowlisted_import
+4:32 get field -> public member_of_public
+4:36 url parameter -> internal default_internal
+4:43 timeout field -> public member_name
+5:10 response variable -> internal default_internal
+5:19 someInternalField field -> internal default_internal
+counts: unresolved_base=1 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: axios, get, require, timeout
+kept_dynamic: 

@@ -1,0 +1,13 @@
+file: js09_magic_method_tostring.js
+allowlist: javascript-2026.11.06.1
+1:7 Money class -> internal default_internal
+2:3 constructor method -> public framework_contract
+2:15 amount parameter -> internal default_internal
+3:10 amount field -> internal default_internal
+3:19 amount parameter -> internal default_internal
+6:3 toString method -> public framework_contract
+7:12 String variable -> public keyword_or_builtin
+7:24 amount field -> internal default_internal
+counts: unresolved_base=2 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: String, constructor, toString
+kept_dynamic: 

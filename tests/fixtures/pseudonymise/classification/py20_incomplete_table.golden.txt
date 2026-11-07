@@ -1,0 +1,18 @@
+file: py20_incomplete_table.py
+allowlist: python-2026.11.06.1
+1:6 flask module -> internal incomplete_table
+1:19 request import -> internal incomplete_table
+2:6 billing module -> internal unlisted_import
+2:14 engine module -> internal default_internal
+2:28 accrue_interest import -> internal unlisted_import
+5:5 handle function -> public framework_contract
+6:5 rate variable -> internal default_internal
+6:12 request import -> internal incomplete_table
+6:20 args field -> internal incomplete_table
+6:25 get field -> internal incomplete_table
+7:12 accrue_interest import -> internal unlisted_import
+7:28 rate parameter -> internal keyword_of_internal
+7:33 rate variable -> internal default_internal
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=5 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: handle
+kept_dynamic: 

@@ -1,0 +1,14 @@
+file: py05_internal_import.py
+allowlist: python-2026.11.06.1
+1:15 billing_rules import -> internal internal_import
+2:7 models module -> internal default_internal
+2:21 Account import -> internal internal_import
+5:5 load function -> public well_known
+5:10 account_id parameter -> internal default_internal
+6:12 billing_rules import -> internal internal_import
+6:26 apply field -> internal default_internal
+6:32 Account import -> internal internal_import
+6:40 account_id parameter -> internal default_internal
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: load
+kept_dynamic: 

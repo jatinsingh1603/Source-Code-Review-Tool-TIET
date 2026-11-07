@@ -1,0 +1,7 @@
+file: js13_subscript_literal_outside_file.js
+allowlist: javascript-2026.11.06.1
+1:10 readFlag function -> internal default_internal
+2:10 globalThis variable -> public keyword_or_builtin
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: globalThis
+kept_dynamic: 

@@ -1,0 +1,15 @@
+file: py01_keyword_builtin.py
+allowlist: python-2026.11.06.1
+1:5 convert function -> internal default_internal
+1:13 value parameter -> internal default_internal
+2:8 value parameter -> internal default_internal
+3:16 str variable -> public keyword_or_builtin
+3:20 len variable -> public keyword_or_builtin
+3:24 value parameter -> internal default_internal
+4:12 sorted variable -> public keyword_or_builtin
+4:19 value parameter -> internal default_internal
+4:26 key parameter -> public keyword_of_public
+4:30 len variable -> public keyword_or_builtin
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: key, len, sorted, str
+kept_dynamic: 

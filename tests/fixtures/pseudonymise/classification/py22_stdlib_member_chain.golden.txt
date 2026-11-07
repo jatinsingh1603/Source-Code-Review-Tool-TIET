@@ -1,0 +1,15 @@
+file: py22_stdlib_member_chain.py
+allowlist: python-2026.11.06.1
+1:8 os import -> public stdlib_import
+4:5 config_path function -> internal default_internal
+4:17 folder parameter -> internal default_internal
+5:12 os import -> public stdlib_import
+5:15 path field -> public member_of_public
+5:20 join field -> public member_of_public
+5:25 folder parameter -> internal default_internal
+5:33 os import -> public stdlib_import
+5:36 environ field -> public member_of_public
+5:44 get field -> public framework_contract
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: environ, get, join, os, path
+kept_dynamic: 

@@ -1,0 +1,15 @@
+file: js01_keyword_builtin.js
+allowlist: javascript-2026.11.06.1
+1:10 render function -> public framework_contract
+1:17 value parameter -> internal default_internal
+2:7 value parameter -> internal default_internal
+3:12 JSON variable -> public keyword_or_builtin
+3:17 stringify field -> public member_of_public
+3:27 Object variable -> public keyword_or_builtin
+3:34 keys field -> public member_of_public
+3:39 value parameter -> internal default_internal
+5:10 parseInt variable -> public keyword_or_builtin
+5:19 value parameter -> internal default_internal
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: JSON, Object, keys, parseInt, render, stringify
+kept_dynamic: 

@@ -1,0 +1,17 @@
+file: py06_chain_resolved_base.py
+allowlist: python-2026.11.06.1
+1:6 flask module -> public allowlisted_import
+1:19 request import -> public allowlisted_import
+4:5 read_form function -> internal default_internal
+4:15 field_name parameter -> internal default_internal
+5:12 request import -> public allowlisted_import
+5:20 form field -> public member_of_public
+5:25 get field -> public member_of_public
+5:29 field_name parameter -> internal default_internal
+5:42 request import -> public allowlisted_import
+5:50 form field -> public member_of_public
+5:55 getlist field -> internal default_internal
+5:63 field_name parameter -> internal default_internal
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: flask, form, get, request
+kept_dynamic: 

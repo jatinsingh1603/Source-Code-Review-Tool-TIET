@@ -1,0 +1,12 @@
+file: js10_framework_contract_react.js
+allowlist: javascript-2026.11.06.1
+1:8 React import -> internal unlisted_import
+3:22 Panel class -> internal default_internal
+3:36 React import -> internal unlisted_import
+3:42 Component field -> internal default_internal
+4:3 componentDidMount method -> public framework_contract
+5:10 loadPanel field -> internal default_internal
+8:3 render method -> public framework_contract
+counts: unresolved_base=1 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: componentDidMount, render
+kept_dynamic: 

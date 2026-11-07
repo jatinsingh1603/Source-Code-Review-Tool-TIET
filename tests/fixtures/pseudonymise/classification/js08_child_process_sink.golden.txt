@@ -1,0 +1,16 @@
+file: js08_child_process_sink.js
+allowlist: javascript-2026.11.06.1
+1:9 exec variable -> public stdlib_import
+1:18 require variable -> public keyword_or_builtin
+3:10 runTool function -> internal default_internal
+3:18 target parameter -> internal default_internal
+4:3 exec variable -> public stdlib_import
+4:16 target parameter -> internal default_internal
+4:27 error parameter -> internal default_internal
+4:34 stdout parameter -> internal default_internal
+4:45 console variable -> public keyword_or_builtin
+4:53 log field -> public member_of_public
+4:57 stdout parameter -> internal default_internal
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: console, exec, log, require
+kept_dynamic: 

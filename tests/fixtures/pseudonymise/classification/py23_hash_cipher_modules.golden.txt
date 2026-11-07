@@ -1,0 +1,17 @@
+file: py23_hash_cipher_modules.py
+allowlist: python-2026.11.06.1
+1:8 hashlib import -> public stdlib_import
+2:8 hmac import -> public stdlib_import
+5:5 digest function -> internal default_internal
+5:12 key parameter -> internal default_internal
+5:17 message parameter -> internal default_internal
+6:12 hmac import -> public stdlib_import
+6:17 new field -> public member_of_public
+6:21 key parameter -> internal default_internal
+6:26 message parameter -> internal default_internal
+6:35 hashlib import -> public stdlib_import
+6:43 sha256 field -> public member_of_public
+6:51 hexdigest field -> public member_name
+counts: unresolved_base=1 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: hashlib, hexdigest, hmac, new, sha256
+kept_dynamic: 

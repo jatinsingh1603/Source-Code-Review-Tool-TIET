@@ -1,0 +1,10 @@
+file: js16_subscript_literal_in_file.js
+allowlist: javascript-2026.11.06.1
+1:7 festivalBonusRate variable -> internal default_internal [dynamic_name]
+3:10 bonusFor function -> internal default_internal
+3:19 account parameter -> internal default_internal
+4:10 account parameter -> internal default_internal
+4:41 festivalBonusRate variable -> internal default_internal [dynamic_name]
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=1 dynamic_code=0
+kept_public: 
+kept_dynamic: 

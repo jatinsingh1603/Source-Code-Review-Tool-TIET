@@ -1,0 +1,15 @@
+file: py21_subprocess_sink_sanitiser.py
+allowlist: python-2026.11.06.1
+1:8 shlex import -> public stdlib_import
+2:8 subprocess import -> public stdlib_import
+5:5 run_tool function -> internal default_internal
+5:14 target parameter -> internal default_internal
+6:12 subprocess import -> public stdlib_import
+6:23 run field -> public member_of_public
+6:36 shlex import -> public stdlib_import
+6:42 quote field -> public member_of_public
+6:48 target parameter -> internal default_internal
+6:58 check parameter -> public keyword_of_public
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: check, quote, run, shlex, subprocess
+kept_dynamic: 

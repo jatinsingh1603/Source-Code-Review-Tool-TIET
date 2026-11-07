@@ -1,0 +1,14 @@
+file: py02_stdlib_import.py
+allowlist: python-2026.11.06.1
+1:8 os import -> public stdlib_import
+2:6 json module -> public stdlib_import
+2:18 dumps import -> public stdlib_import
+5:5 show function -> internal default_internal
+5:10 path parameter -> internal default_internal
+6:12 dumps import -> public stdlib_import
+6:26 os import -> public stdlib_import
+6:29 getcwd field -> public member_of_public
+6:47 path parameter -> internal default_internal
+counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
+kept_public: dumps, getcwd, json, os
+kept_dynamic: 
