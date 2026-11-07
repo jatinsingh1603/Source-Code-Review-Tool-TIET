@@ -118,6 +118,7 @@ What may leave the machine.
 | `privacy.pseudonym.role_hints` | bool | `false` | `CODEKAVACH_PRIVACY__PSEUDONYM__ROLE_HINTS` | restricted | Append an analysis-derived role (cred, authz, sanitised, tainted, sink_arg) to a pseudonym. Leave off in a client engagement until the leakage arm has measured it. |
 | `privacy.slice.default_strategy` | enclosing_function \| taint_path \| backward_slice | `"enclosing_function"` | `CODEKAVACH_PRIVACY__SLICE__DEFAULT_STRATEGY` | restricted | Slice strategy used when nothing more specific applies. The path-based strategies need a taint engine and fall back to the enclosing function without one. |
 | `privacy.slice.max_tokens` | int | `2048` | `CODEKAVACH_PRIVACY__SLICE__MAX_TOKENS` | restricted | Token budget of one slice, estimated locally (about 3.5 characters per token). A slice that cannot fit is shrunk in a fixed order and, failing that, refused. |
+| `privacy.slice.max_needs_context_rounds` | int | `2` | `CODEKAVACH_PRIVACY__SLICE__MAX_NEEDS_CONTEXT_ROUNDS` | restricted | How many times the model may ask for one more definition for a single candidate. Each round discloses more code, is counted against the aggregation budget and is recorded in the ledger. 0 turns the loop off. |
 
 Defaults too long for the table:
 

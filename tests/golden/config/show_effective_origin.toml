@@ -115,6 +115,7 @@ role_hints = false        # default
 [privacy.slice]
 default_strategy = "enclosing_function"  # default
 max_tokens = 2048         # default
+max_needs_context_rounds = 2  # default
 
 [llm]
 enabled = true            # default

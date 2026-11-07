@@ -299,6 +299,17 @@ class SliceSettings(SectionModel):
         ),
         json_schema_extra=bounds(64, 200_000) | restricted(),
     )
+    max_needs_context_rounds: Annotated[
+        int, in_range(0, 10, "privacy.slice.max_needs_context_rounds")
+    ] = Field(
+        default=2,
+        description=(
+            "How many times the model may ask for one more definition for a single candidate. "
+            "Each round discloses more code, is counted against the aggregation budget and is "
+            "recorded in the ledger. 0 turns the loop off."
+        ),
+        json_schema_extra=bounds(0, 10) | restricted(),
+    )
 
 
 class PrivacySettings(SectionModel):

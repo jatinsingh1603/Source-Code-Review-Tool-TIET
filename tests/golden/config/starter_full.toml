@@ -169,6 +169,8 @@ level = "L3"
 # default_strategy = "enclosing_function"
 #~ Token budget of one slice, estimated locally (about 3.5 characters per token). A slice that cannot fit is shrunk in a fixed order and, failing that, refused.
 # max_tokens = 2048
+#~ How many times the model may ask for one more definition for a single candidate. Each round discloses more code, is counted against the aggregation budget and is recorded in the ledger. 0 turns the loop off.
+# max_needs_context_rounds = 2
 
 #~ Language models. Keys are references, never values.
 #~ Language models and their providers.

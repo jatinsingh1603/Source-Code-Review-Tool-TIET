@@ -118,7 +118,8 @@
       },
       "slice": {
         "default_strategy": "enclosing_function",
-        "max_tokens": 2048
+        "max_tokens": 2048,
+        "max_needs_context_rounds": 2
       }
     },
     "llm": {
@@ -839,6 +840,12 @@
       "contributors": []
     },
     "privacy.slice.default_strategy": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.slice.max_needs_context_rounds": {
       "layer": "default",
       "source": null,
       "line": null,

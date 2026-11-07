@@ -1,0 +1,14 @@
+candidate app/views.py:7: rounds=2 ['expanded', 'expanded', 'round_cap']
+candidate app/views.py:15: rounds=1 ['expanded']
+candidate app/rates.py:2: rounds=0 []
+
+slices = 6
+files = 4
+functions = 6
+lines_disclosed = 27
+lines_prepared_total = 27
+tokens_estimated = 379
+repository_fraction_pct = 50.00
+call_edges = 6
+context_expansions = 3
+strategy_enclosing_function = 6

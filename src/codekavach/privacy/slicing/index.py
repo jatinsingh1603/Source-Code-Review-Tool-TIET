@@ -91,6 +91,23 @@ class ParseIndex:
         """The call graph of the scan, or ``None`` when the stage was not run."""
         return self._callgraph
 
+    @property
+    def total_lines(self) -> int:
+        """Lines over every file of the inventory: the denominator of a repository fraction."""
+        return sum(file.line_count for file in self._files.values())
+
+    def line_count_of(self, path: str) -> int:
+        """Lines of ``path`` according to the inventory; ``0`` for a path the scan did not see."""
+        file = self._files.get(path)
+        return file.line_count if file is not None else 0
+
+    def functions_named(self, name: str) -> tuple[tuple[RepoPath, FunctionRange], ...]:
+        """Every function or method called ``name`` in any parsed file, in path then line order."""
+        found: list[tuple[RepoPath, FunctionRange]] = []
+        for path in sorted(self._ast):
+            found.extend((path, r) for r in self.function_ranges_of(path) if r.symbol_name == name)
+        return tuple(found)
+
     def is_excluded(self, path: str) -> tuple[bool, str]:
         """Whether ``path`` must not be sliced, and the reason (``""`` when it may be)."""
         if self._never_send(path):

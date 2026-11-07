@@ -1675,6 +1675,15 @@
           "type": "string",
           "x-ck-restricted": true
         },
+        "max_needs_context_rounds": {
+          "default": 2,
+          "description": "How many times the model may ask for one more definition for a single candidate. Each round discloses more code, is counted against the aggregation budget and is recorded in the ledger. 0 turns the loop off.",
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Max Needs Context Rounds",
+          "type": "integer",
+          "x-ck-restricted": true
+        },
         "max_tokens": {
           "default": 2048,
           "description": "Token budget of one slice, estimated locally (about 3.5 characters per token). A slice that cannot fit is shrunk in a fixed order and, failing that, refused.",

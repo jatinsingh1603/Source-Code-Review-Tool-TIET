@@ -126,9 +126,12 @@ class Pseudonymiser:
         salt: ScanSalt,
         level: PrivacyLevel,
         scan_id: str,
+        generator: PseudonymGenerator | None = None,
     ) -> tuple[SanitisedPayload, MappingBatch]:
         """The payload and the mapping batch of ``slice_``; see ``process`` for the provenance."""
-        result = self.process(slice_, redaction, salt=salt, level=level, scan_id=scan_id)
+        result = self.process(
+            slice_, redaction, salt=salt, level=level, scan_id=scan_id, generator=generator
+        )
         return result.payload, result.batch
 
     def process(
@@ -139,10 +142,17 @@ class Pseudonymiser:
         salt: ScanSalt,
         level: PrivacyLevel,
         scan_id: str,
+        generator: PseudonymGenerator | None = None,
     ) -> PseudonymisationResult:
         """The payload, the mapping batch and the provenance of ``slice_``.
 
         ``redaction`` is the redaction of ``Pseudonymiser.layout(slice_, level).text``.
+
+        ``generator`` is the scan's generator. Pass the same one for every payload of a scan (and
+        for the context rounds of a candidate) so that a symbol keeps its token in each of them;
+        without one a fresh generator numbers only the names of this slice, so the same function
+        gets different tokens in different slices. The mapping batch holds only the tokens that
+        appear in this payload, whatever else the generator has numbered.
 
         Raises:
             PseudonymError: any step failed; the message names the step and no text.
@@ -155,7 +165,9 @@ class Pseudonymiser:
                 "L4 sends abstract facts and no code; it is delivered by epic E27 (issue E27-01)"
             )
         try:
-            return self._process(slice_, redaction, salt, level, scan_id)
+            return self._process(
+                slice_, redaction, salt=salt, level=level, scan_id=scan_id, generator=generator
+            )
         except PseudonymError:
             raise
         except Exception as exc:  # noqa: BLE001 - fail closed: every failure aborts the candidate
@@ -167,9 +179,11 @@ class Pseudonymiser:
         self,
         slice_: CodeSlice,
         redaction: RedactionResult,
+        *,
         salt: ScanSalt,
         level: PrivacyLevel,
         scan_id: str,
+        generator: PseudonymGenerator | None,
     ) -> PseudonymisationResult:
         layout = layout_of(slice_, level)
         _check_redaction(layout, redaction)
@@ -184,7 +198,9 @@ class Pseudonymiser:
             )
             provenance = PayloadProvenance(PSEUDONYMISE_VERSION, level, None, None)
             return PseudonymisationResult(payload, MappingBatch(scan_id), provenance)
-        return self._full(slice_, redaction, layout, salt=salt, level=level, scan_id=scan_id)
+        return self._full(
+            slice_, redaction, layout, salt=salt, level=level, scan_id=scan_id, generator=generator
+        )
 
     def _full(
         self,
@@ -195,6 +211,7 @@ class Pseudonymiser:
         salt: ScanSalt,
         level: PrivacyLevel,
         scan_id: str,
+        generator: PseudonymGenerator | None,
     ) -> PseudonymisationResult:
         language = slice_.language
         spec = REGISTRY.get(language)
@@ -208,7 +225,7 @@ class Pseudonymiser:
         )
         allowlist = PublicAllowlist.bundled(language, extra=self._extra)
         classification = classify_all(parsed, table, allowlist=allowlist)
-        generator = PseudonymGenerator(salt)
+        generator = generator if generator is not None else PseudonymGenerator(salt)
         labels = file_labels(generator, (segment.path for segment in slice_.segments))
         plan, report = renamer.plan_with_report(
             parsed, classification, generator, allowlist=allowlist, level=level
@@ -222,7 +239,7 @@ class Pseudonymiser:
         if Counter(find_placeholders(text)) != Counter(find_placeholders(redaction.text)):
             raise PseudonymError("pseudonymisation changed the placeholders of the text")
         line_map = map_layout(layout, text)
-        assignments = generator.assignments()
+        assignments = _used(generator.assignments(), text)
         kept = classification.kept_public_names()
         _check_survival(text, assignments, frozenset(kept))
         primary = next(s for s in slice_.segments if s.role is SegmentRole.PRIMARY)
@@ -251,6 +268,14 @@ class Pseudonymiser:
             report=report,
         )
         return PseudonymisationResult(payload, batch, provenance)
+
+
+def _used(
+    assignments: tuple[tuple[PseudonymKind, str, str], ...], text: str
+) -> tuple[tuple[PseudonymKind, str, str], ...]:
+    """The assignments whose token appears in ``text``: a shared generator numbers more names."""
+    present = set(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", text))
+    return tuple(item for item in assignments if item[2] in present)
 
 
 def _check_redaction(layout: PayloadLayout, redaction: RedactionResult) -> None:

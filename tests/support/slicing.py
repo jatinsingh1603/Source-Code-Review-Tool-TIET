@@ -74,3 +74,8 @@ def candidate_at(path: str, line: int, *more: tuple[str, int], **overrides: Any)
     return make_candidate(
         locations=locations, language=language_of(path), taint_path=None, **overrides
     )
+
+
+def candidate_id_n(number: int) -> str:
+    """A valid candidate id that differs by ``number`` (0 to 9), built so it is no literal."""
+    return "cand_0" + "0" * 24 + "ABCDEFGHJK"[number]
