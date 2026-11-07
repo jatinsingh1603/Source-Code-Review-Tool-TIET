@@ -16,6 +16,7 @@ exclusive end) by adding one to each. Converting tree-sitter *byte* columns into
 columns needs the line text and is done by the parsing layer (E07), not here.
 """
 
+import re
 from typing import ClassVar, Self
 
 from pydantic import field_validator, model_validator
@@ -24,6 +25,7 @@ from codekavach.core.models.base import DataClassification, KavachModel
 from codekavach.core.models.paths import RepoPath
 
 MAX_SYMBOL_LENGTH = 512
+_CONTROL_CHARACTER = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 
 
 def check_symbol(value: str) -> str:
@@ -34,7 +36,7 @@ def check_symbol(value: str) -> str:
     stripped = value.strip()
     if not 1 <= len(stripped) <= MAX_SYMBOL_LENGTH:
         raise ValueError("symbol must be 1 to 512 characters after stripping")
-    if any(ord(char) < 32 or 127 <= ord(char) < 160 for char in stripped):
+    if _CONTROL_CHARACTER.search(stripped):
         raise ValueError("symbol must not contain control characters")
     return stripped
 
