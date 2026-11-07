@@ -127,3 +127,21 @@ def test_blanking_preserves_line_count_and_every_newline_offset(lines: list[str]
     assert len(out.split("\n")) == len(source.split("\n"))
     assert newline_offsets(out) == newline_offsets(source)
     assert len(out.encode()) == len(source.encode())
+
+
+@pytest.mark.parametrize(
+    ("language", "source"),
+    [
+        (Language.PYTHON, "x = 1  # contact <PII:email:2> about it\n"),
+        (Language.JAVASCRIPT, "const a = 1; // contact <PII:email:2> about it\n"),
+        (Language.JAVASCRIPT, "const a = 1; /* contact <PII:email:2> about it */\n"),
+    ],
+)
+def test_a_comment_that_holds_a_placeholder_keeps_its_delimiters_and_still_parses(
+    language: Language, source: str
+) -> None:
+    out = blank(source, language)
+    assert "<PII:email:2>" in out
+    assert "contact" not in out
+    assert parse("sample", language, out).error_count == 0
+    assert len(out.encode()) == len(source.encode())

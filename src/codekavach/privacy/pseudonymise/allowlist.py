@@ -243,6 +243,20 @@ class PublicAllowlist:
         """Whether ``name`` is a well-known source, sink, sanitiser or instance name."""
         return name in self._bundle.well_known
 
+    def is_public(self, word: str) -> bool:
+        """Whether ``word`` may stay in clear by its spelling alone, for the literal shaper.
+
+        True for a keyword or builtin, a dunder, a name the user added, a framework contract and
+        a well-known source, sink or sanitiser; nothing that needs a symbol table to decide.
+        """
+        return (
+            self.is_keyword_or_builtin(word)
+            or self.is_magic(word)
+            or self.is_extra(word)
+            or self.is_framework_contract(word)
+            or self.is_well_known(word)
+        )
+
     def is_public_module(self, top: str) -> bool:
         """Whether a third-party module, by its top-level name, is on the allowlist."""
         surface = self._bundle.packages.get(top)

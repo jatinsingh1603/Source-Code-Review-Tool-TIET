@@ -91,3 +91,12 @@ def test_the_javascript_framework_entries_name_their_framework() -> None:
     for section in ("framework_contracts", "framework_decorators"):
         for name, framework in data[section].items():
             assert isinstance(framework, str) and framework.strip(), (section, name)
+
+
+def test_is_public_is_the_spelling_only_test_the_literal_shaper_uses() -> None:
+    allowlist = PublicAllowlist.bundled(Language.PYTHON, extra=("festival_rate",))
+    assert allowlist.is_public("print")  # a builtin
+    assert allowlist.is_public("__init__")  # a dunder
+    assert allowlist.is_public("festival_rate")  # a name the user added
+    assert not allowlist.is_public("compute_bonus")
+    assert not allowlist.is_public("flask")  # a module needs the symbol table, not the spelling

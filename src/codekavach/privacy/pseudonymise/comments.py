@@ -44,9 +44,10 @@ def _check_marker(marker: str) -> None:
 def _offsets(text: str, spans: Sequence[Location]) -> list[tuple[int, int]]:
     """Character offsets of each span, from 1-based line and code-point columns."""
     line_starts = [0]
-    for index, char in enumerate(text):
-        if char == "\n":
-            line_starts.append(index + 1)
+    position = 0
+    for line in text.split("\n")[:-1]:
+        position += len(line) + 1
+        line_starts.append(position)
     ranges: list[tuple[int, int]] = []
     for span in spans:
         if span.start_line > len(line_starts):
@@ -69,8 +70,13 @@ def _offsets(text: str, spans: Sequence[Location]) -> list[tuple[int, int]]:
     return ranges
 
 
+_NOT_NEWLINE: Final = re.compile(r"[^\n]")
+
+
 def _blank_chars(text: str, *, filler: str) -> str:
     """Replace each character by ``filler`` repeated once per UTF-8 byte; newlines are kept."""
+    if text.isascii():
+        return _NOT_NEWLINE.sub(lambda _: filler, text)
     out: list[str] = []
     for char in text:
         if char == "\n":
@@ -98,16 +104,38 @@ def _split_placeholders(text: str) -> list[tuple[str, bool]]:
     return pieces
 
 
+_COMMENT_OPENERS: Final = ("//", "/*", "#")
+
+
+def _blank_comment(text: str) -> str:
+    """One comment, blanked to spaces; placeholder tokens inside it are kept verbatim.
+
+    A comment that holds a token keeps its delimiters (``#``, ``//``, ``/* */``): the token is
+    the only text left, and without its delimiter it would be code.
+    """
+    pieces = _split_placeholders(text)
+    if not any(is_placeholder for _, is_placeholder in pieces):
+        return _blank_chars(text, filler=" ")
+    opener = next((o for o in _COMMENT_OPENERS if text.startswith(o)), "")
+    closer = "*/" if opener == "/*" and len(text) >= 4 and text.endswith("*/") else ""
+    inner = text[len(opener) : len(text) - len(closer)]
+    return (
+        opener
+        + "".join(
+            chunk if is_placeholder else _blank_chars(chunk, filler=" ")
+            for chunk, is_placeholder in _split_placeholders(inner)
+        )
+        + closer
+    )
+
+
 def _blank_span(text: str, *, marker: str) -> str:
     """One comment or docstring, blanked; placeholder tokens inside it are kept verbatim."""
     prefix = _STRING_PREFIX.match(text)
     body_start = prefix.end() if prefix else 0
     rest = text[body_start:]
     if not rest or rest[0] not in "\"'":
-        return "".join(
-            chunk if is_placeholder else _blank_chars(chunk, filler=" ")
-            for chunk, is_placeholder in _split_placeholders(text)
-        )
+        return _blank_comment(text)
     quote = rest[:3] if rest.startswith(_TRIPLE) else rest[0]
     if len(text) < body_start + 2 * len(quote) or not text.endswith(quote):
         raise PseudonymError("a docstring span has no closing quote")
