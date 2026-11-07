@@ -1,0 +1,14 @@
+// codekavach payload L3
+// file_1
+const express = require('express');
+const { runQuery: var_5 } = require('./file_2');
+
+const router = express.Router();
+
+router.get('/file_3/file_4', async (param_2, param_1) => {
+  const { accountId: var_1, customerTier: var_3 } = param_2.params;
+                                               
+  const var_4 = `SELECT col_2 FROM tbl_6 WHERE col_3 = ${var_1}`;
+  const var_2 = await var_5(var_4, { accountId: var_1, customerTier: var_3, field_1: '<PII:email:2>' });
+  param_1.json({ field_2: var_2[0].field_2 });
+});

@@ -169,6 +169,18 @@ class PseudonymGenerator:
         base = f"{pseudonym_kind.value}_{number}"
         return f"{base}_{role.value}" if role is not None and self._role_hints else base
 
+    def assignments(self) -> tuple[tuple[PseudonymKind, str, str], ...]:
+        """Every ``(kind, original, token)`` numbered so far, by kind and then by number.
+
+        The originals are raw client data: this is for building the mapping batch (E09-05) and
+        nothing else. Role hints are not part of the token here.
+        """
+        return tuple(
+            (kind, original, f"{kind.value}_{number}")
+            for kind, numbers in self._numbers.items()
+            for original, number in sorted(numbers.items(), key=lambda item: item[1])
+        )
+
     def token_for_symbol(self, symbol: "Symbol", role: SecurityRole | None = None) -> str:
         """The token of a symbol, through the ``Symbol.kind`` vocabulary of E07-03."""
         return self.token(SYMBOL_KINDS[symbol.kind], symbol.name, role)
