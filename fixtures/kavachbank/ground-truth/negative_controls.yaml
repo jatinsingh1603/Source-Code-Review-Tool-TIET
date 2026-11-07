@@ -1,0 +1,15 @@
+# The safe counterpart of each planted class (E13-01): no engine may report anything at these lines,
+# so precision is measured rather than assumed. Same conventions as manifest.yaml.
+schema_version: 1
+
+negative_controls:
+  - {id: KB-SAFE-001, class: sql_injection, file: services/api/accounts.py, line: 18}
+  - {id: KB-SAFE-002, class: command_injection, file: services/api/reports.py, line: 16}
+  - {id: KB-SAFE-003, class: path_traversal, file: services/web/exporter.js, line: 19}
+  - {id: KB-SAFE-004, class: ssrf, file: services/web/payments.js, line: 27}
+  - {id: KB-SAFE-005, class: insecure_deserialisation, file: services/api/serialisation.py, line: 19}
+  - {id: KB-SAFE-006, class: weak_cryptography, file: services/api/security.py, line: 21}
+  - {id: KB-SAFE-007, class: weak_cryptography, file: services/api/security.py, line: 34}
+  - {id: KB-SAFE-008, class: missing_authorization, file: services/api/handlers.py, line: 47}
+  - {id: KB-SAFE-009, class: insecure_direct_object_reference, file: services/api/handlers.py, line: 49}
+  - {id: KB-SAFE-010, class: reflected_xss, file: services/web/renderer.js, line: 22}

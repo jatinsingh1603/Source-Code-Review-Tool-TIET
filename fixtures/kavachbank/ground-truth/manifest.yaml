@@ -1,0 +1,69 @@
+# Ground truth of the KavachBank fixture (E13-01). Paths are relative to fixtures/kavachbank;
+# lines are 1-based. Secrets and personal data are named by value_ref, never written here: a
+# value_ref is a constant of tests/support/synthetic.py or "<kind>:<subtype>[:<index>]".
+# Load it with tests/support/kavachbank.py; regenerate terms.txt with tools/gen_terms.py.
+schema_version: 1
+
+application:
+  name: KavachBank
+  description: >-
+    A deliberately vulnerable retail-banking sample: savings and deposit accounts, fee and
+    interest engines, loan scoring and fraud rules behind a Python API and a Node web front end.
+  services:
+    - services/api
+    - services/web
+
+planted_vulnerabilities:
+  - {id: KB-VULN-001, cwe: 89, class: sql_injection, file: services/api/accounts.py, line: 11, demo_1: true}
+  - {id: KB-VULN-002, cwe: 78, class: command_injection, file: services/api/reports.py, line: 9, demo_1: true}
+  - {id: KB-VULN-003, cwe: 22, class: path_traversal, file: services/web/exporter.js, line: 9, demo_1: true}
+  - {id: KB-VULN-004, cwe: 918, class: ssrf, file: services/web/payments.js, line: 18, demo_1: true}
+  - {id: KB-VULN-005, cwe: 502, class: insecure_deserialisation, file: services/api/serialisation.py, line: 14, demo_1: true}
+  - {id: KB-VULN-006, cwe: 327, class: weak_cryptography, file: services/api/security.py, line: 15, demo_1: true}
+  - {id: KB-VULN-007, cwe: 329, class: weak_cryptography, file: services/api/security.py, line: 27, demo_1: true}
+  - {id: KB-VULN-008, cwe: 862, class: missing_authorization, file: services/api/handlers.py, line: 39, demo_1: true}
+  - {id: KB-VULN-009, cwe: 639, class: insecure_direct_object_reference, file: services/api/handlers.py, line: 34, demo_1: true}
+  - {id: KB-VULN-010, cwe: 79, class: reflected_xss, file: services/web/renderer.js, line: 18, demo_1: true}
+
+planted_secrets:
+  - {id: KB-SEC-001, subtype: connection_string, file: services/api/config.py, line: 14, value_ref: "secret:connection_string"}
+  - {id: KB-SEC-002, subtype: aws_access_key, file: services/api/config.py, line: 16, value_ref: AWS_EXAMPLE_ACCESS_KEY_ID}
+  - {id: KB-SEC-003, subtype: aws_secret_key, file: services/api/config.py, line: 17, value_ref: AWS_EXAMPLE_SECRET_ACCESS_KEY}
+  - {id: KB-SEC-004, subtype: razorpay_key_secret, file: services/api/config.py, line: 18, value_ref: "secret:razorpay_key_secret"}
+  - {id: KB-SEC-005, subtype: generic_credential, file: services/api/config.py, line: 19, value_ref: "secret:generic_credential"}
+  - {id: KB-SEC-006, subtype: private_key_block, file: services/api/config.py, line: 20, value_ref: "secret:private_key_block"}
+  - {id: KB-SEC-007, subtype: razorpay_key_id, file: services/web/config.js, line: 10, value_ref: "secret:razorpay_key_id"}
+  - {id: KB-SEC-008, subtype: razorpay_key_secret, file: services/web/config.js, line: 11, value_ref: "secret:razorpay_key_secret"}
+
+planted_pii:
+  - {id: KB-PII-001, subtype: email, file: fixtures/seed/customers.json, line: 7, value_ref: EXAMPLE_EMAIL}
+  - {id: KB-PII-002, subtype: phone_intl, file: fixtures/seed/customers.json, line: 8, value_ref: EXAMPLE_PHONE}
+  - {id: KB-PII-003, subtype: pan_number, file: fixtures/seed/customers.json, line: 9, value_ref: "pii:pan_number"}
+  - {id: KB-PII-004, subtype: aadhaar_number, file: fixtures/seed/customers.json, line: 10, value_ref: "pii:aadhaar_number"}
+  - {id: KB-PII-005, subtype: date_of_birth, file: fixtures/seed/customers.json, line: 11, value_ref: "pii:date_of_birth"}
+  - {id: KB-PII-006, subtype: indian_mobile, file: fixtures/seed/customers.json, line: 17, value_ref: "pii:indian_mobile:1"}
+  - {id: KB-PII-007, subtype: gstin, file: fixtures/seed/customers.json, line: 18, value_ref: "pii:gstin"}
+  - {id: KB-PII-008, subtype: ifsc_code, file: fixtures/seed/customers.json, line: 19, value_ref: "pii:ifsc_code"}
+  - {id: KB-PII-009, subtype: upi_id, file: fixtures/seed/customers.json, line: 20, value_ref: "pii:upi_id"}
+  - {id: KB-PII-010, subtype: credit_card, file: fixtures/seed/customers.json, line: 21, value_ref: "pii:credit_card:1"}
+
+business_domain_dictionary:
+  - festival bonus
+  - festival rate
+  - loyalty uplift
+  - senior citizen uplift
+  - maintenance fee
+  - salary account
+  - minimum average balance
+  - cheque bounce penalty
+  - overdraft penalty
+  - neft fee
+  - eligibility score
+  - risk band
+  - velocity limit
+  - new beneficiary
+  - premium accounts
+  - fixed deposit
+  - payment link
+  - settlement status
+  - kavachbank

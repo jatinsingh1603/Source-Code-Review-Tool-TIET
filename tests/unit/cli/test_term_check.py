@@ -1,4 +1,5 @@
 import hashlib
+import importlib
 import logging
 import time
 from collections.abc import Callable, Iterator
@@ -243,7 +244,15 @@ KAVACHBANK_TERMS = (
 )
 
 
-@pytest.mark.skipif(not KAVACHBANK_TERMS.exists(), reason="needs E13 and the M1 privacy stages")
+def _ledger_reader_exists() -> bool:
+    ledger = importlib.import_module("codekavach.privacy.egress.ledger")
+    return hasattr(ledger, "open_reader")
+
+
+@pytest.mark.skipif(
+    not (KAVACHBANK_TERMS.exists() and _ledger_reader_exists()),
+    reason="needs the demo scan to write a ledger: the M1 privacy stages (E13-02) and E12",
+)
 def test_demo_terms(cli: Cli) -> None:
     kavachbank = KAVACHBANK_TERMS.parents[1]
     assert cli(["scan", str(kavachbank), "--profile", "demo"]).exit_code == 0

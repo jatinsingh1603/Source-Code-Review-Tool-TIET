@@ -62,8 +62,11 @@ repos:
         # Two JSON fixtures of the E08-02 secret-detector corpus cannot carry a pragma comment: a
         # Google service-account key file (a marker that expands to synthetic JSON) and a
         # package-lock integrity digest (a negative case). Every other corpus file allowlists
-        # its lines inline, and every planted value is listed in manifest.json.
-        exclude: ^(uv\.lock|docs/schemas/index\.json|docs/schemas/examples/.*|tests/golden/config/(show_effective(_origin)?|starter_full|starter_profile_demo)\.toml|tests/golden/config/snapshot_demo\.json|tests/fixtures/detect/secrets/(positive/gcp_service_account_json|negative/lock_sri)\.txt)$
+        # its lines inline, and every planted value is listed in manifest.json. The KavachBank
+        # fixture (E13-01) plants synthetic credentials and identifiers on purpose; every one is
+        # listed in fixtures/kavachbank/ground-truth/manifest.yaml and resolved against
+        # tests/support/synthetic.py by tests/integration/test_kavachbank_fixture.py.
+        exclude: ^(fixtures/kavachbank/.*|uv\.lock|docs/schemas/index\.json|docs/schemas/examples/.*|tests/golden/config/(show_effective(_origin)?|starter_full|starter_profile_demo)\.toml|tests/golden/config/snapshot_demo\.json|tests/fixtures/detect/secrets/(positive/gcp_service_account_json|negative/lock_sri)\.txt)$
 
   - repo: local
     hooks:
@@ -97,6 +100,12 @@ repos:
         language: system
         pass_filenames: false
         files: ^(src/codekavach/cli/|tools/gen_cli_docs\.py|docs/reference/cli\.md)
+      - id: kavachbank-terms-drift
+        name: KavachBank terms file drift (E13-01)
+        entry: uv run python tools/gen_terms.py --check
+        language: system
+        pass_filenames: false
+        files: ^(fixtures/kavachbank/ground-truth/|tools/gen_terms\.py|tests/support/(kavachbank|synthetic)\.py)
       - id: docs-check
         name: documentation check (links, anchors, style)
         entry: uv run python tools/dev/check_docs.py

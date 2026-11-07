@@ -1,0 +1,25 @@
+{
+  "_note": "Synthetic seed data for the KavachBank demo. Every identifier is listed in ground-truth/manifest.yaml.",
+  "customers": [
+    {
+      "customer_id": "C-100001",
+      "name": "Asha Verma",
+      "email": "asha.verma@example.test",
+      "phone": "+44 7700 900123",
+      "pan": "ABCPD1234K",
+      "aadhaar": "234123412346",
+      "date_of_birth": "1990-05-14",
+      "risk_band": "A2"
+    },
+    {
+      "customer_id": "C-100002",
+      "name": "Ravi Menon Traders",
+      "phone": "+919812345678",
+      "gstin": "27ABCPD1234K1Z1",
+      "ifsc": "ABCD0123456",
+      "upi_id": "ravi@examplebank",
+      "card_number": "4999 9999 9999 9996",
+      "risk_band": "B1"
+    }
+  ]
+}
