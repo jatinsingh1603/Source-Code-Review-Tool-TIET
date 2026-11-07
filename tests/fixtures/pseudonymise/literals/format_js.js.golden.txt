@@ -1,0 +1,2 @@
+const greet = "xx ${var_1}, xxxx xxxxxxx %s xx xxx";
+const fmt = "%08.3f xxxxxxx xxxxxxx xxx %d xxxxxxx";

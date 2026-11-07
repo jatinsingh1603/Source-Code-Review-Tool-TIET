@@ -1,0 +1,4 @@
+UPLOAD_DIR = "/file_1/file_2/file_3"
+TEMPLATE = "../file_4/file_5.html"
+LOG = "C:\\file_6\\file_7\\file_8.log"
+BACKUP = "./file_9/file_10/file_11.gz"

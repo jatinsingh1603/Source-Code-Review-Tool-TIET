@@ -1,0 +1,6 @@
+def load_premium(cur, customer_id):
+    cur.execute("SELECT col_1, col_2 FROM tbl_1 WHERE col_3 = '%s'")
+    cur.execute("SELECT col_4 FROM tbl_2 WHERE col_5 = 1 AND col_6 > 10000")
+    cur.execute("DELETE FROM tbl_3 WHERE col_7 = 10")
+    cur.execute("SELECT col_8 FROM tbl_4 WHERE col_9 = ? LIMIT 10")
+    return cur.fetchall()

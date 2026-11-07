@@ -1,0 +1,3 @@
+ENDPOINT = "https://mod_1:8443/var_1/var_2/{id}/var_3?var_4=x&var_5=x"
+MIRROR = "http://mod_2/var_6/var_7/"
+WEBHOOK = "https://mod_3/var_8/var_9/var_10?var_11=x"

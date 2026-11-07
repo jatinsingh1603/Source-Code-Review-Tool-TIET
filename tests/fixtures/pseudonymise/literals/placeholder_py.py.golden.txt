@@ -1,0 +1,2 @@
+QUERY = "SELECT <PII:email:2> FROM tbl_1 WHERE col_1 = '%s'"
+NOTE = "xxxxxxx <PII:email:2> xxxxx xxx xxxxxxxx xxxxx xxx"

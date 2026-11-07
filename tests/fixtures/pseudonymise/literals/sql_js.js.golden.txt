@@ -1,0 +1,3 @@
+const q1 = "UPDATE tbl_1 SET col_1 = 'xxxx' WHERE col_2 = ?";
+const q2 = "SELECT col_3 FROM tbl_2 WHERE col_4 = 5432";
+const q3 = "INSERT INTO tbl_3 (tbl_4, tbl_5) VALUES (?, ?)";

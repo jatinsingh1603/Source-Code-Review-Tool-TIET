@@ -1,0 +1,3 @@
+const cfg = "./file_1/file_2.json";
+const bin = "../../file_3/file_4";
+const data = "/file_5/file_6/file_7/file_8/file_9.csv";

@@ -1,0 +1,4 @@
+const title = "xxxxxxxxx xxxxxxx xxxxxxxxx";
+const short = "no";
+const msg = "xxxx xxxxxxxx xxxxx xxxxxx xxxxxxx xxxx xxxx";
+const pass = "xxxxxxxx xxxxx xxxxxxxxx xx xxx xxxxxxx xxxxx";

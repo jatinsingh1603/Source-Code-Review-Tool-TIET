@@ -1,0 +1,3 @@
+MSG = "xxxxx %s, xxx xxxx %d xxxxxx xxxxxxx xxxxxxx"
+TPL = "xxxx {var_1}, xxxx xxxxxxx xx {0:>10.2f}"
+RAW = "{{xxxxxxx xxxxxx}} xxx %(var_2)s xx %(var_3)s"

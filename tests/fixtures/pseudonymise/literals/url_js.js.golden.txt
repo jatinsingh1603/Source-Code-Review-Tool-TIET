@@ -1,0 +1,3 @@
+const base = "https://mod_1/var_1/var_2/:orderId?var_3=x";
+const ws = "wss://mod_2:9443/var_4/*";
+const hook = "https://mod_3/var_5/var_6/var_7";

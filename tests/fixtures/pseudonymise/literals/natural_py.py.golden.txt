@@ -1,0 +1,3 @@
+ERR = "xxxxxxx xxx xxx xxxxxxx xxxxxxx xxxxxx"
+HELP = "ok"
+NOTE = "xxxxxxxx xxxxxxxx xxxxx xx xxxxx xxxx"
