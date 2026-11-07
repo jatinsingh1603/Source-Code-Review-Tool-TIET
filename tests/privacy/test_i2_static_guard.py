@@ -7,6 +7,8 @@ import pytest
 
 from codekavach.core.models.base import KavachModel
 from tests.privacy._i2_guard import (
+    LLM_EXPOSE_ALLOWLIST,
+    LLM_FILE_IO_ALLOWLIST,
     LLM_NEUTRAL_ALLOWLIST,
     Violation,
     Zone,
@@ -20,7 +22,7 @@ from tests.privacy._i2_guard import (
 
 pytestmark = pytest.mark.privacy
 REPO_ROOT = Path(__file__).resolve().parents[2]
-LLM_FILE = "src/codekavach/llm/tasks/triage.py"
+LLM_FILE = "src/codekavach/llm/tasks/example.py"  # not on any allowlist
 
 
 def rules(source: str, *, zone: Zone = Zone.LLM, filename: str = LLM_FILE) -> list[str]:
@@ -188,3 +190,21 @@ def test_walker_on_a_temporary_tree(tmp_path: Path) -> None:
     assert any("broken.py:1: I2 violation: parse unparseable file" in text for text in violations)
     assert any("latin1.py:1: I2 violation: parse" in text for text in violations)
     assert not any("tests/t.py" in text for text in violations)
+
+
+def test_the_io_and_expose_allowlists_are_small_justified_and_exist() -> None:
+    for allowlist in (LLM_FILE_IO_ALLOWLIST, LLM_EXPOSE_ALLOWLIST):
+        assert len(allowlist) <= 3  # widening these needs a review of why, not a quiet addition
+        for path, reason in allowlist.items():
+            assert reason.strip(), path
+            assert (REPO_ROOT / path).is_file(), path
+    assert set(LLM_EXPOSE_ALLOWLIST) == {"src/codekavach/llm/tasks/triage.py"}
+
+
+def test_expose_in_an_llm_file_outside_the_allowlist_is_still_a_violation() -> None:
+    source = "def f(payload):\n    return payload.text.expose()\n"
+    other = "src/codekavach/llm/providers/other.py"
+    found = find_i2_violations(source, other, zone=Zone.LLM)
+    assert [violation.rule for violation in found] == ["R3"]
+    allowed = find_i2_violations(source, "src/codekavach/llm/tasks/triage.py", zone=Zone.LLM)
+    assert allowed == []

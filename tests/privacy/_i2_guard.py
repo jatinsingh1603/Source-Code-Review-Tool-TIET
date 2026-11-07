@@ -10,7 +10,7 @@ Rules, reported as ``path:line: I2 violation: <rule> <detail>``:
   ``if TYPE_CHECKING:`` and string annotations count too.
 - R2  ``SanitisedText(...)`` is called only under ``src/codekavach/privacy/``, in
   ``src/codekavach/core/models/text.py`` and under ``tests/``.
-- R3  no ``.expose()`` call in ``src/codekavach/llm/``.
+- R3  no ``.expose()`` call in ``src/codekavach/llm/`` outside ``LLM_EXPOSE_ALLOWLIST``.
 - R4  no ``open()``, ``.read_text()`` or ``.read_bytes()`` in ``src/codekavach/llm/`` outside
   ``LLM_FILE_IO_ALLOWLIST``.
 
@@ -63,9 +63,19 @@ LLM_NEUTRAL_ALLOWLIST: Mapping[str, str] = {
     "find_placeholders": "reads placeholder tokens in sanitised text",
     "PLACEHOLDER_PATTERN": "placeholder token syntax",
 }
-# Files under src/codekavach/llm/ allowed to read files (E23 may add its prompt loader, with a
-# written justification in its closing comment). Paths are relative to the repository root.
-LLM_FILE_IO_ALLOWLIST: frozenset[str] = frozenset()
+# Files under src/codekavach/llm/ allowed to read files, with the written justification for each.
+# Paths are relative to the repository root. Neither reads client data: one reads a template that
+# ships in the package, the other reads recorded provider responses from a fixture directory.
+LLM_FILE_IO_ALLOWLIST: Mapping[str, str] = {
+    "src/codekavach/llm/prompts/loader.py": "reads the prompt templates shipped with the package",
+    "src/codekavach/llm/providers/replay.py": "reads and writes recorded responses (cassettes)",
+}
+# Files under src/codekavach/llm/ allowed to call .expose() on sanitised text. A prompt has to
+# contain the payload, so exactly one place does it: the task that assembles the prompt. The
+# provider adapters receive the finished prompt and never expose text themselves.
+LLM_EXPOSE_ALLOWLIST: Mapping[str, str] = {
+    "src/codekavach/llm/tasks/triage.py": "assembles the prompt around the payload text (E13-02)",
+}
 RAW_EXTRA_NAMES = frozenset({"RawCode"})
 
 
@@ -260,7 +270,11 @@ class _Checker(ast.NodeVisitor):
         if name == "SanitisedText" and not self._may_construct_sanitised():
             self._add(node, "R2", "SanitisedText constructed outside codekavach.privacy")
         if self._llm:
-            if isinstance(func, ast.Attribute) and func.attr == "expose":
+            if (
+                isinstance(func, ast.Attribute)
+                and func.attr == "expose"
+                and not self._expose_allowed()
+            ):
                 self._add(node, "R3", ".expose() called in codekavach.llm")
             file_io = (isinstance(func, ast.Name) and func.id == "open") or (
                 isinstance(func, ast.Attribute) and func.attr in {"read_text", "read_bytes"}
@@ -273,6 +287,9 @@ class _Checker(ast.NodeVisitor):
         return self.zone in {Zone.PRIVACY, Zone.TESTS} or self.filename.endswith(
             "src/codekavach/core/models/text.py"
         )
+
+    def _expose_allowed(self) -> bool:
+        return any(self.filename.endswith(path) for path in LLM_EXPOSE_ALLOWLIST)
 
     def _file_io_allowed(self) -> bool:
         return any(self.filename.endswith(path) for path in LLM_FILE_IO_ALLOWLIST)
