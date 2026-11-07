@@ -16,13 +16,9 @@ from tree_sitter import Node
 
 from codekavach.config import Settings
 from codekavach.core.models import CodeSlice, Language, StubReason
-from codekavach.core.pipeline.salt import ScanSalt
-from codekavach.parsing import REGISTRY, parse
+from codekavach.parsing import parse
 from codekavach.parsing.functions import FunctionRange
 from codekavach.parsing.models import ParsedFile
-from codekavach.parsing.symbols import build_symbol_table
-from codekavach.privacy.pseudonymise.classify import IdentifierClass, classify_all
-from codekavach.privacy.pseudonymise.generator import PseudonymGenerator, PseudonymKind
 from codekavach.privacy.slicing.assemble import assemble, numbered_labels
 from codekavach.privacy.slicing.base import outcome_for
 from codekavach.privacy.slicing.budget import SliceBudget
@@ -40,6 +36,7 @@ from codekavach.privacy.slicing.stubs import (
     parameter_names,
     signature_of,
 )
+from tests.support.rename import rename_text
 from tests.support.slicing import candidate_at, make_index
 from tests.unit.privacy.slicing.test_fixtures import CASES, load, run
 
@@ -545,38 +542,24 @@ def test_there_are_at_least_fifteen_stub_cases_in_three_languages() -> None:
 
 
 def test_a_stubs_internal_names_are_renamed_before_the_payload_leaves() -> None:
-    """The names in stub text go through the classifier and the generator like any other name.
+    """Slice and stubs go through the real classifier and the Python renamer (E09-02, E09-04).
 
-    The renamer itself (E09-04) is not in the tree yet, so this test applies the generator to the
-    identifiers the classifier calls internal and checks that none survives and that the result
-    still parses.
+    The assembled text is what the pseudonymiser receives. None of the names that the stubs
+    carry survives in the renamed text, which still parses. The effect-summary and label lines
+    are comments, and the renamer blanks comments: the payload assembly (E09-05) has to add
+    them after renaming, or render them another way, to keep them in the payload.
     """
     _, found, _ = build(
         {"billing/service.py": SERVICE, "billing/bonus.py": BONUS}, ("billing/service.py", 9)
     )
     labels = numbered_labels([s.path for s in found.segments])
     text = assemble(found.segments, found.stubs, language=found.language, labels=labels)
-    parsed = parse("slice.py", Language.PYTHON, text)
-    table = build_symbol_table(parsed, REGISTRY.get(Language.PYTHON))
-    result = classify_all(parsed, table)
-    internal = sorted(
-        {
-            s.name
-            for s, d in zip(table.symbols, result.decisions, strict=True)
-            if d.classification is IdentifierClass.INTERNAL
-        }
-    )
-    for name in ("_lookup_rate", "compute_bonus", "tier_cap", "AccountService"):
-        assert name in internal
-    generator = PseudonymGenerator(ScanSalt(bytes(range(32))))
-    generator.prepare(PseudonymKind.FN, internal)
-    renamed = text
-    for name in sorted(internal, key=len, reverse=True):
-        renamed = re.sub(
-            rf"\b{re.escape(name)}\b", generator.token(PseudonymKind.FN, name), renamed
-        )
-    for name in ("_lookup_rate", "compute_bonus", "tier_cap", "AccountService"):
-        assert name not in renamed
+    internal = ("_lookup_rate", "compute_bonus", "tier_cap", "AccountService", "account_id")
+    assert all(name in text for name in internal)
+    renamed = rename_text(Language.PYTHON, text, extra=()).text
+    for name in internal:
+        assert name not in renamed, name
+    assert re.search(r"def fn_\d+\(param_\d+, param_\d+\): \.\.\.", renamed)
     assert parse("renamed.py", Language.PYTHON, renamed).error_count == 0
 
 
