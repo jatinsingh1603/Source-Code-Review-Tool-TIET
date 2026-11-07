@@ -80,6 +80,7 @@ def exercise(vault: Vault, tmp_path: Path) -> dict[str, Callable[[], object]]:
         "put": lambda: vault.put(batch()),
         "get_record": lambda: vault.get_record("var_1"),
         "lookup": lambda: vault.lookup("var_1"),
+        "lookup_many": lambda: vault.lookup_many(["var_1", "var_2"]),
         "reverse": lambda: vault.reverse(ORIGINALS[0]),
         "iter_originals": lambda: list(vault.iter_originals(min_len=1)),
         "original_count": lambda: vault.original_count(1),

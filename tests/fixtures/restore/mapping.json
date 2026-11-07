@@ -1,0 +1,11 @@
+{
+  "scan_id": "scan_fixture",
+  "note": "Synthetic originals only. Each row is [pseudonym, original, kind]; the vault is built from these rows.",
+  "entries": [
+    ["fn_1", "accrue_premium_interest", "fn"],
+    ["param_1", "account_id", "param"],
+    ["var_3", "invoice_totals", "var"],
+    ["cls_2", "AccountLedger", "cls"],
+    ["file_4", "accounts_module", "file"]
+  ]
+}

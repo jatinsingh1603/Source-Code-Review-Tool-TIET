@@ -39,7 +39,7 @@ import os
 import re
 import sqlite3
 import time
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
@@ -440,6 +440,38 @@ class Vault:
         """
         record = self.get_record(pseudonym, scan_id=scan_id)
         return None if record is None else record.original
+
+    def lookup_many(
+        self, pseudonyms: Iterable[str], *, scan_id: str | None = None
+    ) -> dict[str, str]:
+        """The originals behind several pseudonyms, in one query; unknown names are left out.
+
+        With ``scan_id`` only that scan's records are read. Without it the newest record of each
+        name wins, as in ``lookup``. Only the record that wins is decrypted.
+        """
+        names = list(dict.fromkeys(pseudonyms))
+        if not names:
+            return {}
+        marks = ",".join(["?"] * len(names))
+        sql = (
+            "SELECT scan_id, pseudonym, nonce, ciphertext FROM records "  # noqa: S608 - only "?" marks
+            f"WHERE pseudonym IN ({marks})"
+        )
+        args: list[Any] = list(names)
+        if scan_id is not None:
+            sql += " AND scan_id = ?"
+            args.append(scan_id)
+        connection = self._connect()
+        try:
+            rows = connection.execute(sql + " ORDER BY id DESC", args).fetchall()
+        finally:
+            connection.close()
+        found: dict[str, str] = {}
+        for row_scan, pseudonym, nonce, ciphertext in rows:
+            if pseudonym in found:
+                continue
+            found[pseudonym] = self._payload(row_scan, pseudonym, nonce, ciphertext)["o"]
+        return found
 
     def reverse(self, original: str, *, scan_id: str | None = None) -> str | None:
         """The pseudonym of ``original`` (newest first), found by its keyed index."""

@@ -1,0 +1,144 @@
+{
+  "note": "Recorded verdict texts for E10-02. Synthetic: names come from mapping.json. Each case runs against the payload of tests/support/factories.py (file lines 86 to 89, payload lines 1 to 4) unless it is noted otherwise. expect.dropped counts DroppedClaim entries; expect.locations counts cited_locations.",
+  "cases": [
+    {
+      "id": "variant_backticks",
+      "reasoning": "The check reads `fn_1` directly.",
+      "expect": {"verdict_dropped": false, "reasoning": "The check reads `accrue_premium_interest` directly.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "variant_case",
+      "reasoning": "Fn_1 and FN_1 both.",
+      "expect": {"verdict_dropped": false, "reasoning": "accrue_premium_interest and accrue_premium_interest both.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "variant_call_suffix",
+      "reasoning": "It calls fn_1() on entry.",
+      "expect": {"verdict_dropped": false, "reasoning": "It calls accrue_premium_interest() on entry.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "variant_possessive",
+      "reasoning": "The value of param_1's default is unset.",
+      "expect": {"verdict_dropped": false, "reasoning": "The value of account_id's default is unset.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "variant_plural",
+      "reasoning": "Both param_1s are tainted.",
+      "expect": {"verdict_dropped": false, "reasoning": "Both account_ids are tainted.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "variant_space_and_hyphen",
+      "reasoning": "Use fn 1 and fn-1 carefully.",
+      "expect": {"verdict_dropped": false, "reasoning": "Use accrue_premium_interest and accrue_premium_interest carefully.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "variant_markdown_emphasis",
+      "reasoning": "The **fn_1** and *param_1* values.",
+      "expect": {"verdict_dropped": false, "reasoning": "The **accrue_premium_interest** and *account_id* values.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "near_miss_in_second_sentence",
+      "reasoning": "The primary call uses param_1. Helper fn_11 is unrelated.",
+      "expect": {"verdict_dropped": false, "reasoning": "The primary call uses account_id.", "dropped": 1, "locations": 0}
+    },
+    {
+      "id": "near_miss_as_primary_assertion",
+      "reasoning": "Helper fn_11 is the issue.",
+      "expect": {"verdict_dropped": true, "reasoning": "", "dropped": 1, "locations": 0}
+    },
+    {
+      "id": "unknown_in_second_sentence",
+      "reasoning": "Taints param_1. See also fn_9.",
+      "expect": {"verdict_dropped": false, "reasoning": "Taints account_id.", "dropped": 1, "locations": 0}
+    },
+    {
+      "id": "unknown_remediation_sentence",
+      "reasoning": "Taints param_1.",
+      "remediation": "Bind param_1. Retire fn_9 now.",
+      "expect": {"verdict_dropped": false, "reasoning": "Taints account_id.", "remediation": "Bind account_id.", "dropped": 1, "locations": 0}
+    },
+    {
+      "id": "unknown_only_remediation",
+      "reasoning": "Taints param_1.",
+      "remediation": "Retire fn_9.",
+      "expect": {"verdict_dropped": false, "reasoning": "Taints account_id.", "remediation": "", "dropped": 1, "locations": 0}
+    },
+    {
+      "id": "unknown_twice_in_primary",
+      "reasoning": "Helper fn_9 calls fn_8 twice.",
+      "expect": {"verdict_dropped": true, "reasoning": "", "dropped": 2, "locations": 0}
+    },
+    {
+      "id": "secret_placeholder_plain",
+      "reasoning": "Found <SECRET:aws_access_key:1> in the file.",
+      "expect": {"verdict_dropped": false, "reasoning": "Found the hardcoded AWS access key in the file.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "secret_placeholder_in_backticks",
+      "reasoning": "Found `<SECRET:aws_access_key:1>` here.",
+      "expect": {"verdict_dropped": false, "reasoning": "Found the hardcoded AWS access key here.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "personal_data_placeholder",
+      "reasoning": "Mail to <PII:email:1> nightly.",
+      "expect": {"verdict_dropped": false, "reasoning": "Mail to the email nightly.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "unknown_term_is_primary",
+      "reasoning": "Calls <TERM:domain:1> now.",
+      "expect": {"verdict_dropped": true, "reasoning": "", "dropped": 1, "locations": 0}
+    },
+    {
+      "id": "unmappable_cited_line",
+      "reasoning": "Taints param_1.",
+      "cited_lines": [3, 50],
+      "expect": {"verdict_dropped": false, "reasoning": "Taints account_id.", "dropped": 1, "locations": 1}
+    },
+    {
+      "id": "all_cited_lines_mapped",
+      "reasoning": "Taints param_1.",
+      "cited_lines": [1, 4],
+      "expect": {"verdict_dropped": false, "reasoning": "Taints account_id.", "dropped": 0, "locations": 2}
+    },
+    {
+      "id": "primary_unanchored_then_anchored",
+      "reasoning": "fn_9 is the core. param_1 also.",
+      "expect": {"verdict_dropped": true, "reasoning": "", "dropped": 1, "locations": 0}
+    },
+    {
+      "id": "undecided_without_anchor",
+      "reasoning": "Need more.",
+      "is_vulnerable": null,
+      "needs_context": [{"kind": "caller", "symbol": "fn_77", "reason": "who calls it"}],
+      "expect": {"verdict_dropped": true, "reasoning": "", "dropped": 1, "locations": 0}
+    },
+    {
+      "id": "undecided_with_anchored_request",
+      "reasoning": "Need more.",
+      "is_vulnerable": null,
+      "needs_context": [{"kind": "callee_body", "symbol": "fn_1", "reason": "reads param_1"}],
+      "expect": {"verdict_dropped": false, "reasoning": "Need more.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "no_names_at_all",
+      "reasoning": "No names here at all.",
+      "expect": {"verdict_dropped": false, "reasoning": "No names here at all.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "several_kinds_in_order",
+      "reasoning": "Uses var_3. Then cls_2 wraps it. Finally file_4 is read.",
+      "expect": {"verdict_dropped": false, "reasoning": "Uses invoice_totals. Then AccountLedger wraps it. Finally accounts_module is read.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "lookalikes_are_left_alone",
+      "reasoning": "The fn_1st helper and myfn_1 stay.",
+      "expect": {"verdict_dropped": false, "reasoning": "The fn_1st helper and myfn_1 stay.", "dropped": 0, "locations": 0}
+    },
+    {
+      "id": "unknown_remediation_and_known_reasoning",
+      "reasoning": "Taints param_1. Also uses var_3.",
+      "remediation": "Retire fn_12 and rebind var_3.",
+      "expect": {"verdict_dropped": false, "reasoning": "Taints account_id. Also uses invoice_totals.", "remediation": "", "dropped": 1, "locations": 0}
+    }
+  ]
+}
