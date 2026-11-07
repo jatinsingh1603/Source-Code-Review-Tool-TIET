@@ -139,29 +139,35 @@ def _chain_failure(  # noqa: PLR0911 - one return per reason code
     return None
 
 
+def _chain_broken(seq: int, reason: str) -> StepResult:
+    return StepResult(
+        name="chain",
+        ok=False,
+        error_code="ledger_chain_broken",
+        message=f"ledger integrity check failed at seq {seq} ({reason})",
+        data={"ok": False, "first_bad_seq": seq, "reason": reason},
+    )
+
+
 def chain_step(context: VerifyContext) -> StepResult:
     """Walk the whole chain in ``seq`` order; stop at the first failure."""
     prev: EgressRecord | None = None
     seen: dict[int, str] = {}
-    for record in context.reader.records(None):
-        context.records += 1
-        failure = _chain_failure(record, prev, seen)
-        if failure is not None:
-            seq, reason = failure
-            return StepResult(
-                name="chain",
-                ok=False,
-                error_code="ledger_chain_broken",
-                message=f"ledger integrity check failed at seq {seq} ({reason})",
-                data={"ok": False, "first_bad_seq": seq, "reason": reason},
-            )
-        seen[record.seq] = record.payload_hash
-        if record.outcome.value in {"sent", "blocked"}:
-            context.payload_hashes.add(record.payload_hash)
-            context.seqs_by_hash.setdefault(record.payload_hash, []).append(record.seq)
-            if record.outcome.value == "sent":
-                context.sent_hashes.add(record.payload_hash)
-        prev = record
+    try:
+        for record in context.reader.records(None):
+            context.records += 1
+            failure = _chain_failure(record, prev, seen)
+            if failure is not None:
+                return _chain_broken(*failure)
+            seen[record.seq] = record.payload_hash
+            if record.outcome.value in {"sent", "blocked"}:
+                context.payload_hashes.add(record.payload_hash)
+                context.seqs_by_hash.setdefault(record.payload_hash, []).append(record.seq)
+                if record.outcome.value == "sent":
+                    context.sent_hashes.add(record.payload_hash)
+            prev = record
+    except Exception:  # noqa: BLE001 - a line the reader cannot parse is a broken chain, not a crash
+        return _chain_broken(context.records + 1, "unreadable_entry")
     return StepResult(
         name="chain",
         ok=True,

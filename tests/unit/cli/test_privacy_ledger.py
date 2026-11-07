@@ -11,6 +11,7 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
+from codekavach.cli.errors import BackendUnavailableError
 from codekavach.cli.ledger import VerifyContext, chain_step
 from codekavach.core.models import PrivacyLevel
 from codekavach.core.models.egress import EgressRecord, TokenCounts
@@ -173,10 +174,33 @@ def test_empty_ledger(cli: Cli, project: Path, reader: FakeReader) -> None:
     assert (verify.exit_code, "0 records" in verify.stdout) == (0, True)
 
 
-def test_no_backend(cli: Cli, project: Path) -> None:
+def test_no_backend(cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def unavailable(*args: object, **kwargs: object) -> object:
+        raise BackendUnavailableError(
+            "egress ledger is not available in this build", hint="delivered by epic E12"
+        )
+
+    monkeypatch.setattr("codekavach.cli.ledger.load_backend", unavailable)
     result = ledger(cli, project, "verify")
     assert result.exit_code == 2
     assert "error[backend_unavailable]" in result.stderr
+
+
+def test_a_line_the_reader_cannot_parse_is_a_broken_chain_not_a_crash(
+    cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class Unreadable(FakeReader):
+        def records(self, scan_id: str | None) -> Iterator[EgressRecord]:
+            yield from self.chain[:2]
+            raise ValueError("malformed ledger line")
+
+    fake = Unreadable(make_egress_chain(3))
+    fake_backend(monkeypatch, "codekavach.privacy.egress.ledger.open_reader", lambda layout: fake)
+    result = ledger(cli, project, "verify", "--json")
+    assert result.exit_code != 0
+    error = result.json["errors"][0]
+    assert error["code"] == "ledger_chain_broken"
+    assert "seq 3 (unreadable_entry)" in error["message"]
 
 
 def test_show_filters_and_footer(cli: Cli, project: Path, reader: FakeReader) -> None:

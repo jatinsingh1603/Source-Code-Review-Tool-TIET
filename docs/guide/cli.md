@@ -21,7 +21,7 @@ This is version 0.1.0.dev0. Some back ends belong to later epics. A command whos
 |---------|---------------|------|
 | `doctor`, `init`, `scan`, `providers list`, `privacy notice`, `privacy consent`, `completion`, `config` | yes | |
 | `privacy inspect` | not in this build | E11 |
-| `privacy ledger show`, `privacy ledger verify` | not in this build | E12 |
+| `privacy ledger show`, `privacy ledger verify` | yes | |
 | `providers test` | not in this build | E22 |
 | `report` | not in this build | E30 |
 | `vault status`, `vault rotate`, `vault destroy` | not in this build | E10 |
@@ -110,7 +110,7 @@ $ codekavach privacy ledger verify --check-terms terms.txt
 - `privacy ledger show` lists the recorded requests as metadata. It does not print payload text. `--outcome blocked` lists what the guard refused.
 - `privacy ledger verify` recomputes the hash chain of the ledger and checks the stored payloads against their hashes. `--check-terms` takes a file with one sensitive term per line (four characters or more) and fails when a term occurs verbatim in a stored payload. `--ignore-case` also matches other capitalisation. A failed check exits with code 3.
 
-These commands are not in this build yet (epics E11 and E12), so today each of them exits with code 2 and `error[backend_unavailable]`.
+`privacy inspect` is not in this build yet (epic E11), so today it exits with code 2 and `error[backend_unavailable]`. The ledger commands are in this build: a project whose scans sent nothing has an empty ledger and `privacy ledger verify` says `ledger intact: 0 records`. Nothing writes to the ledger before the provider layer arrives (epic E13).
 
 A terms file for the check holds terms like these:
 
