@@ -132,6 +132,7 @@ EXTRA_CANDIDATES: dict[str, list[Any]] = {
     "privacy.provider_tier_levels": [{"local": "L2", "private": "L2", "public": "L3"}],
     "privacy.public_allowlist_extra": [["PublicApiName"], ["public_api_name"]],
     "privacy.egress.provider_host_allowlist": [["api.example.test"]],
+    "privacy.egress.proxy_url": ["http://proxy.example.test:3128"],
     "llm.default_provider": ["mock"],
     "engines.enabled": [["semgrep"]],
     "engines.disabled": [["semgrep"]],

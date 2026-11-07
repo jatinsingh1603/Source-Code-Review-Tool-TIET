@@ -106,6 +106,7 @@ provider_host_allowlist = []  # default
 encrypt_at_rest = true    # default
 ticket_ttl_seconds = 60   # default
 scanner_timeout_seconds = 5.0  # default
+proxy_trust = "none"      # default
 
 [privacy.pseudonym]
 link_mode = "per_scan"    # default

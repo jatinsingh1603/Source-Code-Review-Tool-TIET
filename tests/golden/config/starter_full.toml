@@ -151,6 +151,10 @@ level = "L3"
 # ticket_ttl_seconds = 60
 #~ Time limit of one leak scanner; a scanner over it blocks the request.
 # scanner_timeout_seconds = 5.0
+#~ An explicit proxy for remote providers: an http or https address with host and port. Ambient proxy environment variables are never read. A proxy is a party in the path: name what it may do in proxy_trust. Credentials are not accepted.
+#? proxy_url = ""
+#~ What the proxy may do: none tunnels the TLS connection and sees only the host; inspect and terminate declare that it can see requests, which the privacy attestation records.
+# proxy_trust = "none"
 
 #~ How identifiers are renamed.
 [privacy.pseudonym]

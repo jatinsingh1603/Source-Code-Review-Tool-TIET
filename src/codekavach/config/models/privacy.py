@@ -15,6 +15,7 @@ process variable owned by E05-13.
 import re
 from pathlib import Path
 from typing import Annotated, Any, Final, Literal, Self
+from urllib.parse import urlsplit
 
 from pydantic import Field, field_validator, model_validator
 
@@ -202,6 +203,46 @@ class EgressSettings(SectionModel):
         description="Time limit of one leak scanner; a scanner over it blocks the request.",
         json_schema_extra={"minimum": 0.05, "maximum": 60.0} | restricted(),
     )
+
+    proxy_url: str | None = Field(
+        default=None,
+        description=(
+            "An explicit proxy for remote providers: an http or https address with host and "
+            "port. Ambient proxy environment variables are never read. A proxy is a party in "
+            "the path: name what it may do in proxy_trust. Credentials are not accepted."
+        ),
+        json_schema_extra=restricted(),
+    )
+    proxy_trust: Literal["none", "inspect", "terminate"] = Field(
+        default="none",
+        description=(
+            "What the proxy may do: none tunnels the TLS connection and sees only the host; "
+            "inspect and terminate declare that it can see requests, which the privacy "
+            "attestation records."
+        ),
+        json_schema_extra=restricted(),
+    )
+
+    @field_validator("proxy_url")
+    @classmethod
+    def _check_proxy(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        parts = urlsplit(value)
+        if (
+            parts.scheme not in ("http", "https")
+            or not parts.hostname
+            or parts.username is not None
+            or parts.password is not None
+            or parts.path not in ("", "/")
+            or parts.query
+            or parts.fragment
+        ):
+            raise ValueError(
+                f"{INVALID} privacy.egress.proxy_url is an http or https address with a host "
+                "and no credentials, path or query"
+            )
+        return value
 
     @field_validator("provider_host_allowlist")
     @classmethod

@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from codekavach.config import Settings
 from codekavach.config.models.privacy import (
     DEFAULT_NEVER_SEND,
+    EgressSettings,
     PathRule,
     PrivacySettings,
     VaultSettings,
@@ -213,6 +214,8 @@ EGRESS_DEFAULTS = {
     "encrypt_at_rest": True,
     "ticket_ttl_seconds": 60,
     "scanner_timeout_seconds": 5.0,
+    "proxy_url": None,
+    "proxy_trust": "none",
 }
 
 
@@ -261,3 +264,26 @@ def test_an_allow_list_entry_names_a_host(host: str) -> None:
 def test_an_allow_list_entry_cannot_be_a_formality(host: str) -> None:
     with pytest.raises(ValidationError):
         PrivacySettings.model_validate({"egress": {"provider_host_allowlist": [host]}})
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "ftp://proxy.example.com:3128",
+        "http://" + "user" + ":" + "x" + "@proxy.example.com:3128",
+        "http://proxy.example.com:3128/path",
+        "http://proxy.example.com:3128?x=1",
+        "proxy.example.com:3128",
+        "http://",
+    ],
+)
+def test_a_proxy_url_with_credentials_a_path_or_another_scheme_is_refused(value: str) -> None:
+    with pytest.raises(ValueError, match="proxy_url"):
+        EgressSettings(proxy_url=value)
+
+
+def test_an_explicit_proxy_is_accepted_and_trust_is_a_closed_set() -> None:
+    egress = EgressSettings(proxy_url="http://proxy.example.com:3128", proxy_trust="inspect")
+    assert egress.proxy_url == "http://proxy.example.com:3128"
+    with pytest.raises(ValueError, match="proxy_trust"):
+        EgressSettings(proxy_trust="trusted")  # type: ignore[arg-type]

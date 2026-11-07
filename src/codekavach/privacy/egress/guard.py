@@ -57,6 +57,8 @@ __all__ = [
     "LeakScanner",
     "ScannerRegistry",
     "VaultOriginals",
+    "host_allowed",
+    "payload_in_body",
 ]
 
 _log = get_logger("codekavach.privacy.egress")
@@ -236,7 +238,7 @@ def _mint(book: _TicketBook, meta: EgressMeta, ttl_seconds: int, now: datetime) 
     return ticket
 
 
-def _host_allowed(host: str | None, allowlist: Sequence[str]) -> bool:
+def host_allowed(host: str | None, allowlist: Sequence[str]) -> bool:
     """True when ``allowlist`` names ``host`` (``*.example.com`` matches subdomains only).
 
     The list is default-deny: an empty list allows no remote host, and so does a provider with no
@@ -255,7 +257,7 @@ def _host_allowed(host: str | None, allowlist: Sequence[str]) -> bool:
     return False
 
 
-def _payload_in_body(body: bytes, meta: EgressMeta, payload_text: str | None) -> bool:
+def payload_in_body(body: bytes, meta: EgressMeta, payload_text: str | None) -> bool:
     """True when the body really contains the payload that ``meta.payload_hash`` names.
 
     With the payload text, its SHA-256 must equal the hash and the text must occur in the body, as
@@ -352,7 +354,7 @@ class EgressGuard:
             return "level_not_permitted"
         if provider.is_remote and (consent is None or not consent.granted):
             return "consent_missing"
-        if not _payload_in_body(body, meta, payload_text):
+        if not payload_in_body(body, meta, payload_text):
             return "hash_mismatch"
         return None
 
@@ -363,7 +365,7 @@ class EgressGuard:
         if not provider.is_remote:
             return True
         allowlist = settings.privacy.egress.provider_host_allowlist
-        return settings.llm.allow_remote and _host_allowed(provider.host, allowlist)
+        return settings.llm.allow_remote and host_allowed(provider.host, allowlist)
 
     @staticmethod
     def _level_permitted(

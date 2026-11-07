@@ -138,6 +138,32 @@
           "type": "array",
           "x-ck-restricted": true
         },
+        "proxy_trust": {
+          "default": "none",
+          "description": "What the proxy may do: none tunnels the TLS connection and sees only the host; inspect and terminate declare that it can see requests, which the privacy attestation records.",
+          "enum": [
+            "none",
+            "inspect",
+            "terminate"
+          ],
+          "title": "Proxy Trust",
+          "type": "string",
+          "x-ck-restricted": true
+        },
+        "proxy_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "An explicit proxy for remote providers: an http or https address with host and port. Ambient proxy environment variables are never read. A proxy is a party in the path: name what it may do in proxy_trust. Credentials are not accepted.",
+          "title": "Proxy Url",
+          "x-ck-restricted": true
+        },
         "rate_per_minute": {
           "default": 60,
           "description": "Most requests the guard lets out in any one minute.",

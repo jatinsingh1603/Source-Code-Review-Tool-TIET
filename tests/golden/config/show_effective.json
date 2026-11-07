@@ -108,7 +108,9 @@
         "provider_host_allowlist": [],
         "encrypt_at_rest": true,
         "ticket_ttl_seconds": 60,
-        "scanner_timeout_seconds": 5.0
+        "scanner_timeout_seconds": 5.0,
+        "proxy_url": null,
+        "proxy_trust": "none"
       },
       "pseudonym": {
         "link_mode": "per_scan",
@@ -733,6 +735,18 @@
       "contributors": []
     },
     "privacy.egress.provider_host_allowlist": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.egress.proxy_trust": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.egress.proxy_url": {
       "layer": "default",
       "source": null,
       "line": null,

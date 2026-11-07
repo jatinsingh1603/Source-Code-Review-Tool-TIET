@@ -53,7 +53,10 @@ source_modules =
 forbidden_modules =
     httpx
     httpcore
+    h11
     h2
+    anyio
+    azure
     requests
     urllib3
     aiohttp
