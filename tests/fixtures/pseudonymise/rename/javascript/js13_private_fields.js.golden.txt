@@ -1,0 +1,9 @@
+class cls_1 {
+  #field_2 = 0;
+  static #field_1 = 0;
+
+  add(param_1) {
+    this.#field_2 += param_1;
+    return this.#field_2;
+  }
+}

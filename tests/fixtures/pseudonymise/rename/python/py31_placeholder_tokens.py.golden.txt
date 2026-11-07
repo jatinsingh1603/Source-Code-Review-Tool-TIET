@@ -1,0 +1,3 @@
+#        <TERM:ledger_name:3>        
+const_1 = "https://mod_1/var_1/<SECRET:api_key:1>/xxx"
+const_2 = "xxxxx <PII:email:2> xxxxxxxx xxx xxxxxxxx xxxxx"

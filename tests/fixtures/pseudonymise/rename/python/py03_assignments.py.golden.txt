@@ -1,0 +1,8 @@
+def fn_1(param_1):
+    var_2 = 0
+    var_5 = 0
+    for var_1 in param_1:
+        var_2 += var_1.field_1
+        var_5 += 1
+    var_3, var_4 = param_1[0], param_1[1]
+    return var_2, var_5, var_3, var_4

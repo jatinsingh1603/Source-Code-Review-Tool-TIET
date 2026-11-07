@@ -1,0 +1,4 @@
+def fn_1(param_1, param_2):
+    del param_1[param_2]
+    var_1 = 1
+    del var_1

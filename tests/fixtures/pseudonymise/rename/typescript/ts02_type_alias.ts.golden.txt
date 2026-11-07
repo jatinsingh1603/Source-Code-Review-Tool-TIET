@@ -1,0 +1,4 @@
+type cls_2 = number;
+type cls_1 = { field_1: string; field_2: cls_2 };
+
+const var_1: cls_1 = { field_1: "x", field_2: 5 };

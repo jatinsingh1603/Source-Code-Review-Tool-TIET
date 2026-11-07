@@ -1,0 +1,2 @@
+def fn_1(param_1):
+    return getattr(param_1, "loyalty_points_total")

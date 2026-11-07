@@ -1,0 +1,3 @@
+             
+const { accountId: var_2, createdAt: var_1 } = req.body;                                              
+const var_3 = var_4({ accountId: var_2, field_1: "xxxxxxx" });

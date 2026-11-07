@@ -1,0 +1,7 @@
+class cls_1 {
+  constructor(private field_2: string, public readonly field_1: string) {}
+
+  fn_1(): string {
+    return this.field_2 + this.field_1;
+  }
+}

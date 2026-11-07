@@ -1,0 +1,3 @@
+def fn_1(param_1):
+    if (var_2 := next((var_1 for var_1 in param_1 if var_1 > 10), None)) is not None:
+        return var_2

@@ -1,0 +1,3 @@
+class cls_1:
+    def fn_1(param_1, param_2: "cls_1") -> "cls_1":
+        return param_2

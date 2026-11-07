@@ -1,0 +1,6 @@
+def route(param_1):
+    match param_1:
+        case "pay":
+            return 1
+        case _:
+            return 0

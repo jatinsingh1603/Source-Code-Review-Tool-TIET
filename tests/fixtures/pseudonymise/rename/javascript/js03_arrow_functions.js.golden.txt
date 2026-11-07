@@ -1,0 +1,6 @@
+const var_2 = (param_1, param_2) => param_1 * param_2;
+const var_3 = param_1 => param_1 + 1;
+const var_4 = (param_3) => {
+  const var_1 = param_3 * 2;
+  return var_1;
+};

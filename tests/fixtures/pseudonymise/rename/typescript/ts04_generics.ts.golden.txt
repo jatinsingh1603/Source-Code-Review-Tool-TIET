@@ -1,0 +1,7 @@
+function fn_1<cls_2>(param_1: cls_2[]): cls_2 {
+  return param_1[0];
+}
+
+class cls_1<cls_3> {
+  constructor(public param_2: cls_3) {}
+}

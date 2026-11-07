@@ -1,0 +1,3 @@
+function fn_1(param_1, param_3 = "INR", param_2 = 3) {
+  return param_1 + param_2;
+}

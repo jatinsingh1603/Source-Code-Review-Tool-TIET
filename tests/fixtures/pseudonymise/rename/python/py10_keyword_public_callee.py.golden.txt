@@ -1,0 +1,5 @@
+import requests
+
+
+def fn_1(param_2, param_1):
+    return requests.get(param_2, timeout=param_1, verify=True)

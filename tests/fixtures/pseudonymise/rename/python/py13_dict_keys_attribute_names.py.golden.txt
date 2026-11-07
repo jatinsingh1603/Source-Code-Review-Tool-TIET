@@ -1,0 +1,3 @@
+                
+def fn_1(param_1):
+    return {"xxxxxxxxxx": param_1.field_1, "balance": param_1.balance}

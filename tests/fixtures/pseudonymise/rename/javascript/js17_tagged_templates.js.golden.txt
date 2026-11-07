@@ -1,0 +1,6 @@
+function fn_1(param_1, param_2) {
+  return param_1[0] + param_2;
+}
+
+const var_2 = 5;
+const var_1 = fn_1`xxxxx: ${var_2}`;

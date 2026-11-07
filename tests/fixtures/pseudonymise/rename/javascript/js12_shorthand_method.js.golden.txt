@@ -1,0 +1,8 @@
+const var_1 = {
+  fn_2(param_1) {
+    return param_1;
+  },
+  async fn_1() {
+    return 1;
+  },
+};

@@ -1,0 +1,13 @@
+interface cls_2 {
+  fn_1(): number;
+}
+
+abstract class cls_3 implements cls_2 {
+  abstract fn_1(): number;
+}
+
+class cls_1 extends cls_3 {
+  fn_1(): number {
+    return 2;
+  }
+}

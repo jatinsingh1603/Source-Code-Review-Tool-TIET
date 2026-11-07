@@ -1,0 +1,6 @@
+namespace mod_1 {
+  export const var_1 = 18;
+  export function fn_1(param_1: number): number {
+    return param_1 + var_1;
+  }
+}

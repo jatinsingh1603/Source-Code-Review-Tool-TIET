@@ -1,0 +1,6 @@
+def fn_1(param_1, param_2):
+    try:
+        return param_1 / param_2
+    except ZeroDivisionError as var_1:
+        var_2(var_1)
+        raise

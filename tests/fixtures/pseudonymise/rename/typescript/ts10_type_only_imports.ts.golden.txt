@@ -1,0 +1,6 @@
+import type { mod_2 } from "./file_1";
+import { mod_1 } from "./file_2";
+
+export function fn_1(param_1: mod_2) {
+  return mod_1(param_1);
+}

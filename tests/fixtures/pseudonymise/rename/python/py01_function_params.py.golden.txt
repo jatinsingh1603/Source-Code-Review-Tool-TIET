@@ -1,0 +1,6 @@
+def fn_1(param_5, param_1, /, param_4, *, param_2=3, **options):
+    return param_5
+
+
+def fn_2(param_3, *param_6):
+    return param_3

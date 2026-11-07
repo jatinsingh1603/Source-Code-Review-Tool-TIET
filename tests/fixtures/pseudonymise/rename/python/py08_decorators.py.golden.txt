@@ -1,0 +1,19 @@
+import functools
+
+from flask import Flask
+
+app = Flask(__name__)
+
+
+def fn_3(param_1):
+    @functools.field_1(param_1)
+    def fn_2(*args, **param_2):
+        return param_1(*args, **param_2)
+
+    return fn_2
+
+
+@app.route("/file_1")
+@fn_3
+def fn_1():
+    return "ok"

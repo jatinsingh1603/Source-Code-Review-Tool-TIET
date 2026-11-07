@@ -1,0 +1,9 @@
+__all__ = ["fn_1", "cls_1"]
+
+
+class cls_1:
+    pass
+
+
+def fn_1(param_1):
+    return param_1

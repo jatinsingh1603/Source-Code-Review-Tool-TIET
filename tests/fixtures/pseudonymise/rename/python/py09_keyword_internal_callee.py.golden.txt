@@ -1,0 +1,6 @@
+def fn_1(param_1, param_2, param_3="INR"):
+    return param_2
+
+
+def fn_2(param_4):
+    return fn_1(param_1=param_4, param_2=10, param_3="INR")

@@ -1,0 +1,9 @@
+interface cls_1 {
+  field_2: number;
+}
+
+interface cls_1 {
+  field_1: number;
+}
+
+const var_1: cls_1 = { field_2: 1, field_1: 2 };

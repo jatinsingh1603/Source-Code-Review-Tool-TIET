@@ -1,0 +1,9 @@
+def fn_1(param_1):
+    def fn_2(param_1):
+        param_1 = param_1 + 1
+        return param_1
+
+    return fn_2(param_1)
+
+
+var_1 = lambda param_1: param_1 * 2

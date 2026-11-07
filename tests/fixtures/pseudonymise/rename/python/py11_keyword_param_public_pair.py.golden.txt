@@ -1,0 +1,6 @@
+def fn_1(param_1, type=None):
+    return param_1
+
+
+def run(raw):
+    return fn_1(raw, type=int)

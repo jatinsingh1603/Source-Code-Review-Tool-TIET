@@ -1,0 +1,17 @@
+class cls_1 {
+  constructor(field_1) {
+    this.field_1 = field_1;
+  }
+
+  get fn_1() {
+    return this.field_1.field_2;
+  }
+
+  set fn_1(param_1) {
+    this.field_1.field_2 = param_1;
+  }
+
+  static create(field_1) {
+    return new cls_1(field_1);
+  }
+}

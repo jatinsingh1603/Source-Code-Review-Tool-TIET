@@ -1,0 +1,9 @@
+from typing import Optional
+
+
+class cls_1:
+    field_1: int
+
+
+def fn_1(param_1: cls_1, param_2: float = 1.0) -> Optional[cls_1]:
+    return param_1

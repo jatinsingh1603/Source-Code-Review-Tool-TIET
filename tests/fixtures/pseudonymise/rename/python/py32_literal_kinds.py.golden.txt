@@ -1,0 +1,8 @@
+def fn_1(param_1):
+    var_5 = "SELECT col_1 FROM tbl_7 WHERE col_2 = %s"
+    var_1 = "https://mod_1/var_8/var_9/var_7/var_10"
+    var_6 = "/file_1/file_2/file_3/file_4/file_5.csv"
+    var_3 = r"^xxx-[x-x]{6}$"
+    var_2 = "xxxx xxxxxxxx, xxxx xxxxxxxx xxxxx is xxxxx"
+    var_4 = "xxxxx %s xxx xxx %d"
+    return var_5, var_1, var_6, var_3, var_2, var_4

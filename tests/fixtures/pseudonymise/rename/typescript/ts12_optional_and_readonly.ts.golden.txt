@@ -1,0 +1,8 @@
+interface cls_1 {
+  readonly field_2?: number;
+  field_1?: string;
+}
+
+function fn_1(param_1: cls_1 = {}): number {
+  return param_1.field_2 ?? 3;
+}

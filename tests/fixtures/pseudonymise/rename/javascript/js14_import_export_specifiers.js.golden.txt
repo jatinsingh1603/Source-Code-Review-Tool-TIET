@@ -1,0 +1,5 @@
+import { mod_1 as mod_2, mod_3 } from "./file_1";
+import * as mod_4 from "./file_2";
+
+export { mod_2 as field_1, mod_3 };
+export const var_1 = mod_4.field_2(1, 2);

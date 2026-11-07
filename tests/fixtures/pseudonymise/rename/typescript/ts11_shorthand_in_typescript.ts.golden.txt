@@ -1,0 +1,5 @@
+             
+function fn_1(param_1: string, res: var_1) {
+  const var_3 = var_2(param_1);
+  return res.json({ accountId: param_1, total: var_3 });
+}

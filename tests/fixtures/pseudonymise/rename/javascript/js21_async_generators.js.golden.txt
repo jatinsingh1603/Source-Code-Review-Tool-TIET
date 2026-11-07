@@ -1,0 +1,5 @@
+async function* fn_1(param_1) {
+  for await (const var_1 of param_1.field_1()) {
+    yield var_1;
+  }
+}

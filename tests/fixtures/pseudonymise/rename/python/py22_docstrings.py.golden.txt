@@ -1,0 +1,9 @@
+"""xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"""
+
+
+class cls_1:
+    """xxxxxxxxxxxxxxxx"""
+
+    def fn_1(param_1):
+        """xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"""
+        return 1

@@ -1,0 +1,5 @@
+function fn_1(param_1, ...param_2) {
+  return [...param_1, ...param_2.field_2()];
+}
+
+const var_1 = { ...var_2, field_1: true };
