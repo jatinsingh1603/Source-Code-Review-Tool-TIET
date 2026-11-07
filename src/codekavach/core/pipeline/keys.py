@@ -16,6 +16,7 @@ Key                    Constant                Produced by                 Notes
 ``callgraph``          ``CALL_GRAPH``          parse (E07)                 raw code
 ``candidates.raw``     ``CANDIDATES_RAW``      analyse-* (E14 to E20)      multi-provider
 ``candidates``         ``CANDIDATES``          aggregate (E21)             raw code
+``slices``             ``SLICES``              privacy-prepare (E13-02)    raw code
 ``payloads.sanitised`` ``PAYLOADS_SANITISED``  privacy-prepare (E25)       sanitised
 ``verdicts.raw``       ``VERDICTS_RAW``        llm-review (E23)            pseudonym space
 ``verdicts.restored``  ``VERDICTS_RESTORED``   restore (E10)
@@ -47,6 +48,7 @@ SYMBOLS: Final = "symbols"
 CALL_GRAPH: Final = "callgraph"
 CANDIDATES_RAW: Final = "candidates.raw"
 CANDIDATES: Final = "candidates"
+SLICES: Final = "slices"
 PAYLOADS_SANITISED: Final = "payloads.sanitised"
 VERDICTS_RAW: Final = "verdicts.raw"
 VERDICTS_RESTORED: Final = "verdicts.restored"
@@ -61,7 +63,11 @@ SCAN_RECORD: Final = "scan.record"
 
 # Artefacts that contain or point at client code in the clear, and those produced by the privacy
 # layer; E04-13 checks that an LLM stage reads only the latter (pipeline-level support for I2).
-RAW_CODE_KEYS: Final = frozenset({FILES, AST, SYMBOLS, CALL_GRAPH, CANDIDATES_RAW, CANDIDATES})
+# ``slices`` is the original ``CodeSlice`` per candidate, kept so that ``privacy inspect`` (E05-16)
+# can show it beside the payload; being in this set is what keeps an LLM stage from reading it.
+RAW_CODE_KEYS: Final = frozenset(
+    {FILES, AST, SYMBOLS, CALL_GRAPH, CANDIDATES_RAW, CANDIDATES, SLICES}
+)
 SANITISED_KEYS: Final = frozenset({PAYLOADS_SANITISED, VERDICTS_RAW})
 
 DEFAULT_STAGE_ORDER: Final[tuple[str, ...]] = (

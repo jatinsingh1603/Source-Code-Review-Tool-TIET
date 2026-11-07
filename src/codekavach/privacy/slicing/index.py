@@ -14,7 +14,6 @@ saw is excluded). Sending third-party code is a free re-identification for an ad
 why vendored files are excluded and not merely deprioritised.
 """
 
-import fnmatch
 from collections.abc import Callable, Mapping
 from typing import Any, Final
 
@@ -25,46 +24,20 @@ from codekavach.parsing.functions import FunctionRange, function_ranges
 from codekavach.parsing.models import ParsedFile
 from codekavach.parsing.spec import REGISTRY, UnknownLanguageError
 from codekavach.parsing.symbols import SymbolTable
+from codekavach.privacy.policy.resolve import PolicyResolver
 
 NeverSend = Callable[[str], bool]
 _EMPTY_TABLE: Final = SymbolTable(scopes=(), symbols=())
 
 
-def _segments_match(pattern: list[str], parts: list[str]) -> bool:
-    if not pattern:
-        return not parts
-    head, rest = pattern[0], pattern[1:]
-    if head == "**":
-        return any(_segments_match(rest, parts[skip:]) for skip in range(len(parts) + 1))
-    if not parts:
-        return False
-    return fnmatch.fnmatchcase(parts[0], head) and _segments_match(rest, parts[1:])
-
-
 def never_send_matcher(settings: Settings) -> NeverSend:
     """A predicate over repository paths built from the ``never_send`` settings.
 
-    This is the conservative interim reading; the policy layer (E25) owns the final resolver.
-    A pattern without ``/`` matches a file or directory of that name at any depth; a pattern with
-    ``/`` is anchored at the project root; ``*`` and ``?`` stay inside one path segment and ``**``
-    spans segments. A pattern that matches a directory also matches everything below it. Both
-    ``privacy.never_send`` and the ``privacy.paths`` rules with ``never_send = true`` count.
+    The rules and their glob semantics belong to ``PolicyResolver`` (E13-02); this is its
+    ``is_never_send`` as a plain predicate. Both ``privacy.never_send`` and the ``privacy.paths``
+    rules with ``never_send = true`` count.
     """
-    patterns = [*settings.privacy.never_send]
-    patterns += [rule.pattern for rule in settings.privacy.paths if rule.never_send]
-    compiled = [(pattern.strip("/").split("/"), "/" in pattern.strip("/")) for pattern in patterns]
-
-    def matches(path: str) -> bool:
-        parts = path.split("/")
-        for pattern, anchored in compiled:
-            starts = [0] if anchored else range(len(parts))
-            for start in starts:
-                for end in range(start + 1, len(parts) + 1):
-                    if _segments_match(pattern, parts[start:end]):
-                        return True
-        return False
-
-    return matches
+    return PolicyResolver(settings).is_never_send
 
 
 class ParseIndex:

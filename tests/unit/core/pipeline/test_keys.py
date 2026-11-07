@@ -34,7 +34,7 @@ def test_default_order_matches_architecture() -> None:
 
 
 def test_constants_are_valid_and_distinct() -> None:
-    assert len(CONSTANTS) == 18  # scan.item_failures added by E04-20
+    assert len(CONSTANTS) == 19  # scan.item_failures (E04-20), slices (E13-02)
     assert all(is_valid_key(value) for value in CONSTANTS.values())
     assert len(set(CONSTANTS.values())) == len(CONSTANTS)
     assert RAW_CODE_KEYS.isdisjoint(SANITISED_KEYS)
@@ -92,3 +92,9 @@ def test_stage_selector() -> None:
 )
 def test_property_bad_characters_rejected(prefix: str, bad: str, suffix: str) -> None:
     assert not is_valid_key(prefix + bad + suffix)
+
+
+def test_slices_is_raw_code_so_an_llm_stage_cannot_read_it() -> None:
+    assert keys.SLICES == "slices"
+    assert keys.SLICES in RAW_CODE_KEYS
+    assert keys.SLICES not in SANITISED_KEYS
