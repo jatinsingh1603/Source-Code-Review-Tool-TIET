@@ -27,6 +27,7 @@ repos:
       - id: detect-private-key
         exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/)
       - id: debug-statements
+        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/)
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.9
