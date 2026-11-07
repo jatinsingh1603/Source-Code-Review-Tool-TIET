@@ -1,0 +1,11 @@
+import express from 'express';
+import { Router } from "express/lib/router";
+import mod_3 from './file_1';
+import mod_2 from 'xxxxxx-xxxx';
+const viaRequire = require('express');
+const var_1 = require('../file_2/file_3');
+export { mod_1 } from 'xxxxxx-xxxx';
+
+const app = express();
+app.use(viaRequire.json());
+app.get('/file_4', (param_2, param_1) => param_1.json(mod_3(mod_2(var_1))));

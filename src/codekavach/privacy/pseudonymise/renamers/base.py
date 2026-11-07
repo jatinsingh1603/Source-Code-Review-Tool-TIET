@@ -82,6 +82,18 @@ _RANK: Final = {kind: rank for rank, kind in enumerate(_KIND_ORDER)}
 _TOKEN_LIKE: Final = re.compile(r"^#?[A-Za-z_$][\w$]*$")
 
 
+def _is_public_specifier(content: str, allowlist: PublicAllowlist) -> bool:
+    """Whether the text of an import string names a package that the bundled data lists.
+
+    A relative path is never public; ``@scope/name/sub`` is judged by ``@scope/name``.
+    """
+    parts = content.split("/")
+    if not parts[0] or parts[0].startswith("."):
+        return False
+    top = "/".join(parts[:2]) if parts[0].startswith("@") else parts[0]
+    return top in allowlist.package_names()
+
+
 class UnsupportedLanguageError(PseudonymError):
     """No renamer is registered for a language."""
 
@@ -116,6 +128,9 @@ class SourceFacts:
     """What the parse tells that the classification does not: byte offsets of special nodes."""
 
     shorthand_starts: frozenset[int] = field(default=frozenset())
+    specifier_starts: frozenset[int] = field(
+        default=frozenset()
+    )  # start of the text, not the quote
 
 
 class ByteOffsets:
@@ -267,6 +282,7 @@ class BaseRenamer:
             level=level,
             tokens=tokens,
             string_names=string_names,
+            facts=facts,
             data=data,
             offsets=offsets,
         )
@@ -339,6 +355,7 @@ class BaseRenamer:
         level: PrivacyLevel,
         tokens: dict[str, str],
         string_names: set[str],
+        facts: SourceFacts,
         data: bytes,
         offsets: ByteOffsets,
     ) -> tuple[list[RenameEdit], int, int]:
@@ -354,6 +371,8 @@ class BaseRenamer:
                 raise PseudonymError("a string literal does not sit where the parse says")
             if original in classification.kept_dynamic:
                 continue  # the pair stays in clear and consistent, and is counted as kept
+            if start in facts.specifier_starts and _is_public_specifier(original, allowlist):
+                continue  # ``require('express')``: a listed package is recognisable by name
             token = tokens.get(original)
             if token is not None and (
                 original in string_names

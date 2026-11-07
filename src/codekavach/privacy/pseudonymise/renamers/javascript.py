@@ -34,6 +34,12 @@ from codekavach.privacy.pseudonymise.renamers.base import BaseRenamer, SourceFac
 _SHORTHAND_QUERY = """
 (shorthand_property_identifier) @shorthand
 (shorthand_property_identifier_pattern) @shorthand
+(import_statement source: (string) @specifier)
+(export_statement source: (string) @specifier)
+(call_expression
+  function: (identifier) @callee
+  arguments: (arguments . (string) @specifier)
+  (#eq? @callee "require"))
 """
 
 
@@ -53,7 +59,11 @@ class JavaScriptRenamer(BaseRenamer):
             raise PseudonymError("a file without a syntax tree is not renamed")
         captures = QueryCursor(_shorthand_query(self.language)).captures(parsed.tree.root_node)
         return SourceFacts(
-            shorthand_starts=frozenset(node.start_byte for node in captures.get("shorthand", []))
+            shorthand_starts=frozenset(node.start_byte for node in captures.get("shorthand", [])),
+            specifier_starts=frozenset(
+                node.start_byte + 1
+                for node in captures.get("specifier", [])  # past the quote
+            ),
         )
 
     def identifier_edits(
