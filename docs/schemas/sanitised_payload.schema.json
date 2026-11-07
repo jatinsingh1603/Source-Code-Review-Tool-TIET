@@ -34,6 +34,63 @@
       "title": "LineMapEntry",
       "type": "object"
     },
+    "PayloadFacts": {
+      "additionalProperties": false,
+      "description": "The candidate-derived facts a prompt may contain: nothing the model could use to anchor.\n\nDeliberately small and closed. It carries the rule identifier, the CWE numbers, the sink family\nand the slice strategy (all vocabulary owned by CodeKavach) and the clauses of the stub\nsummaries (a fixed grammar with no identifiers beyond public names). It has no severity, path,\nauthor, commit or pull-request field: the engine's opinion would anchor the model\n(``docs/research/INSIGHTS.md`` section 2.2 item 4), and a path is a disclosure.",
+      "properties": {
+        "cwe": {
+          "default": [],
+          "items": {
+            "ge": 1,
+            "le": 99999,
+            "type": "integer"
+          },
+          "title": "Cwe",
+          "type": "array"
+        },
+        "rule": {
+          "description": "The identifier of the rule that fired.",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,127}$",
+          "title": "Rule",
+          "type": "string"
+        },
+        "sink_family": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sink Family"
+        },
+        "strategy": {
+          "description": "The slice strategy that was used.",
+          "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$",
+          "title": "Strategy",
+          "type": "string"
+        },
+        "stub_summaries": {
+          "default": [],
+          "items": {
+            "maxLength": 160,
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Stub Summaries",
+          "type": "array"
+        }
+      },
+      "required": [
+        "rule",
+        "strategy"
+      ],
+      "title": "PayloadFacts",
+      "type": "object"
+    },
     "PlaceholderKind": {
       "description": "Kind of redaction placeholder; upper case because it appears inside the token.",
       "enum": [
@@ -104,6 +161,18 @@
       "pattern": "^cand_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
       "title": "Candidate Id",
       "type": "string"
+    },
+    "facts": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PayloadFacts"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The candidate-derived facts the triage prompt may state; never severity."
     },
     "id": {
       "pattern": "^pay_[0-7][0-9A-HJKMNP-TV-Z]{25}$",

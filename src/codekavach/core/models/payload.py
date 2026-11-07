@@ -19,7 +19,7 @@ decided by policy and the egress transport (E12, E25), not by this model.
 
 import re
 from collections import Counter
-from typing import ClassVar, Self
+from typing import Annotated, ClassVar, Self
 
 from pydantic import Field, model_validator
 
@@ -34,6 +34,7 @@ from codekavach.core.models.ids import (
     SliceIdField,
     new_payload_id,
 )
+from codekavach.core.models.taxonomy import CweId
 from codekavach.core.models.text import SanitisedText
 
 PLACEHOLDER_PATTERN = r"<(SECRET|PII|TERM):([a-z][a-z0-9_]{0,47}):([1-9][0-9]{0,5})>"
@@ -104,6 +105,33 @@ class LineMapEntry(KavachModel):
         return self
 
 
+_FACT_WORD = r"^[a-z0-9][a-z0-9_.-]{0,63}$"
+_RULE_ID = r"^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,127}$"
+MAX_STUB_SUMMARIES = 16
+MAX_SUMMARY_LENGTH = 160
+
+
+class PayloadFacts(KavachModel):
+    """The candidate-derived facts a prompt may contain: nothing the model could use to anchor.
+
+    Deliberately small and closed. It carries the rule identifier, the CWE numbers, the sink family
+    and the slice strategy (all vocabulary owned by CodeKavach) and the clauses of the stub
+    summaries (a fixed grammar with no identifiers beyond public names). It has no severity, path,
+    author, commit or pull-request field: the engine's opinion would anchor the model
+    (``docs/research/INSIGHTS.md`` section 2.2 item 4), and a path is a disclosure.
+    """
+
+    DATA_CLASSIFICATION: ClassVar[DataClassification] = DataClassification.SANITISED
+
+    rule: str = Field(pattern=_RULE_ID, description="The identifier of the rule that fired.")
+    cwe: tuple[CweId, ...] = ()
+    sink_family: Annotated[str, Field(pattern=_FACT_WORD)] | None = None
+    strategy: str = Field(pattern=_FACT_WORD, description="The slice strategy that was used.")
+    stub_summaries: tuple[Annotated[str, Field(max_length=MAX_SUMMARY_LENGTH)], ...] = Field(
+        default=(), max_length=MAX_STUB_SUMMARIES
+    )
+
+
 class SanitisedPayload(VersionedModel):
     """What the LLM may see for one candidate."""
 
@@ -119,6 +147,10 @@ class SanitisedPayload(VersionedModel):
     pseudonym_count: int = Field(default=0, ge=0)
     line_map: tuple[LineMapEntry, ...] = ()
     payload_hash: str
+    facts: PayloadFacts | None = Field(
+        default=None,
+        description="The candidate-derived facts the triage prompt may state; never severity.",
+    )
 
     @model_validator(mode="after")
     def _check_consistency(self) -> Self:
@@ -172,6 +204,7 @@ class SanitisedPayload(VersionedModel):
         level: PrivacyLevel,
         pseudonym_count: int = 0,
         line_map: tuple[LineMapEntry, ...] = (),
+        facts: PayloadFacts | None = None,
     ) -> Self:
         """Build a payload, deriving ``id``, ``placeholders`` and ``payload_hash``."""
         raw = text.expose()
@@ -198,4 +231,5 @@ class SanitisedPayload(VersionedModel):
             pseudonym_count=pseudonym_count,
             line_map=line_map,
             payload_hash=sha256_hex(raw),
+            facts=facts,
         )

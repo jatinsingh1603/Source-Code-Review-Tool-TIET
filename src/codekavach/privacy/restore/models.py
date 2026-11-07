@@ -2,11 +2,13 @@
 
 Owning epic: E10 (issue E10-02).
 
-``CandidateVerdict`` is the record ``verdicts.raw`` carries: one model answer, in pseudonym space,
-bound to its candidate. ``RestoredVerdict`` is the answer after de-pseudonymisation. Its text holds
-original names, so it is client data (RAW). It is the one place where originals legitimately
-reappear (ARCHITECTURE section 6.2 step 9), and it is never logged: its ``repr`` shows counts only.
-Everything that is not text (counts, drop reasons, enums) is metadata.
+``CandidateVerdict`` (defined in ``core.models.verdict`` so that the LLM stage can write it without
+importing this package, invariant I2) is the record ``verdicts.raw`` carries: one model answer, in
+pseudonym space, bound to its candidate. ``RestoredVerdict`` is the answer after
+de-pseudonymisation. Its text holds original names, so it is client data (RAW). It is the one
+place where originals legitimately reappear (ARCHITECTURE section 6.2 step 9), and it is never
+logged: its ``repr`` shows counts only. Everything that is not text (counts, drop reasons,
+enums) is metadata.
 """
 
 from typing import ClassVar, Literal
@@ -16,24 +18,9 @@ from codekavach.core.models.enums import Confidence, ContextKind
 from codekavach.core.models.ids import CandidateIdField
 from codekavach.core.models.location import Location
 from codekavach.core.models.taxonomy import CweId
-from codekavach.core.models.verdict import LLMVerdict
 
 DroppedSection = Literal["reasoning", "impact", "remediation", "needs_context", "cited_lines"]
 DropReason = Literal["unknown_pseudonym", "unmappable_line"]
-
-
-class CandidateVerdict(KavachModel):
-    """One model answer for one candidate, as ``verdicts.raw`` carries it (pseudonym space)."""
-
-    DATA_CLASSIFICATION: ClassVar[DataClassification] = DataClassification.UNTRUSTED
-
-    candidate_id: CandidateIdField
-    verdict: LLMVerdict
-
-    def __repr__(self) -> str:
-        return f"CandidateVerdict({self.candidate_id})"
-
-    __str__ = __repr__
 
 
 class DroppedClaim(KavachModel):

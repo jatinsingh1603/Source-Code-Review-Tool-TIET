@@ -62,7 +62,12 @@ from codekavach.core.models.lifecycle import (
     apply_transition,
 )
 from codekavach.core.models.location import CodeRegion, Location
-from codekavach.core.models.payload import LineMapEntry, SanitisedPayload, format_placeholder
+from codekavach.core.models.payload import (
+    LineMapEntry,
+    PayloadFacts,
+    SanitisedPayload,
+    format_placeholder,
+)
 from codekavach.core.models.scan import DEFAULT_STAGES, Project, Scan, StageResult
 from codekavach.core.models.slice import CodeSlice, SliceSegment
 from codekavach.core.models.summary import EgressTotals, ScanSummary
@@ -517,6 +522,21 @@ def code_slices() -> SearchStrategy[CodeSlice]:
 
 
 @functools.cache
+def payload_facts() -> SearchStrategy[PayloadFacts]:
+    """The candidate-derived facts of a payload: vocabulary words and fixed-grammar clauses."""
+    return st.builds(
+        PayloadFacts,
+        rule=st.sampled_from(["KB-VULN-001", "py.sqli.concat", "js.xss.innerhtml"]),
+        cwe=st.lists(st.integers(1, 999), max_size=3, unique=True).map(tuple),
+        sink_family=st.none() | st.sampled_from(["sql", "command", "template"]),
+        strategy=st.sampled_from(["enclosing_function", "taint_path"]),
+        stub_summaries=st.lists(
+            st.sampled_from(["returns value; no sanitiser; derived: syntactic", "effects unknown"]),
+            max_size=3,
+        ).map(tuple),
+    )
+
+
 def sanitised_payloads() -> SearchStrategy[SanitisedPayload]:
     """Payloads built with ``SanitisedPayload.build``; L4 payloads carry no line map."""
 
@@ -552,6 +572,7 @@ def sanitised_payloads() -> SearchStrategy[SanitisedPayload]:
             level=level,
             pseudonym_count=draw(st.integers(0, 500)),
             line_map=tuple(line_map),
+            facts=draw(st.none() | payload_facts()),
         )
         return payload.evolve(id=PayloadId(draw(_typed_id("pay_"))))
 

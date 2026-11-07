@@ -116,6 +116,7 @@ from codekavach.core.models.paths import (
 )
 from codekavach.core.models.payload import (
     LineMapEntry,
+    PayloadFacts,
     PlaceholderRef,
     SanitisedPayload,
     find_placeholders,
@@ -157,6 +158,7 @@ from codekavach.core.models.timeutil import (
     utc_now,
 )
 from codekavach.core.models.verdict import (
+    CandidateVerdict,
     ContextRequest,
     LLMVerdict,
 )
@@ -167,6 +169,7 @@ __all__ = [
     "CandidateId",
     "CandidateIdField",
     "CandidateKind",
+    "CandidateVerdict",
     "CodeRegion",
     "CodeSlice",
     "Confidence",
@@ -199,6 +202,7 @@ __all__ = [
     "Location",
     "MigrationError",
     "ModelError",
+    "PayloadFacts",
     "PayloadId",
     "PayloadIdField",
     "PlaceholderKind",

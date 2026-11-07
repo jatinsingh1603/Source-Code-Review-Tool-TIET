@@ -11,6 +11,7 @@ from pydantic import AwareDatetime, PlainSerializer
 
 from codekavach.core import models
 from codekavach.core.models import (
+    CandidateVerdict,
     ContextRequest,
     EngineRef,
     FingerprintParts,
@@ -19,6 +20,7 @@ from codekavach.core.models import (
     Likelihood,
     LineMapEntry,
     LLMReviewRef,
+    PayloadFacts,
     PlaceholderRef,
     Provenance,
     Reference,
@@ -80,6 +82,10 @@ MODEL_STRATEGIES: dict[type[KavachModel], SearchStrategy[Any]] = {
     LineMapEntry: s.sanitised_payloads()
     .filter(lambda payload: payload.line_map)
     .map(lambda payload: payload.line_map[0]),
+    CandidateVerdict: s.verdicts().map(
+        lambda verdict: CandidateVerdict(candidate_id=f.CANDIDATE_ID, verdict=verdict)
+    ),
+    PayloadFacts: s.payload_facts(),
     PlaceholderRef: s.sanitised_payloads()
     .filter(lambda payload: payload.placeholders)
     .map(lambda payload: payload.placeholders[0]),

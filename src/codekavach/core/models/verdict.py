@@ -22,6 +22,7 @@ from pydantic import BeforeValidator, Field, field_validator, model_validator
 
 from codekavach.core.models.base import DataClassification, KavachModel, VersionedModel
 from codekavach.core.models.enums import Confidence, ContextKind
+from codekavach.core.models.ids import CandidateIdField
 from codekavach.core.models.taxonomy import CweId
 
 MAX_CWES = 5
@@ -165,3 +166,17 @@ def _close_objects(node: Any) -> None:
     elif isinstance(node, list):
         for item in node:
             _close_objects(item)
+
+
+class CandidateVerdict(KavachModel):
+    """One model answer for one candidate, as ``verdicts.raw`` carries it (pseudonym space)."""
+
+    DATA_CLASSIFICATION: ClassVar[DataClassification] = DataClassification.UNTRUSTED
+
+    candidate_id: CandidateIdField
+    verdict: LLMVerdict
+
+    def __repr__(self) -> str:
+        return f"CandidateVerdict({self.candidate_id})"
+
+    __str__ = __repr__

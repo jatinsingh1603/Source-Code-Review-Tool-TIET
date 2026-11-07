@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from codekavach.core.models.ids import CandidateId
+from codekavach.core.models.verdict import CandidateVerdict
 from codekavach.core.pipeline import keys
 from codekavach.core.pipeline.items import RESTORE_FAILED
 from codekavach.core.pipeline.stage import FailurePolicy, StageCategory, describe_stage
@@ -18,8 +19,8 @@ from codekavach.privacy.pseudonymise.generator import PseudonymKind
 from codekavach.privacy.pseudonymise.mapping import MappingBatch, MappingEntry
 from codekavach.privacy.restore import stage as stage_module
 from codekavach.privacy.restore.errors import RestoreError
-from codekavach.privacy.restore.models import CandidateVerdict, RestoredVerdict
-from codekavach.privacy.restore.stage import SLICES, RestoreStage
+from codekavach.privacy.restore.models import RestoredVerdict
+from codekavach.privacy.restore.stage import RestoreStage
 from codekavach.privacy.vault.keys import KeySource, SecretBytes
 from codekavach.privacy.vault.salt import vault_path
 from codekavach.privacy.vault.store import Vault
@@ -64,7 +65,7 @@ def test_the_declarations_match_the_pipeline_table() -> None:
     info = describe_stage(RestoreStage())
     assert info.name == "restore"
     assert info.requires == frozenset(
-        {keys.VERDICTS_RAW, keys.PAYLOADS_SANITISED, SLICES, keys.CANDIDATES}
+        {keys.VERDICTS_RAW, keys.PAYLOADS_SANITISED, keys.SLICES, keys.CANDIDATES}
     )
     assert info.provides == frozenset({keys.VERDICTS_RESTORED})
     assert info.category is StageCategory.RESTORE
@@ -90,7 +91,7 @@ def test_a_failing_candidate_is_reported_and_the_rest_are_published(state_dir: P
         [make_payload(), make_payload(candidate_id=OTHER)],
         persist=False,
     )
-    store.put(SLICES, [make_slice(), make_slice(candidate_id=OTHER)], persist=False)
+    store.put(keys.SLICES, [make_slice(), make_slice(candidate_id=OTHER)], persist=False)
 
     RestoreStage().run(ctx)
 
@@ -110,7 +111,7 @@ def test_a_missing_state_directory_fails_the_stage() -> None:
     verdict = make_verdict(impact="", remediation="")
     store.put(keys.VERDICTS_RAW, [CandidateVerdict(candidate_id=CANDIDATE_ID, verdict=verdict)])
     store.put(keys.PAYLOADS_SANITISED, [], persist=False)
-    store.put(SLICES, [], persist=False)
+    store.put(keys.SLICES, [], persist=False)
     ctx = make_run_context(store=store, state_dir=None).for_stage("restore")
     with pytest.raises(RestoreError):
         RestoreStage().run(ctx)

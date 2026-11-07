@@ -64,7 +64,7 @@
       "file": "sanitised_payload.schema.json",
       "name": "SanitisedPayload",
       "schema_version": 1,
-      "sha256": "c0b4778227dabd3282519b42b6f4ae26858fc0f9fa1f90068403c5df7865e38f"
+      "sha256": "ae92962988ee78f9c68cf0f0b47d7d3cf0e4fa8af9b560560dbf34e5bf79b7fd"
     },
     {
       "file": "scan.schema.json",

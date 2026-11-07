@@ -7,17 +7,16 @@ and published. The vault is opened once for the stage and closed when the block 
 exception; it is opened without creating a file (``create=False``), because a scan that restores
 without a vault has nothing to restore against.
 
-The slice key is local to this module: ``codekavach.core.pipeline.keys`` has no ``SLICES`` yet.
+The slice key is ``keys.SLICES`` (E13-02); privacy-prepare writes the original slice per candidate.
 The stage reads ``candidates`` only as a declared dependency; it does not use its content.
 """
-
-from typing import Final
 
 from pydantic import BaseModel
 
 from codekavach.core.log import get_logger
 from codekavach.core.models.payload import SanitisedPayload
 from codekavach.core.models.slice import CodeSlice
+from codekavach.core.models.verdict import CandidateVerdict
 from codekavach.core.pipeline import keys
 from codekavach.core.pipeline.context import RunContext
 from codekavach.core.pipeline.items import RESTORE_FAILED, guard_item
@@ -25,12 +24,11 @@ from codekavach.core.pipeline.stage import StageCategory
 from codekavach.core.store.base import ArtefactTypeError
 from codekavach.privacy.restore.engine import RestoreEngine
 from codekavach.privacy.restore.errors import RestoreError
-from codekavach.privacy.restore.models import CandidateVerdict, RestoredVerdict
+from codekavach.privacy.restore.models import RestoredVerdict
 from codekavach.privacy.vault.keys import KeySource
 from codekavach.privacy.vault.salt import vault_path
 from codekavach.privacy.vault.store import Vault
 
-SLICES: Final = "slices"
 _log = get_logger("codekavach.privacy.restore")
 
 
@@ -53,7 +51,7 @@ class RestoreStage:
     """Restores every raw verdict of the scan against its payload and slice."""
 
     name = "restore"
-    requires = frozenset({keys.VERDICTS_RAW, keys.PAYLOADS_SANITISED, SLICES, keys.CANDIDATES})
+    requires = frozenset({keys.VERDICTS_RAW, keys.PAYLOADS_SANITISED, keys.SLICES, keys.CANDIDATES})
     provides = frozenset({keys.VERDICTS_RESTORED})
     category = StageCategory.RESTORE
     version = "1"
@@ -68,7 +66,7 @@ class RestoreStage:
             payload.candidate_id: payload
             for payload in _read(ctx, keys.PAYLOADS_SANITISED, SanitisedPayload)
         }
-        slices = {slice_.candidate_id: slice_ for slice_ in _read(ctx, SLICES, CodeSlice)}
+        slices = {slice_.candidate_id: slice_ for slice_ in _read(ctx, keys.SLICES, CodeSlice)}
         if ctx.state_dir is None:
             raise RestoreError("restoration needs the state directory of the vault")
         restored: list[RestoredVerdict] = []
