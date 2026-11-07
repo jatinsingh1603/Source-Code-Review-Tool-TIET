@@ -164,7 +164,7 @@ class ParseIndex:
         for ref in self.symbols_of(from_path).imports:
             if ref.bound != symbol_name or ref.origin != "internal":
                 continue
-            suffix = ref.module.lstrip(".").replace(".", "/")
+            suffix = _module_suffix(ref.module)
             matches = [
                 path
                 for path in self._files
@@ -179,6 +179,25 @@ class ParseIndex:
             if len(found) == 1:
                 return found[0]
         return None
+
+
+_SCRIPT_EXTENSIONS: Final = (".d.ts", ".tsx", ".ts", ".jsx", ".js", ".mjs", ".cjs", ".mts", ".cts")
+
+
+def _module_suffix(module: str) -> str:
+    """The path tail a module name stands for, without extension.
+
+    A Python module (``a.b``, ``..pkg``) becomes ``a/b`` or ``pkg``. A script module that is a
+    path (``./util``, ``../lib/util.js``) loses its leading dots and slashes and its extension, so
+    both kinds can be compared with the path of a file.
+    """
+    if "/" not in module:
+        return module.lstrip(".").replace(".", "/")
+    tail = module.lstrip("./")
+    for extension in _SCRIPT_EXTENSIONS:
+        if tail.endswith(extension):
+            return tail[: -len(extension)]
+    return tail
 
 
 def _is_module(path: str, module_path: str) -> bool:

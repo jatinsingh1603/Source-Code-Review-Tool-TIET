@@ -19,7 +19,7 @@ from codekavach.privacy.slicing.base import (
     lookup_outcome,
     outcome_for,
 )
-from codekavach.privacy.slicing.budget import SliceBudget
+from codekavach.privacy.slicing.budget import SliceBudget, estimate
 from codekavach.privacy.slicing.strategies.enclosing import EnclosingFunctionStrategy
 from tests.support.slicing import candidate_at, make_index
 
@@ -92,6 +92,11 @@ def build(
 def text_of(slice_: CodeSlice) -> str:
     labels = numbered_labels([segment.path for segment in slice_.segments])
     return assemble(slice_.segments, (), language=slice_.language, labels=labels)
+
+
+def segment_tokens(slice_: CodeSlice) -> int:
+    """The estimated tokens of the segments alone: stubs fill what is left, so they do not count."""
+    return estimate(text_of(slice_))
 
 
 def regions(slice_: CodeSlice) -> list[tuple[str, int, int]]:
@@ -244,7 +249,7 @@ class TestRefusals:
 class TestShrinkOrder:
     def test_imports_go_first(self) -> None:
         full = build({"m.py": LONG}, ("m.py", 13))
-        tight = build({"m.py": LONG}, ("m.py", 13), budget=full.token_estimate - 3)
+        tight = build({"m.py": LONG}, ("m.py", 13), budget=segment_tokens(full) - 3)
         assert tight.truncated
         assert not any(s.role is SegmentRole.IMPORTS for s in tight.segments)
         assert "def settle" in text_of(tight) and "audit.close()" in text_of(tight)
@@ -366,7 +371,7 @@ class TestCoherenceGuard:
 
         monkeypatch.setattr("codekavach.privacy.slicing.strategies.enclosing.kept_lines", broken)
         with pytest.raises(SlicingError) as caught:
-            build({"r.py": source}, ("r.py", 7), budget=whole.token_estimate - 12)
+            build({"r.py": source}, ("r.py", 7), budget=segment_tokens(whole) - 12)
         assert caught.value.reason == "over_budget"
 
 

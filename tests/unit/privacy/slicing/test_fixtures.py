@@ -72,7 +72,9 @@ def render(outcome: CodeSlice | SliceRefusal) -> str:
             f"  {segment.role.value} {labels(segment.path)} {region.start_line}-{region.end_line}"
         )
     lines.append("---")
-    lines.append(assemble(outcome.segments, (), language=outcome.language, labels=labels))
+    lines.append(
+        assemble(outcome.segments, outcome.stubs, language=outcome.language, labels=labels)
+    )
     return "\n".join(lines) + "\n"
 
 

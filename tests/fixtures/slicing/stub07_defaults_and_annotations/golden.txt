@@ -1,0 +1,17 @@
+status: slice
+truncated: False
+tokens: 97
+segments:
+  primary file_1 1-6
+---
+# file_1
+from billing.charge import charge
+
+
+def bill(account):
+    receipt = charge(account, 10)
+    return receipt
+
+# cross_file
+def charge(account: Account, amount: Decimal = ..., *, memo: str = ..., tags=..., **extra) -> Receipt: ...
+# returns value; param_0 flows to return; param_1 flows to return; no sanitiser; derived: syntactic

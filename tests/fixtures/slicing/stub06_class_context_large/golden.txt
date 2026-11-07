@@ -1,0 +1,19 @@
+status: slice
+truncated: False
+tokens: 77
+segments:
+  context file_1 1-1
+  primary file_1 13-16
+---
+# file_1
+class LedgerService:
+# ... elided ...
+    def post(self, entry):
+        if entry.amount > self.tier_cap:
+            raise ValueError("too large")
+        return self.ledger.append(entry)
+
+# class context
+class LedgerService:
+    ledger: ...
+    tier_cap: int

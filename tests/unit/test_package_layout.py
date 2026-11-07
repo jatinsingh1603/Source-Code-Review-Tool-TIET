@@ -135,6 +135,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.privacy.slicing.elide",
         "codekavach.privacy.slicing.index",
         "codekavach.privacy.slicing.shape",
+        "codekavach.privacy.slicing.stubs",
         "codekavach.privacy.slicing.strategies.enclosing",
         "codekavach.privacy.vault.crypto",
         "codekavach.privacy.vault.errors",

@@ -1,0 +1,14 @@
+status: slice
+truncated: False
+tokens: 55
+segments:
+  primary file_1 1-3
+---
+# file_1
+def settle(batch):
+    total = _sum_batch(batch)
+    return total
+
+# out_of_slice
+def _sum_batch(batch): ...
+# returns value; param_0 flows to return; no sanitiser; derived: syntactic

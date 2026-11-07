@@ -1,0 +1,17 @@
+status: slice
+truncated: False
+tokens: 76
+segments:
+  primary file_1 1-6
+---
+# file_1
+from net.fetch import fetch
+
+
+async def pull(session, url):
+    body = await fetch(session, url)
+    return body
+
+# cross_file
+async def fetch(session, url, timeout=...): ...
+# returns value; no parameter flows to return; no sanitiser; derived: syntactic

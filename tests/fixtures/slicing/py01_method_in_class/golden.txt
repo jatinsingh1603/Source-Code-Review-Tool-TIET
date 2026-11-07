@@ -1,6 +1,6 @@
 status: slice
 truncated: False
-tokens: 96
+tokens: 111
 segments:
   imports file_1 1-2
   context file_1 6-6
@@ -18,3 +18,7 @@ class AccountService:
         cur = self.db.cursor()
         cur.execute("SELECT * FROM premium_accounts WHERE id = '%s'" % account_id)
         return cur.fetchall()
+
+# class context
+class AccountService:
+    db: ...

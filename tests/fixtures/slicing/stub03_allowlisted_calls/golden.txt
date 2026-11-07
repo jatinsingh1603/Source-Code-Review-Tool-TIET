@@ -1,0 +1,14 @@
+status: slice
+truncated: False
+tokens: 41
+segments:
+  primary file_1 1-7
+---
+# file_1
+import json
+import hashlib
+
+
+def digest(payload):
+    text = json.dumps(payload)
+    return hashlib.sha256(text.encode()).hexdigest()

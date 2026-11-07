@@ -1,0 +1,11 @@
+status: slice
+truncated: False
+tokens: 32
+segments:
+  primary file_1 1-4
+---
+# file_1
+def walk(node, depth):
+    if node is None:
+        return depth
+    return walk(node.next, depth + 1)

@@ -1,0 +1,12 @@
+{
+  "locations": [
+    [
+      "app/handler.py",
+      6
+    ]
+  ],
+  "budget": 2048,
+  "never_send": [
+    "vault/**"
+  ]
+}

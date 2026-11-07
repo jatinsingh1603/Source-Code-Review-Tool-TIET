@@ -1,0 +1,12 @@
+status: slice
+truncated: True
+tokens: 34
+segments:
+  primary file_1 5-7
+---
+# file_1
+def post(entry):
+    data = json.dumps(entry)
+    return RATE_TABLE[data]
+
+from _internal import RATE_TABLE

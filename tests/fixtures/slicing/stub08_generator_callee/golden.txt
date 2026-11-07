@@ -1,0 +1,19 @@
+status: slice
+truncated: False
+tokens: 79
+segments:
+  primary file_1 1-8
+---
+# file_1
+from rows import rows
+
+
+def total(path):
+    count = 0
+    for row in rows(path, 10):
+        count += 1
+    return count
+
+# cross_file
+def rows(path, limit): ...
+# returns value; no parameter flows to return; no sanitiser; calls sink family: file; derived: syntactic

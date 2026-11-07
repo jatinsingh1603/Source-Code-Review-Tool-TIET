@@ -1,0 +1,13 @@
+status: slice
+truncated: False
+tokens: 31
+segments:
+  primary file_1 1-6
+---
+# file_1
+from vault.keys import load_key
+
+
+def sign(message):
+    key = load_key()
+    return message + key

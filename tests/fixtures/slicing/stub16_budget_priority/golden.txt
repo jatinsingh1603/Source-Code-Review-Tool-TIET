@@ -1,0 +1,20 @@
+status: slice
+truncated: False
+tokens: 79
+segments:
+  primary file_1 1-9
+---
+# file_1
+from app.helpers import alpha, beta, gamma, delta
+
+
+def work(item):
+    first = alpha(item)
+    beta(item)
+    gamma(item)
+    delta(item)
+    return first
+
+# cross_file
+def alpha(value): ...
+# returns value; param_0 flows to return; no sanitiser; derived: syntactic

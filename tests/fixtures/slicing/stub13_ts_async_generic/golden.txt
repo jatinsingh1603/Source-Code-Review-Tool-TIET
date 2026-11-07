@@ -1,0 +1,17 @@
+status: slice
+truncated: False
+tokens: 85
+segments:
+  primary file_1 1-6
+---
+// file_1
+import { load } from "./load";
+
+export async function open(id: string) {
+  const record = await load<string>(id);
+  return record;
+}
+
+// cross_file
+async function load<T>(id: string, retries: number = undefined): Promise<T> {}
+// returns nothing; no sanitiser; raises; derived: syntactic

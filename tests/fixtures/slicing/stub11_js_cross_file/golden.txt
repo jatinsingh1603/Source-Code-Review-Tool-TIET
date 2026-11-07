@@ -1,0 +1,17 @@
+status: slice
+truncated: False
+tokens: 96
+segments:
+  primary file_1 1-6
+---
+// file_1
+import { build } from "./util";
+
+export function start(opts) {
+  const config = build(opts, 5);
+  return config;
+}
+
+// cross_file
+function build({ mode = undefined, level: lvl = undefined } = undefined, size = undefined) {}
+// returns value; param_0 flows to return; param_1 flows to return; no sanitiser; derived: syntactic

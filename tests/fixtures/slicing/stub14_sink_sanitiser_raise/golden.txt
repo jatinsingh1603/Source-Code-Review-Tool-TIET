@@ -1,0 +1,17 @@
+status: slice
+truncated: False
+tokens: 81
+segments:
+  primary file_1 1-6
+---
+# file_1
+from tools.runner import run_report
+
+
+def build(name):
+    safe = run_report(name)
+    return safe
+
+# cross_file
+def run_report(name): ...
+# returns value; param_0 flows to return; calls allowlisted sanitiser: quote; calls sink family: subprocess; raises; derived: syntactic

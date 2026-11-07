@@ -307,6 +307,10 @@ class StubReason(StrEnum):
     OUT_OF_SLICE_CALLEE = "out_of_slice_callee"
     TOKEN_BUDGET = "token_budget"  # noqa: S105 - enum value, not a credential
     EXTERNAL_LIBRARY = "external_library"
+    CROSS_FILE_CALLEE = "cross_file_callee"
+    UNRESOLVED_CALLEE = "unresolved_callee"
+    CLASS_CONTEXT = "class_context"
+    IMPORT_CONTEXT = "import_context"
 
 
 class PlaceholderKind(StrEnum):

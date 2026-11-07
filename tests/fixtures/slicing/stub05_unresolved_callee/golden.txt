@@ -1,0 +1,14 @@
+status: slice
+truncated: False
+tokens: 45
+segments:
+  primary file_1 4-6
+---
+# file_1
+def run(job):
+    prepared = prepare(job)
+    return prepared
+
+# unresolved
+def prepare(*args, **kwargs): ...
+# effects unknown; derived: syntactic

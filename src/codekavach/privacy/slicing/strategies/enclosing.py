@@ -68,6 +68,7 @@ from codekavach.privacy.slicing.shape import (
     statement_of,
     unit_of,
 )
+from codekavach.privacy.slicing.stubs import StubStats, build_stubs, fit_stubs
 
 _LOG = get_logger("codekavach.privacy.slicing")
 _MIN_WINDOW = 3
@@ -221,6 +222,12 @@ class EnclosingFunctionStrategy:
 
     def build(self, candidate: Candidate, parsed: ParseIndex, *, budget: SliceBudget) -> CodeSlice:
         """The slice for ``candidate``, or ``SlicingError`` with the reason it cannot be made."""
+        return self.build_with_stats(candidate, parsed, budget=budget)[0]
+
+    def build_with_stats(
+        self, candidate: Candidate, parsed: ParseIndex, *, budget: SliceBudget
+    ) -> tuple[CodeSlice, StubStats]:
+        """``build`` and the statistics of the stubs: what was left out, and why (E11-02)."""
         primary = candidate.locations[0]
         excluded, reason = parsed.is_excluded(primary.path)
         if excluded:
@@ -237,15 +244,31 @@ class EnclosingFunctionStrategy:
                 raise SlicingError("not_coherent")
             used = estimate(assemble(segments, (), language=language, labels=labels))
             if used <= budget.max_tokens:
-                return CodeSlice(
+                stub_set = build_stubs(
+                    segments,
+                    parsed,
+                    candidate_path=primary.path,
+                    candidate_line=primary.start_line,
+                    budget_tokens=budget.max_tokens - used,
+                )
+                stub_set, total = fit_stubs(
+                    stub_set,
+                    segments,
+                    language=language,
+                    labels=labels,
+                    max_tokens=budget.max_tokens,
+                )
+                slice_ = CodeSlice(
                     id=slice_id_for(candidate, segments),
                     candidate_id=candidate.id,
                     language=language,
                     strategy=self.name,
                     segments=tuple(segments),
-                    token_estimate=used,
+                    stubs=stub_set.stubs,
+                    token_estimate=max(total, used),
                     truncated=truncated,
                 )
+                return slice_, stub_set.stats
             step = job.shrink(flags)
             if step is None:
                 raise SlicingError("over_budget")

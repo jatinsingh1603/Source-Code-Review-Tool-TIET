@@ -1,0 +1,27 @@
+status: slice
+truncated: False
+tokens: 122
+segments:
+  context file_1 1-1
+  primary file_1 7-12
+  context file_1 17-17
+---
+// file_1
+export class LimitGuard extends Guard {
+// ... elided ...
+  check(amount: number): boolean {
+    if (amount > this.limit) {
+      return this.refuse(amount);
+    }
+    return true;
+  }
+// ... elided ...
+}
+
+// class context
+class LimitGuard extends Base {
+  limit: number;
+}
+// out_of_slice
+function refuse(amount: number): boolean {}
+// returns value; no parameter flows to return; no sanitiser; derived: syntactic

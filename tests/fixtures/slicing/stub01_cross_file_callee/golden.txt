@@ -1,0 +1,17 @@
+status: slice
+truncated: False
+tokens: 84
+segments:
+  primary file_1 1-6
+---
+# file_1
+from billing.bonus import compute_bonus
+
+
+def accrue(account_id, rate):
+    bonus = compute_bonus(rate, account_id)
+    return bonus
+
+# cross_file
+def compute_bonus(rate, cap=...): ...
+# returns value; param_0 flows to return; param_1 flows to return; no sanitiser; derived: syntactic

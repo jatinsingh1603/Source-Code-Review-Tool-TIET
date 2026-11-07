@@ -176,7 +176,11 @@
       "enum": [
         "out_of_slice_callee",
         "token_budget",
-        "external_library"
+        "external_library",
+        "cross_file_callee",
+        "unresolved_callee",
+        "class_context",
+        "import_context"
       ],
       "title": "StubReason",
       "type": "string"
