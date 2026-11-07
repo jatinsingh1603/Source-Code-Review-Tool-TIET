@@ -15,7 +15,7 @@
 PYTEST_ARGS ?=
 
 .PHONY: help setup fmt fmt-check lint type contracts test test-unit test-integration test-e2e \
-	test-privacy cov check lock-check build adr clean hooks hooks-update schemas schemas-check licences telemetry-check \
+	test-privacy cov perf check lock-check build adr clean hooks hooks-update schemas schemas-check licences telemetry-check \
 	changelog-draft changelog-check docs-check claims prepush
 
 help: ## Show this help
@@ -60,6 +60,12 @@ test-privacy: ## Run the privacy invariant tier
 # make cov on a clean Linux machine), so cov uses the factor CI uses unless one is already set.
 cov: ## Run the tests with branch coverage (terminal, XML and HTML reports)
 	CODEKAVACH_PERF_FACTOR=$${CODEKAVACH_PERF_FACTOR:-3.0} uv run pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html $(PYTEST_ARGS)
+
+# The budgets are timed without coverage: tracing made CPU-bound code 6 to 7 times slower on the
+# Linux runners (detect 31 ms to 215 ms, classification 15 ms to 84 ms, 2026-11-05 and 2026-11-07),
+# well past the factor of 3. CI runs this after the coverage step, which deselects perf.
+perf: ## Run the performance budget tests without coverage (factor 3.0 unless one is set)
+	CODEKAVACH_PERF_FACTOR=$${CODEKAVACH_PERF_FACTOR:-3.0} uv run pytest -m "perf and not network" $(PYTEST_ARGS)
 
 check: fmt-check lint type contracts test ## Run every gate CI runs, stopping at the first failure
 

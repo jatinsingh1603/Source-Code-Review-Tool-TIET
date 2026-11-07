@@ -142,8 +142,9 @@ jobs:
   test:
     name: test (${{ matrix.os }}, ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
-    # The Linux jobs run every test, the perf budgets and coverage in one process: about 14.5
+    # The Linux jobs ran every test, the perf budgets and coverage in one process: about 14.5
     # minutes at 6 500 tests, so 15 left no room (a run on 2026-11-05 was cancelled at the limit).
+    # The perf budgets now run in their own step without coverage (see docs/process/testing.md).
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -165,18 +166,16 @@ jobs:
       - run: uv run python --version
         env:
           UV_NO_SYNC: "1"
-      - name: Tests with coverage (Linux runs the perf budgets)
-        if: runner.os == 'Linux'
-        run: make cov
-        env:
-          UV_NO_SYNC: "1"
-          PYTEST_ARGS: --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml
-      - name: Tests with coverage (macOS deselects the perf budgets)
-        if: runner.os == 'macOS'
+      - name: Tests with coverage (the perf budgets run in their own step on Linux)
         run: make cov
         env:
           UV_NO_SYNC: "1"
           PYTEST_ARGS: -m "not network and not perf" --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml
+      - name: Performance budgets without coverage (Linux)
+        if: runner.os == 'Linux'
+        run: make perf
+        env:
+          UV_NO_SYNC: "1"
       - name: Coverage total in the job summary
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         run: |

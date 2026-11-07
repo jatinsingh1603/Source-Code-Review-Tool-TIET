@@ -17,16 +17,12 @@ from codekavach.core.models import ScanStatus
 from codekavach.core.pipeline.runner import ScanOutcome, run_scan
 from codekavach.core.pipeline.salt import ScanSalt
 from tests.support.ingest import SALT_HEX, stages_registry
-from tests.support.perf import assert_within_budget, perf_factor
+from tests.support.perf import assert_within_budget
 
 FILES = 5_000
 LINES_PER_FILE = 200
 COLD_BUDGET_SECONDS = 150.0
 WARM_BUDGET_SECONDS = 15.0
-# A warm run reads and decodes 5 000 stored entries, so it is dominated by file reads and JSON and
-# model decoding. Coverage and a shared runner slow that by more than the general factor allows:
-# Linux CI measured 51 to 52 s against 45 s (15 s x 3) on Python 3.13, with the work unchanged.
-WARM_EXTRA_FACTOR = 1.5
 
 PYTHON_HEADER = """\"\"\"Module {i}.\"\"\"
 
@@ -142,11 +138,6 @@ def test_five_thousand_files_parse_within_the_cold_and_warm_budgets(tmp_path: Pa
     warm, warm_seconds = scan(repo)
     assert warm.scan.status is ScanStatus.COMPLETED
     assert (warm.result.memo_hits, warm.result.memo_misses) == (FILES, 0)
-    assert_within_budget(
-        warm_seconds,
-        WARM_BUDGET_SECONDS,
-        factor=perf_factor() * WARM_EXTRA_FACTOR,
-        label="warm parse of 5000 files",
-    )
+    assert_within_budget(warm_seconds, WARM_BUDGET_SECONDS, label="warm parse of 5000 files")
     # The warm run must be much cheaper than the cold one, not merely under its ceiling.
     assert warm_seconds < cold_seconds
