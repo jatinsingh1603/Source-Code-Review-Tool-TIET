@@ -1,14 +1,13 @@
 """Performance budgets of the egress leak scanners (E12-02).
 
-The four matching scanners (vault originals, domain terms, size and rate, aggregation) run over a
-256 KB body, with a vault automaton of 50 000 originals, in under 40 ms; building that automaton
-takes under 2 s and happens once, before the first request.
+All six scanners (vault originals, domain terms, size and rate, aggregation, and the two that run
+the E08 detectors again) scan a 256 KB body, with a vault automaton of 50 000 originals, in under
+40 ms; building that automaton takes under 2 s and happens once, before the first request.
 
-The two scanners that run the E08 detectors again (residual secrets and personal data) are
-bounded by those detectors: they are 17 regular-expression passes over the body, about 125 ms
-here for 256 KB, so the issue's 40 ms for all six is not reachable without a faster detector
-engine (follow-up issue). They get their own budget, stated here so that a regression shows.
-Budgets are scaled by the performance factor.
+The detector scanners meet it through the prefilters of the detectors (E12-02b): a detector whose
+patterns cannot match the body is skipped, so a body without an email address, a credential-looking
+name or a card number does not pay for 17 regular-expression passes. Budgets are scaled by the
+performance factor.
 """
 
 import json
@@ -32,8 +31,6 @@ from codekavach.privacy.slicing.metrics import ScanDisclosure
 from tests.support.perf import assert_within_budget, measure
 
 SCAN_BUDGET_SECONDS = 0.040
-DETECTOR_BUDGET_SECONDS = 0.300
-DETECTOR_IDS = frozenset({"residual_pii", "residual_secret"})
 BUILD_BUDGET_SECONDS = 2.0
 ORIGINALS = 50_000
 BODY_BYTES = 256 * 1024
@@ -84,13 +81,13 @@ def test_building_the_automaton_for_50000_originals_stays_within_budget(names: l
     )
 
 
-def run(names: list[str], *, detectors: bool) -> tuple[float, int]:
+def run(names: list[str]) -> tuple[float, int]:
     config = Settings.model_validate({"privacy": {"domain_terms": ["Phoenix Ledger"]}})
     registry = register_default_scanners(ScannerRegistry(), ScanDisclosure(repo_lines=1000))
     warm(registry, Vault(names), config)
     data = body()
     assert len(data) <= BODY_BYTES
-    chosen = [item for item in registry if (item.id in DETECTOR_IDS) is detectors]
+    chosen = list(registry)
 
     def scan_all() -> None:
         for scanner in chosen:
@@ -104,14 +101,7 @@ def run(names: list[str], *, detectors: bool) -> tuple[float, int]:
 
 
 @pytest.mark.perf
-def test_the_four_matching_scanners_scan_a_256_kb_body_within_budget(names: list[str]) -> None:
-    seconds, count = run(names, detectors=False)
-    assert count == 4
-    assert_within_budget(seconds, SCAN_BUDGET_SECONDS, label="matching scanners, 50000 originals")
-
-
-@pytest.mark.perf
-def test_the_two_detector_scanners_scan_a_256_kb_body_within_budget(names: list[str]) -> None:
-    seconds, count = run(names, detectors=True)
-    assert count == 2
-    assert_within_budget(seconds, DETECTOR_BUDGET_SECONDS, label="detector scanners")
+def test_all_six_scanners_scan_a_256_kb_body_within_budget(names: list[str]) -> None:
+    seconds, count = run(names)
+    assert count == 6
+    assert_within_budget(seconds, SCAN_BUDGET_SECONDS, label="six scanners, 50000 originals")

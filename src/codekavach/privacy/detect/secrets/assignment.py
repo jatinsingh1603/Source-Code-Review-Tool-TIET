@@ -34,6 +34,7 @@ from codekavach.parsing.models import ParsedFile
 from codekavach.parsing.subtokens import split_subtokens
 from codekavach.privacy.detect.base import TypedSpan
 from codekavach.privacy.detect.offsets import ByteOffsets
+from codekavach.privacy.detect.prefilter import TextFacts
 from codekavach.privacy.detect.safe_regex import safe_compile
 from codekavach.privacy.detect.secrets.filters import is_placeholder
 
@@ -147,6 +148,21 @@ class AssignmentDetector:
 
     id = DETECTOR_ID
     kinds = frozenset({PlaceholderKind.SECRET})
+
+    def may_match(self, facts: TextFacts) -> bool:
+        """False when no name in the text can be a credential name (a prefilter, E12-02b).
+
+        ``is_credential_name`` needs a sub-word of the name in ``CREDENTIAL_WORDS``, or two
+        adjacent sub-words forming a ``CREDENTIAL_PAIRS`` entry. A sub-word is a substring of the
+        name, so its lower case is a substring of the lower-cased text.
+        """
+        if facts.has_any_word(CREDENTIAL_WORDS):
+            return True
+        lowered = facts.lowered
+        return any(
+            first in lowered and second in lowered
+            for first, second in (pair.split("_") for pair in CREDENTIAL_PAIRS)
+        )
 
     def detect(self, text: RawCode, *, path: RepoPath, language: Language) -> list[TypedSpan]:
         """Line-based pass: ``name = "value"`` anywhere, and bare values in configuration files."""

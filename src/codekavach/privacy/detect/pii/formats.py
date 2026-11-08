@@ -43,6 +43,7 @@ from codekavach.privacy.detect.pii.filters import (
     Verdict,
     first_match,
 )
+from codekavach.privacy.detect.prefilter import Needs, TextFacts
 from codekavach.privacy.detect.safe_regex import safe_compile
 from codekavach.privacy.detect.vocabulary import PII_SUBTYPES
 
@@ -409,6 +410,29 @@ def formats_for(locales: Collection[str]) -> tuple[PiiFormat, ...]:
     return tuple(item for item in PII_FORMATS if item.locales & chosen)
 
 
+# What a text must hold for each format's pattern to be able to match (E12-02b). Every entry is read
+# off the pattern above: a literal it cannot match without, or the pattern with its look-around
+# assertions removed. A format without an entry needs nothing and always runs.
+# tests/unit/privacy/test_prefilter.py compares the spans with and without these conditions.
+NEEDS: Final[dict[str, Needs]] = {
+    "aadhaar_number": Needs(core=r"[2-9]\d{3}[ \-]?\d{4}[ \-]?\d{4}"),
+    "pan_number": Needs(core=r"\d{4}[A-Z]"),  # the tail of the pattern: it starts at a digit
+    "ifsc_code": Needs(chars=("0",), core=r"[A-Z]{4}0[A-Z0-9]{6}"),
+    "upi_id": Needs(chars=("@",)),
+    "indian_mobile": Needs(core=r"[6-9]\d{4}"),  # both alternatives start so
+    "gstin": Needs(core=r"\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]"),  # the tail of the pattern
+    "email": Needs(chars=("@",)),
+    "phone_intl": Needs(core=r"\+[1-9](?:[ \-]?\d){6,14}"),
+    "credit_card": Needs(core=r"\d(?:[ \-]?\d){12,18}"),
+    "iban": Needs(core=r"\d{2}(?: ?[A-Z0-9]{4}){2}"),  # the part after the country code
+    "ipv4": Needs(core=r"\d\.\d{1,3}\.\d{1,3}\.\d"),  # four octets: a digit, dot, ... dot, a digit
+    "ipv6": Needs(core=r":[0-9A-Fa-f]{0,4}:"),  # two groups end in a colon
+    "mac_address": Needs(core=r"[:\-][0-9A-Fa-f]{2}[:\-]"),  # a separator, two digits, the same
+    "date_of_birth": Needs(words=("dob", "birth")),  # name_words: birth, birthdate, birthday, dob
+    "passport_number": Needs(words=("passport",)),  # name_words: passport
+}
+
+
 class PiiDetector:
     """The ``pii.<subtype>`` detector of one :class:`PiiFormat`.
 
@@ -423,12 +447,17 @@ class PiiDetector:
         self.id = f"pii.{pii_format.subtype}"
         self._pattern = pii_format.compiled()
         self._disabled = frozenset(disabled_filters)
+        self._needs = NEEDS.get(pii_format.subtype, Needs())
         unknown = self._disabled - PII_FILTER_NAMES
         if unknown:
             raise ValueError(f"unknown filter names: {sorted(unknown)}")
 
     def __repr__(self) -> str:
         return f"PiiDetector(id={self.id!r})"
+
+    def may_match(self, facts: TextFacts) -> bool:
+        """False only when this format's pattern cannot match the text (a prefilter, E12-02b)."""
+        return self._needs.met(facts)
 
     def detect(self, text: RawCode, *, path: RepoPath, language: Language) -> Sequence[TypedSpan]:
         """Every value of this format in ``text`` that passes its check and the filters."""

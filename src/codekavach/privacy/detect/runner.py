@@ -31,6 +31,7 @@ from codekavach.privacy.detect.mask import (
     placeholder_regions,
 )
 from codekavach.privacy.detect.overlap import remainders, resolve_overlaps
+from codekavach.privacy.detect.prefilter import TextFacts
 from codekavach.privacy.detect.registry import DetectorRegistry
 from codekavach.privacy.errors import RedactionError
 
@@ -47,6 +48,22 @@ class DetectionReport(KavachModel):
     downgraded: int = Field(default=0, ge=0)
     clipped_by_placeholders: int = Field(default=0, ge=0)
     spans_out: int = Field(default=0, ge=0)
+
+
+def _cannot_match(detector: Detector, facts: TextFacts) -> bool:
+    """True when ``detector`` offers ``may_match`` and says its patterns cannot match the text.
+
+    A prefilter that raises is ignored: the detector then runs, so a faulty prefilter can cost
+    time but never hide a value.
+    """
+    may_match = getattr(detector, "may_match", None)
+    if may_match is None:
+        return False
+    try:
+        return bool(may_match(facts) is False)
+    except Exception:  # noqa: BLE001 - a plugin may raise anything; the detector runs instead
+        _log.warning("detector_prefilter_failed", detector=detector.id)
+        return False
 
 
 def _run_one(
@@ -73,8 +90,14 @@ def detect_with_report(
     language: Language,
     settings: Settings,
     registry: DetectorRegistry,
+    prefilter: bool = True,
 ) -> tuple[tuple[TypedSpan, ...], DetectionReport]:
-    """Detect in ``text`` and return the resolved spans with a counts-only report."""
+    """Detect in ``text`` and return the resolved spans with a counts-only report.
+
+    A detector that offers ``may_match`` is skipped when the text cannot match its patterns
+    (``prefilter=False`` runs every detector, which the equivalence tests use). Its count in the
+    report is then zero, as it would have been.
+    """
     raw = text.expose()
     masked = raw
     regions: tuple[tuple[int, int], ...] = ()
@@ -89,7 +112,11 @@ def detect_with_report(
     kept: list[TypedSpan] = []
     below_floor = 0
     downgraded = 0
+    facts = TextFacts(masked)
     for detector in registry.all():
+        if prefilter and _cannot_match(detector, facts):
+            counts.append((detector.id, 0))
+            continue
         found = _run_one(detector, seen, byte_length, path, language)
         counts.append((detector.id, len(found)))
         for span in found:
