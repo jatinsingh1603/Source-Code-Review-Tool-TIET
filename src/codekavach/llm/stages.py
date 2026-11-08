@@ -117,6 +117,7 @@ class LlmReviewStage:
                         payload=payload,
                         respond=respond,
                         static_text=task.static_text(payload),
+                        wait_seconds=float(ctx.config.llm.timeout_seconds),
                     )
                     counts[result.kind] += 1
                     item = str(payload.candidate_id)

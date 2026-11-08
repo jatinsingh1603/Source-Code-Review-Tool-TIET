@@ -23,6 +23,7 @@ exception message carries payload text.
 
 import contextlib
 import hashlib
+import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -102,6 +103,8 @@ class EgressSession:
         consent: ConsentDecision | None,
         dry_run: bool = False,
         http_transport: Any = None,  # an httpx.BaseTransport; tests inject a mock one
+        sleep: Callable[[float], None] = time.sleep,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._settings = settings
         self._state = state_dir
@@ -110,6 +113,8 @@ class EgressSession:
         self._consent = consent
         self._dry_run = dry_run
         self._http_transport = http_transport
+        self._sleep = sleep
+        self._clock = clock
         self._stack = contextlib.ExitStack()
         self._guard: EgressGuard | None = None
         self._ledger: LedgerWriter | None = None
@@ -126,7 +131,9 @@ class EgressSession:
                 key_source=privacy.vault.key_source,
                 settings=self._settings,
             )
-            registry = register_default_scanners(ScannerRegistry(), ScanDisclosure(repo_lines=1))
+            registry = register_default_scanners(
+                ScannerRegistry(), ScanDisclosure(repo_lines=1), clock=self._clock
+            )
             self._registry = registry
             self._guard = EgressGuard(registry)
             warm(registry, self._vault, self._settings)
@@ -163,8 +170,14 @@ class EgressSession:
         payload: SanitisedPayload,
         respond: Callable[[], Reply] | None = None,
         static_text: Sequence[str] = (),
+        wait_seconds: float = 0.0,
     ) -> Dispatch:
-        """Guard, ledger and send ``request``; ``respond`` answers an offline provider locally."""
+        """Guard, ledger and send ``request``; ``respond`` answers an offline provider locally.
+
+        A request refused only for the rate limit waits for the bucket to refill, up to
+        ``wait_seconds`` in all, and is evaluated again; nothing is ledgered for a wait. Any other
+        refusal, or a rate refusal that outlasts the wait, is final and ledgered once.
+        """
         guard, ledger, transport = self._guard, self._ledger, self._transport
         if guard is None or ledger is None or transport is None:
             raise RuntimeError("the egress session is not open")
@@ -177,15 +190,26 @@ class EgressSession:
             task=task,
         )
         text = payload.text
-        decision = guard.evaluate(
-            request.body,
-            meta,
-            settings=self._settings,
-            consent=self._consent,
-            vault=self._vault,
-            payload_text=text.expose(),
-            static_text=static_text,
-        )
+        interval = 60.0 / max(self._settings.privacy.egress.rate_per_minute, 1)
+        waited = 0.0
+        while True:
+            decision = guard.evaluate(
+                request.body,
+                meta,
+                settings=self._settings,
+                consent=self._consent,
+                vault=self._vault,
+                payload_text=text.expose(),
+                static_text=static_text,
+            )
+            only_rate = bool(decision.hits) and all(
+                hit.block_code == "rate_budget" for hit in decision.hits
+            )
+            if decision.allowed or not only_rate or waited >= wait_seconds:
+                break
+            pause = min(interval, wait_seconds - waited)
+            self._sleep(pause)
+            waited += pause
 
         def draft(
             outcome: EgressOutcome, *, block_code: str | None = None, ref_seq: int | None = None
