@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src &#39;none&#39;; base-uri &#39;none&#39;">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Secure Source Code Review</title>
+<style>
+:root { color-scheme: light; --ink:#1b2430; --muted:#5b6675; --line:#d5dbe3; --soft:#f4f6f9; --accent:#16407a;
+  --critical:#8e1b1b; --high:#c2410c; --medium:#a16207; --low:#1d6b4a; --info:#475569; }
+* { box-sizing: border-box; }
+body { margin:0; font:14px/1.5 -apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; color:var(--ink); background:#fff; }
+main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+h1,h2,h3 { line-height:1.25; } h2 { border-bottom:2px solid var(--line); padding-bottom:6px; margin-top:40px; }
+table { border-collapse:collapse; width:100%; margin:12px 0; } th,td { border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
+th { background:var(--soft); }
+.cover { min-height: 60vh; display:flex; flex-direction:column; justify-content:center; border-bottom:4px solid var(--accent); padding-bottom:32px; }
+.cover h1 { font-size:34px; margin:0 0 12px; } .marking { font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--critical); }
+.sev { display:inline-block; padding:1px 8px; border-radius:10px; color:#fff; font-size:12px; font-weight:700; text-transform:uppercase; }
+.sev-critical { background:var(--critical); } .sev-high { background:var(--high); } .sev-medium { background:var(--medium); }
+.sev-low { background:var(--low); } .sev-info { background:var(--info); }
+.matrix td { text-align:center; width:56px; height:40px; } .matrix .axis { background:var(--soft); font-size:12px; color:var(--muted); }
+.cell-0 { color:#9aa4b2; } .cell-n { font-weight:700; background:#ffe9d6; }
+.finding { border:1px solid var(--line); border-radius:6px; padding:12px 16px; margin:16px 0; break-inside:avoid-page; }
+.meta { color:var(--muted); font-size:13px; }
+pre.code { background:var(--soft); border:1px solid var(--line); border-radius:4px; padding:8px 0; overflow:auto; font:12.5px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; margin:8px 0; }
+pre.code .ln { display:block; padding:0 8px; white-space:pre-wrap; word-break:break-word; }
+pre.code .ln.hit { background:#fff1c2; border-left:3px solid var(--high); }
+pre.code .no { display:inline-block; min-width:4ch; margin-right:10px; text-align:right; color:var(--muted); user-select:none; }
+pre.code mark { background:#ffd24d; color:inherit; }
+.note { border-left:4px solid var(--accent); background:var(--soft); padding:8px 12px; margin:12px 0; }
+.warn { border-left-color:var(--high); }
+nav.toc ol { padding-left:20px; } nav.toc a { color:var(--accent); text-decoration:none; }
+@media print {
+  @page { size:A4; margin:22mm 16mm 20mm; @top-center { content:"Confidential"; font-size:9pt; color:#8e1b1b; }
+    @bottom-right { content:"Page " counter(page) " of " counter(pages); font-size:9pt; color:#5b6675; } }
+  main { max-width:none; padding:0; } .cover { min-height:0; page-break-after:always; } h2 { page-break-before:always; }
+  nav.toc a::after { content: leader('.') target-counter(attr(href), page); }
+}
+</style>
+</head>
+<body>
+<main>
+<section class="cover">
+  <div class="marking">Confidential</div>
+  <h1>Secure Source Code Review</h1>
+  <table>
+    <tr><th>Scan</th><td><scan-1></td></tr>
+    <tr><th>Generated</th><td><time></td></tr>
+    <tr><th>Reviewer</th><td>not stated</td></tr>
+    <tr><th>Version</th><td>CodeKavach 0.1.0.dev0</td></tr>
+    <tr><th>Revision</th><td>not a git checkout</td></tr>
+  </table>
+</section>
+
+<nav class="toc"><h2 id="contents">Contents</h2>
+  <ol>
+    <li><a href="#summary">Executive summary</a></li>
+    <li><a href="#matrix">Severity by likelihood</a></li>
+    <li><a href="#table">Summary of findings</a></li>
+    <li><a href="#findings">Detailed findings</a></li>
+<li><a href="#privacy">Privacy attestation</a></li>    <li><a href="#appendix">Appendix: tools and versions</a></li>
+  </ol>
+</nav>
+
+<h2 id="summary">Executive summary</h2>
+<p>10 finding(s) from 10 candidate(s) in
+30 file(s) and 984 line(s).
+0 candidate(s) were reviewed by a model.</p>
+<table>
+  <tr><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>Info</th></tr>
+  <tr><td>1</td><td>7</td><td>2</td><td>0</td><td>0</td></tr>
+</table>
+<p class="meta">A model that judges a finding not vulnerable lowers its confidence and ranks it lower. It never removes it,
+and it never changes its status: only a person can mark a finding a false positive.</p>
+
+<h2 id="matrix">Severity by likelihood</h2>
+<table class="matrix">
+  <tr><td class="axis">Likelihood 5</td>
+    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td></tr>
+  <tr><td class="axis">Likelihood 4</td>
+    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td></tr>
+  <tr><td class="axis">Likelihood 3</td>
+    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-n">2</td>    <td class="cell-n">7</td>    <td class="cell-n">1</td></tr>
+  <tr><td class="axis">Likelihood 2</td>
+    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td></tr>
+  <tr><td class="axis">Likelihood 1</td>
+    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td></tr>
+  <tr><td class="axis"></td><td class="axis">Impact 1</td><td class="axis">Impact 2</td><td class="axis">Impact 3</td><td class="axis">Impact 4</td><td class="axis">Impact 5</td></tr>
+</table>
+
+<h2 id="table">Summary of findings</h2>
+<table>
+  <tr><th>#</th><th>Severity</th><th>Title</th><th>Location</th><th>CWE</th><th>Status</th><th>Model view</th></tr>
+  <tr><td><a href="#f1">1</a></td>
+    <td><span class="sev sev-critical">critical</span></td>
+    <td>A shell command is built from variable parts that are not quoted.</td>
+    <td>services/api/reports.py:9</td>
+    <td>CWE-78</td>
+    <td>open</td>
+    <td>not reviewed</td></tr>
+  <tr><td><a href="#f2">2</a></td>
+    <td><span class="sev sev-high">high</span></td>
+    <td>A database call receives query text that was built by string interpolation.</td>
+    <td>services/api/accounts.py:11</td>
+    <td>CWE-89</td>
+    <td>open</td>
+    <td>not reviewed</td></tr>
+  <tr><td><a href="#f3">3</a></td>
+    <td><span class="sev sev-high">high</span></td>
+    <td>A record is fetched by an identifier from the caller with no ownership check.</td>
+    <td>services/api/handlers.py:34</td>
+    <td>CWE-639</td>
+    <td>open</td>
+    <td>not reviewed</td></tr>
+  <tr><td><a href="#f4">4</a></td>
+    <td><span class="sev sev-high">high</span></td>
+    <td>An account-scoped route has no authentication or authorisation check.</td>
+    <td>services/api/handlers.py:39</td>
+    <td>CWE-862</td>
+    <td>open</td>
+    <td>not reviewed</td></tr>
+  <tr><td><a href="#f5">5</a></td>
+    <td><span class="sev sev-high">high</span></td>
+    <td>A password is hashed with an algorithm that is broken or far too fast.</td>
+    <td>services/api/security.py:15</td>
+    <td>CWE-327</td>
+    <td>open</td>
+    <td>not reviewed</td></tr>
+  <tr><td><a href="#f6">6</a></td>
+    <td><span class="sev sev-high">high</span></td>
+    <td>Data is deserialised with a loader that can construct arbitrary objects.</td>
+    <td>services/api/serialisation.py:14</td>
+    <td>CWE-502</td>
+    <td>open</td>
+    <td>not reviewed</td></tr>
+  <tr><td><a href="#f7">7</a></td>
+    <td><span class="sev sev-high">high</span></td>
+    <td>A file operation uses a path that comes from the caller without a containment check.</td>
+    <td>services/web/exporter.js:9</td>
+    <td>CWE-22</td>
+    <td>open</td>
+    <td>not reviewed</td></tr>
+  <tr><td><a href="#f8">8</a></td>
+    <td><span class="sev sev-high">high</span></td>
+    <td>An outbound request goes to a URL chosen by the caller, with no allow-list check.</td>
+    <td>services/web/payments.js:18</td>
+    <td>CWE-918</td>
+    <td>open</td>
+    <td>not reviewed</td></tr>
+  <tr><td><a href="#f9">9</a></td>
+    <td><span class="sev sev-medium">medium</span></td>
+    <td>A block cipher is given a fixed initialisation vector instead of a random one.</td>
+    <td>services/api/security.py:27</td>
+    <td>CWE-329</td>
+    <td>open</td>
+    <td>not reviewed</td></tr>
+  <tr><td><a href="#f10">10</a></td>
+    <td><span class="sev sev-medium">medium</span></td>
+    <td>Input from the caller is written into an HTML response without escaping.</td>
+    <td>services/web/renderer.js:18</td>
+    <td>CWE-79</td>
+    <td>open</td>
+    <td>not reviewed</td></tr>
+</table>
+
+<h2 id="findings">Detailed findings</h2>
+<article class="finding" id="f1">
+  <h3>1. A shell command is built from variable parts that are not quoted. <span class="sev sev-critical">critical</span></h3>
+  <p class="meta">services/api/reports.py:9
+    &middot; confidence medium &middot; status open
+    &middot; rule py.command-injection (codekavach.rules)
+&middot; OWASP A03:2021 Injection</p>
+  <pre class="code" aria-label="Evidence from services/api/reports.py"><span class="ln"><span class="no">6</span></span><span class="ln"><span class="no">7</span>def archive_statements(folder, archive_name):</span><span class="ln"><span class="no">8</span>    &#34;&#34;&#34;Pack a folder of statements into an archive for download.&#34;&#34;&#34;</span><span class="ln hit"><span class="no">9</span>    <mark>subprocess.run(f&#34;zip -r {archive_name} {folder}&#34;, shell=True, check=True)</mark></span><span class="ln"><span class="no">10</span>    return archive_name</span><span class="ln"><span class="no">11</span></span><span class="ln"><span class="no">12</span></span></pre>
+</article>
+<article class="finding" id="f2">
+  <h3>2. A database call receives query text that was built by string interpolation. <span class="sev sev-high">high</span></h3>
+  <p class="meta">services/api/accounts.py:11
+    &middot; confidence medium &middot; status open
+    &middot; rule py.sql-injection (codekavach.rules)
+&middot; OWASP A03:2021 Injection</p>
+  <pre class="code" aria-label="Evidence from services/api/accounts.py"><span class="ln"><span class="no">8</span>def find_premium_account(conn, account_id):</span><span class="ln"><span class="no">9</span>    &#34;&#34;&#34;The premium-tier account with this id.&#34;&#34;&#34;</span><span class="ln"><span class="no">10</span>    cur = conn.cursor()</span><span class="ln hit"><span class="no">11</span>    <mark>cur.execute(&#34;SELECT * FROM premium_accounts WHERE id = &#39;%s&#39;&#34; % account_id)</mark></span><span class="ln"><span class="no">12</span>    return cur.fetchone()</span><span class="ln"><span class="no">13</span></span><span class="ln"><span class="no">14</span></span></pre>
+</article>
+<article class="finding" id="f3">
+  <h3>3. A record is fetched by an identifier from the caller with no ownership check. <span class="sev sev-high">high</span></h3>
+  <p class="meta">services/api/handlers.py:34
+    &middot; confidence medium &middot; status open
+    &middot; rule py.insecure-direct-object-reference (codekavach.rules)
+&middot; OWASP A01:2021 Broken Access Control</p>
+  <pre class="code" aria-label="Evidence from services/api/handlers.py"><span class="ln"><span class="no">31</span>@require_auth</span><span class="ln"><span class="no">32</span>def account_statement(account_id):</span><span class="ln"><span class="no">33</span>    conn = db.connect()</span><span class="ln hit"><span class="no">34</span>    statement = <mark>accounts.get_statement(conn, account_id)</mark></span><span class="ln"><span class="no">35</span>    return jsonify(serialisation.dump_statement(statement))</span><span class="ln"><span class="no">36</span></span><span class="ln"><span class="no">37</span></span></pre>
+</article>
+<article class="finding" id="f4">
+  <h3>4. An account-scoped route has no authentication or authorisation check. <span class="sev sev-high">high</span></h3>
+  <p class="meta">services/api/handlers.py:39
+    &middot; confidence medium &middot; status open
+    &middot; rule py.missing-authorization (codekavach.rules)
+&middot; OWASP A01:2021 Broken Access Control</p>
+  <pre class="code" aria-label="Evidence from services/api/handlers.py"><span class="ln"><span class="no">36</span></span><span class="ln"><span class="no">37</span></span><span class="ln"><span class="no">38</span>@app.route(&#34;/api/accounts/&lt;account_id&gt;/close&#34;, methods=[&#34;POST&#34;])</span><span class="ln hit"><span class="no">39</span><mark>def close_account(account_id):</mark></span><span class="ln hit"><span class="no">40</span>    <mark>conn = db.connect()</mark></span><span class="ln hit"><span class="no">41</span>    <mark>accounts.close(conn, account_id)</mark></span><span class="ln hit"><span class="no">42</span>    <mark>return jsonify(status=&#34;closed&#34;)</mark></span><span class="ln"><span class="no">43</span></span><span class="ln"><span class="no">44</span></span><span class="ln"><span class="no">45</span>@app.route(&#34;/api/me/accounts/&lt;account_id&gt;&#34;)</span></pre>
+</article>
+<article class="finding" id="f5">
+  <h3>5. A password is hashed with an algorithm that is broken or far too fast. <span class="sev sev-high">high</span></h3>
+  <p class="meta">services/api/security.py:15
+    &middot; confidence medium &middot; status open
+    &middot; rule py.weak-password-hash (codekavach.rules)
+&middot; OWASP A02:2021 Cryptographic Failures</p>
+  <pre class="code" aria-label="Evidence from services/api/security.py"><span class="ln"><span class="no">12</span></span><span class="ln"><span class="no">13</span>def hash_password(password):</span><span class="ln"><span class="no">14</span>    &#34;&#34;&#34;The stored form of a customer password.&#34;&#34;&#34;</span><span class="ln hit"><span class="no">15</span>    return <mark>hashlib.md5(password.encode(&#34;utf-8&#34;))</mark>.hexdigest()</span><span class="ln"><span class="no">16</span></span><span class="ln"><span class="no">17</span></span><span class="ln"><span class="no">18</span>def hash_password_strong(password, salt=None):</span></pre>
+</article>
+<article class="finding" id="f6">
+  <h3>6. Data is deserialised with a loader that can construct arbitrary objects. <span class="sev sev-high">high</span></h3>
+  <p class="meta">services/api/serialisation.py:14
+    &middot; confidence medium &middot; status open
+    &middot; rule py.insecure-deserialisation (codekavach.rules)
+&middot; OWASP A08:2021 Software and Data Integrity Failures</p>
+  <pre class="code" aria-label="Evidence from services/api/serialisation.py"><span class="ln"><span class="no">11</span></span><span class="ln"><span class="no">12</span>def load_cached_profile(blob):</span><span class="ln"><span class="no">13</span>    &#34;&#34;&#34;A customer profile read back from the shared cache.&#34;&#34;&#34;</span><span class="ln hit"><span class="no">14</span>    return <mark>pickle.loads(blob)</mark></span><span class="ln"><span class="no">15</span></span><span class="ln"><span class="no">16</span></span><span class="ln"><span class="no">17</span>def load_profile(text):</span></pre>
+</article>
+<article class="finding" id="f7">
+  <h3>7. A file operation uses a path that comes from the caller without a containment check. <span class="sev sev-high">high</span></h3>
+  <p class="meta">services/web/exporter.js:9
+    &middot; confidence medium &middot; status open
+    &middot; rule js.path-traversal (codekavach.rules)
+&middot; OWASP A01:2021 Broken Access Control</p>
+  <pre class="code" aria-label="Evidence from services/web/exporter.js"><span class="ln"><span class="no">6</span></span><span class="ln"><span class="no">7</span>function exportStatement(req, res) {</span><span class="ln"><span class="no">8</span>  const file = path.join(config.exportDir, req.query.file);</span><span class="ln hit"><span class="no">9</span>  <mark>fs.createReadStream(file)</mark>.pipe(res);</span><span class="ln"><span class="no">10</span>}</span><span class="ln"><span class="no">11</span></span><span class="ln"><span class="no">12</span>function exportStatementSafely(req, res) {</span></pre>
+</article>
+<article class="finding" id="f8">
+  <h3>8. An outbound request goes to a URL chosen by the caller, with no allow-list check. <span class="sev sev-high">high</span></h3>
+  <p class="meta">services/web/payments.js:18
+    &middot; confidence medium &middot; status open
+    &middot; rule js.ssrf (codekavach.rules)
+&middot; OWASP A10:2021 Server-Side Request Forgery</p>
+  <pre class="code" aria-label="Evidence from services/web/payments.js"><span class="ln"><span class="no">15</span>}</span><span class="ln"><span class="no">16</span></span><span class="ln"><span class="no">17</span>async function fetchSettlementStatus(callbackUrl) {</span><span class="ln hit"><span class="no">18</span>  const response = await <mark>fetch(callbackUrl)</mark>;</span><span class="ln"><span class="no">19</span>  return response.json();</span><span class="ln"><span class="no">20</span>}</span><span class="ln"><span class="no">21</span></span></pre>
+</article>
+<article class="finding" id="f9">
+  <h3>9. A block cipher is given a fixed initialisation vector instead of a random one. <span class="sev sev-medium">medium</span></h3>
+  <p class="meta">services/api/security.py:27
+    &middot; confidence medium &middot; status open
+    &middot; rule py.static-iv (codekavach.rules)
+</p>
+  <pre class="code" aria-label="Evidence from services/api/security.py"><span class="ln"><span class="no">24</span></span><span class="ln"><span class="no">25</span>def encrypt_field(key, plaintext):</span><span class="ln"><span class="no">26</span>    &#34;&#34;&#34;Encrypt a column value before it is stored.&#34;&#34;&#34;</span><span class="ln hit"><span class="no">27</span>    cipher = <mark>AES.new(key, AES.MODE_CBC, STATIC_IV)</mark></span><span class="ln"><span class="no">28</span>    return cipher.encrypt(plaintext.ljust(16 * ((len(plaintext) + 15) // 16)).encode(&#34;utf-8&#34;))</span><span class="ln"><span class="no">29</span></span><span class="ln"><span class="no">30</span></span></pre>
+</article>
+<article class="finding" id="f10">
+  <h3>10. Input from the caller is written into an HTML response without escaping. <span class="sev sev-medium">medium</span></h3>
+  <p class="meta">services/web/renderer.js:18
+    &middot; confidence medium &middot; status open
+    &middot; rule js.reflected-xss (codekavach.rules)
+&middot; OWASP A03:2021 Injection</p>
+  <pre class="code" aria-label="Evidence from services/web/renderer.js"><span class="ln"><span class="no">15</span>}</span><span class="ln"><span class="no">16</span></span><span class="ln"><span class="no">17</span>function renderGreeting(req, res) {</span><span class="ln hit"><span class="no">18</span>  <mark>res.send(&#39;&lt;h1&gt;Welcome back, &#39; + req.query.name + &#39;&lt;/h1&gt;&#39;)</mark>;</span><span class="ln"><span class="no">19</span>}</span><span class="ln"><span class="no">20</span></span><span class="ln"><span class="no">21</span>function renderGreetingSafely(req, res) {</span></pre>
+</article>
+
+<h2 id="privacy">Privacy attestation</h2>
+<table>
+  <tr><th>Privacy level (default)</th><td>L3</td></tr>
+  <tr><th>Provider and model</th><td>none / none (local)</td></tr>
+<tr><th>slices</th><td>10</td></tr><tr><th>files</th><td>8</td></tr><tr><th>functions</th><td>10</td></tr><tr><th>lines disclosed</th><td>57</td></tr><tr><th>lines prepared total</th><td>61</td></tr><tr><th>tokens estimated</th><td>714</td></tr><tr><th>repository fraction pct</th><td>5.79</td></tr><tr><th>call edges</th><td>3</td></tr><tr><th>context expansions</th><td>0</td></tr><tr><th>strategy enclosing function</th><td>10</td></tr>  <tr><th>Ledger head hash</th><td><ledger-head></td></tr>
+  <tr><th>Ledger entries</th><td>10; not_sent_dry_run: 10</td></tr>
+  <tr><th>Zero-leak check</th><td>31 listed terms searched in every ledger payload: no occurrence</td></tr>
+  <tr><th>Retention</th><td>kept until the vault is destroyed</td></tr>
+</table>
+<p class="note">What this attestation does not cover. The zero-leak check is verbatim: it looks for the listed terms as written and does not detect a term that was paraphrased, split or encoded. The structure of the code, its control flow, the libraries it uses and the technology stack are still disclosed to the model whatever the privacy level. Structural leakage, meaning what an observer could infer from that structure, is measured separately by the evaluation harness and is not part of this check.</p>
+
+<h2 id="appendix">Appendix: tools and versions</h2>
+<table>
+  <tr><th>Tool</th><th>Version</th></tr>
+<tr><td>CodeKavach</td><td>0.1.0.dev0</td></tr></table>
+</main>
+</body>
+</html>

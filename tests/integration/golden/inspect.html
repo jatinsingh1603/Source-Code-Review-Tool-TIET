@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src &#39;none&#39;; base-uri &#39;none&#39;">
+<meta name="referrer" content="no-referrer">
+<title>Privacy inspection</title>
+<style>
+:root { color-scheme: light; --ink:#1b2430; --muted:#5b6675; --line:#d5dbe3; --soft:#f4f6f9; --accent:#16407a; }
+body { margin:0; font:14px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--ink); background:#fff; }
+main { max-width:1280px; margin:0 auto; padding:24px 16px 64px; }
+.banner { border-left:4px solid #c2410c; background:var(--soft); padding:8px 12px; margin:12px 0; }
+.pair { border:1px solid var(--line); border-radius:6px; margin:20px 0; padding:12px 16px; }
+.cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:900px) { .cols { grid-template-columns:1fr; } }
+h2 { font-size:15px; margin:0 0 4px; } .meta { color:var(--muted); font-size:12.5px; word-break:break-all; }
+pre { background:var(--soft); border:1px solid var(--line); border-radius:4px; padding:8px 0; overflow:auto; margin:6px 0 0;
+  font:12.5px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+pre .ln { display:block; padding:0 8px; white-space:pre-wrap; word-break:break-word; }
+pre .no { display:inline-block; min-width:4ch; margin-right:10px; text-align:right; color:var(--muted); user-select:none; }
+.redacted { background:#ffd9d9; border-bottom:2px solid #b42318; } .renamed { background:#d9e8ff; border-bottom:2px solid var(--accent); }
+.legend span { padding:1px 6px; margin-right:8px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Privacy inspection</h1>
+<p class="meta">Scan <scan-1>. Left: the original code, which stays on this machine. Right: the exact payload recorded in the ledger.
+This page contains client code. It is written only where you asked and is never part of a report.</p>
+<p class="legend"><span class="redacted">redacted</span><span class="renamed">renamed</span></p>
+<div class="banner">Provider <strong>mock</strong> answers locally: the ledger shows what <em>would</em> have left this machine, not what did.</div><section class="pair" id="p1">
+  <h2>1. services/api/reports.py:9 &middot; py.command-injection</h2>
+  <p class="meta">candidate <cand-2> &middot; level L3 &middot; ledger: recorded
+    &middot; 0 redaction(s), 7 rename(s) &middot; payload hash 0478cf84cfd6da81525b5bd6f598141818b18c6ec8f0794b5c186b7c0a4ba15c</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code"><span class="ln"><span class="no">4</span>import subprocess</span><span class="ln"><span class="no">5</span></span><span class="ln"><span class="no">6</span></span><span class="ln"><span class="no">7</span>def archive_statements(folder, archive_name):</span><span class="ln"><span class="no">8</span>    &#34;&#34;&#34;Pack a folder of statements into an archive for download.&#34;&#34;&#34;</span><span class="ln"><span class="no">9</span>    subprocess.run(f&#34;zip -r {archive_name} {folder}&#34;, shell=True, check=True)</span><span class="ln"><span class="no">10</span>    return archive_name</span></pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload"><span class="ln"><span class="no">1</span># codekavach payload L3</span><span class="ln"><span class="no">2</span># <span class="renamed">file_8</span></span><span class="ln"><span class="no">3</span>import subprocess</span><span class="ln"><span class="no">4</span></span><span class="ln"><span class="no">5</span></span><span class="ln"><span class="no">6</span>def <span class="renamed">fn_6</span>(<span class="renamed">param_4</span>, <span class="renamed">param_5</span>):</span><span class="ln"><span class="no">7</span>    &#34;&#34;&#34;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&#34;&#34;&#34;</span><span class="ln"><span class="no">8</span>    subprocess.run(f&#34;zip -x {<span class="renamed">param_5</span>} {<span class="renamed">param_4</span>}&#34;, shell=True, check=True)</span><span class="ln"><span class="no">9</span>    return <span class="renamed">param_5</span></span><span class="ln"><span class="no">10</span></span></pre></div>
+  </div>
+</section>
+<section class="pair" id="p2">
+  <h2>2. services/api/accounts.py:11 &middot; py.sql-injection</h2>
+  <p class="meta">candidate <cand-3> &middot; level L3 &middot; ledger: recorded
+    &middot; 0 redaction(s), 9 rename(s) &middot; payload hash 18966e0a90c150936ca677786abbf5cf014995d68e285484c34918c5bc08299a</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code"><span class="ln"><span class="no">8</span>def find_premium_account(conn, account_id):</span><span class="ln"><span class="no">9</span>    &#34;&#34;&#34;The premium-tier account with this id.&#34;&#34;&#34;</span><span class="ln"><span class="no">10</span>    cur = conn.cursor()</span><span class="ln"><span class="no">11</span>    cur.execute(&#34;SELECT * FROM premium_accounts WHERE id = &#39;%s&#39;&#34; % account_id)</span><span class="ln"><span class="no">12</span>    return cur.fetchone()</span></pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload"><span class="ln"><span class="no">1</span># codekavach payload L3</span><span class="ln"><span class="no">2</span># <span class="renamed">file_1</span></span><span class="ln"><span class="no">3</span>def <span class="renamed">fn_1</span>(<span class="renamed">param_2</span>, <span class="renamed">param_1</span>):</span><span class="ln"><span class="no">4</span>    &#34;&#34;&#34;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&#34;&#34;&#34;</span><span class="ln"><span class="no">5</span>    <span class="renamed">var_1</span> = <span class="renamed">param_2</span>.cursor()</span><span class="ln"><span class="no">6</span>    <span class="renamed">var_1</span>.execute(&#34;SELECT * FROM tbl_2 WHERE id = &#39;%s&#39;&#34; % <span class="renamed">param_1</span>)</span><span class="ln"><span class="no">7</span>    return <span class="renamed">var_1</span>.fetchone()</span><span class="ln"><span class="no">8</span></span></pre></div>
+  </div>
+</section>
+<section class="pair" id="p3">
+  <h2>3. services/api/handlers.py:34 &middot; py.insecure-direct-object-reference</h2>
+  <p class="meta">candidate <cand-4> &middot; level L3 &middot; ledger: recorded
+    &middot; 0 redaction(s), 27 rename(s) &middot; payload hash 1e02e3410dddcdba82e4458182ca2e3a1d48f3342ce6a4dae41dc00a6aa01d47</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code"><span class="ln"><span class="no">5</span>from flask import Flask, abort, g, jsonify, request</span><span class="ln"><span class="no">6</span></span><span class="ln"><span class="no">7</span>import accounts</span><span class="ln"><span class="no">8</span>import db</span><span class="ln"><span class="no">12</span>import serialisation</span><span class="ln"><span class="no">13</span>from security import require_auth</span><span class="ln"><span class="no">30</span>@app.route(&#34;/api/accounts/&lt;account_id&gt;/statement&#34;)</span><span class="ln"><span class="no">31</span>@require_auth</span><span class="ln"><span class="no">32</span>def account_statement(account_id):</span><span class="ln"><span class="no">33</span>    conn = db.connect()</span><span class="ln"><span class="no">34</span>    statement = accounts.get_statement(conn, account_id)</span><span class="ln"><span class="no">35</span>    return jsonify(serialisation.dump_statement(statement))</span></pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload"><span class="ln"><span class="no">1</span># codekavach payload L3</span><span class="ln"><span class="no">2</span># <span class="renamed">file_2</span></span><span class="ln"><span class="no">3</span>from flask import Flask, abort, g, jsonify, request</span><span class="ln"><span class="no">4</span></span><span class="ln"><span class="no">5</span>import <span class="renamed">mod_5</span></span><span class="ln"><span class="no">6</span>import <span class="renamed">mod_4</span></span><span class="ln"><span class="no">7</span># ... elided ...</span><span class="ln"><span class="no">8</span>import <span class="renamed">mod_3</span></span><span class="ln"><span class="no">9</span>from <span class="renamed">mod_1</span> import <span class="renamed">mod_2</span></span><span class="ln"><span class="no">10</span># ... elided ...</span><span class="ln"><span class="no">11</span>@app.route(&#34;/<span class="renamed">file_3</span>/<span class="renamed">file_4</span>/<span class="renamed">file_5</span>/<span class="renamed">file_6</span>&#34;)</span><span class="ln"><span class="no">12</span>@<span class="renamed">mod_2</span></span><span class="ln"><span class="no">13</span>def <span class="renamed">fn_3</span>(<span class="renamed">param_1</span>):</span><span class="ln"><span class="no">14</span>    <span class="renamed">var_3</span> = <span class="renamed">mod_4</span>.connect()</span><span class="ln"><span class="no">15</span>    <span class="renamed">var_4</span> = <span class="renamed">mod_5</span>.<span class="renamed">fn_2</span>(<span class="renamed">var_3</span>, <span class="renamed">param_1</span>)</span><span class="ln"><span class="no">16</span>    return jsonify(<span class="renamed">mod_3</span>.<span class="renamed">fn_4</span>(<span class="renamed">var_4</span>))</span><span class="ln"><span class="no">17</span></span><span class="ln"><span class="no">18</span># unresolved</span><span class="ln"><span class="no">19</span>def <span class="renamed">fn_4</span>(*args, **<span class="renamed">param_3</span>): ...</span><span class="ln"><span class="no">20</span># effects unknown; derived: syntactic</span><span class="ln"><span class="no">21</span># unresolved</span><span class="ln"><span class="no">22</span>def <span class="renamed">fn_2</span>(*args, **<span class="renamed">param_3</span>): ...</span><span class="ln"><span class="no">23</span># effects unknown; derived: syntactic</span><span class="ln"><span class="no">24</span></span></pre></div>
+  </div>
+</section>
+<section class="pair" id="p4">
+  <h2>4. services/api/handlers.py:39 &middot; py.missing-authorization</h2>
+  <p class="meta">candidate <cand-5> &middot; level L3 &middot; ledger: recorded
+    &middot; 0 redaction(s), 14 rename(s) &middot; payload hash 39d763ab95b137399150882d26da466ba944838672b5185ce11f6db1a3f5af95</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code"><span class="ln"><span class="no">5</span>from flask import Flask, abort, g, jsonify, request</span><span class="ln"><span class="no">6</span></span><span class="ln"><span class="no">7</span>import accounts</span><span class="ln"><span class="no">8</span>import db</span><span class="ln"><span class="no">38</span>@app.route(&#34;/api/accounts/&lt;account_id&gt;/close&#34;, methods=[&#34;POST&#34;])</span><span class="ln"><span class="no">39</span>def close_account(account_id):</span><span class="ln"><span class="no">40</span>    conn = db.connect()</span><span class="ln"><span class="no">41</span>    accounts.close(conn, account_id)</span><span class="ln"><span class="no">42</span>    return jsonify(status=&#34;closed&#34;)</span></pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload"><span class="ln"><span class="no">1</span># codekavach payload L3</span><span class="ln"><span class="no">2</span># <span class="renamed">file_2</span></span><span class="ln"><span class="no">3</span>from flask import Flask, abort, g, jsonify, request</span><span class="ln"><span class="no">4</span></span><span class="ln"><span class="no">5</span>import <span class="renamed">mod_5</span></span><span class="ln"><span class="no">6</span>import <span class="renamed">mod_4</span></span><span class="ln"><span class="no">7</span># ... elided ...</span><span class="ln"><span class="no">8</span>@app.route(&#34;/<span class="renamed">file_3</span>/<span class="renamed">file_4</span>/<span class="renamed">file_5</span>/<span class="renamed">file_7</span>&#34;, methods=[&#34;POST&#34;])</span><span class="ln"><span class="no">9</span>def <span class="renamed">fn_5</span>(<span class="renamed">param_1</span>):</span><span class="ln"><span class="no">10</span>    <span class="renamed">var_3</span> = <span class="renamed">mod_4</span>.connect()</span><span class="ln"><span class="no">11</span>    <span class="renamed">mod_5</span>.close(<span class="renamed">var_3</span>, <span class="renamed">param_1</span>)</span><span class="ln"><span class="no">12</span>    return jsonify(status=&#34;xxxxxx&#34;)</span><span class="ln"><span class="no">13</span></span></pre></div>
+  </div>
+</section>
+<section class="pair" id="p5">
+  <h2>5. services/api/security.py:15 &middot; py.weak-password-hash</h2>
+  <p class="meta">candidate <cand-6> &middot; level L3 &middot; ledger: recorded
+    &middot; 0 redaction(s), 4 rename(s) &middot; payload hash a8e3aa4855bdfd89b5e63fff6f4b7b8e13987b4cd7519ac697f6996479f6f548</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code"><span class="ln"><span class="no">3</span>import hashlib</span><span class="ln"><span class="no">13</span>def hash_password(password):</span><span class="ln"><span class="no">14</span>    &#34;&#34;&#34;The stored form of a customer password.&#34;&#34;&#34;</span><span class="ln"><span class="no">15</span>    return hashlib.md5(password.encode(&#34;utf-8&#34;)).hexdigest()</span></pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload"><span class="ln"><span class="no">1</span># codekavach payload L3</span><span class="ln"><span class="no">2</span># <span class="renamed">file_9</span></span><span class="ln"><span class="no">3</span>import hashlib</span><span class="ln"><span class="no">4</span># ... elided ...</span><span class="ln"><span class="no">5</span>def <span class="renamed">fn_7</span>(<span class="renamed">param_6</span>):</span><span class="ln"><span class="no">6</span>    &#34;&#34;&#34;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&#34;&#34;&#34;</span><span class="ln"><span class="no">7</span>    return hashlib.md5(<span class="renamed">param_6</span>.encode(&#34;xxx-x&#34;)).hexdigest()</span><span class="ln"><span class="no">8</span></span></pre></div>
+  </div>
+</section>
+<section class="pair" id="p6">
+  <h2>6. services/api/serialisation.py:14 &middot; py.insecure-deserialisation</h2>
+  <p class="meta">candidate <cand-7> &middot; level L3 &middot; ledger: recorded
+    &middot; 0 redaction(s), 4 rename(s) &middot; payload hash 34376a00a18a2f7246a0669469ea35f1c734e1a3bdca143841df276ffd075cbf</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code"><span class="ln"><span class="no">4</span>import pickle</span><span class="ln"><span class="no">12</span>def load_cached_profile(blob):</span><span class="ln"><span class="no">13</span>    &#34;&#34;&#34;A customer profile read back from the shared cache.&#34;&#34;&#34;</span><span class="ln"><span class="no">14</span>    return pickle.loads(blob)</span></pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload"><span class="ln"><span class="no">1</span># codekavach payload L3</span><span class="ln"><span class="no">2</span># <span class="renamed">file_10</span></span><span class="ln"><span class="no">3</span>import pickle</span><span class="ln"><span class="no">4</span># ... elided ...</span><span class="ln"><span class="no">5</span>def <span class="renamed">fn_9</span>(<span class="renamed">param_9</span>):</span><span class="ln"><span class="no">6</span>    &#34;&#34;&#34;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&#34;&#34;&#34;</span><span class="ln"><span class="no">7</span>    return pickle.loads(<span class="renamed">param_9</span>)</span><span class="ln"><span class="no">8</span></span></pre></div>
+  </div>
+</section>
+<section class="pair" id="p7">
+  <h2>7. services/web/exporter.js:9 &middot; js.path-traversal</h2>
+  <p class="meta">candidate <cand-8> &middot; level L3 &middot; ledger: recorded
+    &middot; 0 redaction(s), 14 rename(s) &middot; payload hash 833b089cb5749e2256abe88993af43729fe424dcc2b75f1e640857debd4a5a4d</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code"><span class="ln"><span class="no">3</span>const fs = require(&#39;fs&#39;);</span><span class="ln"><span class="no">4</span>const path = require(&#39;path&#39;);</span><span class="ln"><span class="no">5</span>const config = require(&#39;./config&#39;);</span><span class="ln"><span class="no">6</span></span><span class="ln"><span class="no">7</span>function exportStatement(req, res) {</span><span class="ln"><span class="no">8</span>  const file = path.join(config.exportDir, req.query.file);</span><span class="ln"><span class="no">9</span>  fs.createReadStream(file).pipe(res);</span><span class="ln"><span class="no">10</span>}</span></pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload"><span class="ln"><span class="no">1</span>// codekavach payload L3</span><span class="ln"><span class="no">2</span>// <span class="renamed">file_11</span></span><span class="ln"><span class="no">3</span>const fs = require(&#39;fs&#39;);</span><span class="ln"><span class="no">4</span>const path = require(&#39;path&#39;);</span><span class="ln"><span class="no">5</span>const <span class="renamed">var_7</span> = require(&#39;./<span class="renamed">file_12</span>&#39;);</span><span class="ln"><span class="no">6</span></span><span class="ln"><span class="no">7</span>function <span class="renamed">fn_10</span>(<span class="renamed">param_11</span>, <span class="renamed">param_10</span>) {</span><span class="ln"><span class="no">8</span>  const <span class="renamed">field_4</span> = path.join(<span class="renamed">var_7</span>.<span class="renamed">field_2</span>, <span class="renamed">param_11</span>.query.<span class="renamed">field_4</span>);</span><span class="ln"><span class="no">9</span>  fs.createReadStream(<span class="renamed">field_4</span>).<span class="renamed">field_3</span>(<span class="renamed">param_10</span>);</span><span class="ln"><span class="no">10</span>}</span><span class="ln"><span class="no">11</span></span></pre></div>
+  </div>
+</section>
+<section class="pair" id="p8">
+  <h2>8. services/web/payments.js:18 &middot; js.ssrf</h2>
+  <p class="meta">candidate <cand-9> &middot; level L3 &middot; ledger: recorded
+    &middot; 0 redaction(s), 6 rename(s) &middot; payload hash 7c63d013b85f9231da3a4dc480c7c60216df96c80b9430c965f2b4b37b3f2080</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code"><span class="ln"><span class="no">17</span>async function fetchSettlementStatus(callbackUrl) {</span><span class="ln"><span class="no">18</span>  const response = await fetch(callbackUrl);</span><span class="ln"><span class="no">19</span>  return response.json();</span><span class="ln"><span class="no">20</span>}</span></pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload"><span class="ln"><span class="no">1</span>// codekavach payload L3</span><span class="ln"><span class="no">2</span>// <span class="renamed">file_13</span></span><span class="ln"><span class="no">3</span>async function <span class="renamed">fn_11</span>(<span class="renamed">param_12</span>) {</span><span class="ln"><span class="no">4</span>  const <span class="renamed">var_8</span> = await fetch(<span class="renamed">param_12</span>);</span><span class="ln"><span class="no">5</span>  return <span class="renamed">var_8</span>.json();</span><span class="ln"><span class="no">6</span>}</span><span class="ln"><span class="no">7</span></span></pre></div>
+  </div>
+</section>
+<section class="pair" id="p9">
+  <h2>9. services/api/security.py:27 &middot; py.static-iv</h2>
+  <p class="meta">candidate <cand-10> &middot; level L3 &middot; ledger: recorded
+    &middot; 0 redaction(s), 11 rename(s) &middot; payload hash bb61e86ab346975377d36fd0ee271189c0d3ed99d5f0812520db0db557f56192</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code"><span class="ln"><span class="no">7</span>from Crypto.Cipher import AES</span><span class="ln"><span class="no">25</span>def encrypt_field(key, plaintext):</span><span class="ln"><span class="no">26</span>    &#34;&#34;&#34;Encrypt a column value before it is stored.&#34;&#34;&#34;</span><span class="ln"><span class="no">27</span>    cipher = AES.new(key, AES.MODE_CBC, STATIC_IV)</span><span class="ln"><span class="no">28</span>    return cipher.encrypt(plaintext.ljust(16 * ((len(plaintext) + 15) // 16)).encode(&#34;utf-8&#34;))</span></pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload"><span class="ln"><span class="no">1</span># codekavach payload L3</span><span class="ln"><span class="no">2</span># <span class="renamed">file_9</span></span><span class="ln"><span class="no">3</span>from Crypto.Cipher import AES</span><span class="ln"><span class="no">4</span># ... elided ...</span><span class="ln"><span class="no">5</span>def <span class="renamed">fn_8</span>(<span class="renamed">param_7</span>, <span class="renamed">param_8</span>):</span><span class="ln"><span class="no">6</span>    &#34;&#34;&#34;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&#34;&#34;&#34;</span><span class="ln"><span class="no">7</span>    <span class="renamed">var_5</span> = AES.new(<span class="renamed">param_7</span>, AES.MODE_CBC, <span class="renamed">var_6</span>)</span><span class="ln"><span class="no">8</span>    return <span class="renamed">var_5</span>.encrypt(<span class="renamed">param_8</span>.<span class="renamed">field_1</span>(16 * ((len(<span class="renamed">param_8</span>) + 15) // 16)).encode(&#34;xxx-x&#34;))</span><span class="ln"><span class="no">9</span></span></pre></div>
+  </div>
+</section>
+<section class="pair" id="p10">
+  <h2>10. services/web/renderer.js:18 &middot; js.reflected-xss</h2>
+  <p class="meta">candidate <cand-11> &middot; level L3 &middot; ledger: recorded
+    &middot; 0 redaction(s), 7 rename(s) &middot; payload hash 63b191ec875463e20723845d0bf047777de2653d030169722f17977e44c18a5e</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code"><span class="ln"><span class="no">17</span>function renderGreeting(req, res) {</span><span class="ln"><span class="no">18</span>  res.send(&#39;&lt;h1&gt;Welcome back, &#39; + req.query.name + &#39;&lt;/h1&gt;&#39;);</span><span class="ln"><span class="no">19</span>}</span></pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload"><span class="ln"><span class="no">1</span>// codekavach payload L3</span><span class="ln"><span class="no">2</span>// <span class="renamed">file_14</span></span><span class="ln"><span class="no">3</span>function <span class="renamed">fn_12</span>(<span class="renamed">param_11</span>, <span class="renamed">param_10</span>) {</span><span class="ln"><span class="no">4</span>  <span class="renamed">param_10</span>.send(&#39;&lt;xx&gt;xxxxxxx xxxx, &#39; + <span class="renamed">param_11</span>.query.<span class="renamed">field_5</span> + &#39;&lt;/xx&gt;&#39;);</span><span class="ln"><span class="no">5</span>}</span><span class="ln"><span class="no">6</span></span></pre></div>
+  </div>
+</section>
+</main>
+</body>
+</html>
