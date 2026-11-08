@@ -735,6 +735,7 @@ Usage: codekavach privacy inspect [OPTIONS] [target]
 | `--layout` | auto \| columns \| stacked | auto | auto, columns or stacked. |
 | `--list` | flag | off | Only the table of payloads, no code. |
 | `--include-payload` | flag | off | JSON mode: add the sanitised text. |
+| `--html` | PATH |  | Also write a two-column page of every pair. |
 
 Global options apply.
 

@@ -92,7 +92,7 @@ def source(monkeypatch: pytest.MonkeyPatch) -> FakeSource:
     fake_backend(
         monkeypatch,
         "codekavach.privacy.inspect_source.open_payload_source",
-        lambda layout, scan_id: fake,
+        lambda layout, scan_id, **_kw: fake,
     )
     return fake
 
@@ -189,15 +189,15 @@ def test_missing_original_never_send_l4_l0(cli: Cli, project: Path, source: Fake
     assert "no payload: level L0" in result.stdout
 
 
-def test_no_scan_and_no_backend(cli: Cli, project_dir: Path) -> None:
+def test_no_scan_and_an_empty_scan(cli: Cli, project_dir: Path) -> None:
     (project_dir / ".git").mkdir()
     result = cli(["privacy", "inspect", str(project_dir)])
     assert result.exit_code == 2
     assert "error[scan_not_found]" in result.stderr
     (project_dir / ".codekavach" / "scans" / SCAN_ID).mkdir(parents=True)
     result = cli(["privacy", "inspect", str(project_dir)])
-    assert result.exit_code == 2
-    assert "error[backend_unavailable]" in result.stderr
+    assert result.exit_code == 0  # the source is in the build; this scan holds no payloads
+    assert "error[backend_unavailable]" not in result.stderr
 
 
 def test_raw_code_is_exposed_only_by_privacy_inspect() -> None:
@@ -207,7 +207,7 @@ def test_raw_code_is_exposed_only_by_privacy_inspect() -> None:
         for path in cli_dir.glob("*.py")
         if re.search(r"segment\.text\.expose\(|RawCode\(.*\)\.expose\(", path.read_text("utf-8"))
     }
-    assert users == {"privacy.py"}
+    assert users == {"privacy.py", "inspect_page.py"}  # the command and its local page
 
 
 def test_json_is_valid(cli: Cli, project: Path, source: FakeSource) -> None:

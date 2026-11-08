@@ -27,9 +27,14 @@ def test_the_prepare_stage_declares_the_documented_keys_and_category() -> None:
     assert info.name == "privacy-prepare"
     assert {keys.CANDIDATES, keys.FILES, keys.SYMBOLS} <= set(info.requires)
     assert set(info.optional_requires) == {keys.CALL_GRAPH}
-    assert set(info.provides) == {keys.PAYLOADS_SANITISED, keys.SLICES, keys.DISCLOSURE}
+    assert set(info.provides) == {
+        keys.PAYLOADS_SANITISED,
+        keys.SLICES,
+        keys.DISCLOSURE,
+        keys.PAYLOAD_INDEX,
+    }
     assert info.category is StageCategory.PRIVACY
-    assert set(info.transient_provides) == {keys.PAYLOADS_SANITISED, keys.SLICES}
+    assert set(info.transient_provides) == {keys.PAYLOADS_SANITISED}
 
 
 def test_the_review_stage_reads_sanitised_payloads_and_no_raw_code() -> None:

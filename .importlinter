@@ -238,6 +238,7 @@ source_modules =
     codekavach.privacy.detect
     codekavach.privacy.egress
     codekavach.privacy.errors
+    codekavach.privacy.inspect_source
     codekavach.privacy.ir
     codekavach.privacy.policy
     codekavach.privacy.pseudonymise

@@ -32,7 +32,7 @@ from typing import Final
 from codekavach.config import Settings
 from codekavach.core.log import get_logger
 from codekavach.core.models import Candidate, RawCode
-from codekavach.core.models.disclosure import DisclosureRows
+from codekavach.core.models.disclosure import DisclosureRows, PayloadStub
 from codekavach.core.models.enums import PrivacyLevel
 from codekavach.core.models.payload import (
     MAX_STUB_SUMMARIES,
@@ -100,6 +100,20 @@ class _FailedError(Exception):
 class _Outcome:
     payload: SanitisedPayload
     slice_: CodeSlice
+
+
+def stub_of(payload: SanitisedPayload) -> PayloadStub:
+    """``payload`` without its text, for the artefact store."""
+    return PayloadStub(
+        id=payload.id,
+        candidate_id=payload.candidate_id,
+        slice_id=payload.slice_id,
+        level=payload.level,
+        pseudonym_count=payload.pseudonym_count,
+        line_map=payload.line_map,
+        payload_hash=payload.payload_hash,
+        facts=payload.facts,
+    )
 
 
 def _safe_rule(rule_id: str) -> str:
@@ -203,9 +217,12 @@ class PrivacyPrepareStage:
     version = "1"
     requires = frozenset({keys.CANDIDATES, keys.FILES, keys.SYMBOLS, keys.AST})
     optional_requires = frozenset({keys.CALL_GRAPH})
-    provides = frozenset({keys.PAYLOADS_SANITISED, keys.SLICES, keys.DISCLOSURE})
-    # Sanitised text and raw code are never reloaded from disk, so the store holds them in memory.
-    transient_provides = frozenset({keys.PAYLOADS_SANITISED, keys.SLICES})
+    provides = frozenset(
+        {keys.PAYLOADS_SANITISED, keys.SLICES, keys.DISCLOSURE, keys.PAYLOAD_INDEX}
+    )
+    # Sanitised text is held by the ledger only and never reloaded from an artefact, so the store
+    # keeps the payloads in memory; the slices, the index and the figures are written to disk.
+    transient_provides = frozenset({keys.PAYLOADS_SANITISED})
     category = StageCategory.PRIVACY
 
     def run(self, ctx: RunContext) -> None:
@@ -284,7 +301,8 @@ class PrivacyPrepareStage:
         )
         _DISCLOSURES[ctx.scan_id] = disclosure
         ctx.artefacts.put(keys.DISCLOSURE, DisclosureRows(rows=disclosure.as_attestation_rows()))
-        ctx.artefacts.put(keys.SLICES, slices, persist=False)
+        ctx.artefacts.put(keys.SLICES, slices)
+        ctx.artefacts.put(keys.PAYLOAD_INDEX, [stub_of(payload) for payload in payloads])
         ctx.artefacts.put(keys.PAYLOADS_SANITISED, payloads, persist=False)
 
     @staticmethod

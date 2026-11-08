@@ -14,6 +14,7 @@
 │ --layout                   <auto|columns|stacked>  auto, columns or stacked. [default: auto]     │
 │ --list                                             Only the table of payloads, no code.          │
 │ --include-payload                                  JSON mode: add the sanitised text.            │
+│ --html                     PATH                    Also write a two-column page of every pair.   │
 │ --help             -h                              Show this message and exit.                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="{{ csp }}">
+<meta name="referrer" content="no-referrer">
+<title>Privacy inspection</title>
+<style>
+:root { color-scheme: light; --ink:#1b2430; --muted:#5b6675; --line:#d5dbe3; --soft:#f4f6f9; --accent:#16407a; }
+body { margin:0; font:14px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--ink); background:#fff; }
+main { max-width:1280px; margin:0 auto; padding:24px 16px 64px; }
+.banner { border-left:4px solid #c2410c; background:var(--soft); padding:8px 12px; margin:12px 0; }
+.pair { border:1px solid var(--line); border-radius:6px; margin:20px 0; padding:12px 16px; }
+.cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:900px) { .cols { grid-template-columns:1fr; } }
+h2 { font-size:15px; margin:0 0 4px; } .meta { color:var(--muted); font-size:12.5px; word-break:break-all; }
+pre { background:var(--soft); border:1px solid var(--line); border-radius:4px; padding:8px 0; overflow:auto; margin:6px 0 0;
+  font:12.5px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+pre .ln { display:block; padding:0 8px; white-space:pre-wrap; word-break:break-word; }
+pre .no { display:inline-block; min-width:4ch; margin-right:10px; text-align:right; color:var(--muted); user-select:none; }
+.redacted { background:#ffd9d9; border-bottom:2px solid #b42318; } .renamed { background:#d9e8ff; border-bottom:2px solid var(--accent); }
+.legend span { padding:1px 6px; margin-right:8px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Privacy inspection</h1>
+<p class="meta">Scan {{ scan_id }}. Left: the original code, which stays on this machine. Right: the exact payload recorded in the ledger.
+This page contains client code. It is written only where you asked and is never part of a report.</p>
+<p class="legend"><span class="redacted">redacted</span><span class="renamed">renamed</span></p>
+{% if offline %}<div class="banner">Provider <strong>{{ provider_kind }}</strong> answers locally: the ledger shows what <em>would</em> have left this machine, not what did.</div>{% endif %}
+{% for pair in pairs %}
+<section class="pair" id="p{{ loop.index }}">
+  <h2>{{ loop.index }}. {{ pair.location }} &middot; {{ pair.rule }}</h2>
+  <p class="meta">candidate {{ pair.candidate_id }} &middot; level {{ pair.level }} &middot; ledger: {{ pair.outcome }}
+    &middot; {{ pair.redactions }} redaction(s), {{ pair.renames }} rename(s) &middot; payload hash {{ pair.payload_hash }}</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code">{% for row in pair.original %}<span class="ln"><span class="no">{{ row.number }}</span>{{ row.html }}</span>{% else %}<span class="ln">original not available</span>{% endfor %}</pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload">{% for row in pair.payload %}<span class="ln"><span class="no">{{ row.number }}</span>{{ row.html }}</span>{% endfor %}</pre></div>
+  </div>
+</section>
+{% else %}
+<p>No payloads to show.</p>
+{% endfor %}
+</main>
+</body>
+</html>

@@ -131,9 +131,9 @@ def run_and_capture(
     def spy(self: PrivacyPrepareStage, ctx: RunContext) -> None:
         original(self, ctx)
         payloads = ctx.artefacts.get_object(keys.PAYLOADS_SANITISED)
-        slices = ctx.artefacts.get_object(keys.SLICES)
-        assert isinstance(payloads, list) and isinstance(slices, list)
-        captured.payloads, captured.slices = list(payloads), list(slices)
+        assert isinstance(payloads, list)
+        captured.payloads = list(payloads)
+        captured.slices = ctx.artefacts.get_list(keys.SLICES, CodeSlice)
         captured.candidates = ctx.artefacts.get_list(keys.CANDIDATES, Candidate)
 
     with pytest.MonkeyPatch.context() as patch:

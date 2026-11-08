@@ -5,8 +5,9 @@ Owning epic: E05.
 ``privacy inspect`` shows, per candidate, the client's original code next to the exact sanitised
 payload whose hash the ledger records (Demo 1 criterion 3). It is read-only and local and never
 opens the vault: showing both sides needs no mapping, and I3 forbids exporting one, so there is no
-option that prints the identifier mapping. Original code is rendered only to the terminal in human
-mode, never into the JSON envelope, a log or a file; ``RawCode.expose()`` is called in this module
+option that prints the identifier mapping. Original code is rendered to the terminal in human
+mode and, with ``--html``, to the one local page the user names; it never enters the JSON envelope,
+a log or a report; ``RawCode.expose()`` is called in this module
 only, immediately before building the ``Syntax`` object. Sanitised text enters JSON only with
 ``--include-payload``. Each payload's hash is verified before display, so what the user audits is
 what the ledger recorded (I6); a mismatch is reported and the payload is not shown.
@@ -35,6 +36,7 @@ from codekavach.cli.onboarding import build_notice, notice_facts, notice_lines
 from codekavach.cli.output import TABLE_BOX, get_output, simple_table, to_jsonable
 
 if TYPE_CHECKING:
+    from codekavach.config import Settings
     from codekavach.core.models.candidate import Candidate
     from codekavach.core.models.payload import SanitisedPayload
     from codekavach.core.models.slice import CodeSlice
@@ -89,14 +91,14 @@ class Entry:
     hash_ok: bool
 
 
-def _source(layout: "StateLayout", scan_id: str) -> PayloadSource:
+def _source(layout: "StateLayout", scan_id: str, settings: "Settings") -> PayloadSource:
     opener = load_backend(
         "codekavach.privacy.inspect_source",
         "open_payload_source",
         feature="payload inspection",
-        epic="E11",
+        epic="E13",
     )
-    source: PayloadSource = opener(layout, scan_id)
+    source: PayloadSource = opener(layout, scan_id, settings=settings)
     return source
 
 
@@ -404,6 +406,10 @@ def inspect_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     include_payload: Annotated[
         bool, typer.Option("--include-payload", help="JSON mode: add the sanitised text.")
     ] = False,
+    html: Annotated[
+        Path | None,
+        typer.Option("--html", metavar="PATH", help="Also write a two-column page of every pair."),
+    ] = None,
 ) -> None:
     """Show original code next to the exact payload prepared for the LLM."""
     from codekavach.config.paths import resolve_state_dir  # noqa: PLC0415
@@ -419,7 +425,7 @@ def inspect_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     loaded = get_context(ctx).loaded
     state = StateLayout(resolve_state_dir(loaded.project_root, loaded.settings.project.state_dir))
     scan_id = resolve_scan(state, scan)
-    source = _source(state, scan_id)
+    source = _source(state, scan_id, loaded.settings)
     entries = collect(source, scan_id, candidate or [], file_glob)
     mismatched = [entry for entry in entries if not entry.hash_ok]
     valid = [entry for entry in entries if entry.hash_ok]
@@ -435,6 +441,14 @@ def inspect_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         "scan_id": scan_id,
         "payloads": [payload_json(entry, include_payload=include_payload) for entry in shown],
     }
+    if html is not None:
+        from codekavach.cli.inspect_page import render_page, write_page  # noqa: PLC0415
+
+        written = write_page(
+            loaded.resolve_path(html),
+            render_page(valid, scan_id=scan_id, provider_kind=provider_kind),
+        )
+        data["html"] = str(written)
     out.result(
         data,
         human=_renderer(

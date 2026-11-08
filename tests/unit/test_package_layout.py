@@ -158,6 +158,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.privacy.redact.redactor",
         "codekavach.privacy.policy.resolve",
         "codekavach.privacy.stages",
+        "codekavach.privacy.inspect_source",
         "codekavach.core.models.disclosure",
         "codekavach.report.model.document",
         "codekavach.report.model.build",
@@ -360,6 +361,7 @@ ALLOWED_EXTRA_MODULES: frozenset[str] = frozenset(
         "codekavach.cli.signals",
         "codekavach.cli.term_check",
         "codekavach.cli.vault",
+        "codekavach.cli.inspect_page",
     }
 )
 

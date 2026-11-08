@@ -18,7 +18,7 @@ ARCHITECTURE_MODELS = (
 )  # fmt: skip
 REFERENCE = Path(__file__).resolve().parents[4] / "docs" / "reference" / "domain-model.md"
 # KavachModel subclasses defined in the package that are deliberately not re-exported.
-PRIVATE: frozenset[str] = frozenset({"DisclosureRows"})
+PRIVATE: frozenset[str] = frozenset({"DisclosureRows", "PayloadStub"})
 BASES = frozenset({KavachModel, VersionedModel})
 NETWORK_AND_PROCESS = ("socket", "ssl", "http", "urllib", "requests", "httpx", "aiohttp")
 SUBPROCESS_ALLOWED = frozenset({"export.py", "compat.py"})
