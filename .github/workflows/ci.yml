@@ -248,9 +248,45 @@ jobs:
         env:
           UV_NO_SYNC: "1"
 
+  demo:
+    # Demo 1 end to end on the mock provider (E13-03): the run fails when a listed term occurs in a
+    # ledger payload, when the ledger does not verify, or when the PDF report cannot be made.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Libraries WeasyPrint needs for the PDF report
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0
+      - run: uv sync --locked --all-extras
+      - name: Run the demo (budget 3 minutes)
+        run: |
+          timeout 180 uv run codekavach demo --out demo-out | tee demo-out.txt
+          test -s demo-out/report.pdf || { echo "the PDF report was not written"; exit 1; }
+        env:
+          UV_NO_SYNC: "1"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: demo-output
+          path: |
+            demo-out/inspect.html
+            demo-out/report.html
+            demo-out/report.pdf
+            demo-out/verification.txt
+            demo-out.txt
+          retention-days: 14
+          if-no-files-found: ignore
+
   ci-ok:
     if: always()
-    needs: [lint, typecheck, contracts, hooks, commits, test, build, licences]
+    needs: [lint, typecheck, contracts, hooks, commits, test, build, licences, demo]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

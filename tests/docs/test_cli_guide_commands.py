@@ -70,6 +70,7 @@ PROBES: dict[str, list[str]] = {
     "completion": ["completion", "bash"],
     "init": ["init", "--stdout"],
     "scan": ["scan", "."],
+    "demo": ["demo", "--fixture", "./no-such-fixture"],  # refused before any work is done
 }
 BASH = None if sys.platform == "win32" else shutil.which("bash")
 needs_bash = pytest.mark.skipif(BASH is None, reason="needs bash, and a POSIX shell is assumed")
@@ -233,7 +234,6 @@ def test_the_table_covers_every_command_that_needs_a_back_end() -> None:
         "vault status",
         "vault rotate",
         "vault destroy",
-        "demo",
     }
 
 

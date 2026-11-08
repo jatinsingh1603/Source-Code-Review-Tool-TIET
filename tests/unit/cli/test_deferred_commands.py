@@ -50,6 +50,8 @@ CASES = [
     Case("demo", ["demo"], "codekavach.cli.demo_runner.run_demo", "E13", "the demo"),
 ]  # fmt: skip
 IDS = [case.name for case in CASES]
+MISSING = [case for case in CASES if case.name != "demo"]  # the demo back end is in this build
+MISSING_IDS = [case.name for case in MISSING]
 
 
 @pytest.fixture
@@ -98,7 +100,7 @@ def test_the_sync_help_says_what_it_does_not_do(cli: Cli, project: Path) -> None
 
 def test_the_demo_help_names_the_sequence(cli: Cli, project: Path) -> None:
     out = " ".join(cli(["demo", "--help"], cwd=project).stdout.split())
-    for step in ("scan", "privacy inspect --list", "privacy ledger verify", "report"):
+    for step in ("scan", "inspection page", "ledger verification", "zero-leak", "report"):
         assert step in out
     assert "mock provider" in out
 
@@ -112,7 +114,7 @@ def test_the_groups_without_a_command_show_help(cli: Cli, project: Path) -> None
 # --- without a back end ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("case", CASES, ids=IDS)
+@pytest.mark.parametrize("case", MISSING, ids=MISSING_IDS)
 def test_a_missing_back_end_is_backend_unavailable(case: Case, cli: Cli, project: Path) -> None:
     before = listing(project)
     result = cli(case.words, cwd=project)
@@ -125,7 +127,7 @@ def test_a_missing_back_end_is_backend_unavailable(case: Case, cli: Cli, project
     assert listing(project) == before  # nothing was written
 
 
-@pytest.mark.parametrize("case", CASES, ids=IDS)
+@pytest.mark.parametrize("case", MISSING, ids=MISSING_IDS)
 def test_a_missing_back_end_in_json_mode_is_one_envelope(
     case: Case, cli: Cli, project: Path
 ) -> None:
@@ -138,11 +140,6 @@ def test_a_missing_back_end_in_json_mode_is_one_envelope(
     assert error["code"] == "backend_unavailable"
     assert error["hint"] == f"delivered by epic {case.epic}"
     assert error["message"] == f"{case.feature} is not available in this build"
-
-
-def test_the_demo_writes_nothing_by_default(cli: Cli, project: Path) -> None:
-    cli(["demo"], cwd=project)
-    assert not (project / "codekavach-demo").exists()
 
 
 # --- with a back end ----------------------------------------------------------------------------

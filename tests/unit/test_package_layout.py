@@ -362,6 +362,7 @@ ALLOWED_EXTRA_MODULES: frozenset[str] = frozenset(
         "codekavach.cli.term_check",
         "codekavach.cli.vault",
         "codekavach.cli.inspect_page",
+        "codekavach.cli.demo_runner",
     }
 )
 

@@ -481,7 +481,7 @@ Global options apply.
 
 Run the Demo 1 sequence offline on the mock provider.
 
-Runs, in order: a scan of the fixture, `privacy inspect --list`, `privacy ledger verify --check-terms` and the report, and writes the results below --out. Nothing leaves the machine. Delivered by epic E13.
+Runs, in order: a scan of the fixture, the inspection page, the ledger verification with the zero-leak check and the report, and writes the results below --out. Nothing leaves the machine. Fails when a listed term occurs in a ledger payload.
 
 ```text
 Usage: codekavach demo [OPTIONS]

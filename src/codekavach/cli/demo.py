@@ -4,8 +4,6 @@ Owning epic: E05.
 
 The grammar is fixed here; the runner is ``codekavach.cli.demo_runner.run_demo`` of epic E13. The
 demo uses the mock provider, so no consent is involved, and its runner refuses a remote provider.
-Until E13 lands the command validates its arguments and ends with ``backend_unavailable``; it
-writes nothing.
 """
 
 from pathlib import Path
@@ -34,9 +32,9 @@ def demo_command(
 ) -> None:
     """Run the Demo 1 sequence offline on the mock provider.
 
-    Runs, in order: a scan of the fixture, `privacy inspect --list`, `privacy ledger verify
-    --check-terms` and the report, and writes the results below --out. Nothing leaves the machine.
-    Delivered by epic E13.
+    Runs, in order: a scan of the fixture, the inspection page, the ledger verification with the
+    zero-leak check and the report, and writes the results below --out. Nothing leaves the machine.
+    Fails when a listed term occurs in a ledger payload.
     """
     check_dataset(fixture, option="--fixture")
     run_backend(

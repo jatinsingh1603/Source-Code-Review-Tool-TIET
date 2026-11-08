@@ -19,11 +19,10 @@ This is version 0.1.0.dev0. Some back ends belong to later epics. A command whos
 
 | Command | In this build | Epic |
 |---------|---------------|------|
-| `doctor`, `init`, `scan`, `providers list`, `privacy notice`, `privacy consent`, `privacy inspect`, `completion`, `config`, `report` | yes | |
+| `doctor`, `init`, `scan`, `providers list`, `privacy notice`, `privacy consent`, `privacy inspect`, `completion`, `config`, `report`, `demo` | yes | |
 | `privacy ledger show`, `privacy ledger verify` | yes | |
 | `providers test` | not in this build | E22 |
 | `vault status`, `vault rotate`, `vault destroy` | not in this build | E10 |
-| `demo` | not in this build | E13 |
 
 `scan` runs the pipeline with the stages that are installed. With none installed it finishes with zero findings and the warning `no_stages`, so a clean result in this build says that nothing was analysed. Read the warning before you trust a result.
 
