@@ -67,4 +67,15 @@ $ uv run codekavach report fixtures/kavachbank --format html --format pdf
 
 ## Replay
 
-A `replay` provider answers from recorded responses, so a demo can show realistic verdicts without a model. Recordings for the KavachBank fixture are a follow-up (see the closing comment of the E13-03 issue); until they land, the demo uses the mock provider, whose answers are canned.
+The `replay` provider answers from recorded responses, keyed by payload hash, in `fixtures/kavachbank/cassettes/`. The demo scans under a fixed salt, so the payload hashes are stable and the cassettes answer every payload of the fixture. A replay run reproduces the mock run: the same findings and the same number of reviewed candidates, which `tests/integration/test_demo_replay.py` asserts on every push. Like the mock, replay answers on the machine and opens no connection, and the ledger shows what would have been sent.
+
+The `demo` command itself runs on the mock provider. The replay run is `run_demo(fixture, out, provider="replay", send=True)` from Python, which is how the test does it.
+
+When a change to the redactor, the pseudonymiser or the slicer alters a payload, its cassette no longer matches. A replay miss is an error, never a fallback to the mock, and the drift check fails:
+
+```console
+$ uv run python tools/gen_cassettes.py --check
+$ uv run python tools/gen_cassettes.py
+```
+
+The first command lists every cassette that is missing, unused or different. The second rewrites the directory from a fresh scan on the mock provider; it is refused when `CI` is set, so a pipeline cannot rewrite the cassettes it replays. Review the diff before committing it.
