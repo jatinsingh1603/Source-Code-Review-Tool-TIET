@@ -15,6 +15,12 @@ user chose, a member of a package the file imports, or bound by an import whose 
 or allowlisted. Everything else is INTERNAL, and an unresolved reference or member with no known
 base is INTERNAL too, counted.
 
+**The kind of an imported name.** A decision carries the kind a renamer gives the name's token.
+A name bound by an import and called in the text is a function (a class when written in
+PascalCase), so the slice that imports it and the slice that defines it use the same ``fn_N`` or
+``cls_N`` (E09-FU). It is a heuristic read from the call syntax; an exact kind needs the
+definition, which only the slicer's index knows.
+
 **Member names are decided by name within the file.** The renamer cannot tell which object an
 attribute belongs to (``x.args`` is an external occurrence with no binding), so a member name must
 get one decision per file, or a renamed definition and an unrenamed access would disagree and
@@ -578,6 +584,30 @@ class _Run:
             position -= 1
         return None, commas
 
+    def _kind_of(self, index: int, symbol: Symbol) -> str:
+        """The kind a renamer should give ``symbol``'s name: an imported name that is called.
+
+        The pseudonym includes the kind, and the slice that defines a function or a class calls
+        its token ``fn_N`` or ``cls_N``, so the slice that only imports it must not call it
+        ``mod_N``: the model would meet one function under two names (E09-FU). A name bound by an
+        import and called in the text is a function, or a class when it is written in PascalCase,
+        which is how every supported language marks a constructor. The convention is a heuristic;
+        an exact kind needs the definition (``ParseIndex.definition_of``), which this module
+        does not see.
+        """
+        if symbol.kind != "import" or symbol.is_definition or self._root is None:
+            return symbol.kind
+        start = self._start_of(index)
+        if start < 0:
+            return symbol.kind
+        end = start + len(symbol.name)
+        while end < len(self._source) and self._source[end] in " 	":
+            end += 1
+        if end >= len(self._source) or self._source[end] != "(":
+            return symbol.kind
+        first = symbol.name[:1]
+        return "class" if first.isupper() and not symbol.name.isupper() else "function"
+
     def _callee_at(self, paren: int) -> int | None:
         """The symbol of the callee whose name ends just before the ``(`` at ``paren``."""
         end = paren
@@ -745,7 +775,7 @@ class _Run:
         decisions = tuple(
             ClassificationDecision(
                 symbol.name,
-                symbol.kind,
+                self._kind_of(index, symbol),
                 symbol.location,
                 classes[index],
                 rules[index],

@@ -18,7 +18,7 @@ from codekavach.config.models.root import Settings
 from codekavach.core.models import Confidence, Language, PlaceholderKind, RawCode
 from codekavach.privacy.detect.base import TypedSpan
 from codekavach.privacy.detect.pii.builtin import pii_detectors
-from codekavach.privacy.detect.pii.formats import NEEDS, PII_FORMATS, PiiDetector
+from codekavach.privacy.detect.pii.formats import NEEDS, PII_FORMATS, PiiDetector, PiiFormat
 from codekavach.privacy.detect.prefilter import Needs, TextFacts
 from codekavach.privacy.detect.registry import DetectorRegistry
 from codekavach.privacy.detect.runner import detect_with_report
@@ -120,10 +120,12 @@ def test_every_pii_format_declares_what_it_needs() -> None:
 @pytest.mark.parametrize("item", PII_FORMATS, ids=lambda item: item.subtype)
 @given(text=TEXTS)
 @RELAXED
-def test_where_a_pii_pattern_matches_its_prefilter_says_so(item: object, text: str) -> None:
-    pii_format = item
-    if pii_format.compiled().search(text):  # type: ignore[attr-defined]
-        assert PiiDetector(pii_format).may_match(TextFacts(text))  # type: ignore[arg-type]
+def test_where_a_pii_detector_finds_a_value_its_prefilter_says_so(
+    item: PiiFormat, text: str
+) -> None:
+    detector = PiiDetector(item)
+    if detector.detect(RawCode(text), path="a.txt", language=Language.UNKNOWN):
+        assert detector.may_match(TextFacts(text))
 
 
 @given(text=TEXTS)

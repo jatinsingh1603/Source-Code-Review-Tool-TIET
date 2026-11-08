@@ -1,5 +1,5 @@
-import mod_1 from "./file_1";
+import fn_1 from "./file_1";
 
-export default function fn_1(param_1) {
-  return mod_1(param_1);
+export default function fn_2(param_1) {
+  return fn_1(param_1);
 }

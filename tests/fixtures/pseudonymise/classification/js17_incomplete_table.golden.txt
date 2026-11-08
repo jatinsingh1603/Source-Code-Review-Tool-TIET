@@ -3,7 +3,7 @@ allowlist: javascript-2026.11.06.1
 1:10 exec import -> internal incomplete_table
 3:10 runTool function -> internal default_internal
 3:18 target parameter -> internal default_internal
-4:3 exec import -> internal incomplete_table
+4:3 exec function -> internal incomplete_table
 4:8 target parameter -> internal default_internal
 counts: unresolved_base=0 unresolved_name=0 incomplete_table=2 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
 kept_public: 

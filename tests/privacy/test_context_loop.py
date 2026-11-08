@@ -213,3 +213,20 @@ def test_without_a_shared_generator_a_symbol_may_change_its_token_between_slices
     common = set(tokens[0]) & set(tokens[1])
     assert common
     assert any(tokens[0][name] != tokens[1][name] for name in common)
+
+
+def test_an_imported_function_keeps_one_pseudonym_across_slices() -> None:
+    """E09-FU: ``monthly_rate`` is imported and called in views.py and defined in rates.py."""
+    index = make_index(sources())
+    engine = Pseudonymiser()
+    generator = PseudonymGenerator(SALT)
+    strategy = EnclosingFunctionStrategy()
+    caller = strategy.build(candidate_at("app/views.py", 15), index, budget=SliceBudget(2048))
+    definition = strategy.build(candidate_at("app/rates.py", 2), index, budget=SliceBudget(2048))
+    payload_a, batch_a = prepare(caller, engine, generator)
+    payload_b, batch_b = prepare(definition, engine, generator)
+    token = pseudonym_of(batch_a, "monthly_rate")
+    assert token == pseudonym_of(batch_b, "monthly_rate")
+    assert token.startswith("fn_")  # a function, not a module
+    assert token in payload_a.text.expose() and token in payload_b.text.expose()
+    assert "monthly_rate" not in payload_a.text.expose() + payload_b.text.expose()

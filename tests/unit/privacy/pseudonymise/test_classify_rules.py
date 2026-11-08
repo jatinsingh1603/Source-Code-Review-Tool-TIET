@@ -331,7 +331,7 @@ WORKED_EXAMPLE_MAP: dict[tuple[int, str, str], IdentifierClass] = {
     (6, "get", "field"): PUBLIC,
     (6, "type", "parameter"): PUBLIC,
     (6, "float", "variable"): PUBLIC,
-    (7, "accrue_interest", "import"): INTERNAL,
+    (7, "accrue_interest", "function"): INTERNAL,
     (7, "aid", "parameter"): INTERNAL,
     (7, "rate", "parameter"): INTERNAL,
     (7, "rate", "variable"): INTERNAL,
@@ -431,3 +431,28 @@ def test_a_symbol_that_is_not_in_the_table_is_internal() -> None:
         }
     )
     assert classifier.classify(stranger) is INTERNAL
+
+
+# --- the kind of an imported name that is called (E09-FU) ------------------------------------
+
+CALLED_IMPORTS = [
+    ("from billing import accrue\n\naccrue(1)\n", "accrue", "function"),
+    ("from billing import accrue\n\naccrue (1)\n", "accrue", "function"),
+    ("from billing import Account\n\nAccount(1)\n", "Account", "class"),
+    ("from billing import accrue\n\nvalue = accrue\n", "accrue", "import"),
+    ("from billing import LIMIT\n\nLIMIT(1)\n", "LIMIT", "function"),
+]
+
+
+@pytest.mark.parametrize(("source", "name", "kind"), CALLED_IMPORTS)
+def test_the_strongest_kind_of_an_imported_name_follows_how_it_is_used(
+    source: str, name: str, kind: str
+) -> None:
+    kinds = {d.kind for d in decisions_of(classify_text(Language.PYTHON, source), name)}
+    rank = ("class", "function", "import")
+    assert min(kinds, key=rank.index) == kind
+
+
+def test_the_import_statement_itself_keeps_its_kind() -> None:
+    result = classify_text(Language.PYTHON, "from billing import accrue\n\naccrue(1)\n")
+    assert any(d.kind == "import" for d in decisions_of(result, "accrue"))

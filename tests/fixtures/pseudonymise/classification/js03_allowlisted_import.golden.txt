@@ -2,7 +2,7 @@ file: js03_allowlisted_import.js
 allowlist: javascript-2026.11.06.1
 1:8 express import -> public allowlisted_import
 3:7 app variable -> public well_known
-3:13 express import -> public allowlisted_import
+3:13 express function -> public allowlisted_import
 4:1 app variable -> public well_known
 4:5 get field -> public keyword_or_builtin
 4:21 req parameter -> internal default_internal

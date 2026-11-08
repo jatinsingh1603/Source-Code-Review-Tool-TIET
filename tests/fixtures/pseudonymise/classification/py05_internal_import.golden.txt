@@ -7,7 +7,7 @@ allowlist: python-2026.11.06.1
 5:10 account_id parameter -> internal default_internal
 6:12 billing_rules import -> internal internal_import
 6:26 apply field -> internal default_internal
-6:32 Account import -> internal internal_import
+6:32 Account class -> internal internal_import
 6:40 account_id parameter -> internal default_internal
 counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
 kept_public: load
