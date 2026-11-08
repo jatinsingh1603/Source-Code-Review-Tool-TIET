@@ -54,8 +54,10 @@ def scan(tmp_path: Path, repo: Path) -> Iterator[subprocess.Popen[str]]:
         "CK_SLOW_SCAN_MODE": "cooperative",
         # The real parse stage would finish before the signal arrives and become the "last
         # completed stage"; this scan is about the fake stages only. The analysis stages that
-        # read the parse output go with it, or the plan would lack their input.
-        "CODEKAVACH_PLUGINS__DISABLE": "stage:parse,stage:analyse-rules,stage:aggregate",
+        # read the parse output go with it, and so do the privacy and review stages.
+        "CODEKAVACH_PLUGINS__DISABLE": (
+            "stage:parse,stage:analyse-rules,stage:aggregate,stage:privacy-prepare,stage:llm-review"
+        ),
         "CODEKAVACH_HOME": str(tmp_path / "home"),
     }
     process = subprocess.Popen(
