@@ -63,6 +63,7 @@ class Outcome(StrEnum):
     blocked = "blocked"
     completed = "completed"
     failed = "failed"
+    not_sent_dry_run = "not_sent_dry_run"
 
 
 @dataclass
@@ -160,7 +161,7 @@ def chain_step(context: VerifyContext) -> StepResult:
             if failure is not None:
                 return _chain_broken(*failure)
             seen[record.seq] = record.payload_hash
-            if record.outcome.value in {"sent", "blocked"}:
+            if record.outcome.value in {"sent", "blocked", "not_sent_dry_run"}:
                 context.payload_hashes.add(record.payload_hash)
                 context.seqs_by_hash.setdefault(record.payload_hash, []).append(record.seq)
                 if record.outcome.value == "sent":

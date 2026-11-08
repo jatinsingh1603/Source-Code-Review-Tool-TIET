@@ -769,7 +769,7 @@ Usage: codekavach privacy ledger show [OPTIONS] [target]
 | Option | Type or choices | Default | Description |
 |---|---|---|---|
 | `--scan` | TEXT | latest | Scan id, latest or all. |
-| `--outcome` | sent \| blocked \| completed \| failed (repeatable) |  | Outcome to list; repeatable. |
+| `--outcome` | sent \| blocked \| completed \| failed \| not_sent_dry_run (repeatable) |  | Outcome to list; repeatable. |
 | `--limit` | INTEGER | 50 | Records to show; 0 shows all. |
 | `--since` | TEXT |  | Only records at or after this ISO 8601 time. |
 

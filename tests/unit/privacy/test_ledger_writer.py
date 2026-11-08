@@ -342,3 +342,17 @@ def test_draft_timestamp_never_regresses(writer: LedgerWriter) -> None:
     later = writer.append(draft_for(text_of(2), 1), SanitisedText(text_of(2)))
     assert later.timestamp >= FIXED_NOW + timedelta(seconds=50)
     assert writer.verify_chain().ok
+
+
+def test_a_dry_run_entry_stores_its_payload_and_verifies(state: Path) -> None:
+    """E12-04b: a dry-run delivery is ledgered as ``not_sent_dry_run`` with the payload kept."""
+    writer = open_writer(state, key_source="ephemeral")
+    text = text_of(1)
+    sealed = writer.append(
+        draft_for(text, 1, outcome=EgressOutcome.NOT_SENT_DRY_RUN), SanitisedText(text)
+    )
+    assert sealed.outcome is EgressOutcome.NOT_SENT_DRY_RUN
+    assert EgressRecord.model_validate_json(sealed.model_dump_json()) == sealed
+    stored = writer.payload_text(sealed.payload_hash)
+    assert stored is not None and stored.expose() == text
+    assert writer.verify_chain().ok and writer.verify_payloads().ok

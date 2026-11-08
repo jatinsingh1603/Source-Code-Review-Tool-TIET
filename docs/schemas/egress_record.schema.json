@@ -6,7 +6,8 @@
         "sent",
         "blocked",
         "completed",
-        "failed"
+        "failed",
+        "not_sent_dry_run"
       ],
       "title": "EgressOutcome",
       "type": "string"

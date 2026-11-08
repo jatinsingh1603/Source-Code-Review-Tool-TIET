@@ -85,7 +85,7 @@ Both are small structured values: a `level` from 1 to 5 plus narrative text. ARC
 
 ### D11 `EgressRecord` extensions
 
-`scan_id`, `task`, `outcome` (`sent`, `blocked`, `completed` or `failed`), `block_code`, `ref_seq` and `request_hash` are added. With them:
+`scan_id`, `task`, `outcome` (`sent`, `blocked`, `completed`, `failed` or `not_sent_dry_run`), `block_code`, `ref_seq` and `request_hash` are added. With them:
 
 - blocked attempts are auditable;
 - completion token counts can be appended as a new entry instead of mutating a hash-chained one;

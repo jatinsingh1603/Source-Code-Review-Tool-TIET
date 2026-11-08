@@ -93,7 +93,7 @@ GOLDEN: dict[type[StrEnum], list[str]] = {
     EvidenceRole: ["primary", "source", "propagator", "sanitiser", "sink", "context"],
     ActorKind: ["system", "human", "policy"],
     DetectionOrigin: ["deterministic", "llm"],
-    EgressOutcome: ["sent", "blocked", "completed", "failed"],
+    EgressOutcome: ["sent", "blocked", "completed", "failed", "not_sent_dry_run"],
 }
 
 

@@ -368,6 +368,7 @@ class EgressOutcome(StrEnum):
     BLOCKED = "blocked"
     COMPLETED = "completed"
     FAILED = "failed"
+    NOT_SENT_DRY_RUN = "not_sent_dry_run"
 
 
 class TrustTier(StrEnum):

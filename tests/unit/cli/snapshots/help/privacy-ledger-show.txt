@@ -7,11 +7,15 @@
 │   target      <str>  Project directory. [default: .]                                             │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --scan             <str>                            Scan id, latest or all. [default: latest]    │
-│ --outcome          <sent|blocked|completed|failed>  Outcome to list; repeatable.                 │
-│ --limit            <int>                            Records to show; 0 shows all. [default: 50]  │
-│ --since            <str>                            Only records at or after this ISO 8601 time. │
-│ --help     -h                                       Show this message and exit.                  │
+│ --scan             <str>                                  Scan id, latest or all.                │
+│                                                           [default: latest]                      │
+│ --outcome          <sent|blocked|completed|failed|not_se  Outcome to list; repeatable.           │
+│                    nt_dry_run>                                                                   │
+│ --limit            <int>                                  Records to show; 0 shows all.          │
+│                                                           [default: 50]                          │
+│ --since            <str>                                  Only records at or after this ISO 8601 │
+│                                                           time.                                  │
+│ --help     -h                                             Show this message and exit.            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮
 │ --config                        PATH                        Configuration file to use instead of │
