@@ -67,7 +67,7 @@ def summarise_ledger(
         if store.has(keys.DISCLOSURE):
             disclosure = store.get(keys.DISCLOSURE, DisclosureRows).rows
         if store.has(keys.ITEM_FAILURES):
-            raw = store.get_object(keys.ITEM_FAILURES)
+            raw = store.get_json(keys.ITEM_FAILURES)
             if isinstance(raw, list):
                 failures.update(
                     str(item.get("error_code", "unknown")) for item in raw if isinstance(item, dict)

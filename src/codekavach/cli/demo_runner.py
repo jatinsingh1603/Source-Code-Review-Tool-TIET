@@ -46,6 +46,11 @@ PASSPHRASE_VARIABLE: Final = "CODEKAVACH_DEMO_PASSPHRASE"  # noqa: S105 - a vari
 TERMS_FILE: Final = Path("ground-truth") / "terms.txt"
 WORK_DIR: Final = ".work"
 PROJECT_DIR: Final = "kavachbank"
+# A fixed salt gives the same pseudonyms, and so the same payload hashes, on every run: the replay
+# cassettes are keyed by payload hash. The data is synthetic, so a published salt costs nothing.
+DEMO_SALT_HEX: Final = "6c" * 32  # pragma: allowlist secret
+REPLAY_ID: Final = "rec"
+CASSETTES: Final = "cassettes"
 SUMMARY_NOTE: Final = (
     "This demo used the {kind} provider: it answers on this machine and opens no connection. "
     "The ledger shows what would have been sent to a model, not what was."
@@ -59,6 +64,7 @@ class DemoReport:
     scan_id: str
     provider: str
     findings: int
+    reviewed: int
     payloads: int
     chain_ok: bool
     payloads_ok: bool
@@ -127,8 +133,20 @@ def _step(results: list[StepResult], name: str) -> StepResult | None:
     return next((result for result in results if result.name == name), None)
 
 
-def run_demo(fixture: str, out: Path, *, keep_state: bool = False) -> DemoReport:
+def run_demo(
+    fixture: str,
+    out: Path,
+    *,
+    keep_state: bool = False,
+    provider: str = "mock",
+    send: bool = False,
+    cassette_dir: Path | None = None,
+) -> DemoReport:
     """Run the Demo 1 sequence on ``fixture`` and write the results below ``out``.
+
+    ``provider`` is ``mock`` or ``replay`` (answers from ``cassette_dir``, by default
+    ``fixtures/kavachbank/cassettes``). The CLI runs ``--no-send``; ``send=True`` lets the offline
+    provider answer, which a replay rehearsal needs. Both providers answer on this machine.
 
     Raises:
         UsageError: the fixture is missing, or the configured provider is not a local one.
@@ -144,7 +162,10 @@ def run_demo(fixture: str, out: Path, *, keep_state: bool = False) -> DemoReport
     terms = source / TERMS_FILE
     try:
         with _passphrase() as secret_env:
-            return _run(root, work, out, terms, secret_env, keep_state=keep_state)
+            return _run(
+                root, work, out, terms, secret_env, keep_state=keep_state,
+                provider=provider, send=send, cassette_dir=cassette_dir or source / CASSETTES,
+            )  # fmt: skip
     finally:
         if not keep_state and work.exists():
             shutil.rmtree(work, ignore_errors=True)
@@ -157,18 +178,35 @@ def _provider_kind(loaded: LoadedConfig) -> str:
     return str(provider.kind.value) if provider is not None else provider_id
 
 
+def _overrides(provider: str, cassette_dir: Path | None) -> dict[str, object] | None:
+    if provider != "replay":
+        return None
+    entry: dict[str, object] = {"kind": "replay"}
+    if cassette_dir is not None:
+        entry["cassette_dir"] = str(cassette_dir)
+    return {"llm": {"default_provider": REPLAY_ID, "providers": {REPLAY_ID: entry}}}
+
+
 def _scan(
-    root: Path, work: Path, secret_env: dict[str, str]
+    root: Path,
+    work: Path,
+    secret_env: dict[str, str],
+    *,
+    provider: str,
+    send: bool,
+    cassette_dir: Path | None,
 ) -> tuple[LoadedConfig, ScanOutcome, str]:
     env = {"CODEKAVACH_HOME": str(work / "home"), **secret_env}
-    loaded = load_settings(target=root, env=env, cli_overrides=None)
+    loaded = load_settings(target=root, env=env, cli_overrides=_overrides(provider, cassette_dir))
     kind = _provider_kind(loaded)
     if kind not in LOCAL_PROVIDERS:
         raise UsageError(
             f"the demo runs offline and refuses the {kind!r} provider; use mock or replay",
             code="demo_remote_provider",
         )
-    outcome = run_scan(loaded, str(root), salt=ScanSalt.generate(), persist=False, no_send=True)
+    outcome = run_scan(
+        loaded, str(root), salt=ScanSalt.from_hex(DEMO_SALT_HEX), persist=False, no_send=not send
+    )
     if outcome.result.status.value == "failed":
         failed = ", ".join(outcome.result.failed_stages()) or "unknown"
         raise InternalError(f"the demo scan failed in stage {failed}", code="scan_failed")
@@ -176,9 +214,20 @@ def _scan(
 
 
 def _run(
-    root: Path, work: Path, out: Path, terms: Path, secret_env: dict[str, str], *, keep_state: bool
+    root: Path,
+    work: Path,
+    out: Path,
+    terms: Path,
+    secret_env: dict[str, str],
+    *,
+    keep_state: bool,
+    provider: str,
+    send: bool,
+    cassette_dir: Path | None,
 ) -> DemoReport:
-    loaded, outcome, kind = _scan(root, work, secret_env)
+    loaded, outcome, kind = _scan(
+        root, work, secret_env, provider=provider, send=send, cassette_dir=cassette_dir
+    )
     settings = loaded.settings
     layout = StateLayout(outcome.state_dir)
     scan_id = str(outcome.scan.id)
@@ -248,6 +297,7 @@ def _run(
         scan_id=scan_id,
         provider=kind,
         findings=len(findings),
+        reviewed=sum(1 for finding in findings if finding.provenance.llm_reviews),
         payloads=len(entries),
         chain_ok=bool(chain and chain.ok),
         payloads_ok=bool(payloads and payloads.ok),

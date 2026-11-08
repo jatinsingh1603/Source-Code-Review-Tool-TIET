@@ -39,6 +39,7 @@ from codekavach.privacy.errors import PseudonymError, RedactionError
 from codekavach.privacy.pseudonymise.engine import Pseudonymiser
 from codekavach.privacy.redact.redactor import Redactor
 from codekavach.privacy.stages import PrivacyPrepareStage
+from codekavach.report.model.build import summarise_ledger
 from tests.support.ingest import SALT_HEX, stages_registry
 from tests.support.kavachbank import FIXTURE_ROOT
 
@@ -290,6 +291,14 @@ def test_a_failing_pseudonymisation_is_reported_with_its_own_code(
         "privacy_pseudonymise_failed"
     }
     assert run.verdicts == []
+    # The report says how many candidates were not reviewed, and why.
+    loaded = load_settings(
+        target=root,
+        env={"CODEKAVACH_HOME": str(root.parent / "home-pseudo"), **ENV},
+        cli_overrides=None,
+    )
+    summary = summarise_ledger(run.outcome.state_dir, str(run.outcome.scan.id), loaded.settings)
+    assert dict(summary.not_reviewed) == {"privacy_pseudonymise_failed": len(run.candidates)}
 
 
 def test_a_request_the_guard_blocks_is_ledgered_and_the_scan_goes_on(

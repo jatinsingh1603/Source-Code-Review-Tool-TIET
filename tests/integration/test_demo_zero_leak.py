@@ -88,6 +88,7 @@ def test_the_demo_writes_the_inspection_page_the_report_and_the_verification(
     assert any(item.startswith("html report") for item in report.files)
     for term in load_terms(TERMS_PATH).terms:
         assert term.text not in page  # the report names no sensitive value
+    assert "inspect.html" not in page and "Original code" not in page  # client code stays out
 
 
 def test_the_fixture_is_left_untouched(demo: tuple[DemoReport, Path]) -> None:
