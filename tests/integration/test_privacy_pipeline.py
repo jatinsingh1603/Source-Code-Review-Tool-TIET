@@ -21,8 +21,10 @@ from pydantic import BaseModel
 from codekavach.config import load_settings
 from codekavach.core.models import Candidate, ScanStatus
 from codekavach.core.models.enums import EgressOutcome
+from codekavach.core.models.finding import Finding
 from codekavach.core.models.payload import SanitisedPayload
 from codekavach.core.models.slice import CodeSlice
+from codekavach.core.models.summary import ScanSummary
 from codekavach.core.models.verdict import CandidateVerdict
 from codekavach.core.pipeline import keys
 from codekavach.core.pipeline.context import RunContext
@@ -47,6 +49,8 @@ STAGES = (
     "aggregate",
     "privacy-prepare",
     "llm-review",
+    "restore",
+    "rate",
 )
 PASSPHRASE_VARIABLE = "CK_TEST_VAULT_PASSPHRASE"
 ENV = {
@@ -167,9 +171,26 @@ def sent(root: Path) -> Run:
     return run_and_capture(root)
 
 
-def test_the_six_stages_complete_on_the_mock_provider(sent: Run) -> None:
+def test_the_eight_stages_complete_on_the_mock_provider(sent: Run) -> None:
     assert sent.outcome.scan.status in {ScanStatus.COMPLETED, ScanStatus.COMPLETED_WITH_ERRORS}
     assert [run.stage for run in sent.outcome.result.stage_runs] == list(STAGES)
+
+
+def test_every_candidate_becomes_a_finding_with_its_review_recorded(sent: Run) -> None:
+    findings = read(sent.outcome, keys.FINDINGS, Finding)
+    assert len(findings) == len(sent.candidates)
+    assert {f.provenance.candidate_ids[0] for f in findings} == {c.id for c in sent.candidates}
+    reviewed = [f for f in findings if f.provenance.llm_reviews]
+    assert len(reviewed) == len(sent.verdicts) > 0
+    summary = store_of(sent.outcome).get(keys.SCAN_SUMMARY, ScanSummary)
+    assert summary.findings_total == len(findings)
+
+
+def test_a_no_send_scan_still_reports_every_deterministic_finding(root: Path) -> None:
+    dry = run_and_capture(root, no_send=True, home="home-findings")
+    findings = read(dry.outcome, keys.FINDINGS, Finding)
+    assert len(findings) == len(dry.candidates) > 0
+    assert all(not f.provenance.llm_reviews for f in findings)
 
 
 def test_every_candidate_is_either_a_payload_or_a_failed_item(sent: Run) -> None:

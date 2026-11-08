@@ -55,7 +55,9 @@ def scan(tmp_path: Path, repo: Path) -> Iterator[subprocess.Popen[str]]:
         # The real parse stage would finish before the signal arrives and become the "last
         # completed stage"; this scan is about the fake stages only. The analysis stages that
         # read the parse output go with it.
-        "CODEKAVACH_PLUGINS__DISABLE": "stage:parse,stage:analyse-rules,stage:aggregate",
+        "CODEKAVACH_PLUGINS__DISABLE": (
+            "stage:parse,stage:analyse-rules,stage:aggregate,stage:rate"
+        ),
         # The privacy stages cannot be disabled by name; turning the LLM path off drops them.
         "CODEKAVACH_LLM__ENABLED": "false",
         "CODEKAVACH_HOME": str(tmp_path / "home"),

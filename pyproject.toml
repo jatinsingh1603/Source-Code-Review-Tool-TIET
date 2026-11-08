@@ -44,6 +44,8 @@ analyse-rules = "codekavach.analysis.rules.stage:AnalyseRulesStage"
 aggregate = "codekavach.analysis.aggregate.stage:AggregateStage"
 privacy-prepare = "codekavach.privacy.stages:PrivacyPrepareStage"
 llm-review = "codekavach.llm.stages:LlmReviewStage"
+restore = "codekavach.privacy.restore.stage:RestoreStage"
+rate = "codekavach.risk.stage:RateStage"
 
 [dependency-groups]
 lint = ["ruff>=0.16", "import-linter"]
