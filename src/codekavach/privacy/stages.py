@@ -32,6 +32,7 @@ from typing import Final
 from codekavach.config import Settings
 from codekavach.core.log import get_logger
 from codekavach.core.models import Candidate, RawCode
+from codekavach.core.models.disclosure import DisclosureRows
 from codekavach.core.models.enums import PrivacyLevel
 from codekavach.core.models.payload import (
     MAX_STUB_SUMMARIES,
@@ -202,9 +203,9 @@ class PrivacyPrepareStage:
     version = "1"
     requires = frozenset({keys.CANDIDATES, keys.FILES, keys.SYMBOLS, keys.AST})
     optional_requires = frozenset({keys.CALL_GRAPH})
-    provides = frozenset({keys.PAYLOADS_SANITISED, keys.SLICES})
+    provides = frozenset({keys.PAYLOADS_SANITISED, keys.SLICES, keys.DISCLOSURE})
     # Sanitised text and raw code are never reloaded from disk, so the store holds them in memory.
-    transient_provides = provides
+    transient_provides = frozenset({keys.PAYLOADS_SANITISED, keys.SLICES})
     category = StageCategory.PRIVACY
 
     def run(self, ctx: RunContext) -> None:
@@ -282,6 +283,7 @@ class PrivacyPrepareStage:
             candidates=len(candidates),
         )
         _DISCLOSURES[ctx.scan_id] = disclosure
+        ctx.artefacts.put(keys.DISCLOSURE, DisclosureRows(rows=disclosure.as_attestation_rows()))
         ctx.artefacts.put(keys.SLICES, slices, persist=False)
         ctx.artefacts.put(keys.PAYLOADS_SANITISED, payloads, persist=False)
 

@@ -257,6 +257,14 @@ def report_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     registry: RendererRegistry = load_backend(
         "codekavach.report.render", "renderer_registry", feature="report renderers", epic="E31"
     )()
+    if not formats:
+        # The configured defaults name formats whose renderers arrive later (E31): write the
+        # ones this build has and say which were left out. A format named on the command line
+        # that cannot be rendered is still an error.
+        available = set(registry.names())
+        for fmt in (item for item in requested if item not in available):
+            out.warn("format_unavailable", f"no renderer for configured format {fmt}")
+        requested = tuple(item for item in requested if item in available)
     check_formats(requested, registry)
 
     from codekavach.config.paths import resolve_state_dir  # noqa: PLC0415
@@ -276,7 +284,15 @@ def report_command(  # noqa: PLR0917 - Typer maps each parameter to one option
             code="scan_incomplete",
             hint="run codekavach scan again",
         )
-    document = build_document(stored, findings)
+    summarise = load_backend(
+        "codekavach.report.model.build",
+        "summarise_ledger",
+        feature="the privacy attestation",
+        epic="E13",
+    )
+    document = build_document(
+        stored, findings, settings, summarise(state_dir, str(stored.id), settings)
+    )
     files = render_all(
         registry,
         requested,

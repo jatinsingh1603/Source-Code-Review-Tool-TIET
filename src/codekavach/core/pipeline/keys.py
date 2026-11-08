@@ -18,6 +18,7 @@ Key                    Constant                Produced by                 Notes
 ``candidates``         ``CANDIDATES``          aggregate (E21)             raw code
 ``slices``             ``SLICES``              privacy-prepare (E13-02)    raw code
 ``payloads.sanitised`` ``PAYLOADS_SANITISED``  privacy-prepare (E25)       sanitised
+``privacy.disclosure``  ``DISCLOSURE``           privacy-prepare (E13-03)    metadata
 ``verdicts.raw``       ``VERDICTS_RAW``        llm-review (E23)            pseudonym space
 ``verdicts.restored``  ``VERDICTS_RESTORED``   restore (E10)
 ``findings``           ``FINDINGS``            rate (E29)
@@ -51,6 +52,7 @@ CANDIDATES: Final = "candidates"
 SLICES: Final = "slices"
 PAYLOADS_SANITISED: Final = "payloads.sanitised"
 VERDICTS_RAW: Final = "verdicts.raw"
+DISCLOSURE: Final = "privacy.disclosure"
 VERDICTS_RESTORED: Final = "verdicts.restored"
 FINDINGS: Final = "findings"
 SCAN_SUMMARY: Final = "scan.summary"

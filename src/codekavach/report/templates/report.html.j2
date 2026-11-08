@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="{{ csp }}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>{{ doc.title }}</title>
+<style>
+:root { color-scheme: light; --ink:#1b2430; --muted:#5b6675; --line:#d5dbe3; --soft:#f4f6f9; --accent:#16407a;
+  --critical:#8e1b1b; --high:#c2410c; --medium:#a16207; --low:#1d6b4a; --info:#475569; }
+* { box-sizing: border-box; }
+body { margin:0; font:14px/1.5 -apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; color:var(--ink); background:#fff; }
+main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+h1,h2,h3 { line-height:1.25; } h2 { border-bottom:2px solid var(--line); padding-bottom:6px; margin-top:40px; }
+table { border-collapse:collapse; width:100%; margin:12px 0; } th,td { border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
+th { background:var(--soft); }
+.cover { min-height: 60vh; display:flex; flex-direction:column; justify-content:center; border-bottom:4px solid var(--accent); padding-bottom:32px; }
+.cover h1 { font-size:34px; margin:0 0 12px; } .marking { font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--critical); }
+.sev { display:inline-block; padding:1px 8px; border-radius:10px; color:#fff; font-size:12px; font-weight:700; text-transform:uppercase; }
+.sev-critical { background:var(--critical); } .sev-high { background:var(--high); } .sev-medium { background:var(--medium); }
+.sev-low { background:var(--low); } .sev-info { background:var(--info); }
+.matrix td { text-align:center; width:56px; height:40px; } .matrix .axis { background:var(--soft); font-size:12px; color:var(--muted); }
+.cell-0 { color:#9aa4b2; } .cell-n { font-weight:700; background:#ffe9d6; }
+.finding { border:1px solid var(--line); border-radius:6px; padding:12px 16px; margin:16px 0; break-inside:avoid-page; }
+.meta { color:var(--muted); font-size:13px; }
+pre.code { background:var(--soft); border:1px solid var(--line); border-radius:4px; padding:8px 0; overflow:auto; font:12.5px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; margin:8px 0; }
+pre.code .ln { display:block; padding:0 8px; white-space:pre-wrap; word-break:break-word; }
+pre.code .ln.hit { background:#fff1c2; border-left:3px solid var(--high); }
+pre.code .no { display:inline-block; min-width:4ch; margin-right:10px; text-align:right; color:var(--muted); user-select:none; }
+pre.code mark { background:#ffd24d; color:inherit; }
+.note { border-left:4px solid var(--accent); background:var(--soft); padding:8px 12px; margin:12px 0; }
+.warn { border-left-color:var(--high); }
+nav.toc ol { padding-left:20px; } nav.toc a { color:var(--accent); text-decoration:none; }
+@media print {
+  @page { size:A4; margin:22mm 16mm 20mm; @top-center { content:"{{ header }}"; font-size:9pt; color:#8e1b1b; }
+    @bottom-right { content:"Page " counter(page) " of " counter(pages); font-size:9pt; color:#5b6675; } }
+  main { max-width:none; padding:0; } .cover { min-height:0; page-break-after:always; } h2 { page-break-before:always; }
+  nav.toc a::after { content: leader('.') target-counter(attr(href), page); }
+}
+</style>
+</head>
+<body>
+<main>
+<section class="cover">
+  <div class="marking">{{ doc.classification }}</div>
+  <h1>{{ doc.title }}</h1>
+  <table>
+    <tr><th>Scan</th><td>{{ doc.scan.id }}</td></tr>
+    <tr><th>Generated</th><td>{{ doc.generated_at.strftime('%Y-%m-%d %H:%M UTC') }}</td></tr>
+    <tr><th>Reviewer</th><td>{{ doc.auditor or 'not stated' }}</td></tr>
+    <tr><th>Version</th><td>CodeKavach {{ doc.scan.codekavach_version }}</td></tr>
+    <tr><th>Revision</th><td>{{ doc.scan.git_commit or 'not a git checkout' }}{% if doc.scan.git_branch %} ({{ doc.scan.git_branch }}){% endif %}</td></tr>
+  </table>
+</section>
+
+<nav class="toc"><h2 id="contents">Contents</h2>
+  <ol>
+    <li><a href="#summary">Executive summary</a></li>
+    <li><a href="#matrix">Severity by likelihood</a></li>
+    <li><a href="#table">Summary of findings</a></li>
+    <li><a href="#findings">Detailed findings</a></li>
+    {% if attestation %}<li><a href="#privacy">Privacy attestation</a></li>{% endif %}
+    <li><a href="#appendix">Appendix: tools and versions</a></li>
+  </ol>
+</nav>
+
+<h2 id="summary">Executive summary</h2>
+<p>{{ doc.summary.findings_total }} finding(s) from {{ doc.summary.candidates_total }} candidate(s) in
+{{ doc.summary.files_scanned }} file(s) and {{ doc.summary.lines_scanned }} line(s).
+{{ doc.summary.candidates_reviewed_by_llm }} candidate(s) were reviewed by a model.</p>
+<table>
+  <tr>{% for severity in severities %}<th>{{ severity.value|capitalize }}</th>{% endfor %}</tr>
+  <tr>{% for severity in severities %}<td>{{ by_severity.get(severity, 0) }}</td>{% endfor %}</tr>
+</table>
+{% if doc.not_reviewed %}
+<div class="note warn"><strong>Not reviewed by a model.</strong>
+{% for code, count in doc.not_reviewed %}{{ count }} item(s): {{ code }}{% if not loop.last %}; {% endif %}{% endfor %}.
+These findings are deterministic results that were not confirmed or dismissed by a model.</div>
+{% endif %}
+<p class="meta">A model that judges a finding not vulnerable lowers its confidence and ranks it lower. It never removes it,
+and it never changes its status: only a person can mark a finding a false positive.</p>
+
+<h2 id="matrix">Severity by likelihood</h2>
+<table class="matrix">
+  {% for likelihood in [5, 4, 3, 2, 1] %}
+  <tr><td class="axis">Likelihood {{ likelihood }}</td>
+    {% for impact in [1, 2, 3, 4, 5] %}{% set n = matrix.get((likelihood, impact), 0) %}
+    <td class="{{ 'cell-n' if n else 'cell-0' }}">{{ n }}</td>{% endfor %}</tr>
+  {% endfor %}
+  <tr><td class="axis"></td>{% for impact in [1, 2, 3, 4, 5] %}<td class="axis">Impact {{ impact }}</td>{% endfor %}</tr>
+</table>
+
+<h2 id="table">Summary of findings</h2>
+<table>
+  <tr><th>#</th><th>Severity</th><th>Title</th><th>Location</th><th>CWE</th><th>Status</th><th>Model view</th></tr>
+  {% for finding in findings %}
+  <tr><td><a href="#f{{ loop.index }}">{{ loop.index }}</a></td>
+    <td><span class="sev sev-{{ finding.severity.value }}">{{ finding.severity.value }}</span></td>
+    <td>{{ finding.title }}</td>
+    <td>{{ finding.primary_location.path }}:{{ finding.primary_location.start_line }}</td>
+    <td>{% for cwe in finding.cwe %}CWE-{{ cwe }}{% if not loop.last %}, {% endif %}{% else %}n/a{% endfor %}</td>
+    <td>{{ finding.status.value }}</td>
+    <td>{% if finding.provenance.llm_reviews %}{% set review = finding.provenance.llm_reviews[0] %}{{ 'vulnerable' if review.is_vulnerable else ('not vulnerable' if review.is_vulnerable == false else 'undecided') }}{% else %}not reviewed{% endif %}</td></tr>
+  {% else %}
+  <tr><td colspan="7">No findings.</td></tr>
+  {% endfor %}
+</table>
+
+<h2 id="findings">Detailed findings</h2>
+{% for finding in findings %}
+<article class="finding" id="f{{ loop.index }}">
+  <h3>{{ loop.index }}. {{ finding.title }} <span class="sev sev-{{ finding.severity.value }}">{{ finding.severity.value }}</span></h3>
+  <p class="meta">{{ finding.primary_location.path }}:{{ finding.primary_location.start_line }}
+    &middot; confidence {{ finding.confidence.value }} &middot; status {{ finding.status.value }}
+    &middot; rule {{ finding.provenance.engines[0].rule_id }} ({{ finding.provenance.engines[0].engine }})
+    {% for owasp in finding.owasp %}&middot; OWASP {{ owasp.id }} {{ owasp.title }}{% endfor %}</p>
+  {% for evidence in finding.evidence %}
+  <pre class="code" aria-label="Evidence from {{ evidence.location.path }}">{% for row in snippet_rows(evidence) %}<span class="ln{{ ' hit' if row.marked else '' }}"><span class="no">{{ row.number }}</span>{{ row.html }}</span>{% endfor %}</pre>
+  {% endfor %}
+  {% if finding.impact.narrative %}<p><strong>Impact.</strong> {{ finding.impact.narrative }}</p>{% endif %}
+  {% if finding.remediation %}<p><strong>Remediation.</strong> {{ finding.remediation }}</p>{% endif %}
+  {% for review in finding.provenance.llm_reviews %}
+  <p class="meta"><strong>Model review</strong> ({{ review.provider }}, {{ review.model }}, prompt {{ review.prompt_version }}, level {{ review.level.value }}):
+    {{ 'vulnerable' if review.is_vulnerable else ('not vulnerable' if review.is_vulnerable == false else 'undecided') }}.
+    {{ review.reasoning }}</p>
+  {% endfor %}
+</article>
+{% endfor %}
+
+{% if attestation %}
+<h2 id="privacy">Privacy attestation</h2>
+{% if attestation.offline_notice %}<div class="note warn">{{ attestation.offline_notice }}</div>{% endif %}
+<table>
+  <tr><th>Privacy level (default)</th><td>{{ attestation.default_level }}</td></tr>
+  {% for pattern, level in attestation.levels %}<tr><th>Path pattern {{ pattern }}</th><td>{{ level }}</td></tr>{% endfor %}
+  <tr><th>Provider and model</th><td>{{ attestation.provider or 'none' }} / {{ attestation.model or 'none' }} ({{ 'local' if attestation.provider_is_local else 'remote' }})</td></tr>
+  {% for name, value in attestation.disclosure %}<tr><th>{{ name|replace('_', ' ') }}</th><td>{{ value }}</td></tr>{% else %}
+  <tr><th>Disclosure</th><td>not recorded for this scan</td></tr>{% endfor %}
+  <tr><th>Ledger head hash</th><td>{{ attestation.ledger_head_hash or 'no ledger entries' }}</td></tr>
+  <tr><th>Ledger entries</th><td>{{ attestation.ledger_entries }}{% for outcome, count in attestation.entries_by_outcome %}; {{ outcome }}: {{ count }}{% endfor %}</td></tr>
+  <tr><th>Zero-leak check</th><td>{{ attestation.zero_leak.text }}</td></tr>
+  <tr><th>Retention</th><td>{{ attestation.retention }}</td></tr>
+</table>
+<p class="note">{{ attestation.not_covered }}</p>
+{% endif %}
+
+<h2 id="appendix">Appendix: tools and versions</h2>
+<table>
+  <tr><th>Tool</th><th>Version</th></tr>
+  {% for name, version in doc.tools %}<tr><td>{{ name }}</td><td>{{ version }}</td></tr>{% endfor %}
+</table>
+</main>
+</body>
+</html>

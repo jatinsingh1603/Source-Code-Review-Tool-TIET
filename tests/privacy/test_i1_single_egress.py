@@ -58,6 +58,9 @@ NETWORK_DISTRIBUTIONS = {
 # Reviewed and found not to open connections of their own in this product: they either run only
 # in development or never touch a remote host (``jeepney`` and ``secretstorage`` speak D-Bus on a
 # local socket for the keyring; ``certifi`` is a certificate bundle, not a client).
+# ``weasyprint`` (the optional PDF renderer) can fetch a URL it is handed, so
+# ``codekavach.report.render.pdf`` gives it a fetcher that refuses every URL; the report holds none
+# (test_the_pdf_fetcher_refuses_every_url). Its dependencies only parse and draw.
 REVIEWED_OFFLINE = frozenset(
     (
         "alembic",
@@ -65,6 +68,8 @@ REVIEWED_OFFLINE = frozenset(
         "annotated-types",
         "ast-serialize",
         "attrs",
+        "brotli",
+        "brotlicffi",
         "certifi",
         "cffi",
         "cfgv",
@@ -74,10 +79,12 @@ REVIEWED_OFFLINE = frozenset(
         "colorama",
         "coverage",
         "cryptography",
+        "cssselect2",
         "detect-secrets",
         "distlib",
         "execnet",
         "filelock",
+        "fonttools",
         "grimp",
         "hypothesis",
         "identify",
@@ -103,6 +110,7 @@ REVIEWED_OFFLINE = frozenset(
         "nodeenv",
         "packaging",
         "pathspec",
+        "pillow",
         "platformdirs",
         "pluggy",
         "pre-commit",
@@ -110,7 +118,9 @@ REVIEWED_OFFLINE = frozenset(
         "pydantic",
         "pydantic-core",
         "pydantic-settings",
+        "pydyf",
         "pygments",
+        "pyphen",
         "pytest",
         "pytest-cov",
         "pytest-randomly",
@@ -130,6 +140,8 @@ REVIEWED_OFFLINE = frozenset(
         "sortedcontainers",
         "sqlalchemy",
         "structlog",
+        "tinycss2",
+        "tinyhtml5",
         "tomli-w",
         "towncrier",
         "tree-sitter",
@@ -143,6 +155,9 @@ REVIEWED_OFFLINE = frozenset(
         "typing-extensions",
         "typing-inspection",
         "virtualenv",
+        "weasyprint",
+        "webencodings",
+        "zopfli",
     )
 )
 VENDOR_SDKS = (

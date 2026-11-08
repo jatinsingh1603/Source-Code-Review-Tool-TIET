@@ -108,7 +108,7 @@ def backends_installed(
     monkeypatch: pytest.MonkeyPatch, renderers: dict[str, FakeRenderer], lookup: FakeLookup
 ) -> None:
     fake_backend(monkeypatch, LOOKUP, lambda _state_dir: lookup)
-    fake_backend(monkeypatch, DOCUMENT, lambda scan, findings: (scan.id, len(findings)))
+    fake_backend(monkeypatch, DOCUMENT, lambda scan, findings, *_rest: (scan.id, len(findings)))
     fake_backend(monkeypatch, REGISTRY, lambda: FakeRegistry(renderers))
 
 
@@ -296,11 +296,16 @@ def test_no_overwrite_keeps_existing_files(
     assert (project / "out" / "report.html").read_bytes() == before
 
 
-def test_build_without_report_back_ends(cli: Cli, project: Path) -> None:
+def test_the_report_back_ends_are_delivered_by_the_build() -> None:
+    """E13 supplies the document builder and the renderer registry the command loads."""
     assert ("codekavach.report.model", "build_report_document") not in backends._OVERRIDES
-    result = report(cli, project, "--format", "html")
-    assert result.exit_code == 2
-    assert "error[backend_unavailable]" in result.stderr
+    build = backends.load_backend(
+        "codekavach.report.model", "build_report_document", feature="report content", epic="E30"
+    )
+    registry = backends.load_backend(
+        "codekavach.report.render", "renderer_registry", feature="report renderers", epic="E31"
+    )()
+    assert callable(build) and {"html", "pdf"} <= set(registry.names())
 
 
 # the real lookup

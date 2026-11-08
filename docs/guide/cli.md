@@ -19,11 +19,10 @@ This is version 0.1.0.dev0. Some back ends belong to later epics. A command whos
 
 | Command | In this build | Epic |
 |---------|---------------|------|
-| `doctor`, `init`, `scan`, `providers list`, `privacy notice`, `privacy consent`, `completion`, `config` | yes | |
+| `doctor`, `init`, `scan`, `providers list`, `privacy notice`, `privacy consent`, `completion`, `config`, `report` | yes | |
 | `privacy inspect` | not in this build | E11 |
 | `privacy ledger show`, `privacy ledger verify` | yes | |
 | `providers test` | not in this build | E22 |
-| `report` | not in this build | E30 |
 | `vault status`, `vault rotate`, `vault destroy` | not in this build | E10 |
 | `demo` | not in this build | E13 |
 
@@ -198,7 +197,7 @@ $ codekavach scan . --profile airgapped
 $ codekavach report --scan latest --format html --format sarif --output-dir codekavach-report
 ```
 
-`--format` can be repeated or given as a comma-separated list, `--name` sets the file name without the extension, and `--no-overwrite` keeps existing files. The command is not in this build yet (epic E30). PDF output needs system libraries and a font that covers Devanagari; `codekavach doctor --category report` checks both. The paths of the written files are in the `report_files` list of the JSON result (section 8).
+`--format` can be repeated or given as a comma-separated list, `--name` sets the file name without the extension, and `--no-overwrite` keeps existing files. Without `--format` it writes the configured formats that have a renderer in this build (HTML, and PDF with the `reports` extra) and warns about the others. PDF output needs system libraries and a font that covers Devanagari; `codekavach doctor --category report` checks both. The paths of the written files are in the `report_files` list of the JSON result (section 8).
 
 A report holds code snippets as evidence. Keep the report directory out of version control and give it the access of the code itself; `codekavach init --update-gitignore` adds it to `.gitignore`.
 

@@ -158,6 +158,13 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.privacy.redact.redactor",
         "codekavach.privacy.policy.resolve",
         "codekavach.privacy.stages",
+        "codekavach.core.models.disclosure",
+        "codekavach.report.model.document",
+        "codekavach.report.model.build",
+        "codekavach.report.render.base",
+        "codekavach.report.render.html",
+        "codekavach.report.render.pdf",
+        "codekavach.report.render.stage",
         "codekavach.risk.severity",
         "codekavach.risk.stage",
         "codekavach.privacy.egress.guard",
@@ -367,6 +374,8 @@ INIT_IMPORT_ALLOWLIST: frozenset[str] = frozenset(
         "codekavach.parsing",
         "codekavach.parsing.queries",
         "codekavach.parsing.specs",
+        "codekavach.report.model",
+        "codekavach.report.render",
     }
 )
 

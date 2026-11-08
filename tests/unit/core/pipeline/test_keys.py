@@ -34,7 +34,7 @@ def test_default_order_matches_architecture() -> None:
 
 
 def test_constants_are_valid_and_distinct() -> None:
-    assert len(CONSTANTS) == 19  # scan.item_failures (E04-20), slices (E13-02)
+    assert len(CONSTANTS) == 20  # scan.item_failures (E04-20), slices (E13-02), disclosure
     assert all(is_valid_key(value) for value in CONSTANTS.values())
     assert len(set(CONSTANTS.values())) == len(CONSTANTS)
     assert RAW_CODE_KEYS.isdisjoint(SANITISED_KEYS)

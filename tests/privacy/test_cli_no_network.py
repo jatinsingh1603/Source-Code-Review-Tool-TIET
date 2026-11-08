@@ -175,7 +175,7 @@ def test_command_makes_no_network_attempt(
         fake_backend(
             monkeypatch,
             "codekavach.report.model.build_report_document",
-            lambda scan, findings: (scan.id, len(findings)),
+            lambda scan, findings, *_rest: (scan.id, len(findings)),
         )
         fake_backend(monkeypatch, "codekavach.report.render.renderer_registry", FakeRegistry)
     args = [str(project) if argument == PROJECT else argument for argument in case.args]
