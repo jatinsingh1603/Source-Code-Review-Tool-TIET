@@ -113,6 +113,8 @@ class Run:
     slices: list[CodeSlice] = field(default_factory=list)
     candidates: list[Candidate] = field(default_factory=list)
     verdicts: list[CandidateVerdict] = field(default_factory=list)
+    findings: list[Finding] = field(default_factory=list)
+    summary: ScanSummary | None = None
     ledger: list[Any] = field(default_factory=list)
 
 
@@ -141,6 +143,8 @@ def run_and_capture(
         captured.outcome = scan(root, no_send=no_send, home=home, overrides=overrides, env=env)
     # Read now: a later scan in the same project replaces the stored records of this one.
     captured.verdicts = read(captured.outcome, keys.VERDICTS_RAW, CandidateVerdict)
+    captured.findings = read(captured.outcome, keys.FINDINGS, Finding)
+    captured.summary = store_of(captured.outcome).get(keys.SCAN_SUMMARY, ScanSummary)
     captured.ledger = ledger_of(captured.outcome)
     return captured
 
@@ -177,18 +181,17 @@ def test_the_eight_stages_complete_on_the_mock_provider(sent: Run) -> None:
 
 
 def test_every_candidate_becomes_a_finding_with_its_review_recorded(sent: Run) -> None:
-    findings = read(sent.outcome, keys.FINDINGS, Finding)
+    findings = sent.findings
     assert len(findings) == len(sent.candidates)
     assert {f.provenance.candidate_ids[0] for f in findings} == {c.id for c in sent.candidates}
     reviewed = [f for f in findings if f.provenance.llm_reviews]
     assert len(reviewed) == len(sent.verdicts) > 0
-    summary = store_of(sent.outcome).get(keys.SCAN_SUMMARY, ScanSummary)
-    assert summary.findings_total == len(findings)
+    assert sent.summary is not None and sent.summary.findings_total == len(findings)
 
 
 def test_a_no_send_scan_still_reports_every_deterministic_finding(root: Path) -> None:
     dry = run_and_capture(root, no_send=True, home="home-findings")
-    findings = read(dry.outcome, keys.FINDINGS, Finding)
+    findings = dry.findings
     assert len(findings) == len(dry.candidates) > 0
     assert all(not f.provenance.llm_reviews for f in findings)
 
