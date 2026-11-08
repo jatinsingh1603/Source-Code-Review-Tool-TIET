@@ -293,6 +293,21 @@ def test_a_request_the_guard_blocks_is_ledgered_and_the_scan_goes_on(
     assert len(run.verdicts) == total - 1
 
 
+def test_a_configured_aggregation_budget_blocks_requests_in_a_real_scan(root: Path) -> None:
+    """The prepare stage's disclosure record reaches the guard (E13-02c)."""
+    open_run = run_and_capture(root, home="home-agg-open")
+    assert all(r.outcome is not EgressOutcome.BLOCKED for r in open_run.ledger)
+    run = run_and_capture(
+        root,
+        home="home-agg",
+        overrides={"privacy": {"egress": {"aggregation_budget_pct": 0.1}}},
+    )
+    assert run.payloads and run.verdicts == []
+    assert {r.outcome for r in run.ledger} == {EgressOutcome.BLOCKED}
+    assert {r.block_code for r in run.ledger} == {"aggregation_budget"}
+    assert set(failures_of(run.outcome, "llm-review").values()) == {"egress_blocked"}
+
+
 def test_a_disabled_llm_path_runs_neither_new_stage_and_writes_no_ledger(root: Path) -> None:
     outcome = scan(root, home="home-off", env={"CODEKAVACH_LLM__ENABLED": "false"})
     ran = [run.stage for run in outcome.result.stage_runs]

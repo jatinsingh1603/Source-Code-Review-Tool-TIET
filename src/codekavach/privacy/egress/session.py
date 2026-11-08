@@ -105,6 +105,7 @@ class EgressSession:
         http_transport: Any = None,  # an httpx.BaseTransport; tests inject a mock one
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
+        disclosure: ScanDisclosure | None = None,
     ) -> None:
         self._settings = settings
         self._state = state_dir
@@ -115,6 +116,7 @@ class EgressSession:
         self._http_transport = http_transport
         self._sleep = sleep
         self._clock = clock
+        self._disclosure = disclosure or ScanDisclosure(repo_lines=1)
         self._stack = contextlib.ExitStack()
         self._guard: EgressGuard | None = None
         self._ledger: LedgerWriter | None = None
@@ -132,7 +134,7 @@ class EgressSession:
                 settings=self._settings,
             )
             registry = register_default_scanners(
-                ScannerRegistry(), ScanDisclosure(repo_lines=1), clock=self._clock
+                ScannerRegistry(), self._disclosure, clock=self._clock
             )
             self._registry = registry
             self._guard = EgressGuard(registry)

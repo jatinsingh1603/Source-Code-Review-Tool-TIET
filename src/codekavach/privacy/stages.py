@@ -68,6 +68,7 @@ from codekavach.privacy.redact.redactor import Redactor
 from codekavach.privacy.slicing.base import SlicingError
 from codekavach.privacy.slicing.budget import SliceBudget
 from codekavach.privacy.slicing.index import ParseIndex
+from codekavach.privacy.slicing.metrics import ScanDisclosure
 from codekavach.privacy.slicing.strategies.enclosing import EnclosingFunctionStrategy
 from codekavach.privacy.slicing.stubs import is_valid_summary
 from codekavach.privacy.vault.errors import VaultError
@@ -152,6 +153,12 @@ def detector_registry(settings: Settings) -> DetectorRegistry:
     return register_term_detector(registry, settings)
 
 
+# What each scan's prepare stage has disclosed, handed to the egress session of the same scan. Both
+# stages run in one process; a review that finds no entry (a resumed scan) starts from an empty
+# record, which the aggregation budget treats as no disclosure.
+_DISCLOSURES: dict[str, ScanDisclosure] = {}
+
+
 @contextmanager
 def open_egress_session(
     *,
@@ -182,6 +189,7 @@ def open_egress_session(
             scan_id=scan_id,
             consent=consent,
             dry_run=dry_run,
+            disclosure=_DISCLOSURES.pop(scan_id, None),
         ) as session,
     ):
         yield session
@@ -220,6 +228,7 @@ class PrivacyPrepareStage:
             callgraph=callgraph,
             never_send=policy.is_never_send,
         )
+        disclosure = ScanDisclosure.for_index(index)
         registry = detector_registry(ctx.config)
         numbering = PlaceholderNumbering(ctx.scan_salt)
         generator = PseudonymGenerator(ctx.scan_salt)
@@ -260,6 +269,7 @@ class PrivacyPrepareStage:
                     except _FailedError as failure:
                         ctx.fail_item(str(candidate.id), failure.code)
                         continue
+                    disclosure.record(outcome.slice_, index)
                     payloads.append(outcome.payload)
                     slices.append(outcome.slice_)
                 if done % 25 == 0:
@@ -271,6 +281,7 @@ class PrivacyPrepareStage:
             withheld=withheld,
             candidates=len(candidates),
         )
+        _DISCLOSURES[ctx.scan_id] = disclosure
         ctx.artefacts.put(keys.SLICES, slices, persist=False)
         ctx.artefacts.put(keys.PAYLOADS_SANITISED, payloads, persist=False)
 
