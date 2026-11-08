@@ -19,6 +19,13 @@ pytest_plugins = [
     "tests.support.no_network",
 ]
 
+# No test may reach the operating system's keyring: on macOS a real Keychain can block a headless
+# runner waiting for an unlock prompt, and a developer's own secrets must never be read. The
+# refusing backend makes every platform behave like the Linux runners (the vault fails closed);
+# tests that need a keyring use the in-memory one. Set before keyring is first imported and
+# inherited by the subprocesses the CLI tests start.
+os.environ["PYTHON_KEYRING_BACKEND"] = "keyring.backends.fail.Keyring"
+
 PROFILE_VARIABLE = "HYPOTHESIS_PROFILE"
 PROFILES = ("dev", "ci", "nightly")
 
