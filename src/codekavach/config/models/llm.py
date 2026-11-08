@@ -357,3 +357,21 @@ class LLMSettings(SectionModel):
             if not chosen.enabled:
                 raise ValueError(f"{UNKNOWN_PROVIDER} llm.default_provider names a disabled one")
         return self
+
+    def selected_provider(self) -> tuple[str, ProviderSettings]:
+        """The provider this scan uses: the named default, or the first usable one for ``auto``.
+
+        ``auto`` takes the first enabled provider in declaration order that is neither ``mock`` nor
+        ``replay`` and that ``allow_remote`` permits; failing that, ``mock``. Whether a hosted
+        provider's key resolves is checked when it is built (E22), not here.
+        """
+        if self.default_provider != AUTO:
+            return self.default_provider, self.providers[self.default_provider]
+        for provider_id, provider in self.providers.items():
+            if provider.kind in _OFFLINE or not provider.enabled:
+                continue
+            if provider.is_remote and not self.allow_remote:
+                continue
+            return provider_id, provider
+        mock = self.providers.get(MOCK)
+        return MOCK, mock if mock is not None else ProviderSettings(kind=ProviderKind.MOCK)

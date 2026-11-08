@@ -35,7 +35,9 @@ class SampleStage:
 """
 DETECTOR_MODULE = "class Foo:\n    pass\n"
 # Stages the codekavach distribution itself ships; they load whatever the allow-list says.
-BUILTIN_STAGES = frozenset({"ingest", "parse", "analyse-rules", "aggregate"})
+BUILTIN_STAGES = frozenset(
+    {"ingest", "parse", "analyse-rules", "aggregate", "privacy-prepare", "llm-review"}
+)
 
 
 def settings(**plugins: Any) -> Settings:

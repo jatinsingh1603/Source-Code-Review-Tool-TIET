@@ -257,6 +257,34 @@ def host_allowed(host: str | None, allowlist: Sequence[str]) -> bool:
     return False
 
 
+MIN_STATIC_CHARS = 24
+# These two judge the size and the share of the whole request, so they read the whole request.
+WHOLE_BODY_SCANNERS = frozenset({"budget", "aggregation"})
+
+
+def mask_static(body: bytes, static_text: Sequence[str]) -> bytes | None:
+    """``body`` with each trusted fragment replaced by ``null``, or ``None`` when there is none.
+
+    A fragment is found as it was written (the schema's JSON) and as a JSON string body, escaped
+    with and without ASCII-only output, because that is how a prompt sits inside the request.
+    ``null`` is valid both as a JSON value (where the schema sat) and inside a string, so a JSON
+    body stays JSON and the scanners keep reading its decoded strings.
+    """
+    fragments = [text for text in static_text if len(text) >= MIN_STATIC_CHARS]
+    if not fragments:
+        return None
+    masked = body
+    for text in fragments:
+        needles = {
+            text.encode("utf-8"),
+            json.dumps(text, ensure_ascii=False)[1:-1].encode("utf-8"),
+            json.dumps(text, ensure_ascii=True)[1:-1].encode("utf-8"),
+        }
+        for needle in needles:
+            masked = masked.replace(needle, b"null")
+    return masked
+
+
 def payload_in_body(body: bytes, meta: EgressMeta, payload_text: str | None) -> bool:
     """True when the body really contains the payload that ``meta.payload_hash`` names.
 
@@ -303,15 +331,27 @@ class EgressGuard:
         consent: ConsentDecision | None,
         vault: VaultOriginals | None = None,
         payload_text: str | None = None,
+        static_text: Sequence[str] = (),
     ) -> EgressDecision:
-        """Return the decision for ``body``; never raises and never allows on an error."""
+        """Return the decision for ``body``; never raises and never allows on an error.
+
+        ``static_text`` is text that CodeKavach itself wrote into the request (the fixed rubric of
+        a prompt, the answer schema) and that therefore holds no client data. The content scanners
+        do not look at it, because a client identifier such as ``name`` or ``config`` is also an
+        ordinary word of the rubric and would otherwise block every request. It must come from the
+        task, never from a provider; a part shorter than ``MIN_STATIC_CHARS`` is ignored, so it
+        cannot be used to hide an identifier. The size and aggregation scanners still see the whole
+        body, and the payload check uses the whole body.
+        """
         scanned: tuple[str, ...] = ()
         hits: tuple[LeakHit, ...] = ()
         try:
             code = self._preconditions(body, meta, settings, consent, payload_text)
             if code is None:
                 scanned = self.registry.ids
-                hits, errored = self._scan(body, meta, settings, vault)
+                hits, errored = self._scan(
+                    body, meta, settings, vault, mask_static(body, static_text)
+                )
                 code = self._block_code(hits, errored or not scanned)
             decision = self._decide(meta, settings, code, hits)
         except Exception:  # noqa: BLE001 - nothing may turn an internal failure into a pass
@@ -377,7 +417,12 @@ class EgressGuard:
         return level.at_least(floor)
 
     def _scan(
-        self, body: bytes, meta: EgressMeta, settings: Settings, vault: VaultOriginals | None
+        self,
+        body: bytes,
+        meta: EgressMeta,
+        settings: Settings,
+        vault: VaultOriginals | None,
+        content: bytes | None = None,
     ) -> tuple[tuple[LeakHit, ...], bool]:
         timeout = settings.privacy.egress.scanner_timeout_seconds
         hits: list[LeakHit] = []
@@ -389,7 +434,8 @@ class EgressGuard:
                 except Exception:  # noqa: BLE001 - an unbindable scanner is an error, not a pass
                     errored = True
                     continue
-            outcome = _run_scanner(scanner, body, meta, timeout)
+            seen = body if scanner.id in WHOLE_BODY_SCANNERS or content is None else content
+            outcome = _run_scanner(scanner, seen, meta, timeout)
             errored = errored or outcome.error
             hits.extend(outcome.hits)
         return tuple(hits), errored

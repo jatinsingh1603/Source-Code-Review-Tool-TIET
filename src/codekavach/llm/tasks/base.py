@@ -60,3 +60,7 @@ class ReviewTask(Protocol):
     def prompt_hash(self) -> str:
         """SHA-256 of the template text, recorded in provenance with ``prompt_version``."""
         ...
+
+    def static_text(self, payload: SanitisedPayload) -> tuple[str, ...]:
+        """The text the task writes itself (rubric, schema, closed-vocabulary facts)."""
+        ...

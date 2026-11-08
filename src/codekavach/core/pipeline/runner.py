@@ -252,6 +252,7 @@ def run_scan(
     persist: bool = True,
     resume: str | None = None,
     handle_sigint: bool = False,
+    no_send: bool = False,
 ) -> ScanOutcome:
     """Run one scan of ``target`` with the loaded configuration.
 
@@ -259,6 +260,9 @@ def run_scan(
     stage cache (E04-21); ``refresh`` names stages or groups that must run anyway. Records are
     written even with ``use_cache=False``. The cache is used only with the default on-disk store,
     whose blobs the records point at.
+
+    ``no_send`` runs every egress check and writes ``not_sent_dry_run`` ledger entries but sends
+    nothing (``--no-send``).
 
     ``persist`` records the scan in the local database, under the project found by its root
     directory; ``persist=False`` leaves no database file behind.
@@ -317,6 +321,7 @@ def run_scan(
         project_root=loaded.project_root,
         state_dir=layout.root,
         consent=consent,
+        no_send=no_send,
     )
     cache_on = resumed is not None or (settings.scan.cache if use_cache is None else use_cache)
     orchestrator = Orchestrator(

@@ -42,6 +42,8 @@ ingest = "codekavach.ingest.stage:IngestStage"
 parse = "codekavach.parsing.stage:ParseStage"
 analyse-rules = "codekavach.analysis.rules.stage:AnalyseRulesStage"
 aggregate = "codekavach.analysis.aggregate.stage:AggregateStage"
+privacy-prepare = "codekavach.privacy.stages:PrivacyPrepareStage"
+llm-review = "codekavach.llm.stages:LlmReviewStage"
 
 [dependency-groups]
 lint = ["ruff>=0.16", "import-linter"]

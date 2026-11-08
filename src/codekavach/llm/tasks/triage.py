@@ -14,6 +14,7 @@ tests), is long enough that code cannot guess it, and must not occur in the mate
 the render fails closed rather than producing an ambiguous prompt.
 """
 
+import json
 import re
 import secrets
 from typing import Final
@@ -33,13 +34,20 @@ class PromptBoundaryError(ValueError):
     """The delimiter occurs in the material it is meant to fence."""
 
 
+def _facts_header(facts: CandidateFacts) -> str:
+    """The four closed-vocabulary lines of the facts: rule, CWE, sink family and strategy."""
+    return "\n".join(
+        [
+            f"rule: {facts.rule_id}",
+            f"cwe: {', '.join(f'CWE-{number}' for number in facts.cwe) or 'none given'}",
+            f"sink family: {facts.sink_family or 'none given'}",
+            f"slice strategy: {facts.strategy}",
+        ]
+    )
+
+
 def _facts_block(facts: CandidateFacts) -> str:
-    lines = [
-        f"rule: {facts.rule_id}",
-        f"cwe: {', '.join(f'CWE-{number}' for number in facts.cwe) or 'none given'}",
-        f"sink family: {facts.sink_family or 'none given'}",
-        f"slice strategy: {facts.strategy}",
-    ]
+    lines = [_facts_header(facts)]
     if facts.stub_summaries:
         lines.append("callee summaries:")
         lines.extend(f"- {summary}" for summary in facts.stub_summaries)
@@ -86,3 +94,17 @@ class TriageTask:
     def output_schema(self) -> dict[str, object]:
         """The triage answer schema (the analysis field first)."""
         return triage_schema()
+
+    def static_text(self, payload: SanitisedPayload) -> tuple[str, ...]:
+        """The text this task writes itself: the rubric pieces, the answer schema, the facts header.
+
+        None of it derives from the client's code, so the egress guard need not scan it for client
+        identifiers (see ``EgressGuard.evaluate``). The header is the rule, CWE, sink family and
+        strategy lines, whose values ``PayloadFacts`` restricts to a closed vocabulary; the callee
+        summaries are not included, so they are scanned like the code.
+        """
+        template = _COMMENT.sub("", self._template.text, count=1)
+        pieces = re.split(r"\{\{BOUNDARY\}\}|\{\{FACTS\}\}|\{\{PAYLOAD\}\}", template)
+        schema = json.dumps(triage_schema(), sort_keys=True, separators=(",", ":"))
+        header = _facts_header(CandidateFacts.from_payload(payload))
+        return (*(piece for piece in pieces if piece.strip()), schema, header)

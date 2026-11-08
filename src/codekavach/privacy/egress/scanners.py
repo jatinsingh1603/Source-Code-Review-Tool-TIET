@@ -183,12 +183,20 @@ class OriginalMatcher:
     matched against the distinct runs of the text and the result is multiplied by how often each
     run occurs. A pattern with spaces or punctuation is matched against the whole text. There is
     no method that returns a pattern, and the object never persists.
+
+    ``public_run`` says that a whole run of word characters is a published API name (``connect``,
+    ``jsonify``). The pseudonymiser leaves such a name in clear on purpose, so it is not searched:
+    an original such as ``conn`` would otherwise match inside ``connect`` and block every request
+    that calls it. Only a run that is exactly a public name is skipped; ``my_connect`` is not.
     """
 
-    __slots__ = ("_other", "_words")
+    __slots__ = ("_other", "_public_run", "_words")
     __ck_never_persist__ = True
 
-    def __init__(self, patterns: Iterable[str]) -> None:
+    def __init__(
+        self, patterns: Iterable[str], *, public_run: Callable[[str], bool] | None = None
+    ) -> None:
+        self._public_run = public_run
         words: list[str] = []
         other: list[str] = []
         for pattern in dict.fromkeys(patterns):
@@ -214,6 +222,8 @@ class OriginalMatcher:
                 else:
                     seen[0] += 1
             for run, (times, position) in runs.items():
+                if self._public_run is not None and self._public_run(run):
+                    continue
                 for start, _end, _index in self._words.finditer(run):
                     count += times
                     if first < 0 or position + start < first:
@@ -298,7 +308,12 @@ class VaultOriginalScanner:
                     folded = normalise(original)
                     if len(folded) >= MIN_ORIGINAL_LENGTH:
                         patterns[folded] = None
-            self._matcher = OriginalMatcher(patterns)
+            folded_members = frozenset(member.casefold() for member in members)
+
+            def public_run(run: str) -> bool:
+                return run in folded_members or any(item.is_public(run) for item in lists)
+
+            self._matcher = OriginalMatcher(patterns, public_run=public_run)
             self._signature = signature
             patterns.clear()
             _log.info(

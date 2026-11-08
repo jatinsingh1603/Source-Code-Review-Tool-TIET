@@ -156,7 +156,14 @@ def test_record_locality_lists_every_package() -> None:
         for entry in (source / "privacy").iterdir()
         if (entry.is_dir() and (entry / "__init__.py").is_file()) or entry.suffix == ".py"
     } - {"codekavach.privacy.__init__"}
-    exempt = {"codekavach.privacy", "codekavach.privacy.vault", "codekavach.privacy.restore"}
+    # privacy.stages is the composition point: it opens the vault for the prepare stage and builds
+    # the egress session for llm-review, which cannot import the vault itself (E13-02).
+    exempt = {
+        "codekavach.privacy",
+        "codekavach.privacy.vault",
+        "codekavach.privacy.restore",
+        "codekavach.privacy.stages",
+    }
     parser = configparser.ConfigParser()
     parser.read(CONFIG, encoding="utf-8")
     listed = set(

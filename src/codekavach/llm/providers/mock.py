@@ -13,9 +13,9 @@ answer is a pure function of the payload hash and the candidate's CWE, so a test
 * ``reasoning`` is one fixed sentence naming the first 12 digits of the payload hash;
 * ``needs_context`` is empty, and ``impact`` and ``remediation`` are fixed sentences.
 
-The request carries a ``metadata`` object with the payload hash and CWE so that ``respond`` needs
-nothing but the request. Both are already in the body (the hash is the ledger's key) and neither
-is client text.
+The request carries a ``metadata`` object with the CWE list, and ``respond`` reads the payload hash
+from the request itself. The hash is not put into the body: a 64-digit hexadecimal string is what
+the secret scanners look for, and the guard would rightly block a request that carried one.
 """
 
 import json
@@ -73,7 +73,7 @@ class MockProvider:
             schema=task.output_schema(),
             temperature=0.0,
             max_tokens=1024,
-            extra={"metadata": {"payload_hash": payload.payload_hash, "cwe": list(facts.cwe)}},
+            extra={"metadata": {"cwe": list(facts.cwe)}},
         )
         return PreparedRequest(
             provider=self.id,
@@ -93,9 +93,7 @@ class MockProvider:
         """The mock's answer to ``request``, computed from the metadata it carries."""
         try:
             metadata = json.loads(request.body)["metadata"]
-            verdict = verdict_for(
-                str(metadata["payload_hash"]), tuple(int(c) for c in metadata["cwe"])
-            )
+            verdict = verdict_for(request.payload_hash, tuple(int(c) for c in metadata["cwe"]))
         except (KeyError, TypeError, ValueError):
             raise ProviderError("mock_request_malformed") from None
         body = json.dumps({"content": verdict.model_dump(mode="json", exclude={"schema_version"})})

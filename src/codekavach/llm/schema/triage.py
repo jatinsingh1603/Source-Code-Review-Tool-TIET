@@ -14,6 +14,8 @@ every property required and no additional properties, which ``llm_output_schema`
 guarantees.
 """
 
+import copy
+from functools import cache
 from typing import Any, Final
 
 from codekavach.core.models.verdict import LLMVerdict
@@ -33,9 +35,18 @@ def _reordered(schema: dict[str, object]) -> dict[str, object]:
     return schema_out
 
 
+@cache
+def _built() -> dict[str, object]:
+    """The schema is a function of the model alone; building it costs milliseconds per request."""
+    return _reordered(LLMVerdict.llm_output_schema())
+
+
 def triage_schema(*, strict: bool = False) -> dict[str, object]:
-    """The JSON Schema of a triage answer; with ``strict`` the strict-mode envelope around it."""
-    schema = _reordered(LLMVerdict.llm_output_schema())
+    """The JSON Schema of a triage answer; with ``strict`` the strict-mode envelope around it.
+
+    Every call returns a copy, so a caller may change what it gets without affecting the next one.
+    """
+    schema = copy.deepcopy(_built())
     if strict:
         return {"name": SCHEMA_NAME, "strict": True, "schema": schema}
     return schema

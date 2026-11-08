@@ -218,7 +218,8 @@ allow_indirect_imports = True
 [importlinter:contract:vault-record-locality]
 name = Only the vault and the restore engine import MappingRecord (I3)
 type = forbidden
-# Every package except privacy.vault and privacy.restore is listed: import-linter does not check
+# Every package except privacy.vault, privacy.restore and privacy.stages (the composition point
+# that opens the vault for the prepare stage and builds the egress session) is listed: import-linter does not check
 # a source that is the root of the forbidden module. tests/privacy/test_import_contracts.py fails
 # when a package is added and not listed here.
 source_modules =

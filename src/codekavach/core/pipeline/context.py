@@ -63,6 +63,7 @@ class RunContext:
     manifest_provider: "Callable[[], ScanManifest] | None" = None
     stage: str | None = None
     consent: ConsentDecision | None = None
+    no_send: bool = False
     memo: ItemMemo = field(default_factory=NullMemo)
 
     def for_stage(

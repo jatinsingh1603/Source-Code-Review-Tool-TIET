@@ -1,0 +1,315 @@
+"""KavachBank through ingest, parse, analyse, aggregate, privacy-prepare and llm-review (E13-02).
+
+The mock provider answers, sockets are refused, and the checks are the ones the issue names: one
+request per candidate, a ledger entry per request, no raw text in a payload, ``--no-send`` writes
+``not_sent_dry_run`` entries and no verdict, and a candidate that fails is isolated from the rest.
+"""
+
+import shutil
+import socket
+from collections import Counter
+from collections.abc import Iterator
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+import pytest
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
+from pydantic import BaseModel
+
+from codekavach.config import load_settings
+from codekavach.core.models import Candidate, ScanStatus
+from codekavach.core.models.enums import EgressOutcome
+from codekavach.core.models.payload import SanitisedPayload
+from codekavach.core.models.slice import CodeSlice
+from codekavach.core.models.verdict import CandidateVerdict
+from codekavach.core.pipeline import keys
+from codekavach.core.pipeline.context import RunContext
+from codekavach.core.pipeline.runner import ScanOutcome, run_scan
+from codekavach.core.pipeline.salt import ScanSalt
+from codekavach.core.store.artefacts import OnDiskArtefactStore
+from codekavach.core.store.layout import StateLayout
+from codekavach.privacy.egress.guard import EgressGuard
+from codekavach.privacy.egress.ledger import open_reader
+from codekavach.privacy.egress.models import EgressDecision
+from codekavach.privacy.errors import PseudonymError, RedactionError
+from codekavach.privacy.pseudonymise.engine import Pseudonymiser
+from codekavach.privacy.redact.redactor import Redactor
+from codekavach.privacy.stages import PrivacyPrepareStage
+from tests.support.ingest import SALT_HEX, stages_registry
+from tests.support.kavachbank import FIXTURE_ROOT
+
+STAGES = (
+    "ingest",
+    "parse",
+    "analyse-rules",
+    "aggregate",
+    "privacy-prepare",
+    "llm-review",
+)
+PASSPHRASE_VARIABLE = "CK_TEST_VAULT_PASSPHRASE"
+ENV = {
+    "CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE": "passphrase",
+    "CODEKAVACH_PRIVACY__VAULT__PASSPHRASE": f"env:{PASSPHRASE_VARIABLE}",
+}
+
+
+@pytest.fixture(autouse=True)
+def no_sockets(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Any attempt to open a connection fails the test (the mock opens none)."""
+
+    def refuse(*args: object, **kwargs: object) -> None:
+        raise AssertionError("a socket was opened")
+
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+    yield
+
+
+def copy_fixture(into: Path) -> Path:
+    root = into / "kavachbank"
+    shutil.copytree(FIXTURE_ROOT, root)
+    (root / ".git").mkdir()
+    return root
+
+
+def scan(
+    root: Path,
+    *,
+    no_send: bool = False,
+    home: str = "home",
+    overrides: dict[str, object] | None = None,
+    env: dict[str, str] | None = None,
+) -> ScanOutcome:
+    loaded = load_settings(
+        target=root,
+        env={"CODEKAVACH_HOME": str(root.parent / home), **ENV, **(env or {})},
+        cli_overrides=overrides,
+    )
+    return run_scan(
+        loaded,
+        str(root),
+        salt=ScanSalt.from_hex(SALT_HEX),
+        registry=stages_registry(*STAGES),
+        persist=False,
+        no_send=no_send,
+    )
+
+
+def store_of(outcome: ScanOutcome) -> OnDiskArtefactStore:
+    return OnDiskArtefactStore.open_existing(StateLayout(outcome.state_dir), outcome.scan.id)
+
+
+@dataclass
+class Run:
+    """A finished scan and the in-memory artefacts that are gone once it ends."""
+
+    outcome: ScanOutcome
+    payloads: list[SanitisedPayload] = field(default_factory=list)
+    slices: list[CodeSlice] = field(default_factory=list)
+    candidates: list[Candidate] = field(default_factory=list)
+    verdicts: list[CandidateVerdict] = field(default_factory=list)
+    ledger: list[Any] = field(default_factory=list)
+
+
+def run_and_capture(
+    root: Path,
+    *,
+    no_send: bool = False,
+    home: str = "home",
+    overrides: dict[str, object] | None = None,
+    env: dict[str, str] | None = None,
+) -> Run:
+    """Scan ``root``; payloads and slices are transient, so a spy on the stage keeps them."""
+    captured = Run(outcome=None)  # type: ignore[arg-type]
+    original = PrivacyPrepareStage.run
+
+    def spy(self: PrivacyPrepareStage, ctx: RunContext) -> None:
+        original(self, ctx)
+        payloads = ctx.artefacts.get_object(keys.PAYLOADS_SANITISED)
+        slices = ctx.artefacts.get_object(keys.SLICES)
+        assert isinstance(payloads, list) and isinstance(slices, list)
+        captured.payloads, captured.slices = list(payloads), list(slices)
+        captured.candidates = ctx.artefacts.get_list(keys.CANDIDATES, Candidate)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(PrivacyPrepareStage, "run", spy)
+        captured.outcome = scan(root, no_send=no_send, home=home, overrides=overrides, env=env)
+    # Read now: a later scan in the same project replaces the stored records of this one.
+    captured.verdicts = read(captured.outcome, keys.VERDICTS_RAW, CandidateVerdict)
+    captured.ledger = ledger_of(captured.outcome)
+    return captured
+
+
+def read[Model: BaseModel](outcome: ScanOutcome, key: str, model: type[Model]) -> list[Model]:
+    return store_of(outcome).get_list(key, model)
+
+
+def ledger_of(outcome: ScanOutcome) -> list[object]:
+    return list(open_reader(StateLayout(outcome.state_dir)).records(outcome.scan.id))
+
+
+@pytest.fixture(scope="module", autouse=True)
+def vault_passphrase() -> Iterator[None]:
+    """A synthetic passphrase, so the vault and the ledger open without a keyring."""
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv(PASSPHRASE_VARIABLE, "synthetic passphrase for tests only")
+        yield
+
+
+@pytest.fixture(scope="module")
+def root(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return copy_fixture(tmp_path_factory.mktemp("privacy-pipeline"))
+
+
+@pytest.fixture(scope="module")
+def sent(root: Path) -> Run:
+    return run_and_capture(root)
+
+
+def test_the_six_stages_complete_on_the_mock_provider(sent: Run) -> None:
+    assert sent.outcome.scan.status in {ScanStatus.COMPLETED, ScanStatus.COMPLETED_WITH_ERRORS}
+    assert [run.stage for run in sent.outcome.result.stage_runs] == list(STAGES)
+
+
+def test_every_candidate_is_either_a_payload_or_a_failed_item(sent: Run) -> None:
+    candidates = sent.candidates
+    failed = {
+        failure.item_id
+        for failure in sent.outcome.result.item_failures
+        if failure.stage == "privacy-prepare"
+    }
+    ids = {str(payload.candidate_id) for payload in sent.payloads}
+    assert ids.isdisjoint(failed)
+    assert ids | failed == {str(candidate.id) for candidate in candidates}
+    assert sent.payloads
+
+
+def test_one_request_per_payload_is_sent_and_completed(sent: Run) -> None:
+    outcomes = Counter(record.outcome for record in sent.ledger)
+    assert outcomes[EgressOutcome.SENT] == len(sent.payloads)
+    assert outcomes[EgressOutcome.COMPLETED] == len(sent.payloads)
+    assert outcomes[EgressOutcome.BLOCKED] == 0
+
+
+def test_every_sent_payload_has_a_raw_verdict(sent: Run) -> None:
+    verdicts = sent.verdicts
+    assert {str(v.candidate_id) for v in verdicts} == {str(p.candidate_id) for p in sent.payloads}
+
+
+def test_payloads_carry_facts_and_a_matching_slice(sent: Run) -> None:
+    assert len(sent.slices) == len(sent.payloads)
+    assert {s.candidate_id for s in sent.slices} == {p.candidate_id for p in sent.payloads}
+    for payload in sent.payloads:
+        assert payload.facts is not None and payload.facts.rule
+        assert payload.facts.strategy == "enclosing_function"
+
+
+def test_no_send_writes_dry_run_entries_and_no_verdicts(root: Path) -> None:
+    run = run_and_capture(root, no_send=True, home="home-dry")
+    outcomes = Counter(record.outcome for record in run.ledger)
+    assert outcomes[EgressOutcome.NOT_SENT_DRY_RUN] == len(run.payloads) > 0
+    assert outcomes[EgressOutcome.SENT] == 0
+    assert run.verdicts == []
+
+
+# --- isolation, policy and the fail-closed paths -----------------------------------------------
+
+
+def failures_of(outcome: ScanOutcome, stage: str) -> dict[str, str]:
+    return {f.item_id: f.error_code for f in outcome.result.item_failures if f.stage == stage}
+
+
+def test_a_never_send_path_has_no_payload_and_is_not_a_failure(root: Path, sent: Run) -> None:
+    candidates = sent.candidates
+    path = candidates[0].locations[0].path
+    run = run_and_capture(root, home="home-never", overrides={"privacy": {"never_send": [path]}})
+    withheld = {str(c.id) for c in candidates if c.locations[0].path == path}
+    ids = {str(p.candidate_id) for p in run.payloads}
+    assert withheld and ids.isdisjoint(withheld)
+    assert withheld.isdisjoint(failures_of(run.outcome, "privacy-prepare"))
+    assert ids  # the other files are still prepared
+
+
+def test_a_failing_redaction_fails_that_candidate_only_and_leaks_no_raw_text(
+    root: Path, sent: Run, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = Redactor.redact
+    calls = {"count": 0}
+
+    def flaky(self: Redactor, *args: Any, **kwargs: Any) -> Any:
+        calls["count"] += 1
+        if calls["count"] == 2:
+            raise RedactionError("injected")
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(Redactor, "redact", flaky)
+    run = run_and_capture(root, home="home-fault")
+    failed = failures_of(run.outcome, "privacy-prepare")
+    assert list(failed.values()) == ["privacy_redaction_failed"]
+    ids = {str(p.candidate_id) for p in run.payloads}
+    assert len(ids) == len(sent.payloads) - 1 and ids.isdisjoint(failed)
+    raw = {segment.text.expose() for s in run.slices for segment in s.segments}
+    assert all(p.text.expose() not in raw for p in run.payloads)
+
+
+def test_a_failing_pseudonymisation_is_reported_with_its_own_code(
+    root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(self: Pseudonymiser, *args: Any, **kwargs: Any) -> Any:
+        raise PseudonymError("injected")
+
+    monkeypatch.setattr(Pseudonymiser, "process", broken)
+    run = run_and_capture(root, home="home-pseudo")
+    assert run.payloads == []
+    assert set(failures_of(run.outcome, "privacy-prepare").values()) == {
+        "privacy_pseudonymise_failed"
+    }
+    assert run.verdicts == []
+
+
+def test_a_request_the_guard_blocks_is_ledgered_and_the_scan_goes_on(
+    root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = EgressGuard.evaluate
+    calls = {"count": 0}
+
+    def block_second(self: EgressGuard, *args: Any, **kwargs: Any) -> EgressDecision:
+        calls["count"] += 1
+        if calls["count"] == 2:
+            return EgressDecision(allowed=False, block_code="residual_secret")
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(EgressGuard, "evaluate", block_second)
+    run = run_and_capture(root, home="home-block")
+    records = run.ledger
+    outcomes = Counter(record.outcome for record in records)
+    total = len(run.payloads)
+    assert outcomes[EgressOutcome.BLOCKED] == 1
+    assert outcomes[EgressOutcome.SENT] == total - 1 == outcomes[EgressOutcome.COMPLETED]
+    blocked = next(r for r in records if r.outcome is EgressOutcome.BLOCKED)
+    assert blocked.block_code == "residual_secret"
+    assert list(failures_of(run.outcome, "llm-review").values()) == ["egress_blocked"]
+    assert len(run.verdicts) == total - 1
+
+
+def test_a_disabled_llm_path_runs_neither_new_stage_and_writes_no_ledger(root: Path) -> None:
+    outcome = scan(root, home="home-off", env={"CODEKAVACH_LLM__ENABLED": "false"})
+    ran = [run.stage for run in outcome.result.stage_runs]
+    assert "privacy-prepare" not in ran and "llm-review" not in ran
+
+
+@settings(max_examples=4, deadline=None, suppress_health_check=list(HealthCheck))
+@given(data=st.data())
+def test_payloads_plus_failed_items_equal_the_candidates_that_may_leave(
+    data: st.DataObject, root: Path, sent: Run
+) -> None:
+    candidates = sent.candidates
+    paths = sorted({c.locations[0].path for c in candidates})
+    held = data.draw(st.lists(st.sampled_from(paths), unique=True, max_size=len(paths) - 1))
+    run = run_and_capture(root, home="home-prop", overrides={"privacy": {"never_send": held}})
+    allowed = {str(c.id) for c in run.candidates if c.locations[0].path not in held}
+    ids = {str(p.candidate_id) for p in run.payloads}
+    failed = set(failures_of(run.outcome, "privacy-prepare"))
+    assert ids.isdisjoint(failed)
+    assert ids | failed == allowed
