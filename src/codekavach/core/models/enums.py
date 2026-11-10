@@ -257,6 +257,20 @@ class SliceStrategy(StrEnum):
     ENCLOSING_FUNCTION = "enclosing_function"
     TAINT_PATH = "taint_path"
     BACKWARD_SLICE = "backward_slice"
+    SINK_WINDOW = "sink_window"
+    FORWARD_SLICE = "forward_slice"
+    HOTSPOT = "hotspot"
+
+
+class SlicePurpose(StrEnum):
+    """What a slice is for: triage of a deterministic candidate, or discovery over a hotspot.
+
+    Discovery slices are budgeted and reported apart from triage results because their precision
+    is lower (docs/research/INSIGHTS.md section 2.2 item 2).
+    """
+
+    TRIAGE = "triage"
+    DISCOVER = "discover"
 
 
 class CandidateKind(StrEnum):

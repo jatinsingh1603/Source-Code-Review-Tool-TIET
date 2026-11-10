@@ -1,0 +1,15 @@
+status: slice
+strategy: hotspot
+purpose: discover
+fallback: None
+recall: None
+truncated: False
+tokens: 36
+---
+# file_1
+import hashlib
+
+
+def digest(password):
+    salt = "s"
+    return hashlib.md5((salt + password).encode()).hexdigest()

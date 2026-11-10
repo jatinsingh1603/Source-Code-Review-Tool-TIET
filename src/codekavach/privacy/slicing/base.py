@@ -61,6 +61,18 @@ class SlicingError(Exception):
         super().__init__(reason)
 
 
+class NotApplicableError(SlicingError):
+    """The strategy has no input for this candidate; a selector may try a weaker one.
+
+    As a ``SlicingError`` its ``reason`` is ``no_enclosing_code`` (nothing was cut). ``fallback``
+    says what was missing, from the closed vocabulary of ``CodeSlice.fallback_reason``.
+    """
+
+    def __init__(self, fallback: str) -> None:
+        super().__init__("no_enclosing_code")
+        self.fallback = fallback
+
+
 class Slicer(Protocol):
     """One way of cutting a slice (the ``SliceStrategy`` of the M1 interface contract).
 

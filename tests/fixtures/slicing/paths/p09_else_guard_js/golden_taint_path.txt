@@ -1,0 +1,23 @@
+status: slice
+strategy: taint_path
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=2 defuse_included=2
+truncated: False
+tokens: 83
+---
+// file_1
+function remove(req, db) {
+  const ident = req.query.id;
+  if (req.user.admin) {
+    log("admin");
+  } else {
+    return null;
+  }
+  db.query("DELETE FROM t WHERE id = " + ident);
+// ... elided ...
+}
+
+// unresolved
+function log(...args) {}
+// effects unknown; derived: syntactic

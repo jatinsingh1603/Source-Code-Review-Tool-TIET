@@ -1,0 +1,14 @@
+status: slice
+strategy: enclosing_function
+purpose: triage
+fallback: None
+recall: None
+truncated: False
+tokens: 40
+---
+# file_1
+def clean(req):
+    value = req.args["v"]
+    value = "safe"
+    value = value + req.args["w"]
+    cur.execute("SELECT " + value)

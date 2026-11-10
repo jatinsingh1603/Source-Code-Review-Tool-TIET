@@ -1,0 +1,27 @@
+{
+  "sink": [
+    "core/store.py",
+    3
+  ],
+  "source": [
+    "web/views.py",
+    5
+  ],
+  "between": [
+    [
+      "web/views.py",
+      6
+    ]
+  ],
+  "budget": 2048,
+  "never_send": [],
+  "callee_depth": 1,
+  "hotspot": false,
+  "strategies": [
+    "taint_path",
+    "backward_slice",
+    "forward_slice",
+    "sink_window",
+    "enclosing_function"
+  ]
+}

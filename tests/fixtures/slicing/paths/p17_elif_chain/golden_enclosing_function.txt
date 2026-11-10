@@ -1,0 +1,18 @@
+status: slice
+strategy: enclosing_function
+purpose: triage
+fallback: None
+recall: None
+truncated: False
+tokens: 68
+---
+# file_1
+def route(req, db):
+    kind = req.args["kind"]
+    value = req.args["value"]
+    if kind == "a":
+        db.execute("A " + value)
+    elif kind == "b":
+        db.execute("B " + value)
+    else:
+        raise ValueError(kind)

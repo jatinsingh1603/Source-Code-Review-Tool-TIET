@@ -1,0 +1,14 @@
+status: slice
+strategy: taint_path
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=0 defuse_included=0
+truncated: False
+tokens: 25
+---
+# file_1
+import os
+
+target = os.environ["TARGET"]
+# ... elided ...
+os.system(command)

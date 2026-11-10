@@ -1,0 +1,16 @@
+status: slice
+strategy: hotspot
+purpose: discover
+fallback: None
+recall: None
+truncated: False
+tokens: 36
+---
+# file_1
+import pickle
+
+
+def restore(blob):
+    header = blob[:4]
+    data = pickle.loads(blob[4:])
+    return header, data

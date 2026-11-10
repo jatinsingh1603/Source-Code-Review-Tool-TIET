@@ -1,0 +1,14 @@
+status: slice
+strategy: taint_path
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=2 defuse_included=2
+truncated: False
+tokens: 37
+---
+# file_1
+def outer(req):
+    prefix = req.args["p"]
+
+    def inner(name):
+        return cur.execute("SELECT " + prefix + name)

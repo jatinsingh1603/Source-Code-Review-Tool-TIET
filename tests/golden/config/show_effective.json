@@ -119,6 +119,8 @@
       "slice": {
         "default_strategy": "enclosing_function",
         "max_tokens": 2048,
+        "defuse_depth": 20,
+        "callee_depth": 1,
         "max_needs_context_rounds": 2
       }
     },
@@ -839,7 +841,19 @@
       "line": null,
       "contributors": []
     },
+    "privacy.slice.callee_depth": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
     "privacy.slice.default_strategy": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.slice.defuse_depth": {
       "layer": "default",
       "source": null,
       "line": null,

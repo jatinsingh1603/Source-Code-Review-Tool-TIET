@@ -1,0 +1,15 @@
+status: slice
+strategy: hotspot
+purpose: discover
+fallback: None
+recall: None
+truncated: False
+tokens: 40
+---
+# file_1
+from flask import render_template_string
+
+
+def page(name):
+    html = "<p>" + name + "</p>"
+    return render_template_string(html)

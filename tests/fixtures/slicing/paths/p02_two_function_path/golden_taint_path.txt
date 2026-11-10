@@ -1,0 +1,18 @@
+status: slice
+strategy: taint_path
+purpose: triage
+fallback: None
+recall: path_steps_total=3 path_steps_included=3 defuse_found=3 defuse_included=3
+truncated: False
+tokens: 58
+---
+# file_1
+def handler(req):
+    name = req.args["name"]
+# ... elided ...
+    return lookup(name)
+
+
+def lookup(term):
+    sql = "SELECT * FROM users WHERE name = '" + term + "'"
+    return cur.execute(sql)

@@ -1,0 +1,22 @@
+status: slice
+strategy: hotspot
+purpose: discover
+fallback: None
+recall: None
+truncated: False
+tokens: 98
+---
+# file_1
+def edit(req, doc):
+    title = req.args["title"]
+    if not has_permission(req.user, doc):
+        raise Forbidden()
+    doc.title = title
+    return doc
+
+# unresolved
+def Forbidden(*args, **kwargs): ...
+# effects unknown; derived: syntactic
+# unresolved
+def has_permission(*args, **kwargs): ...
+# effects unknown; derived: syntactic

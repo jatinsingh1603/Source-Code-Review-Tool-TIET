@@ -1,0 +1,15 @@
+status: slice
+strategy: backward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=2 defuse_included=2
+truncated: False
+tokens: 48
+---
+# file_1
+def fetch(req):
+    ident = req.args["id"]
+    if ident is None:
+        return None
+# ... elided ...
+    cur.execute("SELECT * FROM t WHERE id = " + ident)

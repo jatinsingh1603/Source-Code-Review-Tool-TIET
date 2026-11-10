@@ -1,0 +1,13 @@
+status: slice
+strategy: enclosing_function
+purpose: triage
+fallback: None
+recall: None
+truncated: False
+tokens: 34
+---
+# file_1
+def outer(req):
+# ... elided ...
+    def inner(name):
+        return cur.execute("SELECT " + prefix + name)

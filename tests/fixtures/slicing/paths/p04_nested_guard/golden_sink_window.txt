@@ -1,0 +1,15 @@
+status: slice
+strategy: sink_window
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=0 defuse_included=0
+truncated: False
+tokens: 51
+---
+# file_1
+def update(req, db):
+    ident = req.args["id"]
+    if req.user.is_staff:
+        if ident:
+            db.execute("DELETE FROM t WHERE id = " + ident)
+    return None

@@ -1,0 +1,14 @@
+status: slice
+strategy: enclosing_function
+purpose: triage
+fallback: None
+recall: None
+truncated: False
+tokens: 27
+---
+# file_1
+import os
+
+target = os.environ["TARGET"]
+command = "ls " + target
+os.system(command)

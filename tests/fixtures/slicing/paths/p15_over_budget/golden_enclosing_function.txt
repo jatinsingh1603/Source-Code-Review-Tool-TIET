@@ -1,0 +1,12 @@
+status: slice
+strategy: enclosing_function
+purpose: triage
+fallback: None
+recall: None
+truncated: True
+tokens: 21
+---
+# file_1
+def big(req):
+# ... elided ...
+    cur.execute("SELECT " + a8)

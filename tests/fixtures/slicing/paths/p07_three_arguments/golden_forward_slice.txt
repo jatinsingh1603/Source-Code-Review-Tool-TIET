@@ -1,0 +1,14 @@
+status: slice
+strategy: forward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=1 defuse_included=1
+truncated: False
+tokens: 51
+---
+# file_1
+def build(req, config):
+# ... elided ...
+    column = req.args["column"]
+# ... elided ...
+    cur.execute("SELECT " + column + " FROM " + table + " LIMIT %s", (limit,))

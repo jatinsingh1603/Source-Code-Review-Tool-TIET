@@ -1,0 +1,13 @@
+status: slice
+strategy: forward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=0 defuse_included=0
+truncated: False
+tokens: 30
+---
+# file_1
+def clean(req):
+    value = req.args["v"]
+# ... elided ...
+    cur.execute("SELECT " + value)

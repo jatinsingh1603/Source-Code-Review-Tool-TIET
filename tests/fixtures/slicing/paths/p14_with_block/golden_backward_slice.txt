@@ -1,0 +1,13 @@
+status: slice
+strategy: backward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=3 defuse_included=3
+truncated: False
+tokens: 33
+---
+# file_1
+def save(req):
+    target = req.args["t"]
+    with open(target, "w") as out:
+        out.write(req.data)

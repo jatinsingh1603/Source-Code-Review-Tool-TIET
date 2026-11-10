@@ -1,0 +1,14 @@
+status: slice
+strategy: enclosing_function
+purpose: triage
+fallback: None
+recall: None
+truncated: False
+tokens: 53
+---
+# file_1
+def build(req, config):
+    table = config.table
+    column = req.args["column"]
+    limit = 10
+    cur.execute("SELECT " + column + " FROM " + table + " LIMIT %s", (limit,))

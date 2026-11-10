@@ -169,6 +169,10 @@ level = "L3"
 # default_strategy = "enclosing_function"
 #~ Token budget of one slice, estimated locally (about 3.5 characters per token). A slice that cannot fit is shrunk in a fixed order and, failing that, refused.
 # max_tokens = 2048
+#~ How many def-use steps the backward and forward strategies follow from the sink or the source. A longer chain is cut at the cap, and the slice records that it was.
+# defuse_depth = 20
+#~ How many function hops of a taint path beyond the candidate's own function are cut as code. Each extra function is a disclosure decision; beyond the cap the function is a signature stub. 0 sends only the candidate's function.
+# callee_depth = 1
 #~ How many times the model may ask for one more definition for a single candidate. Each round discloses more code, is counted against the aggregation budget and is recorded in the ledger. 0 turns the loop off.
 # max_needs_context_rounds = 2
 

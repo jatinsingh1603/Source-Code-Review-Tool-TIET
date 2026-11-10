@@ -166,7 +166,9 @@
     },
     "public_allowlist_extra": [],
     "slice": {
+      "callee_depth": 1,
       "default_strategy": "enclosing_function",
+      "defuse_depth": 20,
       "max_needs_context_rounds": 2,
       "max_tokens": 2048
     },

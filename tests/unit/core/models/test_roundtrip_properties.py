@@ -42,7 +42,7 @@ from codekavach.core.models.finding import Finding
 from codekavach.core.models.location import CodeRegion, Location
 from codekavach.core.models.payload import SanitisedPayload
 from codekavach.core.models.scan import Project, Scan
-from codekavach.core.models.slice import CodeSlice, SliceSegment
+from codekavach.core.models.slice import CodeSlice, SliceRecall, SliceSegment
 from codekavach.core.models.summary import EgressTotals, ScanSummary
 from codekavach.core.models.taint import TaintPath
 from codekavach.core.models.text import RawCode, SanitisedText
@@ -79,6 +79,17 @@ MODEL_STRATEGIES: dict[type[KavachModel], SearchStrategy[Any]] = {
     .filter(lambda evidence: evidence.highlights)
     .map(lambda evidence: evidence.highlights[0]),
     SliceSegment: s.code_slices().map(lambda code_slice: code_slice.segments[0]),
+    SliceRecall: st.integers(0, 50).flatmap(
+        lambda total: st.integers(0, 50).flatmap(
+            lambda found: st.builds(
+                SliceRecall,
+                path_steps_total=st.just(total),
+                path_steps_included=st.integers(0, total),
+                defuse_found=st.just(found),
+                defuse_included=st.integers(0, found),
+            )
+        )
+    ),
     LineMapEntry: s.sanitised_payloads()
     .filter(lambda payload: payload.line_map)
     .map(lambda payload: payload.line_map[0]),

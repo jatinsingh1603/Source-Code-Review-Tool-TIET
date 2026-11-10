@@ -1,0 +1,13 @@
+status: slice
+strategy: taint_path
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=2 defuse_included=2
+truncated: False
+tokens: 33
+---
+# file_1
+def save(req):
+    target = req.args["t"]
+    with open(target, "w") as out:
+        out.write(req.data)

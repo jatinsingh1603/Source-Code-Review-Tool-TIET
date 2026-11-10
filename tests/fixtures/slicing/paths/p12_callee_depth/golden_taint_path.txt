@@ -1,0 +1,22 @@
+status: slice
+strategy: taint_path
+purpose: triage
+fallback: None
+recall: path_steps_total=5 path_steps_included=2 defuse_found=2 defuse_included=2
+truncated: False
+tokens: 89
+---
+# file_1
+def second(b):
+    return third(b)
+
+
+def third(c):
+    cur.execute("SELECT " + c)
+
+# out_of_slice
+def entry(req): ...
+# returns value; param_0 flows to return; no sanitiser; derived: syntactic
+# out_of_slice
+def first(a): ...
+# returns value; param_0 flows to return; no sanitiser; derived: syntactic

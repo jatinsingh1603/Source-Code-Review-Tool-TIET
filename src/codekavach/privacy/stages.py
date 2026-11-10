@@ -5,7 +5,8 @@ Owning epic: E13. MVP; extended by E25, which adds the context rounds and the L4
 For every candidate the stage runs, in this order:
 
 1. the policy: a path covered by ``never_send`` (or a level of L0) produces no payload at all;
-2. the slice (``EnclosingFunctionStrategy``) under ``privacy.slice.max_tokens``;
+2. the slice (``StrategySelector``; by default the enclosing function) under
+   ``privacy.slice.max_tokens``;
 3. detection and redaction of secrets, personal data and domain terms;
 4. pseudonymisation and the structural checks of the engine, with one generator for the whole scan
    so that a name keeps its token in every payload;
@@ -70,7 +71,7 @@ from codekavach.privacy.slicing.base import SlicingError
 from codekavach.privacy.slicing.budget import SliceBudget
 from codekavach.privacy.slicing.index import ParseIndex
 from codekavach.privacy.slicing.metrics import ScanDisclosure
-from codekavach.privacy.slicing.strategies.enclosing import EnclosingFunctionStrategy
+from codekavach.privacy.slicing.select import StrategySelector
 from codekavach.privacy.slicing.stubs import is_valid_summary
 from codekavach.privacy.vault.errors import VaultError
 from codekavach.privacy.vault.keys import KeySource
@@ -320,7 +321,8 @@ class PrivacyPrepareStage:
         vault: Vault,
     ) -> _Outcome:
         try:
-            slice_ = EnclosingFunctionStrategy().build(candidate, index, budget=budget)
+            selector = StrategySelector.from_settings(ctx.config)
+            slice_ = selector.build(candidate, index, budget=budget)
         except (SlicingError, KeyError):
             raise _FailedError(SLICE_FAILED) from None
         try:

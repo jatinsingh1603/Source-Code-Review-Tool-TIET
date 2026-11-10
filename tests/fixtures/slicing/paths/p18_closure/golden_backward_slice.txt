@@ -1,0 +1,13 @@
+status: slice
+strategy: backward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=1 defuse_found=1 defuse_included=1
+truncated: False
+tokens: 34
+---
+# file_1
+def outer(req):
+# ... elided ...
+    def inner(name):
+        return cur.execute("SELECT " + prefix + name)

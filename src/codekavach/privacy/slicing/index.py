@@ -17,6 +17,8 @@ why vendored files are excluded and not merely deprioritised.
 from collections.abc import Callable, Mapping
 from typing import Any, Final
 
+from tree_sitter import Node
+
 from codekavach.config import Settings
 from codekavach.core.models import Location, RawCode, RepoPath
 from codekavach.ingest.models import SourceFile
@@ -25,6 +27,7 @@ from codekavach.parsing.models import ParsedFile
 from codekavach.parsing.spec import REGISTRY, UnknownLanguageError
 from codekavach.parsing.symbols import SymbolTable
 from codekavach.privacy.policy.resolve import PolicyResolver
+from codekavach.privacy.slicing.defuse import DefUseIndex
 
 NeverSend = Callable[[str], bool]
 _EMPTY_TABLE: Final = SymbolTable(scopes=(), symbols=())
@@ -58,6 +61,8 @@ class ParseIndex:
         self._callgraph = callgraph
         self._never_send: NeverSend = never_send or (lambda _path: False)
         self._ranges: dict[str, tuple[FunctionRange, ...]] = {}
+        self._defuse: dict[str, DefUseIndex] = {}
+        self._calls: dict[str, list[Node]] = {}
 
     @property
     def callgraph(self) -> Any:
@@ -96,6 +101,10 @@ class ParseIndex:
             return True, "minified"
         return False, ""
 
+    def has_parsed(self, path: str) -> bool:
+        """Whether the scan parsed ``path`` (an excluded or unsupported file may be unparsed)."""
+        return path in self._ast
+
     def parsed_of(self, path: str) -> ParsedFile:
         """The parsed file; ``KeyError`` when the scan did not parse it."""
         return self._ast[path]
@@ -119,6 +128,25 @@ class ParseIndex:
                 spec = None
             cached = function_ranges(parsed, spec)
             self._ranges[path] = cached
+        return cached
+
+    def calls_of(self, path: RepoPath, find: Callable[[Node], list[Node]]) -> list[Node]:
+        """Every call node of ``path`` in source order; ``find`` walks the tree once per file."""
+        cached = self._calls.get(path)
+        if cached is None:
+            tree = self._ast[path].tree
+            cached = [] if tree is None else find(tree.root_node)
+            self._calls[path] = cached
+        return cached
+
+    def defuse_of(self, path: RepoPath) -> DefUseIndex:
+        """The def-use index of ``path``, built once per file and cached (E11-03)."""
+        cached = self._defuse.get(path)
+        if cached is None:
+            cached = DefUseIndex(
+                self._ast[path], self.symbols_of(path), self.function_ranges_of(path)
+            )
+            self._defuse[path] = cached
         return cached
 
     def enclosing_function(self, location: Location) -> FunctionRange | None:

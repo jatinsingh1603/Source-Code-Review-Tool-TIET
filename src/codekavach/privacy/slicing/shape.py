@@ -19,6 +19,7 @@ from typing import Final
 from tree_sitter import Node
 
 from codekavach.core.models import Language
+from codekavach.parsing.functions import FunctionRange
 from codekavach.parsing.models import ParsedFile
 
 LIST_TYPES: Final = frozenset({"module", "block", "program", "statement_block", "class_body"})
@@ -139,6 +140,37 @@ def is_function_of(node: Node, start: int, header_start: int, end: int) -> bool:
     return (
         node.type in FUNCTION_TYPES and start <= first(node) <= header_start and last(node) == end
     )
+
+
+def function_node(file: ParsedFile, function: FunctionRange) -> Node | None:
+    """The tree node of ``function`` (the definition itself, without its decorators).
+
+    The smallest node covering the lines is usually the function or something inside it, so the
+    search climbs; for ``export function f`` it is the export statement around the function, so
+    the search then descends.
+    """
+    start, header, end = (
+        function.full.start_line,
+        function.header.start_line,
+        function.full.end_line,
+    )
+    found = node_for_lines(file, start, end)
+    node = found
+    while node is not None and not is_function_of(node, start, header, end):
+        node = node.parent
+    if node is not None or found is None:
+        return node
+    stack = [found]
+    while stack:
+        current = stack.pop()
+        if is_function_of(current, start, header, end):
+            return current
+        stack.extend(
+            child
+            for child in reversed(current.children)
+            if first(child) <= end and last(child) >= start
+        )
+    return None
 
 
 def body_of(node: Node) -> Node | None:

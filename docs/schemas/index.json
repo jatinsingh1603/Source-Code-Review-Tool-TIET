@@ -16,7 +16,7 @@
       "file": "code_slice.schema.json",
       "name": "CodeSlice",
       "schema_version": 1,
-      "sha256": "722885d27a027ef3355504015d552245f08765d24a8be6c39a15056ca49d6903"
+      "sha256": "0450c559319645de880c7641c200e80b7c5ead27502f73693060673b04d34b37"
     },
     {
       "file": "egress_record.schema.json",

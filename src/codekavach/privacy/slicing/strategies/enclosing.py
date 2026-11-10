@@ -26,7 +26,6 @@ used; the cut is undone, and if even the uncut slice does not parse the strategy
 """
 
 import hashlib
-from collections.abc import Callable
 from dataclasses import dataclass, replace
 
 from tree_sitter import Node
@@ -45,23 +44,28 @@ from codekavach.core.models import (
 )
 from codekavach.core.models.ids import SliceId, encode_ulid
 from codekavach.core.models.text import split_lines
-from codekavach.parsing import parse
 from codekavach.parsing.functions import FunctionRange
-from codekavach.parsing.models import TIMED_OUT, ParsedFile
-from codekavach.privacy.slicing.assemble import assemble, file_text, numbered_labels
+from codekavach.parsing.models import ParsedFile
+from codekavach.privacy.slicing.assemble import assemble, numbered_labels
 from codekavach.privacy.slicing.base import SlicingError
 from codekavach.privacy.slicing.budget import SliceBudget, estimate
+from codekavach.privacy.slicing.cutting import (
+    Range,
+    context_ranges,
+    imports_for,
+    is_coherent,
+    merge_ranges,
+    supported_language,
+    trim_blank,
+)
 from codekavach.privacy.slicing.index import ParseIndex
 from codekavach.privacy.slicing.shape import (
-    IMPORT_TYPES,
     SUPPORTED,
     Lines,
     body_of,
     closer_line,
-    first,
     is_function_of,
     kept_lines,
-    last,
     node_for_lines,
     runs,
     span,
@@ -103,22 +107,19 @@ class _Flags:
     refused: frozenset[int] = frozenset()
 
 
-@dataclass(frozen=True, slots=True)
-class _Range:
-    path: str
-    lines: Lines
-    kind: str  # "code", "context" or "imports"
-
-
 def _window_for(budget: SliceBudget) -> int:
     return max(_MIN_WINDOW, min(_MAX_WINDOW, budget.max_tokens // _TOKENS_PER_WINDOW_LINE))
 
 
-def slice_id_for(candidate: Candidate, segments: list[SliceSegment]) -> SliceId:
+def slice_id_for(
+    candidate: Candidate,
+    segments: list[SliceSegment],
+    strategy: SliceStrategy = SliceStrategy.ENCLOSING_FUNCTION,
+) -> SliceId:
     """A slice id derived from the candidate and the slice, so equal inputs give equal bytes."""
     digest = hashlib.sha256()
     digest.update(candidate.id.encode())
-    digest.update(SliceStrategy.ENCLOSING_FUNCTION.value.encode())
+    digest.update(strategy.value.encode())
     for segment in segments:
         digest.update(
             f"{segment.path}:{segment.region.start_line}:{segment.region.end_line}".encode()
@@ -137,20 +138,22 @@ class _Job:
     primary: Location
     language: Language
 
-    def ranges(self, flags: _Flags) -> list[_Range]:
-        ranges: list[_Range] = []
+    def ranges(self, flags: _Flags) -> list[Range]:
+        ranges: list[Range] = []
         taken: dict[str, list[Lines]] = {}
         for number, unit in enumerate(self.units):
             file = self.parsed.parsed_of(unit.path)
             for lines in _code(unit, flags, number, file.language):
-                ranges.append(_Range(unit.path, lines, "code"))
+                ranges.append(Range(unit.path, lines, "code"))
                 taken.setdefault(unit.path, []).append(lines)
             if unit.node is not None:
-                ranges.extend(_Range(unit.path, c, "context") for c in _context(file, unit.node))
+                ranges.extend(
+                    Range(unit.path, c, "context") for c in context_ranges(file, unit.node)
+                )
         if flags.imports:
             for path, lines_taken in taken.items():
                 ranges.extend(
-                    _Range(path, i, "imports") for i in _imports(self.parsed, path, lines_taken)
+                    Range(path, i, "imports") for i in imports_for(self.parsed, path, lines_taken)
                 )
         return ranges
 
@@ -160,11 +163,11 @@ class _Job:
         def lines_of(path: str) -> list[str]:
             return sources.setdefault(path, split_lines(self.parsed.source_of(path).expose()))
 
-        merged = _merge(self.ranges(flags), lines_of)
+        merged = merge_ranges(self.ranges(flags), lines_of)
         segments: list[SliceSegment] = []
         for path, lines_range, kinds in merged:
             lines = lines_of(path)
-            trimmed = _trim(lines, lines_range)
+            trimmed = trim_blank(lines, lines_range)
             if trimmed is None:
                 continue
             if path == self.primary.path and trimmed.contains(self.primary.start_line):
@@ -185,15 +188,7 @@ class _Job:
 
     def coherent(self, segments: list[SliceSegment]) -> bool:
         """Whether every file's slice parses with no more errors than the whole file has."""
-        if sum(1 for segment in segments if segment.role is SegmentRole.PRIMARY) != 1:
-            return False
-        for path in sorted({segment.path for segment in segments}):
-            baseline = max(self.parsed.parsed_of(path).error_count, 0)
-            text = file_text([s for s in segments if s.path == path], self.language)
-            result = parse(path, self.language, text)
-            if result.error_count == TIMED_OUT or result.error_count > baseline:
-                return False
-        return True
+        return is_coherent(self.parsed, segments, self.language)
 
     def shrink(self, flags: _Flags) -> _Flags | None:
         """The next state of the shrink table, or ``None`` when nothing is left to cut."""
@@ -232,7 +227,7 @@ class EnclosingFunctionStrategy:
         excluded, reason = parsed.is_excluded(primary.path)
         if excluded:
             raise SlicingError(reason)
-        language = _language(parsed, primary.path)
+        language = supported_language(parsed, primary.path)
         units = _units(parsed, candidate)
         job = _Job(parsed, units, primary, language)
         labels = numbered_labels(sorted({unit.path for unit in units}))
@@ -273,19 +268,6 @@ class EnclosingFunctionStrategy:
             if step is None:
                 raise SlicingError("over_budget")
             flags, truncated = step, True
-
-
-def _language(parsed: ParseIndex, path: str) -> Language:
-    try:
-        file = parsed.parsed_of(path)
-    except KeyError:
-        # The path passed the exclusion check, so the scan knows it; it just was not parsed.
-        raise SlicingError("unsupported_language") from None
-    if file.language not in SUPPORTED:
-        raise SlicingError("unsupported_language")
-    if file.tree is None:
-        raise SlicingError("not_coherent")
-    return file.language
 
 
 def _units(parsed: ParseIndex, candidate: Candidate) -> list[_Unit]:
@@ -381,85 +363,3 @@ def _elided(unit: _Unit, language: Language) -> list[Lines]:
                 kept.add(closing.start)
     inside = {line for line in kept if unit.anchor.contains(line)}
     return runs(inside) or [unit.anchor]
-
-
-def _context(file: ParsedFile, node: Node) -> list[Lines]:
-    """Header and closing lines of everything around ``node``, not ``node`` itself."""
-    if file.tree is None:
-        return []
-    own = set(range(first(node), max(first(node), last(node)) + 1))
-    keep = kept_lines(file.tree.root_node, node, file.language, signature=None)
-    return runs(keep - own)
-
-
-def _imports(parsed: ParseIndex, path: str, taken: list[Lines]) -> list[Lines]:
-    """Top-level import statements that bind a name used inside the taken ranges."""
-    file = parsed.parsed_of(path)
-    table = parsed.symbols_of(path)
-    if not table.imports:
-        return []
-    used = {
-        text
-        for location, text in file.identifiers()
-        if any(lines.contains(location.start_line) for lines in taken)
-    }
-    found: list[Lines] = []
-    for reference in table.imports:
-        if reference.bound is None or reference.bound not in used:
-            continue
-        node = node_for_lines(file, reference.location.start_line, reference.location.end_line)
-        statement = statement_of(node)
-        if (
-            statement is None
-            or statement.parent is None
-            or statement.parent.type not in {"module", "program"}
-            or statement.type not in IMPORT_TYPES
-        ):
-            continue
-        lines = span(statement)
-        if not any(_shares(lines, other) for other in taken):
-            found.append(lines)
-    return found
-
-
-def _shares(first_lines: Lines, second_lines: Lines) -> bool:
-    return first_lines.start <= second_lines.end and second_lines.start <= first_lines.end
-
-
-def _blank_between(lines: list[str], before: Lines, after: Lines) -> bool:
-    """Whether only blank lines separate ``before`` from ``after`` (so there is no real gap)."""
-    return all(
-        not lines[number - 1].strip()
-        for number in range(before.end + 1, after.start)
-        if 1 <= number <= len(lines)
-    )
-
-
-def _merge(
-    ranges: list[_Range], lines_of: Callable[[str], list[str]]
-) -> list[tuple[str, Lines, set[str]]]:
-    """Merge ranges of one file that overlap, touch or are separated by blank lines only."""
-    merged: list[tuple[str, Lines, set[str]]] = []
-    for item in sorted(ranges, key=lambda r: (r.path, r.lines.start, r.lines.end)):
-        if merged and merged[-1][0] == item.path:
-            path, lines, kinds = merged[-1]
-            if _blank_between(lines_of(path), lines, item.lines):
-                merged[-1] = (
-                    path,
-                    Lines(lines.start, max(lines.end, item.lines.end)),
-                    kinds | {item.kind},
-                )
-                continue
-        merged.append((item.path, item.lines, {item.kind}))
-    return merged
-
-
-def _trim(lines: list[str], span_lines: Lines) -> Lines | None:
-    """``span_lines`` without blank lines at either edge and inside the file; ``None`` if empty."""
-    start = max(1, span_lines.start)
-    end = min(len(lines), span_lines.end)
-    while start <= end and not lines[start - 1].strip():
-        start += 1
-    while end >= start and not lines[end - 1].strip():
-        end -= 1
-    return Lines(start, end) if start <= end else None

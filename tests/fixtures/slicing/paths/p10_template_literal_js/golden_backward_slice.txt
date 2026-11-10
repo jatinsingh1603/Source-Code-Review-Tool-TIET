@@ -1,0 +1,15 @@
+status: slice
+strategy: backward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=4 defuse_included=4
+truncated: False
+tokens: 53
+---
+// file_1
+function search(req, db) {
+  const term = req.query.q;
+  const limit = 20;
+  const sql = `SELECT * FROM items WHERE name = '${term}' LIMIT ${limit}`;
+  return db.query(sql);
+}

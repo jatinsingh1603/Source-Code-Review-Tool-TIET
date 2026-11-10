@@ -67,7 +67,14 @@ GOLDEN: dict[type[StrEnum], list[str]] = {
         "unknown",
     ],
     TaintRole: ["source", "propagator", "sanitiser", "sink"],
-    SliceStrategy: ["enclosing_function", "taint_path", "backward_slice"],
+    SliceStrategy: [
+        "enclosing_function",
+        "taint_path",
+        "backward_slice",
+        "sink_window",
+        "forward_slice",
+        "hotspot",
+    ],
     CandidateKind: ["vulnerability", "secret", "dependency", "misconfiguration", "hotspot"],
     ScanStatus: [
         "pending",

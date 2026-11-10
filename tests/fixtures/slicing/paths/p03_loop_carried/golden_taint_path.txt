@@ -1,0 +1,16 @@
+status: slice
+strategy: taint_path
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=3 defuse_included=3
+truncated: False
+tokens: 53
+---
+# file_1
+def report(rows):
+# ... elided ...
+    clause = ""
+    for row in rows:
+        clause = clause + row.filter
+# ... elided ...
+    cur.execute("SELECT * FROM t WHERE " + clause)

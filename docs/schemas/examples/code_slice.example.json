@@ -19,5 +19,8 @@
   ],
   "stubs": [],
   "token_estimate": 64,
-  "truncated": false
+  "truncated": false,
+  "purpose": "triage",
+  "fallback_reason": null,
+  "recall": null
 }

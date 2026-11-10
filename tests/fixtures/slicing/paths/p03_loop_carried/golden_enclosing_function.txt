@@ -1,0 +1,17 @@
+status: slice
+strategy: enclosing_function
+purpose: triage
+fallback: None
+recall: None
+truncated: False
+tokens: 60
+---
+# file_1
+def report(rows):
+    total = 0
+    clause = ""
+    for row in rows:
+        clause = clause + row.filter
+        total += row.amount
+    cur.execute("SELECT * FROM t WHERE " + clause)
+    return total

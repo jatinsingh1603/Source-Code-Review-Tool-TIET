@@ -1,0 +1,13 @@
+status: slice
+strategy: hotspot
+purpose: discover
+fallback: None
+recall: None
+truncated: False
+tokens: 38
+---
+# file_1
+def lookup(cur, ident):
+    query = "SELECT * FROM t WHERE id = " + ident
+    cur.execute(query)
+    return cur.fetchall()

@@ -1,0 +1,12 @@
+status: slice
+strategy: enclosing_function
+purpose: triage
+fallback: None
+recall: None
+truncated: False
+tokens: 24
+---
+# file_1
+def save(payload):
+    path = "/data/" + payload
+    return open(path, "w")

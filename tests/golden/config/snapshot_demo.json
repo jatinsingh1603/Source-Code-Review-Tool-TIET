@@ -1,7 +1,7 @@
 {
   "codekavach_version": "0.0.0-test",
   "created_at": "2026-10-01T09:30:00Z",
-  "fingerprint": "11847e01d6c584bed75aec236385d3046ff98da36da02106644a63debb82d4bf",
+  "fingerprint": "30b43c7037f35c5787b534c645f28ee4240c0236848d415eb290165a997c8acb",
   "org_policies": [],
   "origins": {
     "config_version": {
@@ -584,7 +584,19 @@
       "line": null,
       "source": null
     },
+    "privacy.slice.callee_depth": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
     "privacy.slice.default_strategy": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.slice.defuse_depth": {
       "contributors": [],
       "layer": "default",
       "line": null,
@@ -982,7 +994,9 @@
       },
       "public_allowlist_extra": [],
       "slice": {
+        "callee_depth": 1,
         "default_strategy": "enclosing_function",
+        "defuse_depth": 20,
         "max_needs_context_rounds": 2,
         "max_tokens": 2048
       },

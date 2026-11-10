@@ -1,0 +1,12 @@
+status: slice
+strategy: backward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=3 path_steps_included=1 defuse_found=2 defuse_included=2
+truncated: False
+tokens: 24
+---
+# file_1
+def save(payload):
+    path = "/data/" + payload
+    return open(path, "w")

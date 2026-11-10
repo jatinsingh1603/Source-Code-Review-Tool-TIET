@@ -1,0 +1,16 @@
+status: slice
+strategy: enclosing_function
+purpose: triage
+fallback: None
+recall: None
+truncated: False
+tokens: 47
+---
+# file_1
+def read(req):
+    name = req.args["f"]
+    try:
+        handle = open("/srv/" + name)
+        return handle.read()
+    except OSError:
+        return None

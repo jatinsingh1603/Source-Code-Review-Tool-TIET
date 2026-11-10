@@ -1,0 +1,33 @@
+{
+  "sink": [
+    "app/views.py",
+    12
+  ],
+  "source": [
+    "app/views.py",
+    5
+  ],
+  "between": [
+    [
+      "app/views.py",
+      6
+    ],
+    [
+      "secrets_store/keys.py",
+      2
+    ]
+  ],
+  "budget": 2048,
+  "never_send": [
+    "secrets_store/**"
+  ],
+  "callee_depth": 1,
+  "hotspot": false,
+  "strategies": [
+    "taint_path",
+    "backward_slice",
+    "forward_slice",
+    "sink_window",
+    "enclosing_function"
+  ]
+}

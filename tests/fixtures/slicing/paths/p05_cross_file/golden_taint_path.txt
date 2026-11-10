@@ -1,0 +1,20 @@
+status: slice
+strategy: taint_path
+purpose: triage
+fallback: None
+recall: path_steps_total=3 path_steps_included=3 defuse_found=3 defuse_included=3
+truncated: False
+tokens: 52
+---
+# file_1
+def save(payload):
+    path = "/data/" + payload
+    return open(path, "w")
+
+# file_2
+from core.store import save
+
+
+def post(req):
+    body = req.data
+    return save(body)

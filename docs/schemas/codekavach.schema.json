@@ -1663,16 +1663,35 @@
       "additionalProperties": false,
       "description": "How much code is cut out around a candidate (E11).\n\nBoth keys are restricted: a larger budget or a wider strategy discloses more code, so a\nproject file may not loosen them unless it is trusted.",
       "properties": {
+        "callee_depth": {
+          "default": 1,
+          "description": "How many function hops of a taint path beyond the candidate's own function are cut as code. Each extra function is a disclosure decision; beyond the cap the function is a signature stub. 0 sends only the candidate's function.",
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Callee Depth",
+          "type": "integer",
+          "x-ck-restricted": true
+        },
         "default_strategy": {
           "default": "enclosing_function",
           "description": "Slice strategy used when nothing more specific applies. The path-based strategies need a taint engine and fall back to the enclosing function without one.",
           "enum": [
             "enclosing_function",
             "taint_path",
-            "backward_slice"
+            "backward_slice",
+            "sink_window"
           ],
           "title": "Default Strategy",
           "type": "string",
+          "x-ck-restricted": true
+        },
+        "defuse_depth": {
+          "default": 20,
+          "description": "How many def-use steps the backward and forward strategies follow from the sink or the source. A longer chain is cut at the cap, and the slice records that it was.",
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Defuse Depth",
+          "type": "integer",
           "x-ck-restricted": true
         },
         "max_needs_context_rounds": {

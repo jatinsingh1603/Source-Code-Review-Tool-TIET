@@ -283,7 +283,9 @@ class SliceSettings(SectionModel):
     project file may not loosen them unless it is trusted.
     """
 
-    default_strategy: Literal["enclosing_function", "taint_path", "backward_slice"] = Field(
+    default_strategy: Literal[
+        "enclosing_function", "taint_path", "backward_slice", "sink_window"
+    ] = Field(
         default="enclosing_function",
         description=(
             "Slice strategy used when nothing more specific applies. The path-based strategies "
@@ -298,6 +300,23 @@ class SliceSettings(SectionModel):
             "A slice that cannot fit is shrunk in a fixed order and, failing that, refused."
         ),
         json_schema_extra=bounds(64, 200_000) | restricted(),
+    )
+    defuse_depth: Annotated[int, in_range(1, 100, "privacy.slice.defuse_depth")] = Field(
+        default=20,
+        description=(
+            "How many def-use steps the backward and forward strategies follow from the sink or "
+            "the source. A longer chain is cut at the cap, and the slice records that it was."
+        ),
+        json_schema_extra=bounds(1, 100) | restricted(),
+    )
+    callee_depth: Annotated[int, in_range(0, 3, "privacy.slice.callee_depth")] = Field(
+        default=1,
+        description=(
+            "How many function hops of a taint path beyond the candidate's own function are cut "
+            "as code. Each extra function is a disclosure decision; beyond the cap the function "
+            "is a signature stub. 0 sends only the candidate's function."
+        ),
+        json_schema_extra=bounds(0, 3) | restricted(),
     )
     max_needs_context_rounds: Annotated[
         int, in_range(0, 10, "privacy.slice.max_needs_context_rounds")

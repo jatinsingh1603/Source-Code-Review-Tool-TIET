@@ -1,0 +1,15 @@
+status: slice
+strategy: hotspot
+purpose: discover
+fallback: None
+recall: None
+truncated: False
+tokens: 36
+---
+// file_1
+const fs = require("fs");
+
+function read(name) {
+  const base = "/srv/";
+  return fs.readFileSync(base + name);
+}

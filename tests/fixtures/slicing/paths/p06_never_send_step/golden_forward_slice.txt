@@ -1,0 +1,23 @@
+status: slice
+strategy: forward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=4 path_steps_included=3 defuse_found=2 defuse_included=2
+truncated: False
+tokens: 62
+---
+# file_1
+from secrets_store.keys import wrap
+
+
+def post(req):
+    token = req.args["t"]
+    wrapped = wrap(token)
+    return run(wrapped)
+
+
+def run(command):
+# ... elided ...
+    os.system(command)
+
+import _internal

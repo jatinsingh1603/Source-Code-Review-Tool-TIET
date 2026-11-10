@@ -1,0 +1,17 @@
+status: slice
+strategy: forward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=2 defuse_included=2
+truncated: False
+tokens: 70
+---
+// file_1
+export class Users {
+// ... elided ...
+  find(req: Request): Promise<Row[]> {
+    const name: string = req.params.name;
+    const clean = name.trim();
+    return this.db.query("SELECT * FROM users WHERE name = '" + clean + "'");
+  }
+}

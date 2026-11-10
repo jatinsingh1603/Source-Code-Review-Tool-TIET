@@ -1,0 +1,15 @@
+{
+  "sink": [
+    "app.py",
+    6
+  ],
+  "source": null,
+  "between": [],
+  "budget": 2048,
+  "never_send": [],
+  "callee_depth": 1,
+  "hotspot": true,
+  "strategies": [
+    "hotspot"
+  ]
+}

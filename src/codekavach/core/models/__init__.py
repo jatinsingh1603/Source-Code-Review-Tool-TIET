@@ -39,6 +39,7 @@ from codekavach.core.models.enums import (
     ScanStatus,
     SegmentRole,
     Severity,
+    SlicePurpose,
     SliceStrategy,
     StageStatus,
     StubReason,
@@ -130,6 +131,7 @@ from codekavach.core.models.scan import (
 )
 from codekavach.core.models.slice import (
     CodeSlice,
+    SliceRecall,
     SliceSegment,
     Stub,
 )
@@ -226,6 +228,8 @@ __all__ = [
     "Severity",
     "SliceId",
     "SliceIdField",
+    "SlicePurpose",
+    "SliceRecall",
     "SliceSegment",
     "SliceStrategy",
     "SnippetLine",

@@ -84,6 +84,49 @@
       "title": "SegmentRole",
       "type": "string"
     },
+    "SlicePurpose": {
+      "description": "What a slice is for: triage of a deterministic candidate, or discovery over a hotspot.\n\nDiscovery slices are budgeted and reported apart from triage results because their precision\nis lower (docs/research/INSIGHTS.md section 2.2 item 2).",
+      "enum": [
+        "triage",
+        "discover"
+      ],
+      "title": "SlicePurpose",
+      "type": "string"
+    },
+    "SliceRecall": {
+      "additionalProperties": false,
+      "description": "How much of what a path or a def-use walk found the slice kept (E11-03).\n\nThe numbers let the evaluation plot accuracy against slice size and score slice quality\napart from detection quality. They are counts, so they carry no code.",
+      "properties": {
+        "defuse_found": {
+          "minimum": 0,
+          "title": "Defuse Found",
+          "type": "integer"
+        },
+        "defuse_included": {
+          "minimum": 0,
+          "title": "Defuse Included",
+          "type": "integer"
+        },
+        "path_steps_included": {
+          "minimum": 0,
+          "title": "Path Steps Included",
+          "type": "integer"
+        },
+        "path_steps_total": {
+          "minimum": 0,
+          "title": "Path Steps Total",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path_steps_total",
+        "path_steps_included",
+        "defuse_found",
+        "defuse_included"
+      ],
+      "title": "SliceRecall",
+      "type": "object"
+    },
     "SliceSegment": {
       "additionalProperties": false,
       "description": "A contiguous range of whole lines of one file, with their text.",
@@ -117,7 +160,10 @@
       "enum": [
         "enclosing_function",
         "taint_path",
-        "backward_slice"
+        "backward_slice",
+        "sink_window",
+        "forward_slice",
+        "hotspot"
       ],
       "title": "SliceStrategy",
       "type": "string"
@@ -196,6 +242,26 @@
       "title": "Candidate Id",
       "type": "string"
     },
+    "fallback_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "no_taint_path",
+            "unresolved_path",
+            "no_function",
+            "no_enclosing_code",
+            "not_coherent",
+            "over_budget"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fallback Reason"
+    },
     "id": {
       "pattern": "^slice_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
       "title": "Id",
@@ -203,6 +269,21 @@
     },
     "language": {
       "$ref": "#/$defs/Language"
+    },
+    "purpose": {
+      "$ref": "#/$defs/SlicePurpose",
+      "default": "triage"
+    },
+    "recall": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SliceRecall"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "schema_version": {
       "default": 1,

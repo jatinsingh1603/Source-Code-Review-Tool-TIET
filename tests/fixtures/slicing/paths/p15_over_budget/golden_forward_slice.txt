@@ -1,0 +1,19 @@
+status: slice
+strategy: forward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=8 defuse_included=5
+truncated: True
+tokens: 62
+---
+# file_1
+def big(req):
+    a1 = req.args["a1"]
+    a2 = a1 + "1"
+    a3 = a2 + "2"
+    a4 = a3 + "3"
+    a5 = a4 + "4"
+# ... elided ...
+    if not req.user.ok:
+        raise Forbidden()
+    cur.execute("SELECT " + a8)

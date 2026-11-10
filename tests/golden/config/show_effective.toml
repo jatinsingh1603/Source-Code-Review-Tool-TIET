@@ -112,6 +112,8 @@ role_hints = false
 [privacy.slice]
 default_strategy = "enclosing_function"
 max_tokens = 2048
+defuse_depth = 20
+callee_depth = 1
 max_needs_context_rounds = 2
 
 [llm]

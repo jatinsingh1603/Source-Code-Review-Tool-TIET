@@ -1,0 +1,15 @@
+status: slice
+strategy: forward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=5 path_steps_included=5 defuse_found=4 defuse_included=4
+truncated: False
+tokens: 54
+---
+# file_1
+def chain(req):
+    raw = req.args["x"]
+    step1 = raw.strip()
+    step2 = step1.lower()
+    step3 = step2 + "%"
+    cur.execute("SELECT * FROM t WHERE c LIKE '" + step3 + "'")

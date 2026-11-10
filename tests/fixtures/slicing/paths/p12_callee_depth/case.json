@@ -1,0 +1,31 @@
+{
+  "sink": [
+    "app.py",
+    15
+  ],
+  "source": [
+    "app.py",
+    2
+  ],
+  "between": [
+    [
+      "app.py",
+      3
+    ],
+    [
+      "app.py",
+      7
+    ],
+    [
+      "app.py",
+      11
+    ]
+  ],
+  "budget": 2048,
+  "never_send": [],
+  "callee_depth": 1,
+  "hotspot": false,
+  "strategies": [
+    "taint_path"
+  ]
+}

@@ -1,0 +1,23 @@
+status: slice
+strategy: sink_window
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=0 defuse_included=0
+truncated: False
+tokens: 82
+---
+// file_1
+function remove(req, db) {
+  const ident = req.query.id;
+  if (req.user.admin) {
+    log("admin");
+  } else {
+    return null;
+  }
+  db.query("DELETE FROM t WHERE id = " + ident);
+  return true;
+}
+
+// unresolved
+function log(...args) {}
+// effects unknown; derived: syntactic

@@ -60,9 +60,8 @@ from codekavach.privacy.slicing.shape import (
     FUNCTION_TYPES,
     SUPPORTED,
     first,
-    is_function_of,
+    function_node,
     last,
-    node_for_lines,
 )
 
 _LOG = get_logger("codekavach.privacy.slicing")
@@ -284,37 +283,6 @@ def _text_of(node: Node | None, source: bytes, marker: str = NEUTRAL_DEFAULT) ->
     if node is None:
         return ""
     return _render(source, node.start_byte, node.end_byte, _redactions([node], marker))
-
-
-def function_node(file: ParsedFile, function: FunctionRange) -> Node | None:
-    """The tree node of ``function`` (the definition itself, without its decorators).
-
-    The smallest node covering the lines is usually the function or something inside it, so the
-    search climbs; for ``export function f`` it is the export statement around the function, so
-    the search then descends.
-    """
-    start, header, end = (
-        function.full.start_line,
-        function.header.start_line,
-        function.full.end_line,
-    )
-    found = node_for_lines(file, start, end)
-    node = found
-    while node is not None and not is_function_of(node, start, header, end):
-        node = node.parent
-    if node is not None or found is None:
-        return node
-    stack = [found]
-    while stack:
-        current = stack.pop()
-        if is_function_of(current, start, header, end):
-            return current
-        stack.extend(
-            child
-            for child in reversed(current.children)
-            if first(child) <= end and last(child) >= start
-        )
-    return None
 
 
 def _parameter_nodes(node: Node) -> list[Node]:
@@ -637,6 +605,10 @@ def _calls_in(root: Node, start: int, end: int) -> list[Node]:
     return sorted(found, key=lambda n: (n.start_byte, n.end_byte))
 
 
+def _all_calls(root: Node) -> list[Node]:
+    return _calls_in(root, 1, last(root))
+
+
 def callees_of(segments: Sequence[SliceSegment], parsed: ParseIndex) -> tuple[Symbol, ...]:
     """The callee occurrences in the text of ``segments``, as symbols of the file's table.
 
@@ -646,20 +618,18 @@ def callees_of(segments: Sequence[SliceSegment], parsed: ParseIndex) -> tuple[Sy
     arbitrary object (see ``_is_resolvable_receiver``).
     """
     found: list[Symbol] = []
+    per_file: dict[str, tuple[dict[tuple[str, int], Symbol], list[Node]] | None] = {}
     for segment in sorted(segments, key=lambda s: (s.path, s.region.start_line)):
-        try:
-            file = parsed.parsed_of(segment.path)
-        except KeyError:
+        if segment.path not in per_file:
+            per_file[segment.path] = _calls_of_file(parsed, segment.path)
+        loaded = per_file[segment.path]
+        if loaded is None:
             continue
-        if file.tree is None or file.language not in SUPPORTED:
-            continue
+        by_line, calls = loaded
         table = parsed.symbols_of(segment.path)
-        by_line: dict[tuple[str, int], Symbol] = {}
-        for symbol in table.symbols:
-            by_line.setdefault((symbol.name, symbol.location.start_line), symbol)
-        for call in _calls_in(
-            file.tree.root_node, segment.region.start_line, segment.region.end_line
-        ):
+        for call in calls:
+            if not segment.region.start_line <= first(call) <= segment.region.end_line:
+                continue
             name_node = _callee_name_node(call)
             if name_node is None or not _is_resolvable_receiver(call, table):
                 continue
@@ -670,6 +640,22 @@ def callees_of(segments: Sequence[SliceSegment], parsed: ParseIndex) -> tuple[Sy
             if not match.is_definition:
                 found.append(match)
     return tuple(found)
+
+
+def _calls_of_file(
+    parsed: ParseIndex, path: str
+) -> tuple[dict[tuple[str, int], Symbol], list[Node]] | None:
+    """The first symbol of each ``(name, line)`` and every call of one file, walked once."""
+    try:
+        file = parsed.parsed_of(path)
+    except KeyError:
+        return None
+    if file.tree is None or file.language not in SUPPORTED:
+        return None
+    by_line: dict[tuple[str, int], Symbol] = {}
+    for symbol in parsed.symbols_of(path).symbols:
+        by_line.setdefault((symbol.name, symbol.location.start_line), symbol)
+    return by_line, parsed.calls_of(path, _all_calls)
 
 
 def _synthetic_callee(name: str, path: str, name_node: Node) -> Symbol:
@@ -832,10 +818,9 @@ def _data_path_names(parsed: ParseIndex, path: str, line: int) -> set[str]:
         return set()
     if file.tree is None:
         return set()
-    root = file.tree.root_node
     used = {text for where, text in file.identifiers() if where.start_line == line}
     names: set[str] = set()
-    for call in _calls_in(root, 1, last(root)):
+    for call in parsed.calls_of(path, _all_calls):
         name_node = _callee_name_node(call)
         if name_node is None:
             continue

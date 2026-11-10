@@ -1,0 +1,22 @@
+status: slice
+strategy: backward_slice
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=2 defuse_found=2 defuse_included=2
+truncated: False
+tokens: 106
+---
+# file_1
+def transfer(req):
+    amount = req.json["amount"]
+# ... elided ...
+    if not is_admin(req.user):
+        raise Forbidden()
+    cur.execute("UPDATE accounts SET bal = bal - " + amount)
+
+# unresolved
+def Forbidden(*args, **kwargs): ...
+# effects unknown; derived: syntactic
+# unresolved
+def is_admin(*args, **kwargs): ...
+# effects unknown; derived: syntactic

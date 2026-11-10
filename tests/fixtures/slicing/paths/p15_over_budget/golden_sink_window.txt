@@ -1,0 +1,15 @@
+status: slice
+strategy: sink_window
+purpose: triage
+fallback: None
+recall: path_steps_total=2 path_steps_included=1 defuse_found=0 defuse_included=0
+truncated: False
+tokens: 40
+---
+# file_1
+def big(req):
+# ... elided ...
+    a8 = a7 + "7"
+    if not req.user.ok:
+        raise Forbidden()
+    cur.execute("SELECT " + a8)

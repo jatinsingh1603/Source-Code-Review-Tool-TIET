@@ -1,0 +1,22 @@
+{
+  "sink": [
+    "app.py",
+    5
+  ],
+  "source": [
+    "app.py",
+    2
+  ],
+  "between": [],
+  "budget": 2048,
+  "never_send": [],
+  "callee_depth": 1,
+  "hotspot": false,
+  "strategies": [
+    "taint_path",
+    "backward_slice",
+    "forward_slice",
+    "sink_window",
+    "enclosing_function"
+  ]
+}

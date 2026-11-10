@@ -6,12 +6,18 @@ or accept them. Text is held as ``RawCode`` so it never appears in logs or excep
 """
 
 from collections.abc import Iterator
-from typing import ClassVar, Self
+from typing import ClassVar, Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 
 from codekavach.core.models.base import DataClassification, KavachModel, VersionedModel
-from codekavach.core.models.enums import Language, SegmentRole, SliceStrategy, StubReason
+from codekavach.core.models.enums import (
+    Language,
+    SegmentRole,
+    SlicePurpose,
+    SliceStrategy,
+    StubReason,
+)
 from codekavach.core.models.ids import CandidateIdField, SliceIdField
 from codekavach.core.models.location import CodeRegion, check_symbol
 from codekavach.core.models.paths import RepoPath
@@ -54,6 +60,39 @@ class Stub(KavachModel):
         return check_symbol(value)
 
 
+FallbackReason = Literal[
+    "no_taint_path",
+    "unresolved_path",
+    "no_function",
+    "no_enclosing_code",
+    "not_coherent",
+    "over_budget",
+]
+
+
+class SliceRecall(KavachModel):
+    """How much of what a path or a def-use walk found the slice kept (E11-03).
+
+    The numbers let the evaluation plot accuracy against slice size and score slice quality
+    apart from detection quality. They are counts, so they carry no code.
+    """
+
+    DATA_CLASSIFICATION: ClassVar[DataClassification] = DataClassification.METADATA
+
+    path_steps_total: int = Field(ge=0)
+    path_steps_included: int = Field(ge=0)
+    defuse_found: int = Field(ge=0)
+    defuse_included: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def _check_counts(self) -> Self:
+        if self.path_steps_included > self.path_steps_total:
+            raise ValueError("a slice cannot include more path steps than the path has")
+        if self.defuse_included > self.defuse_found:
+            raise ValueError("a slice cannot include more def-use predecessors than were found")
+        return self
+
+
 class CodeSlice(VersionedModel):
     """Minimal code context for one candidate, built by the slicer (E11)."""
 
@@ -68,6 +107,9 @@ class CodeSlice(VersionedModel):
     stubs: tuple[Stub, ...] = ()
     token_estimate: int = Field(ge=0)
     truncated: bool = False
+    purpose: SlicePurpose = SlicePurpose.TRIAGE
+    fallback_reason: FallbackReason | None = None
+    recall: SliceRecall | None = None
 
     @model_validator(mode="after")
     def _check_segments(self) -> Self:
