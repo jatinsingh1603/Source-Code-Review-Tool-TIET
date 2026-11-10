@@ -8,7 +8,6 @@ enclosing function.
 
 import json
 import re
-from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -373,9 +372,7 @@ def test_every_slice_keeps_the_candidates_statement_and_all_its_guards(
             assert f"if v{guard}:" in text
 
 
-def test_the_size_of_each_strategy_for_the_same_candidate(
-    record_property: Callable[[str, object], None],
-) -> None:
+def test_the_size_of_each_strategy_for_the_same_candidate() -> None:
     index = make_index({"app.py": WORKED})
     candidate = taint_candidate(("app.py", 2), ("app.py", 7))
     sizes = {
@@ -388,11 +385,10 @@ def test_the_size_of_each_strategy_for_the_same_candidate(
             EnclosingFunctionStrategy(),
         )
     }
-    record_property("slice_size_tokens", sizes)  # shown in the junit report
-    assert sizes["taint_path"] < sizes["enclosing_function"]
-    assert sizes["backward_slice"] < sizes["enclosing_function"]
-    assert sizes["forward_slice"] < sizes["enclosing_function"]
-    assert sizes["taint_path"] <= sizes["sink_window"]
+    assert sizes["taint_path"] < sizes["enclosing_function"], sizes
+    assert sizes["backward_slice"] < sizes["enclosing_function"], sizes
+    assert sizes["forward_slice"] < sizes["enclosing_function"], sizes
+    assert sizes["taint_path"] <= sizes["sink_window"], sizes
 
 
 def test_through_the_selector_a_path_gives_a_smaller_slice_than_none() -> None:
