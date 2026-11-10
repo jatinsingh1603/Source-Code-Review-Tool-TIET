@@ -69,9 +69,9 @@ def check_item(item_id: object, error_code: object) -> None:
     Raises:
         ValueError: either argument does not match its pattern.
     """
-    if not isinstance(item_id, str) or not ITEM_ID.match(item_id):
+    if not isinstance(item_id, str) or not ITEM_ID.fullmatch(item_id):
         raise ValueError("item_id must match ^[A-Za-z0-9_.:-]{1,64}$")
-    if not isinstance(error_code, str) or not ERROR_CODE.match(error_code):
+    if not isinstance(error_code, str) or not ERROR_CODE.fullmatch(error_code):
         raise ValueError("error_code must match ^[a-z][a-z0-9_]{1,63}$")
 
 
