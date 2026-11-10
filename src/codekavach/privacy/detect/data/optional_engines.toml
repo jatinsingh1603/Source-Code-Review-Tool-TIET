@@ -1,0 +1,65 @@
+# Licence manifest of the optional detection engines, models and datasets (E08-04).
+#
+# Standing policy: docs/research/INSIGHTS.md section 6.2 item 3. Every entry declares an SPDX
+# identifier, a distribution mode and a hosted-use flag.
+#   bundled          shipped inside the CodeKavach distribution
+#   client-installed the client installs it; CodeKavach runs it as a separate process or imports
+#                    it only when present, and never ships it
+#   evaluation-only  fetched by a pinned script for measurement; never shipped
+# hosted = false means the item must not be present in the hosted edition's image.
+
+[[entry]]
+id = "gitleaks"
+kind = "engine"
+spdx = "MIT"
+distribution = "client-installed"
+hosted = true
+note = "Go regex and entropy scanner, run as a subprocess; never imported."
+
+[[entry]]
+id = "detect-secrets"
+kind = "engine"
+spdx = "Apache-2.0"
+distribution = "client-installed"
+hosted = true
+note = "Python baseline scanner, run as a subprocess; never imported."
+
+[[entry]]
+id = "spacy"
+kind = "library"
+spdx = "MIT"
+distribution = "client-installed"
+hosted = true
+note = "Optional name recogniser behind the pii extra; no model is downloaded at run time."
+
+[[entry]]
+id = "en_core_web_sm"
+kind = "model"
+spdx = "MIT"
+distribution = "client-installed"
+hosted = true
+note = "Default spaCy pipeline for the name recogniser; the client installs it offline."
+
+[[entry]]
+id = "term-baseline"
+kind = "data"
+spdx = "PSF-2.0"
+distribution = "bundled"
+hosted = true
+note = "Sub-word counts derived from the CPython standard library by tools/gen_term_baseline.py; no source text is copied."
+
+[[entry]]
+id = "creddata"
+kind = "dataset"
+spdx = "NOASSERTION"
+distribution = "evaluation-only"
+hosted = false
+note = "Public credential benchmark. The samples come from third-party repositories with their own licences, so it is fetched for measurement and never vendored or shipped."
+
+[[entry]]
+id = "secretbench"
+kind = "dataset"
+spdx = "NOASSERTION"
+distribution = "evaluation-only"
+hosted = false
+note = "Public secret-detection dataset. Licence of the samples not asserted; fetched for measurement only."

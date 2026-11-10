@@ -38,13 +38,21 @@ def imported_modules(path: Path) -> set[str]:
     return found
 
 
+# The one module that starts a process: the optional external-engine adapters (E08-04). They run
+# the engine without network, with a timeout and without repository configuration; tests of
+# that module assert the argument vector. Every other module, and every network module even in
+# this one, stays forbidden.
+PROCESS_MODULES = {"secrets/adapters.py": {"subprocess"}}
+
+
 def test_no_detector_module_imports_a_network_or_process_module() -> None:
     root = Path(next(iter(detect_package.__path__)))
     offenders = {
         f"{path.relative_to(root)}: {module}"
         for path in root.rglob("*.py")
         for module in imported_modules(path)
-        if module in FORBIDDEN or module.split(".")[0] in FORBIDDEN - {"urllib.request"}
+        if (module in FORBIDDEN or module.split(".")[0] in FORBIDDEN - {"urllib.request"})
+        and module not in PROCESS_MODULES.get(path.relative_to(root).as_posix(), set())
     }
     assert offenders == set()
 

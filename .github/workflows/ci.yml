@@ -284,9 +284,39 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
+  detector-eval:
+    # Detector accuracy on the in-repository labelled corpus (E08-04). Fails when the recall of
+    # any HIGH-confidence subtype is below 1.0; the table is kept as a build artefact.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked --all-extras
+      - name: Score the detectors
+        run: |
+          uv run python tools/detector_eval.py --check --out-dir detector-eval
+          cat detector-eval/report.md >> "$GITHUB_STEP_SUMMARY"
+        env:
+          UV_NO_SYNC: "1"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: detector-eval
+          path: |
+            detector-eval/report.md
+            detector-eval/report.json
+          retention-days: 30
+          if-no-files-found: ignore
+
   ci-ok:
     if: always()
-    needs: [lint, typecheck, contracts, hooks, commits, test, build, licences, demo]
+    needs: [lint, typecheck, contracts, hooks, commits, test, build, licences, demo, detector-eval]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

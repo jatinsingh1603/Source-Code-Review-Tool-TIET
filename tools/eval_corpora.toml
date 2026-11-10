@@ -1,0 +1,18 @@
+# Pins of the external corpora that tools/detector_eval.py can score (E08-04).
+#
+# Rule (docs/research/INSIGHTS.md section 6.2 item 2): a dataset is fetched at a pinned commit and
+# checked against a checksum, and is never vendored into this repository.
+# tools/fetch_eval_corpora.py refuses an entry whose repository, commit or sha256 is empty. A person
+# fills them in after reading the dataset's licence (see
+# src/codekavach/privacy/detect/data/optional_engines.toml) and computing the checksum of the
+# archive the script downloads.
+
+[corpus.creddata]
+repository = "Samsung/CredData"
+commit = ""
+sha256 = ""
+
+[corpus.secretbench]
+repository = ""
+commit = ""
+sha256 = ""
