@@ -2,16 +2,16 @@ file: py11_dunder_name.py
 allowlist: python-2026.11.06.1
 1:7 Ledger class -> internal default_internal
 2:9 __init__ method -> public magic
-2:18 self parameter -> internal default_internal
+2:18 self parameter -> public receiver
 2:24 entries parameter -> internal default_internal
-3:9 self parameter -> internal default_internal
+3:9 self parameter -> public receiver
 3:14 entries field -> internal default_internal
 3:24 entries parameter -> internal default_internal
 5:9 __repr__ method -> public magic
-5:18 self parameter -> internal default_internal
+5:18 self parameter -> public receiver
 6:26 len variable -> public keyword_or_builtin
-6:30 self parameter -> internal default_internal
+6:30 self parameter -> public receiver
 6:35 entries field -> internal default_internal
 counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
-kept_public: __init__, __repr__, len
+kept_public: __init__, __repr__, len, self
 kept_dynamic: 

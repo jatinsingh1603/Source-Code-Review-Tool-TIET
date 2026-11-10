@@ -129,6 +129,7 @@ class Rule(StrEnum):
     FRAMEWORK_CONTRACT = "framework_contract"
     FRAMEWORK_DECORATOR = "framework_decorator"
     WELL_KNOWN = "well_known"
+    RECEIVER = "receiver"
     MEMBER_NAME = "member_name"
     MEMBER_OF_PUBLIC = "member_of_public"
     STDLIB_IMPORT = "stdlib_import"
@@ -214,6 +215,12 @@ class _Verdict(NamedTuple):
 _MAGIC_VERDICT: Final = _Verdict(IdentifierClass.PUBLIC, Rule.MAGIC)
 _EXTRA_VERDICT: Final = _Verdict(IdentifierClass.PUBLIC, Rule.EXTRA)
 _DEFAULT_VERDICT: Final = _Verdict(IdentifierClass.INTERNAL, Rule.DEFAULT_INTERNAL)
+_RECEIVER_VERDICT: Final = _Verdict(IdentifierClass.PUBLIC, Rule.RECEIVER, depends_on_table=True)
+
+# The conventional spellings of the receiver of a method. Only these are kept in clear, so that a
+# receiver spelled after the client (``account``) is still renamed.
+_RECEIVER_NAMES: Final = frozenset({"self", "cls"})
+_NEWLINE: Final = chr(10)
 
 
 class _Tally:
@@ -348,6 +355,7 @@ class _Run:
         self._named_listed: dict[str, _Verdict | None] = {}
         self._named_plain: dict[str, _Verdict | None] = {}
         self._tally = _Tally()
+        self._receivers: dict[int, str | None] = {}
         self._line_starts = _line_starts(self._source) if self._root is not None else []
         # Character offsets of every identifier's end, to find the symbol that ends just before a
         # ``.`` (its base) or a ``(`` (its callee).
@@ -471,9 +479,62 @@ class _Run:
         # An unbound plain name is not an attribute, so it is decided like a bound name.
         return self._bound(index, symbol)
 
+    def _receiver_of(self, scope: int) -> str | None:
+        """The name of the receiver of the method that ``scope`` is, or ``None``.
+
+        The receiver is the first parameter of a function defined directly in a class body that
+        is not a ``@staticmethod``. It is decided by that position, so a plain function, a nested
+        function and a static method have none; its spelling only has to be a conventional one
+        (``self`` or ``cls``) for the name to stay in clear. Without a parsed tree the decorators
+        cannot be read, and the answer is ``None``.
+        """
+        if scope in self._receivers:
+            return self._receivers[scope]
+        found = self._find_receiver(scope)
+        self._receivers[scope] = found
+        return found
+
+    def _find_receiver(self, scope: int) -> str | None:
+        if self._language is not Language.PYTHON or self._root is None:
+            return None
+        scopes = self._table.scopes
+        if not 0 <= scope < len(scopes) or scopes[scope].kind != "function":
+            return None
+        parent = scopes[scope].parent_id
+        if parent is None or scopes[parent].kind != "class":
+            return None
+        first: tuple[int, int] | None = None
+        name = ""
+        for symbol in self._symbols:
+            if symbol.scope_id == scope and symbol.is_definition and symbol.kind == "parameter":
+                position = (symbol.location.start_line or 0, symbol.location.start_col or 0)
+                if first is None or position < first:
+                    first, name = position, symbol.name
+        if first is None or name not in _RECEIVER_NAMES:
+            return None
+        return None if self._is_static(first) else name
+
+    def _is_static(self, parameter: tuple[int, int]) -> bool:
+        """Whether the ``def`` that holds the parameter at (line, col) carries ``@staticmethod``."""
+        end = self._offset(*parameter)
+        start = self._source.rfind("def", 0, end) if end >= 0 else -1
+        if start < 0:
+            return True  # an unreadable position is not trusted to be a method
+        lines = self._source[:start].split(_NEWLINE)
+        decorators: list[str] = []
+        for text in reversed(lines[:-1]):
+            stripped = text.strip()
+            if not stripped.startswith("@"):
+                break
+            decorators.append(stripped.removeprefix("@").split("(")[0].split(".")[-1])
+        return "staticmethod" in decorators
+
     def _bound(self, index: int, symbol: Symbol) -> _Verdict:
         """A name the file binds (a local, a parameter, a function, a class or a class field)."""
         scope = symbol.scope_id
+        is_receiver_name = symbol.name in _RECEIVER_NAMES
+        if scope >= 0 and is_receiver_name and self._receiver_of(scope) == symbol.name:
+            return _RECEIVER_VERDICT
         in_class = symbol.is_definition and scope >= 0 and self._table.scopes[scope].kind == "class"
         named = self._name_level(symbol.name, listed=in_class)
         if named is not None:

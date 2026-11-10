@@ -1,16 +1,16 @@
 class cls_1:
     field_2 = 3
 
-    def __init__(param_4, field_1):
-        param_4.field_1 = field_1
+    def __init__(self, field_1):
+        self.field_1 = field_1
 
     @classmethod
-    def create(param_2, field_1):
-        return param_2(field_1)
+    def create(cls, field_1):
+        return cls(field_1)
 
     @staticmethod
-    def fn_1(param_3):
-        return round(param_3)
+    def fn_1(param_2):
+        return round(param_2)
 
-    def fn_2(param_4, param_1):
-        return param_4.field_1.field_3(param_1) * param_4.field_2
+    def fn_2(self, param_1):
+        return self.field_1.field_3(param_1) * self.field_2

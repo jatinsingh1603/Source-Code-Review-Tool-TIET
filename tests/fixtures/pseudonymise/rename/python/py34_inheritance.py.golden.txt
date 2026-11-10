@@ -1,8 +1,8 @@
 class cls_2:
-    def fn_1(param_1):
+    def fn_1(self):
         return 1
 
 
 class cls_1(cls_2):
-    def fn_1(param_1):
+    def fn_1(self):
         return super().fn_1() + 1

@@ -21,6 +21,8 @@
 #   * Every entry under [framework_contracts] and [framework_decorators] names its framework in
 #     the comment above it. Renaming these names changes behaviour as well as hiding the
 #     framework contract, so they are kept.
+#   * The receiver of a method (`self`, `cls`) is not listed here: it is public by position, by the
+#     classifier rule `receiver` (first parameter of a non-static function in a class body).
 #   * Only the names here, the keywords and builtins of the language, dunder names and the
 #     user's public_allowlist_extra are ever public. Adding a name here is a disclosure decision.
 

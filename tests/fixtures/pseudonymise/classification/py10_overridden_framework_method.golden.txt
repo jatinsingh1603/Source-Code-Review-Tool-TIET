@@ -6,15 +6,15 @@ allowlist: python-2026.11.06.1
 4:7 ReportView class -> internal default_internal
 4:18 View import -> public allowlisted_import
 5:9 get method -> public framework_contract
-5:13 self parameter -> internal default_internal
+5:13 self parameter -> public receiver
 5:19 request parameter -> public well_known
-6:16 self parameter -> internal default_internal
+6:16 self parameter -> public receiver
 6:21 render_report field -> internal default_internal
 6:35 request parameter -> public well_known
 8:9 render_report method -> internal default_internal
-8:23 self parameter -> internal default_internal
+8:23 self parameter -> public receiver
 8:29 request parameter -> public well_known
 9:16 request parameter -> public well_known
 counts: unresolved_base=0 unresolved_name=0 incomplete_table=0 kept_identifier=0 dynamic_name_marked=0 dynamic_code=0
-kept_public: View, django, get, request
+kept_public: View, django, get, request, self
 kept_dynamic: 

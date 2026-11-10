@@ -4,6 +4,6 @@
 class cls_1:
     """xxxxxxxxxxxxxxxx"""
 
-    def fn_1(param_1):
+    def fn_1(self):
         """xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"""
         return 1
