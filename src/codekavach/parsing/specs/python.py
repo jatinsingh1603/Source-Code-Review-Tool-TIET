@@ -112,6 +112,9 @@ def _string_fragments(string_node: TSNode) -> list[str]:
     ]
 
 
+_GROUP_PARENTS = frozenset({"concatenated_string", "binary_operator", "parenthesized_expression"})
+
+
 def _is_plus(node: TSNode) -> bool:
     if node.type != "binary_operator":
         return False
@@ -158,6 +161,11 @@ def _concatenation_text(string_node: TSNode) -> tuple[str | None, TSNode]:
     is ``None`` when the literal has only one piece. The node is where the enclosing call or
     assignment is looked up from.
     """
+    parent = string_node.parent
+    if (parent is None or parent.type not in _GROUP_PARENTS) and not any(
+        child.type == "interpolation" for child in string_node.children
+    ):
+        return None, string_node  # the common case: a plain literal on its own
     top = _group_top(string_node)
     literals: list[TSNode] = []
     _plus_literals(top, literals)
