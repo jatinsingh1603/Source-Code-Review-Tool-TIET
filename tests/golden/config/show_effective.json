@@ -99,7 +99,14 @@
       "vault": {
         "key_source": "keyring",
         "passphrase": null,
-        "retention_days": null
+        "retention_days": null,
+        "kms": {
+          "endpoint": null,
+          "key_id": null,
+          "token": null,
+          "host_allowlist": [],
+          "timeout_seconds": 5.0
+        }
       },
       "egress": {
         "max_payload_bytes": 262144,
@@ -872,6 +879,36 @@
       "contributors": []
     },
     "privacy.vault.key_source": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.vault.kms.endpoint": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.vault.kms.host_allowlist": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.vault.kms.key_id": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.vault.kms.timeout_seconds": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.vault.kms.token": {
       "layer": "default",
       "source": null,
       "line": null,

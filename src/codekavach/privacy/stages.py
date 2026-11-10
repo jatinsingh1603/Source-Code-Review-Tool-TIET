@@ -75,6 +75,7 @@ from codekavach.privacy.slicing.select import StrategySelector
 from codekavach.privacy.slicing.stubs import is_valid_summary
 from codekavach.privacy.vault.errors import VaultError
 from codekavach.privacy.vault.keys import KeySource
+from codekavach.privacy.vault.lifecycle import apply_retention
 from codekavach.privacy.vault.salt import vault_path
 from codekavach.privacy.vault.store import Vault
 
@@ -258,6 +259,7 @@ class PrivacyPrepareStage:
         withheld = 0
         if ctx.state_dir is None:
             raise RuntimeError("privacy-prepare needs the state directory of the vault")
+        apply_retention(ctx.state_dir, ctx.config)  # a no-op unless privacy.vault.retention_days
         with Vault(
             vault_path(ctx.state_dir),
             KeySource(ctx.config.privacy.vault.key_source),

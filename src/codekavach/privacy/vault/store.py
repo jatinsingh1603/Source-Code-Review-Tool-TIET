@@ -55,6 +55,7 @@ from codekavach.privacy.pseudonymise.generator import PSEUDONYM_SHAPE, Pseudonym
 from codekavach.privacy.pseudonymise.mapping import MappingBatch
 from codekavach.privacy.vault.crypto import (
     COUNTER_LIMIT,
+    KEY_BYTES,
     RecordCipher,
     build_nonce,
     new_data_key,
@@ -71,8 +72,10 @@ from codekavach.privacy.vault.errors import (
 )
 from codekavach.privacy.vault.keys import (
     KeySource,
+    KmsClient,
     ScryptParams,
     SecretBytes,
+    load_kms_source,
     resolve_master_key,
 )
 from codekavach.privacy.vault.models import MappingRecord
@@ -81,7 +84,7 @@ FORMAT_VERSION: Final = 1
 CIPHER_NAME: Final = "AES-256-GCM"
 BUSY_TIMEOUT_SECONDS: Final = 30.0
 _FETCH_SIZE: Final = 256
-_SALT_AAD: Final = b"ck-vault-salt-v1"
+SALT_AAD: Final = b"ck-vault-salt-v1"
 _PSEUDONYM: Final = re.compile(PSEUDONYM_SHAPE)
 _LOG = get_logger("codekavach.privacy.vault")
 
@@ -114,7 +117,22 @@ CREATE TABLE IF NOT EXISTS records (
 CREATE INDEX IF NOT EXISTS records_pseudonym ON records (pseudonym);
 CREATE INDEX IF NOT EXISTS records_original_index ON records (original_index);
 """
-_SELECT_HEADER: Final = (
+# Tables of the lifecycle (E10-03). They are created with the vault and, for a vault made before
+# them, by the first write that needs them; both statements are idempotent.
+LIFECYCLE_SCHEMA: Final = """
+CREATE TABLE IF NOT EXISTS scans (
+    scan_id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS rotations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at TEXT NOT NULL,
+    from_source TEXT NOT NULL,
+    to_source TEXT NOT NULL,
+    data_key_rotated INTEGER NOT NULL
+);
+"""
+SELECT_HEADER: Final = (
     "SELECT format_version, vault_id, key_source, kdf, wrapped_key, nonce_prefix, nonce_counter, "
     "salt_nonce, salt_ciphertext, created_at, rotated_at FROM header WHERE id = 1"
 )
@@ -126,7 +144,7 @@ _INSERT_HEADER: Final = (
 
 
 @dataclass(frozen=True, slots=True)
-class _Header:
+class VaultHeader:
     """The header row; nothing in it is secret except through the key that wraps ``wrapped_key``."""
 
     format_version: int
@@ -140,6 +158,36 @@ class _Header:
     salt_ciphertext: bytes | None
     created_at: str
     rotated_at: str | None
+
+
+def connect(path: Path) -> sqlite3.Connection:
+    """A connection to a vault file in autocommit mode, with deleted content overwritten."""
+    connection = sqlite3.connect(path, timeout=BUSY_TIMEOUT_SECONDS, isolation_level=None)
+    connection.execute("PRAGMA secure_delete = ON")
+    return connection
+
+
+def read_header(path: Path) -> VaultHeader | None:
+    """The header row of the vault at ``path``, or ``None`` when there is no vault yet.
+
+    Reads the unencrypted header only: it needs no key and decrypts nothing.
+    """
+    if not path.is_file():
+        return None
+    connection = connect(path)
+    try:
+        row = _retry_while_locked(lambda: connection.execute(SELECT_HEADER).fetchone())
+    except sqlite3.OperationalError as error:
+        if "no such table" in str(error):
+            return None
+        if _is_locked(error):
+            raise VaultError("the vault is busy; try again") from None
+        raise VaultFormatError("this file is not a vault") from None
+    except sqlite3.DatabaseError:
+        raise VaultFormatError("this file is not a vault") from None
+    finally:
+        connection.close()
+    return None if row is None else VaultHeader(*row)
 
 
 def _is_locked(error: sqlite3.OperationalError) -> bool:
@@ -177,6 +225,83 @@ def _create_private_file(path: Path) -> None:
     os.close(os.open(path, flags, FILE_MODE))
 
 
+def unlock_data_key(
+    header: VaultHeader,
+    *,
+    source: KeySource,
+    key: SecretBytes | None = None,
+    master: SecretBytes | None = None,
+    settings: Settings | None = None,
+    prompt: Callable[[], str] | None = None,
+    env: Mapping[str, str] | None = None,
+    kms: Callable[[], KmsClient] | None = None,
+) -> bytes:
+    """The data key of the vault whose header is ``header``, opened with its key source.
+
+    ``key`` or ``master`` overrides the source. Nothing is decrypted but the sealed data key, which
+    is also what a status probe needs (E10-03). The raised errors never quote a key.
+    """
+    if header.key_source == KeySource.KMS.value:
+        if source is not KeySource.KMS or kms is None:
+            raise VaultKeyError(f"this vault uses the {header.key_source} key source")
+        opened = kms().unwrap(header.wrapped_key)
+        if len(opened) != KEY_BYTES:
+            raise VaultKeyError("the vault key does not open this vault")
+        return opened
+    if master is None:
+        if key is not None:
+            master = key
+        else:
+            if header.key_source != source.value:
+                raise VaultKeyError(f"this vault uses the {header.key_source} key source")
+            kdf = None if header.kdf is None else ScryptParams.from_json(json.loads(header.kdf))
+            master = resolve_master_key(
+                source,
+                settings=settings,
+                prompt=prompt,
+                account=f"vault-{header.vault_id}",
+                kdf=kdf,
+                env=env,
+                create=False,
+            )
+    return unwrap_data_key(master.reveal(), header.wrapped_key)
+
+
+ORPHAN_SUFFIX: Final = ".rotating"
+
+
+def clean_orphans(path: Path) -> None:
+    """Remove the temporary file of a rotation that was interrupted (E10-03).
+
+    A rotation holds the database write lock from its start to the rename, so when the lock can be
+    taken at once nobody is rotating and a leftover file is an orphan. The vault itself is never
+    touched: a rotation only ever renames a finished copy over it.
+    """
+    orphan = path.with_name(path.name + ORPHAN_SUFFIX)
+    leftovers = [
+        orphan,
+        orphan.with_name(orphan.name + "-wal"),
+        orphan.with_name(orphan.name + "-shm"),
+    ]
+    if not path.is_file() or not any(item.exists() for item in leftovers):
+        return
+    probe = sqlite3.connect(path, timeout=0, isolation_level=None)
+    try:
+        probe.execute("BEGIN IMMEDIATE")
+    except sqlite3.OperationalError:
+        probe.close()
+        return
+    try:
+        for item in leftovers:
+            with contextlib.suppress(OSError):
+                item.unlink()
+        _LOG.info("vault_orphan_removed")
+    finally:
+        with contextlib.suppress(sqlite3.Error):
+            probe.execute("ROLLBACK")
+        probe.close()
+
+
 class Vault:
     """Stores and returns pseudonym-to-original mappings under envelope encryption.
 
@@ -194,8 +319,10 @@ class Vault:
         prompt: Callable[[], str] | None = None,
         env: Mapping[str, str] | None = None,
         create: bool = True,
+        kms: KmsClient | None = None,
     ) -> None:
         self._path = Path(path)
+        self._kms = kms
         self._settings = settings
         self._prompt = prompt
         self._env = env
@@ -204,6 +331,7 @@ class Vault:
             self._source = KeySource(key_source)
         except ValueError:
             raise VaultError("unknown vault key source") from None
+        clean_orphans(self._path)
         header = self._read_header()
         master: SecretBytes | None = None
         if header is None:
@@ -244,46 +372,34 @@ class Vault:
     # --- opening and creating -------------------------------------------------------------
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self._path, timeout=BUSY_TIMEOUT_SECONDS, isolation_level=None)
-        connection.execute("PRAGMA secure_delete = ON")
-        return connection
+        return connect(self._path)
 
-    def _read_header(self) -> _Header | None:
-        if not self._path.is_file():
-            return None
-        connection = self._connect()
-        try:
-            row = _retry_while_locked(lambda: connection.execute(_SELECT_HEADER).fetchone())
-        except sqlite3.OperationalError as error:
-            if "no such table" in str(error):
-                return None
-            if _is_locked(error):
-                raise VaultError("the vault is busy; try again") from None
-            raise VaultFormatError("this file is not a vault") from None
-        except sqlite3.DatabaseError:
-            raise VaultFormatError("this file is not a vault") from None
-        finally:
-            connection.close()
-        return None if row is None else _Header(*row)
+    def _read_header(self) -> VaultHeader | None:
+        return read_header(self._path)
 
-    def _create(self) -> tuple[_Header, SecretBytes | None]:
+    def _create(self) -> tuple[VaultHeader, SecretBytes | None]:
         vault_id = os.urandom(8).hex()
         kdf = ScryptParams.fresh() if self._source is KeySource.PASSPHRASE else None
-        master = self._key or resolve_master_key(
-            self._source,
-            settings=self._settings,
-            prompt=self._prompt,
-            account=f"vault-{vault_id}",
-            kdf=kdf,
-            env=self._env,
-        )
-        wrapped = wrap_data_key(master.reveal(), new_data_key())
+        master: SecretBytes | None = None
+        if self._source is KeySource.KMS:
+            wrapped = self._kms_client().wrap(new_data_key())
+        else:
+            master = self._key or resolve_master_key(
+                self._source,
+                settings=self._settings,
+                prompt=self._prompt,
+                account=f"vault-{vault_id}",
+                kdf=kdf,
+                env=self._env,
+            )
+            wrapped = wrap_data_key(master.reveal(), new_data_key())
         _create_private_file(self._path)
         connection = self._connect()
         try:
             _retry_while_locked(lambda: _enable_wal(connection))
             connection.execute("BEGIN IMMEDIATE")
-            for statement in filter(None, (part.strip() for part in _SCHEMA.split(";"))):
+            everything = _SCHEMA + LIFECYCLE_SCHEMA
+            for statement in filter(None, (part.strip() for part in everything.split(";"))):
                 connection.execute(statement)
             connection.execute(
                 _INSERT_HEADER,
@@ -311,30 +427,28 @@ class Vault:
         return header, master if header.vault_id == vault_id else None
 
     @staticmethod
-    def _check_header(header: _Header) -> None:
+    def _check_header(header: VaultHeader) -> None:
         if header.format_version != FORMAT_VERSION:
             raise VaultFormatError("this vault has a format this version cannot read")
         if len(header.nonce_prefix) != 4 or not 0 <= header.nonce_counter <= COUNTER_LIMIT:
             raise VaultFormatError("the header of this vault is invalid")
 
-    def _unwrap(self, header: _Header, master: SecretBytes | None) -> bytes:
-        if master is None:
-            if self._key is not None:
-                master = self._key
-            else:
-                if header.key_source != self._source.value:
-                    raise VaultKeyError(f"this vault uses the {header.key_source} key source")
-                kdf = None if header.kdf is None else ScryptParams.from_json(json.loads(header.kdf))
-                master = resolve_master_key(
-                    self._source,
-                    settings=self._settings,
-                    prompt=self._prompt,
-                    account=f"vault-{header.vault_id}",
-                    kdf=kdf,
-                    env=self._env,
-                    create=False,
-                )
-        return unwrap_data_key(master.reveal(), header.wrapped_key)
+    def _kms_client(self) -> KmsClient:
+        if self._kms is None:
+            self._kms = load_kms_source(self._settings, self._env)
+        return self._kms
+
+    def _unwrap(self, header: VaultHeader, master: SecretBytes | None) -> bytes:
+        return unlock_data_key(
+            header,
+            source=self._source,
+            key=self._key,
+            master=master,
+            settings=self._settings,
+            prompt=self._prompt,
+            env=self._env,
+            kms=self._kms_client if header.key_source == KeySource.KMS.value else None,
+        )
 
     # --- transactions ---------------------------------------------------------------------
 
@@ -380,6 +494,12 @@ class Vault:
         added = 0
         with self._write() as connection:
             counter = self._counter(connection)
+            for statement in filter(None, (part.strip() for part in LIFECYCLE_SCHEMA.split(";"))):
+                connection.execute(statement)
+            connection.execute(
+                "INSERT OR IGNORE INTO scans (scan_id, created_at) VALUES (?, ?)",
+                (batch.scan_id, utc_now().isoformat()),
+            )
             for entry in batch.entries:
                 if not _PSEUDONYM.match(entry.pseudonym) or not entry.original:
                     raise VaultError("a mapping needs a pseudonym of the generator's shape")
@@ -539,14 +659,14 @@ class Vault:
                     counter = self._counter(writer) + 1
                     nonce = self._nonce(counter)
                     value = ScanSalt.generate()
-                    ciphertext = self._cipher.seal(nonce, _SALT_AAD, value.reveal())
+                    ciphertext = self._cipher.seal(nonce, SALT_AAD, value.reveal())
                     writer.execute(
                         "UPDATE header SET nonce_counter = ?, salt_nonce = ?, "
                         "salt_ciphertext = ? WHERE id = 1",
                         (counter, nonce, ciphertext),
                     )
                     return value
-        return ScanSalt(self._cipher.open(sealed[0], _SALT_AAD, sealed[1]))
+        return ScanSalt(self._cipher.open(sealed[0], SALT_AAD, sealed[1]))
 
     @staticmethod
     def _salt_row(connection: sqlite3.Connection) -> tuple[bytes, bytes] | None:

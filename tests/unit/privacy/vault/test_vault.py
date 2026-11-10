@@ -147,8 +147,8 @@ class TestKeySources:
         with pytest.raises(KeySourceUnavailable, match="tests only"):
             keys.resolve_master_key(KeySource.EPHEMERAL, settings=None)
 
-    def test_the_kms_source_names_its_issue(self) -> None:
-        with pytest.raises(KeySourceUnavailable, match="E10-03"):
+    def test_the_kms_source_has_no_master_key(self) -> None:
+        with pytest.raises(KeySourceUnavailable, match="no master key"):
             keys.resolve_master_key(KeySource.KMS, settings=None)
 
     def test_an_unknown_source_is_refused(self) -> None:

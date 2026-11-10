@@ -1,7 +1,7 @@
 {
   "codekavach_version": "0.0.0-test",
   "created_at": "2026-10-01T09:30:00Z",
-  "fingerprint": "30b43c7037f35c5787b534c645f28ee4240c0236848d415eb290165a997c8acb",
+  "fingerprint": "b1a5cbaa56231291b07ee2d0682222f910045e280cf736638e72e696158b57be",
   "org_policies": [],
   "origins": {
     "config_version": {
@@ -620,6 +620,30 @@
       "line": null,
       "source": null
     },
+    "privacy.vault.kms.endpoint": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.vault.kms.host_allowlist": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.vault.kms.key_id": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "privacy.vault.kms.timeout_seconds": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
     "privacy.vault.retention_days": {
       "contributors": [],
       "layer": "default",
@@ -1002,6 +1026,12 @@
       },
       "vault": {
         "key_source": "keyring",
+        "kms": {
+          "endpoint": null,
+          "host_allowlist": [],
+          "key_id": null,
+          "timeout_seconds": 5.0
+        },
         "retention_days": null
       }
     },

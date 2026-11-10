@@ -566,6 +566,75 @@
       "title": "IntegrationsSettings",
       "type": "object"
     },
+    "KmsSettings": {
+      "additionalProperties": false,
+      "description": "The external key-management source of the vault (E10-03, ADR-0003 exception).\n\nUsed only when ``privacy.vault.key_source`` is ``kms``. The only thing that crosses the\nconnection is the vault's wrapped 32-byte data key. The client refuses any host that is not in\n``host_allowlist`` (an empty list refuses every host), plain HTTP and redirects.",
+      "properties": {
+        "endpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "HTTPS base URL of the key-management service; required for key_source kms.",
+          "title": "Endpoint",
+          "x-ck-restricted": true
+        },
+        "host_allowlist": {
+          "description": "Host names the key-management client may contact. Empty refuses every host, so the source stays unusable until the endpoint's host is listed on purpose.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Host Allowlist",
+          "type": "array",
+          "x-ck-restricted": true
+        },
+        "key_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name of the key in the service that wraps the vault data key.",
+          "title": "Key Id",
+          "x-ck-restricted": true
+        },
+        "timeout_seconds": {
+          "default": 5.0,
+          "description": "Seconds the key-management client waits for the service.",
+          "maximum": 30.0,
+          "minimum": 0.5,
+          "title": "Timeout Seconds",
+          "type": "number",
+          "x-ck-restricted": true
+        },
+        "token": {
+          "anyOf": [
+            {
+              "pattern": "^(env:[A-Za-z_][A-Za-z0-9_]{0,127}|keyring:[A-Za-z0-9._@-]{1,128}(/[A-Za-z0-9._@-]{1,128})?|file:(/|~/|[A-Za-z]:[\\\\/]).+)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Secret reference to the service credential; required for key_source kms.",
+          "title": "Token",
+          "x-ck-restricted": true
+        }
+      },
+      "title": "KmsSettings",
+      "type": "object"
+    },
     "LLMSettings": {
       "additionalProperties": false,
       "description": "How findings are sent to language models, and which ones.",
@@ -1755,6 +1824,10 @@
           "type": "string",
           "x-ck-restricted": true
         },
+        "kms": {
+          "$ref": "#/$defs/KmsSettings",
+          "description": "The key-management service, used when key_source is kms."
+        },
         "passphrase": {
           "anyOf": [
             {
@@ -1780,7 +1853,7 @@
             }
           ],
           "default": null,
-          "description": "Days after which a scan's mappings may be removed from the vault; unset keeps them. Not enforced yet: retention is applied by the vault tooling of E10-03.",
+          "description": "Days after which a scan's mappings are removed from the vault at the start of a scan; unset keeps them. Removed mappings cannot be restored, and their payloads can no longer be checked against the vault by the egress guard.",
           "maximum": 36500,
           "minimum": 1,
           "title": "Retention Days",

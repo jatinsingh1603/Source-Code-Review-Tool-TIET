@@ -7,6 +7,7 @@ request per candidate, a ledger entry per request, no raw text in a payload, ``-
 
 import shutil
 import socket
+import sqlite3
 from collections import Counter
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -39,6 +40,7 @@ from codekavach.privacy.errors import PseudonymError, RedactionError
 from codekavach.privacy.pseudonymise.engine import Pseudonymiser
 from codekavach.privacy.redact.redactor import Redactor
 from codekavach.privacy.stages import PrivacyPrepareStage
+from codekavach.privacy.vault.salt import vault_path
 from codekavach.report.model.build import summarise_ledger
 from tests.support.ingest import SALT_HEX, stages_registry
 from tests.support.kavachbank import FIXTURE_ROOT
@@ -361,3 +363,43 @@ def test_payloads_plus_failed_items_equal_the_candidates_that_may_leave(
     failed = set(failures_of(run.outcome, "privacy-prepare"))
     assert ids.isdisjoint(failed)
     assert ids | failed == allowed
+
+
+def test_retention_at_scan_start_removes_old_mappings_and_keeps_pseudonyms_stable(
+    tmp_path: Path,
+) -> None:
+    """E10-03: the setting is applied before the vault is opened; the salt and the header stay."""
+    project = copy_fixture(tmp_path)
+    first = run_and_capture(project, home="home-retention")
+    assert first.payloads
+    database = vault_path(first.outcome.state_dir)
+    connection = sqlite3.connect(database)
+    old_scan = str(first.outcome.scan.id)
+    connection.execute(
+        "UPDATE scans SET created_at = '2020-01-01T00:00:00+00:00' WHERE scan_id = ?", (old_scan,)
+    )
+    connection.commit()
+    header = connection.execute("SELECT * FROM header").fetchall()
+    connection.close()
+    second = run_and_capture(
+        project,
+        home="home-retention",
+        overrides={"privacy": {"vault": {"retention_days": 30}}},
+    )
+    connection = sqlite3.connect(database)
+    try:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM records WHERE scan_id = ?", (old_scan,)
+        ).fetchone() == (0,)
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM records WHERE scan_id = ?", (str(second.outcome.scan.id),)
+            ).fetchone()[0]
+            > 0
+        )
+        after = connection.execute("SELECT * FROM header").fetchall()
+    finally:
+        connection.close()
+    assert after[0][:7] == header[0][:7]  # id, format, vault id, source, kdf, wrapped key
+    first_text = sorted(str(p.model_dump_json()).count("fn_") for p in first.payloads)
+    assert first_text and len(second.payloads) == len(first.payloads)

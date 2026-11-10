@@ -78,7 +78,7 @@ src/codekavach/
     pseudonymise/      identifier classifier, per-language renamers, literal and comment handling
     slicing/           slice strategies and stub generation
     ir/                abstract IR for L4
-    vault/             encrypted mapping vault
+    vault/             encrypted mapping vault; lifecycle (status, key rotation, destroy, retention) and the optional key-management source
     restore/           de-pseudonymisation of model output, slice-to-file line mapping
     egress/            guard (pre-flight leak checks), ledger (hash chain), transport (the only way out)
   llm/
@@ -181,6 +181,8 @@ Policy resolves the effective level per file path and per provider trust tier. T
 - **I4 Fail closed.** An exception in any privacy step aborts the request for that candidate; the candidate is still reported from deterministic evidence.
 - **I5 Determinism.** With the same scan salt, the same input yields the same pseudonyms, so responses can be cached and experiments reproduced.
 - **I6 Completeness.** Property-based tests assert that no vault key (original identifier, literal or secret) of length four or more appears in any ledger payload, except names on the public allowlist.
+
+**Vault lifecycle (E10-03).** `vault_info` reports from the unencrypted header and table counts and does not unlock the vault. `rotate_key` re-seals the data key under a new master key (header only), or also replaces the data key and re-encrypts every record; both write a copy and rename it over the original, so an interrupted rotation leaves the original openable. `destroy` removes the vault file and its key entry and requires a confirmation token; once the key is gone the data is unreadable, but copies of the file or of a service-held key outside this machine are not reached, and the result says so. `privacy.vault.retention_days` deletes the mappings of older scans when a scan starts (before the vault is opened for the new scan), so the pseudonyms of a deleted scan cannot be restored and a report of that scan can no longer be de-pseudonymised; the header and the scan salt are kept. The key-management key source is the one non-LLM network path of the vault, granted by [ADR-0003 exception](adr/ADR-0003-exception-kms.md); it is off by default and refused in the `airgapped` profile.
 
 ### 6.4 Threat model (summary; full version in `docs/THREAT_MODEL.md`)
 

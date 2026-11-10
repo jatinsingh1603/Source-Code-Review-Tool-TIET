@@ -132,8 +132,21 @@ level = "L3"
 # key_source = "keyring"
 #~ Secret reference to the passphrase; required when key_source is passphrase.
 #? passphrase = "env:CODEKAVACH_VAULT_PASSPHRASE"
-#~ Days after which a scan's mappings may be removed from the vault; unset keeps them. Not enforced yet: retention is applied by the vault tooling of E10-03.
+#~ Days after which a scan's mappings are removed from the vault at the start of a scan; unset keeps them. Removed mappings cannot be restored, and their payloads can no longer be checked against the vault by the egress guard.
 #? retention_days = 0
+
+#~ The key-management service, used when key_source is kms.
+[privacy.vault.kms]
+#~ HTTPS base URL of the key-management service; required for key_source kms.
+#? endpoint = ""
+#~ Name of the key in the service that wraps the vault data key.
+#? key_id = ""
+#~ Secret reference to the service credential; required for key_source kms.
+#? token = "env:GITHUB_TOKEN"
+#~ Host names the key-management client may contact. Empty refuses every host, so the source stays unusable until the endpoint's host is listed on purpose.
+# host_allowlist = []
+#~ Seconds the key-management client waits for the service.
+# timeout_seconds = 5.0
 
 #~ Limits the egress guard applies.
 [privacy.egress]

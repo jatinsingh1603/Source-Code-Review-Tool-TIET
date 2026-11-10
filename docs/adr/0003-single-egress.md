@@ -72,6 +72,7 @@ Granted exceptions:
 | Module | Destination class | Granted by |
 |--------|-------------------|------------|
 | `codekavach.privacy.egress.transport` | Configured LLM provider endpoints | This record |
+| `codekavach.privacy.vault.kms` | The operator's key-management service, for the vault data key only | [ADR-0003 exception: key management](ADR-0003-exception-kms.md) |
 
 Expected future requests, none granted yet:
 
@@ -80,7 +81,6 @@ Expected future requests, none granted yet:
 | Advisory database download for SCA | E19 |
 | GitHub client for issue and Projects sync; it sends finding text to the client's own repository | E34 |
 | Dataset download for the evaluation harness | E36 |
-| KMS access for vault keys | E10 |
 
 ### Consequences (positive, negative, neutral)
 

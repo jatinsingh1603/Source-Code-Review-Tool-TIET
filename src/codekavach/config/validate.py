@@ -11,6 +11,7 @@ name keys, levels, stage names and provider ids (a closed, validated pattern), n
 
 from collections.abc import Mapping
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from codekavach.config.errors import DEFAULT_SEVERITY, ConfigErrorCode, ConfigIssue
 from codekavach.config.models.llm import AUTO, ProviderSettings
@@ -35,6 +36,7 @@ STAGE_NAMES: tuple[str, ...] = (
 UNSKIPPABLE_WITH_LLM: tuple[str, ...] = ("privacy-prepare", "restore")
 LLM_STAGE = "llm-review"
 PUBLIC_TIER_FLOOR = PrivacyLevel.L3
+AIRGAPPED = "airgapped"
 L0_HINT = "choose a local provider, set llm.enabled = false, or use a level from L1 to L4."
 
 
@@ -131,6 +133,37 @@ def _privacy_rules(settings: Settings, out: _Collector) -> None:
         )
 
 
+def _vault_rules(settings: Settings, out: _Collector) -> None:
+    """The key-management source needs the network, which the air-gapped profile never has."""
+    vault = settings.privacy.vault
+    if vault.key_source == "kms" and settings.profile == AIRGAPPED:
+        out.add(
+            ConfigErrorCode.CK_CFG_036,
+            "privacy.vault.key_source",
+            "privacy.vault.key_source is kms under the airgapped profile: the key-management "
+            "client contacts a network host, which nothing in this profile may do",
+            hint="use the keyring or a passphrase for the vault key.",
+        )
+    elif vault.key_source == "kms":
+        for name in ("endpoint", "key_id", "token"):
+            if getattr(vault.kms, name) is None:
+                out.add(
+                    ConfigErrorCode.CK_CFG_033,
+                    f"privacy.vault.kms.{name}",
+                    f"privacy.vault.kms.{name} is required when privacy.vault.key_source is kms",
+                )
+    if vault.key_source == "kms" and settings.profile != AIRGAPPED and vault.kms.endpoint:
+        host = (urlsplit(vault.kms.endpoint).hostname or "").lower()
+        if host not in {entry.lower() for entry in vault.kms.host_allowlist}:
+            out.add(
+                ConfigErrorCode.CK_CFG_034,
+                "privacy.vault.kms.endpoint",
+                f"the host {host} of privacy.vault.kms.endpoint is not in "
+                "privacy.vault.kms.host_allowlist",
+                hint="list the host on purpose; an empty allow-list refuses every host.",
+            )
+
+
 def _egress_rules(settings: Settings, out: _Collector) -> None:
     """No value may switch off a scanner (E12-01); a limit of zero is what would read as "none".
 
@@ -209,6 +242,7 @@ def semantic_checks(
     out = _Collector(origins)
     _llm_rules(settings, out)
     _privacy_rules(settings, out)
+    _vault_rules(settings, out)
     _egress_rules(settings, out)
     _path_rules(settings, project_root, out)
     _stage_rules(settings, out)

@@ -37,6 +37,7 @@ from codekavach.core.models import Confidence, PrivacyLevel, TrustTier
 FLOOR_VIOLATION = "[CK-CFG-037]"
 BAD_RULE = "[CK-CFG-039]"
 MISSING_FIELD = "[CK-CFG-033]"
+BAD_URL = "[CK-CFG-034]"
 MAX_PATH_RULES = 500
 MAX_PATTERN_LENGTH = 256
 DEFAULT_TIER_LEVELS: dict[TrustTier, PrivacyLevel] = {
@@ -104,6 +105,58 @@ class PathRule(SectionModel):
         return self
 
 
+class KmsSettings(SectionModel):
+    """The external key-management source of the vault (E10-03, ADR-0003 exception).
+
+    Used only when ``privacy.vault.key_source`` is ``kms``. The only thing that crosses the
+    connection is the vault's wrapped 32-byte data key. The client refuses any host that is not in
+    ``host_allowlist`` (an empty list refuses every host), plain HTTP and redirects.
+    """
+
+    endpoint: str | None = Field(
+        default=None,
+        description="HTTPS base URL of the key-management service; required for key_source kms.",
+        json_schema_extra=restricted(),
+    )
+    key_id: str | None = Field(
+        default=None,
+        description="Name of the key in the service that wraps the vault data key.",
+        json_schema_extra=restricted(),
+    )
+    token: SecretRef | None = Field(
+        default=None,
+        description="Secret reference to the service credential; required for key_source kms.",
+        json_schema_extra=restricted(),
+    )
+    host_allowlist: StrList = Field(
+        default_factory=list,
+        description=(
+            "Host names the key-management client may contact. Empty refuses every host, so "
+            "the source stays unusable until the endpoint's host is listed on purpose."
+        ),
+        json_schema_extra=restricted(),
+    )
+    timeout_seconds: Annotated[
+        float, float_in_range(0.5, 30.0, "privacy.vault.kms.timeout_seconds")
+    ] = Field(
+        default=5.0,
+        description="Seconds the key-management client waits for the service.",
+        json_schema_extra={"minimum": 0.5, "maximum": 30.0} | restricted(),
+    )
+
+    @field_validator("endpoint")
+    @classmethod
+    def _https_endpoint(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        parts = urlsplit(value)
+        if parts.scheme != "https" or not parts.hostname:
+            raise ValueError(f"{BAD_URL} privacy.vault.kms.endpoint must be an https URL")
+        if parts.username or parts.password:
+            raise ValueError(f"{BAD_URL} privacy.vault.kms.endpoint must not hold credentials")
+        return value
+
+
 class VaultSettings(SectionModel):
     """Where the mapping vault's key comes from (E10 implements)."""
 
@@ -121,11 +174,17 @@ class VaultSettings(SectionModel):
         Field(
             default=None,
             description=(
-                "Days after which a scan's mappings may be removed from the vault; unset keeps "
-                "them. Not enforced yet: retention is applied by the vault tooling of E10-03."
+                "Days after which a scan's mappings are removed from the vault at the start of a "
+                "scan; unset keeps them. Removed mappings cannot be restored, and their payloads "
+                "can no longer be checked against the vault by the egress guard."
             ),
             json_schema_extra=bounds(1, 36_500) | restricted(),
         )
+    )
+
+    kms: KmsSettings = Field(
+        default_factory=KmsSettings,
+        description="The key-management service, used when key_source is kms.",
     )
 
     @model_validator(mode="after")

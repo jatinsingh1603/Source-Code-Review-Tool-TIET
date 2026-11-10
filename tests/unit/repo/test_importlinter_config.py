@@ -36,14 +36,18 @@ def test_external_packages_included() -> None:
     assert _config().getboolean("importlinter", "include_external_packages")
 
 
-def test_transport_is_the_only_ignore_source() -> None:
+def test_only_the_adr_granted_modules_are_ignore_sources() -> None:
+    """The egress transport, and the key-management client granted by its ADR-0003 exception."""
     config = _config()
     sources = set()
     for section in config.sections():
         if config.has_option(section, "ignore_imports"):
             for line in _lines(config.get(section, "ignore_imports")):
                 sources.add(line.split("->")[0].strip())
-    assert sources == {"codekavach.privacy.egress.transport"}
+    assert sources == {
+        "codekavach.privacy.egress.transport",
+        "codekavach.privacy.vault.kms",
+    }
 
 
 def _internal_modules() -> set[str]:

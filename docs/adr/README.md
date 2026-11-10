@@ -52,3 +52,11 @@ If the title matches a `Reserved` row, the helper uses that number and changes t
 | [0007](0007-pipeline-contracts.md) | Pipeline contracts | Proposed | 2026-09-28 | | #126 (E04-01) |
 | [0008](0008-cli-conventions.md) | CLI conventions | Proposed | 2026-10-04 | | #160 (E05-01) |
 | [0009](0009-domain-model-conventions.md) | Domain-model conventions | Proposed | 2026-10-06 | | #49 (E02-01) |
+
+### Amendment records
+
+An amendment record extends a decision under the exception procedure of that decision. It carries no number of its own and is not an index row.
+
+| Record | Amends | Issue |
+|--------|--------|-------|
+| [ADR-0003 exception: key management](ADR-0003-exception-kms.md) | [0003](0003-single-egress.md) | #213 (E10-03) |

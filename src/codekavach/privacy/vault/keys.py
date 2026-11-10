@@ -11,7 +11,9 @@ Four sources, one result: 32 bytes wrapped in ``SecretBytes``.
   recorded in the vault header, so a vault made under old parameters still opens after the
   defaults change. The passphrase comes from ``privacy.vault.passphrase`` (a secret reference) or
   from the ``prompt`` callable and is never stored.
-- ``kms``: an external key-management service. Not available before E10-03.
+- ``kms``: an external key-management service (E10-03). It has no master key: the service
+  seals the data key itself, so ``resolve_master_key`` does not serve it and the vault asks the
+  client of ``load_kms_source`` instead.
 - ``ephemeral``: a key that lives as long as the process, for tests; it refuses to run when the
   process is not under pytest.
 
@@ -20,12 +22,13 @@ The default scrypt cost is N=2**15, r=8, p=1: 32 MiB and about 0.1 s on a laptop
 """
 
 import hashlib
+import importlib
 import secrets
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, ClassVar, Final, NoReturn
+from typing import Any, ClassVar, Final, NoReturn, Protocol
 
 from codekavach.config import Settings
 from codekavach.config.errors import ConfigError
@@ -44,6 +47,18 @@ _MAX_R: Final = 32
 _MAX_P: Final = 16
 _MAX_MEMORY: Final = 2**30
 _EPHEMERAL_KEYS: dict[str, bytes] = {}
+
+
+class KmsClient(Protocol):
+    """A provider-neutral key-management client: seals and opens one data key."""
+
+    def wrap(self, data_key: bytes) -> bytes:
+        """The data key sealed by the service."""
+        ...
+
+    def unwrap(self, blob: bytes) -> bytes:
+        """The data key behind ``blob``."""
+        ...
 
 
 class KeySource(StrEnum):
@@ -235,6 +250,42 @@ def resolve_master_key(
         return _from_passphrase(settings, prompt, kdf, env)
     if key_source is KeySource.EPHEMERAL:
         return _ephemeral(account)
-    raise KeySourceUnavailable(
-        "the key-management source is not available yet; it arrives with issue E10-03"
-    )
+    raise KeySourceUnavailable("the key-management source has no master key to resolve")
+
+
+def forget_master_key(source: KeySource | str, account: str) -> bool:
+    """Delete the stored master key of ``account`` for ``source``; whether an entry was removed.
+
+    Only the keyring and the ephemeral source keep a key. A passphrase and a key-management key
+    live outside the machine's stores, so nothing is removed and ``False`` is returned.
+    """
+    try:
+        key_source = KeySource(source)
+    except ValueError:
+        return False
+    if key_source is KeySource.EPHEMERAL:
+        return _EPHEMERAL_KEYS.pop(account, None) is not None
+    if key_source is not KeySource.KEYRING:
+        return False
+    try:
+        keyring = open_keyring("keyring")
+        if keyring.get_password(KEYRING_SERVICE, account) is None:
+            return False
+        keyring.delete_password(KEYRING_SERVICE, account)
+    except Exception:  # noqa: BLE001 - any backend failure means the entry may still exist
+        return False
+    return True
+
+
+def load_kms_source(settings: Settings | None, env: Mapping[str, str] | None = None) -> KmsClient:
+    """The key-management client named by ``privacy.vault.kms``.
+
+    The module that opens the connection is imported here, at run time, and by name. That keeps
+    the network client library off the static import graph of every other module, which is how the
+    single-egress contract (ADR-0003) is kept: only a vault that uses this source loads it.
+    """
+    if settings is None:
+        raise KeySourceUnavailable("the key-management source needs the configuration")
+    module = importlib.import_module("codekavach.privacy.vault.kms")
+    source: KmsClient = module.KmsKeySource.from_settings(settings, env=env)
+    return source

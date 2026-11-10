@@ -95,6 +95,10 @@ min_confidence = "low"
 [privacy.vault]
 key_source = "keyring"
 
+[privacy.vault.kms]
+host_allowlist = []
+timeout_seconds = 5.0
+
 [privacy.egress]
 max_payload_bytes = 262144
 aggregation_budget_pct = 100.0

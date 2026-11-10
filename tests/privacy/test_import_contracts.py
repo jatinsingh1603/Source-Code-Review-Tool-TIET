@@ -63,6 +63,18 @@ VIOLATIONS = {
         {"codekavach/llm/providers/bad.py": "import openai\n"},
         "i1-single-egress",
     ),
+    "kms-exception-store-imports-httpx": (
+        {"codekavach/privacy/vault/store.py": "import httpx\n"},
+        "vault-network-only-in-kms",
+    ),
+    "kms-exception-other-vault-module-imports-requests": (
+        {"codekavach/privacy/vault/info.py": "import requests\n"},
+        "vault-network-only-in-kms",
+    ),
+    "kms-exception-does-not-widen-i1": (
+        {"codekavach/privacy/restore/bad.py": "import httpx\n"},
+        "i1-single-egress",
+    ),
     "i3-github-vault": (
         {"codekavach/integrations/github/bad.py": "import codekavach.privacy.vault\n"},
         "i3-vault-locality",
