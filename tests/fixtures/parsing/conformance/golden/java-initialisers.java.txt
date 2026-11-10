@@ -1,0 +1,20 @@
+identifiers:
+  initialisers.java.txt:1:14 'Initialisers'
+  initialisers.java.txt:1:35 'Base'
+  initialisers.java.txt:2:16 'counter'
+  initialisers.java.txt:3:9 'instanceValue'
+  initialisers.java.txt:6:9 'counter'
+  initialisers.java.txt:10:9 'instanceValue'
+  initialisers.java.txt:10:25 'counter'
+  initialisers.java.txt:13:5 'Initialisers'
+  initialisers.java.txt:17:5 'Initialisers'
+  initialisers.java.txt:17:22 'start'
+  initialisers.java.txt:18:15 'start'
+  initialisers.java.txt:19:9 'instanceValue'
+  initialisers.java.txt:19:26 'start'
+  initialisers.java.txt:23:7 'Base'
+  initialisers.java.txt:24:5 'Base'
+  initialisers.java.txt:24:14 'seed'
+strings:
+comments:
+error_count: 0

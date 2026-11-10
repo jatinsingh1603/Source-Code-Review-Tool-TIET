@@ -1,0 +1,12 @@
+method 'Broken.ok' ('ok')
+  header 2:5-2:18
+  body   2:19-2:32
+  full   2:5-2:32
+method 'Broken.bad' ('bad')
+  header 4:5-4:18
+  body   4:19-6:6
+  full   4:5-6:6
+method 'Broken.later' ('later')
+  header 8:5-8:21
+  body   8:22-8:35
+  full   8:5-8:35

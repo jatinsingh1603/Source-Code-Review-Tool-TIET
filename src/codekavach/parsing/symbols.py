@@ -182,7 +182,8 @@ def _bind(
 ) -> tuple[tuple[Scope, ...], tuple[Binding, ...], ScopeBuilder]:
     binder = cast("ScopeBinder | None", getattr(spec, "bind_scopes", None))
     builder = ScopeBuilder(
-        class_body_sees_members=bool(getattr(spec, "class_body_sees_members", True))
+        class_body_sees_members=bool(getattr(spec, "class_body_sees_members", True)),
+        class_scopes_visible=bool(getattr(spec, "class_scopes_visible", False)),
     )
     builder.open("module", None)
     if binder is not None and parsed.tree is not None:

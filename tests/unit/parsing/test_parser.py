@@ -45,8 +45,8 @@ def test_parse_raises_parse_unavailable_for_an_unpinned_language() -> None:
 
 
 def test_parse_without_a_registered_spec_extracts_nothing() -> None:
-    """Go has a pinned grammar (parses fine) but no registered LanguageSpec (E07-05's job)."""
-    result = parse("a.go", Language.GO, "package main\n")
+    """Ruby has a pinned grammar (parses fine) but no registered LanguageSpec yet."""
+    result = parse("a.rb", Language.RUBY, "package main\n")
     assert result.identifiers() == ()
     assert result.string_literals() == ()
     assert result.comments() == ()

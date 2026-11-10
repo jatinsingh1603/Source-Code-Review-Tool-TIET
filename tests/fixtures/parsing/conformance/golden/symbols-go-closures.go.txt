@@ -1,0 +1,58 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+  2 parent=1 function
+  3 parent=1 function
+  4 parent=0 function
+  5 parent=4 function
+  6 parent=4 block
+  7 parent=6 block
+  8 parent=4 function
+  9 parent=4 function
+symbols:
+  closures.go.txt:1:9 'closures' module scope=-1 ref
+  closures.go.txt:3:6 'counter' function scope=0 def
+  closures.go.txt:3:23 'int' variable scope=-1 ref
+  closures.go.txt:4:2 'count' variable scope=1 def
+  closures.go.txt:5:16 'int' variable scope=-1 ref
+  closures.go.txt:6:3 'count' variable scope=1 ref
+  closures.go.txt:7:10 'count' variable scope=1 ref
+  closures.go.txt:11:6 'apply' function scope=0 def
+  closures.go.txt:11:12 'values' parameter scope=4 def
+  closures.go.txt:11:21 'int' variable scope=-1 ref
+  closures.go.txt:11:26 'int' variable scope=-1 ref
+  closures.go.txt:12:2 'sum' variable scope=4 def
+  closures.go.txt:13:2 'add' variable scope=4 def
+  closures.go.txt:13:14 'a' parameter scope=5 def
+  closures.go.txt:13:16 'int' variable scope=-1 ref
+  closures.go.txt:14:3 'sum' variable scope=4 ref
+  closures.go.txt:14:10 'a' parameter scope=5 ref
+  closures.go.txt:16:6 '_' variable scope=-1 ref
+  closures.go.txt:16:9 'v' variable scope=6 def
+  closures.go.txt:16:20 'values' parameter scope=4 ref
+  closures.go.txt:17:3 'add' variable scope=4 ref
+  closures.go.txt:17:7 'v' variable scope=6 ref
+  closures.go.txt:20:3 '_' variable scope=-1 ref
+  closures.go.txt:20:7 'recover' variable scope=-1 ref
+  closures.go.txt:22:10 'n' parameter scope=9 def
+  closures.go.txt:22:12 'int' variable scope=-1 ref
+  closures.go.txt:22:19 'sum' variable scope=4 ref
+  closures.go.txt:22:26 'n' parameter scope=9 ref
+  closures.go.txt:23:9 'sum' variable scope=4 ref
+extents:
+  'counter' closures.go.txt:3-9
+  'apply' closures.go.txt:11-24
+references:
+  'closures' scope=-1: 1
+  'counter' scope=0: 3
+  'int' scope=-1: 3, 5, 11, 11, 13, 22
+  'count' scope=1: 4, 6, 7
+  'apply' scope=0: 11
+  'values' scope=4: 11, 16
+  'sum' scope=4: 12, 14, 22, 23
+  'add' scope=4: 13, 17
+  'a' scope=5: 13, 14
+  '_' scope=-1: 16, 20
+  'v' scope=6: 16, 17
+  'recover' scope=-1: 20
+  'n' scope=9: 22, 22

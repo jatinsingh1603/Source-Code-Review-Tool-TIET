@@ -47,6 +47,18 @@ _JS_FUNCTION_VALUES: Final = frozenset(
 )
 _JS_CLASSES: Final = frozenset({"class_declaration", "abstract_class_declaration", "class"})
 _JS_FIELDS: Final = frozenset({"field_definition", "public_field_definition"})
+_JAVA_TYPES: Final = frozenset(
+    {
+        "class_declaration",
+        "interface_declaration",
+        "enum_declaration",
+        "record_declaration",
+        "annotation_type_declaration",
+    }
+)
+_JAVA_METHODS: Final = frozenset(
+    {"method_declaration", "constructor_declaration", "compact_constructor_declaration"}
+)
 
 
 class FunctionRange(KavachModel):
@@ -235,6 +247,116 @@ def _javascript_functions(root: Node) -> list[_Raw]:
     return found
 
 
+def _java_header_start(node: Node) -> int:
+    """After the annotations: the first modifier keyword or, with none, the first other child."""
+    for child in node.children:
+        if child.type == "modifiers":
+            for modifier in child.children:
+                if modifier.type not in ("annotation", "marker_annotation"):
+                    return modifier.start_byte
+        else:
+            return child.start_byte
+    return node.start_byte
+
+
+def _java_decorators(node: Node) -> list[tuple[int, int]]:
+    for child in node.children:
+        if child.type == "modifiers":
+            return [
+                (c.start_byte, c.end_byte)
+                for c in child.children
+                if c.type in ("annotation", "marker_annotation")
+            ]
+    return []
+
+
+def _java_functions(root: Node) -> list[_Raw]:
+    found: list[_Raw] = []
+    stack: list[tuple[Node, str]] = [(root, "")]
+    while stack:
+        node, prefix = stack.pop()
+        qualified = prefix
+        if node.type in _JAVA_TYPES or node.type in _JAVA_METHODS:
+            name_node = node.child_by_field_name("name")
+            body = node.child_by_field_name("body")
+            name = _text(name_node)
+            qualified = _qualify(prefix, name) if name else prefix
+            if name_node is not None and name and body is not None:
+                found.append(
+                    _Raw(
+                        name=name,
+                        qualified=qualified,
+                        kind="class" if node.type in _JAVA_TYPES else "method",
+                        name_start=name_node.start_byte,
+                        header_start=_java_header_start(node),
+                        header_end=_header_end(body),
+                        body=(body.start_byte, body.end_byte),
+                        full=(node.start_byte, node.end_byte),
+                        decorators=_java_decorators(node),
+                    )
+                )
+        stack.extend((child, qualified) for child in reversed(node.named_children))
+    return found
+
+
+def _go_receiver(method: Node) -> str:
+    receiver = method.child_by_field_name("receiver")
+    if receiver is None:
+        return ""
+    for parameter in receiver.named_children:
+        written = _text(parameter.child_by_field_name("type"))
+        if written:
+            return written
+    return ""
+
+
+def _go_functions(root: Node) -> list[_Raw]:
+    found: list[_Raw] = []
+    stack: list[Node] = [root]
+    while stack:
+        node = stack.pop()
+        if node.type in ("function_declaration", "method_declaration"):
+            name_node = node.child_by_field_name("name")
+            body = node.child_by_field_name("body")
+            name = _text(name_node)
+            if name_node is not None and name and body is not None:
+                receiver = _go_receiver(node)
+                is_method = node.type == "method_declaration"
+                found.append(
+                    _Raw(
+                        name=name,
+                        qualified=f"({receiver}).{name}" if is_method and receiver else name,
+                        kind="method" if is_method else "function",
+                        name_start=name_node.start_byte,
+                        header_start=node.start_byte,
+                        header_end=_header_end(body),
+                        body=(body.start_byte, body.end_byte),
+                        full=(node.start_byte, node.end_byte),
+                        decorators=[],
+                    )
+                )
+        elif node.type in ("type_spec", "type_alias"):
+            name_node = node.child_by_field_name("name")
+            body = node.child_by_field_name("type")
+            name = _text(name_node)
+            if name_node is not None and name and body is not None:
+                found.append(
+                    _Raw(
+                        name=name,
+                        qualified=name,
+                        kind="class",
+                        name_start=name_node.start_byte,
+                        header_start=node.start_byte,
+                        header_end=_header_end(body),
+                        body=(body.start_byte, body.end_byte),
+                        full=(node.start_byte, node.end_byte),
+                        decorators=[],
+                    )
+                )
+        stack.extend(reversed(node.named_children))
+    return found
+
+
 @dataclass(frozen=True, slots=True)
 class Definition:
     """A named function, method or class with byte offsets (used by the call graph)."""
@@ -255,6 +377,10 @@ def _raws_of(parsed: ParsedFile) -> list[_Raw]:
         raws = _python_functions(root)
     elif parsed.language in (Language.JAVASCRIPT, Language.TYPESCRIPT):
         raws = _javascript_functions(root)
+    elif parsed.language is Language.JAVA:
+        raws = _java_functions(root)
+    elif parsed.language is Language.GO:
+        raws = _go_functions(root)
     else:
         return []
     raws.sort(key=lambda raw: (raw.full[0], -raw.full[1]))

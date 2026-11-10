@@ -1,0 +1,29 @@
+package types
+
+import "fmt"
+
+type Reader interface {
+	Read(p []byte) (n int, err error)
+	fmt.Stringer
+}
+
+type Alias = int
+
+type Pair[K comparable, V any] struct {
+	Key   K
+	Value V
+}
+
+func Map[T, U any](items []T, f func(T) U) []U {
+	out := make([]U, 0, len(items))
+	for _, item := range items {
+		out = append(out, f(item))
+	}
+	return out
+}
+
+type Handler func(name string) error
+
+var anonymous = struct {
+	Field int
+}{Field: 1}

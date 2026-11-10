@@ -1,0 +1,31 @@
+package com.acme.billing;
+
+import java.util.List;
+import java.util.Map;
+import static java.lang.Math.max;
+import com.acme.ledger.*;
+
+/** Accrues interest on an account. */
+public class Engine {
+    private static final int DEFAULT_RATE = 3;
+    private final int rate;
+    private List<String> names;
+
+    public Engine(int rate) {
+        this.rate = rate;
+    }
+
+    // Interest for one period.
+    public int accrue(int amount) {
+        int local = amount * rate;
+        for (int i = 0; i < 2; i++) {
+            local += i;
+        }
+        return max(local, DEFAULT_RATE);
+    }
+
+    public static void main(String[] args) {
+        Engine engine = new Engine(5);
+        System.out.println(engine.accrue(100));
+    }
+}

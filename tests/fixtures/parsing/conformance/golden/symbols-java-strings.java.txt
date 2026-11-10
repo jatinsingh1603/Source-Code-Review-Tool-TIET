@@ -1,0 +1,42 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+symbols:
+  strings.java.txt:1:14 'Strings' class scope=0 def
+  strings.java.txt:2:5 'String' variable scope=-1 ref
+  strings.java.txt:2:12 'text' field scope=1 def
+  strings.java.txt:11:5 'String' variable scope=-1 ref
+  strings.java.txt:11:12 'query' method scope=1 def
+  strings.java.txt:11:18 'String' variable scope=-1 ref
+  strings.java.txt:11:25 'id' parameter scope=2 def
+  strings.java.txt:12:9 'String' variable scope=-1 ref
+  strings.java.txt:12:16 'sql' variable scope=2 def
+  strings.java.txt:12:62 'id' parameter scope=2 ref
+  strings.java.txt:13:9 'String' variable scope=-1 ref
+  strings.java.txt:13:16 'path' variable scope=2 def
+  strings.java.txt:13:33 'id' parameter scope=2 ref
+  strings.java.txt:14:9 'String' variable scope=-1 ref
+  strings.java.txt:14:16 'url' variable scope=2 def
+  strings.java.txt:14:51 'id' parameter scope=2 ref
+  strings.java.txt:15:14 'quote' variable scope=2 def
+  strings.java.txt:16:16 'String' variable scope=-1 ref
+  strings.java.txt:16:23 'format' method scope=-1 ref
+  strings.java.txt:16:39 'sql' variable scope=2 ref
+  strings.java.txt:16:49 'path' variable scope=2 ref
+  strings.java.txt:16:56 'url' variable scope=2 ref
+  strings.java.txt:16:62 'quote' variable scope=2 ref
+extents:
+  'Strings' strings.java.txt:1-18
+  'query' strings.java.txt:11-17
+references:
+  'Strings' scope=0: 1
+  'String' scope=-1: 2, 11, 11, 12, 13, 14, 16
+  'text' scope=1: 2
+  'query' scope=1: 11
+  'id' scope=2: 11, 12, 13, 14
+  'sql' scope=2: 12, 16
+  'path' scope=2: 13, 16
+  'url' scope=2: 14, 16
+  'quote' scope=2: 15, 16
+  'format' scope=-1: 16

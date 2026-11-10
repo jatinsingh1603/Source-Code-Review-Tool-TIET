@@ -31,6 +31,9 @@ The first twelve checks do not depend on the settings. The rest are built from t
 | `storage:database` | storage | no | no | The local database is at the newest schema revision (epic E04). |
 | `parsing:grammar:python` | parsing | yes | no | The tree-sitter grammar loads (epic E07). |
 | `parsing:grammar:javascript` | parsing | yes | no | The tree-sitter grammar loads (epic E07). |
+| `parsing:grammar:typescript` | parsing | no | no | The tree-sitter grammar loads and reports its pinned version (epic E07). |
+| `parsing:grammar:java` | parsing | no | no | The tree-sitter grammar loads and reports its pinned version (epic E07). |
+| `parsing:grammar:go` | parsing | no | no | The tree-sitter grammar loads and reports its pinned version (epic E07). |
 | `secrets:keyring` | secrets | no | no | A usable OS keyring backend exists; no entry is read. |
 | `plugins:load` | plugins | no | no | Every allowed plugin loads. |
 | `plugins:pipeline` | plugins | no | no | The installed stages resolve into a valid order. |

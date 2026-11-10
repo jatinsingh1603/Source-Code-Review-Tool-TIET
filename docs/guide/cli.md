@@ -42,15 +42,18 @@ PASS  config:valid                profile none, 0 warning(s)
 PASS  storage:state-dir           does not exist yet and can be created
 SKIP  storage:artefacts           not available in this build
 PASS  storage:database            no database yet; the first scan creates it
-SKIP  parsing:grammar:python      not available in this build
-SKIP  parsing:grammar:javascript  not available in this build
+PASS  parsing:grammar:python      grammar loads, version 0.9.0
+PASS  parsing:grammar:javascript  grammar loads, version 0.9.0
+PASS  parsing:grammar:typescript  grammar loads, version 0.9.0
+PASS  parsing:grammar:java        grammar loads, version 0.9.0
+PASS  parsing:grammar:go          grammar loads, version 0.9.0
 WARN  secrets:keyring             the keyring backend is insecure and is refused
 PASS  plugins:load                every allowed plugin loads
 PASS  plugins:pipeline            0 stage(s) resolve into a valid order
 PASS  provider:mock:configured    kind mock
 SKIP  provider:mock:reachable     use --probe-providers
 hint  secrets:keyring             install a keyring backend or use passphrase mode
-9 passed, 1 warning, 0 failed, 4 skipped
+12 passed, 1 warning, 0 failed, 2 skipped
 ```
 
 Versions, platform and the keyring line differ between machines. `doctor` diagnoses and changes nothing. It exits with 1 when a required check failed (with `--strict`, also on a warning) and with 0 otherwise. A `WARN` is an optional tool that is missing, such as a keyring or an analysis engine, and the checks are listed in [cli-doctor.md](../reference/cli-doctor.md). `doctor` sends nothing over the network unless you pass `--probe-providers`.

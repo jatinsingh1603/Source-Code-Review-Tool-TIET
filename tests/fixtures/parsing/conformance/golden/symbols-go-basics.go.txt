@@ -1,0 +1,78 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=0 function
+  3 parent=0 function
+  4 parent=3 block
+  5 parent=4 block
+symbols:
+  basics.go.txt:1:9 'billing' module scope=-1 ref
+  basics.go.txt:10:7 'DefaultRate' constant scope=0 def
+  basics.go.txt:12:5 'counter' variable scope=0 def
+  basics.go.txt:12:13 'int' variable scope=-1 ref
+  basics.go.txt:15:6 'Engine' class scope=0 def
+  basics.go.txt:16:2 'rate' field scope=1 def
+  basics.go.txt:16:7 'int' variable scope=-1 ref
+  basics.go.txt:17:2 'name' field scope=1 def
+  basics.go.txt:17:7 'string' variable scope=-1 ref
+  basics.go.txt:20:6 'New' function scope=0 def
+  basics.go.txt:20:10 'rate' parameter scope=2 def
+  basics.go.txt:20:15 'int' variable scope=-1 ref
+  basics.go.txt:20:21 'Engine' class scope=0 ref
+  basics.go.txt:21:10 'Engine' class scope=0 ref
+  basics.go.txt:21:17 'rate' parameter scope=2 ref
+  basics.go.txt:21:23 'rate' parameter scope=2 ref
+  basics.go.txt:25:7 'e' parameter scope=3 def
+  basics.go.txt:25:10 'Engine' class scope=0 ref
+  basics.go.txt:25:18 'Accrue' method scope=1 def
+  basics.go.txt:25:25 'amount' parameter scope=3 def
+  basics.go.txt:25:32 'int64' variable scope=-1 ref
+  basics.go.txt:25:39 'int64' variable scope=-1 ref
+  basics.go.txt:26:5 'rate' variable scope=4 def
+  basics.go.txt:26:13 'e' parameter scope=3 ref
+  basics.go.txt:26:15 'rate' field scope=-1 ref
+  basics.go.txt:26:21 'rate' variable scope=4 ref
+  basics.go.txt:27:10 'amount' parameter scope=3 ref
+  basics.go.txt:27:19 'int64' variable scope=-1 ref
+  basics.go.txt:27:25 'rate' variable scope=4 ref
+  basics.go.txt:29:2 'sum' variable scope=3 def
+  basics.go.txt:29:9 'sha256' variable scope=-1 ref
+  basics.go.txt:29:16 'Sum256' field scope=-1 ref
+  basics.go.txt:29:25 'byte' variable scope=-1 ref
+  basics.go.txt:29:30 'e' parameter scope=3 ref
+  basics.go.txt:29:32 'name' field scope=-1 ref
+  basics.go.txt:30:2 'fmt' variable scope=-1 ref
+  basics.go.txt:30:6 'Println' field scope=-1 ref
+  basics.go.txt:30:14 'sum' variable scope=3 ref
+  basics.go.txt:30:19 'ledger' variable scope=-1 ref
+  basics.go.txt:30:26 'Name' field scope=-1 ref
+extents:
+  'Engine' basics.go.txt:15-18
+  'New' basics.go.txt:20-22
+  'Accrue' basics.go.txt:25-32
+references:
+  'billing' scope=-1: 1
+  'DefaultRate' scope=0: 10
+  'counter' scope=0: 12
+  'int' scope=-1: 12, 16, 20
+  'Engine' scope=0: 15, 20, 21, 25
+  'rate' scope=1: 16
+  'name' scope=1: 17
+  'string' scope=-1: 17
+  'New' scope=0: 20
+  'rate' scope=2: 20, 21, 21
+  'e' scope=3: 25, 26, 29
+  'Accrue' scope=1: 25
+  'amount' scope=3: 25, 27
+  'int64' scope=-1: 25, 25, 27
+  'rate' scope=4: 26, 26, 27
+  'rate' scope=-1: 26
+  'sum' scope=3: 29, 30
+  'sha256' scope=-1: 29
+  'Sum256' scope=-1: 29
+  'byte' scope=-1: 29
+  'name' scope=-1: 29
+  'fmt' scope=-1: 30
+  'Println' scope=-1: 30
+  'ledger' scope=-1: 30
+  'Name' scope=-1: 30

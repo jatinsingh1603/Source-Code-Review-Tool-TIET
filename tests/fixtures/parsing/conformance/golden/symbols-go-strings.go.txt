@@ -1,0 +1,39 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+symbols:
+  strings.go.txt:1:9 'stringsample' module scope=-1 ref
+  strings.go.txt:5:7 'raw' constant scope=0 def
+  strings.go.txt:8:6 'query' function scope=0 def
+  strings.go.txt:8:12 'id' parameter scope=1 def
+  strings.go.txt:8:15 'string' variable scope=-1 ref
+  strings.go.txt:8:23 'string' variable scope=-1 ref
+  strings.go.txt:9:2 'sql' variable scope=1 def
+  strings.go.txt:9:49 'id' parameter scope=1 ref
+  strings.go.txt:10:2 'path' variable scope=1 def
+  strings.go.txt:10:20 'id' parameter scope=1 ref
+  strings.go.txt:11:2 'url' variable scope=1 def
+  strings.go.txt:11:38 'id' parameter scope=1 ref
+  strings.go.txt:12:2 'letter' variable scope=1 def
+  strings.go.txt:13:9 'fmt' variable scope=-1 ref
+  strings.go.txt:13:13 'Sprintf' field scope=-1 ref
+  strings.go.txt:13:30 'sql' variable scope=1 ref
+  strings.go.txt:13:40 'path' variable scope=1 ref
+  strings.go.txt:13:47 'url' variable scope=1 ref
+  strings.go.txt:13:53 'string' variable scope=-1 ref
+  strings.go.txt:13:60 'letter' variable scope=1 ref
+  strings.go.txt:13:70 'raw' constant scope=0 ref
+extents:
+  'query' strings.go.txt:8-14
+references:
+  'stringsample' scope=-1: 1
+  'raw' scope=0: 5, 13
+  'query' scope=0: 8
+  'id' scope=1: 8, 9, 10, 11
+  'string' scope=-1: 8, 8, 13
+  'sql' scope=1: 9, 13
+  'path' scope=1: 10, 13
+  'url' scope=1: 11, 13
+  'letter' scope=1: 12, 13
+  'fmt' scope=-1: 13
+  'Sprintf' scope=-1: 13

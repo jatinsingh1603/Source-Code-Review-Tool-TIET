@@ -1,0 +1,12 @@
+method 'Scoping.shadow' ('shadow')
+  header 8:5-8:26
+  body   8:27-21:6
+  full   8:5-21:6
+method 'Scoping.read' ('read')
+  header 23:5-23:47
+  body   23:48-31:6
+  full   23:5-31:6
+method 'Scoping.names' ('names')
+  header 33:5-33:21
+  body   33:22-33:47
+  full   33:5-33:47

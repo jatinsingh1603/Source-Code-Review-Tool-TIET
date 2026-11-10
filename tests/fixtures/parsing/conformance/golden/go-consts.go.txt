@@ -1,0 +1,21 @@
+identifiers:
+  consts.go.txt:1:9 'consts'
+  consts.go.txt:4:2 'First'
+  consts.go.txt:5:2 'Second'
+  consts.go.txt:6:2 'Third'
+  consts.go.txt:9:7 'Max'
+  consts.go.txt:9:12 'Min'
+  consts.go.txt:12:2 'alpha'
+  consts.go.txt:13:2 'beta'
+  consts.go.txt:13:8 'string'
+  consts.go.txt:16:6 'values'
+  consts.go.txt:16:16 'int'
+  consts.go.txt:16:21 'string'
+  consts.go.txt:17:9 'alpha'
+  consts.go.txt:17:17 'First'
+  consts.go.txt:17:25 'Max'
+  consts.go.txt:17:31 'Min'
+  consts.go.txt:17:36 'beta'
+strings:
+comments:
+error_count: 0

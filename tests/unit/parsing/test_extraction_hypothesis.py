@@ -17,7 +17,12 @@ from tests.support.conformance import (
     assert_identifiers_exhaustive,
     assert_strings_and_comments_disjoint,
 )
-from tests.support.parsing_generators import javascript_program, python_program
+from tests.support.parsing_generators import (
+    go_program,
+    java_program,
+    javascript_program,
+    python_program,
+)
 
 
 @given(st.permutations(range(8)).map(lambda order: python_program(list(order))))
@@ -31,4 +36,20 @@ def test_python_identifiers_exhaustive_over_generated_programs(text: str) -> Non
 def test_javascript_identifiers_exhaustive_over_generated_programs(text: str) -> None:
     parsed = parse("generated.js", Language.JAVASCRIPT, text)
     assert_identifiers_exhaustive(Language.JAVASCRIPT, text, parsed)
+    assert_strings_and_comments_disjoint(parsed)
+
+
+@given(st.permutations(range(8)).map(lambda order: java_program(list(order))))
+def test_java_identifiers_exhaustive_over_generated_programs(text: str) -> None:
+    parsed = parse("Generated.java", Language.JAVA, text)
+    assert parsed.error_count == 0
+    assert_identifiers_exhaustive(Language.JAVA, text, parsed)
+    assert_strings_and_comments_disjoint(parsed)
+
+
+@given(st.permutations(range(8)).map(lambda order: go_program(list(order))))
+def test_go_identifiers_exhaustive_over_generated_programs(text: str) -> None:
+    parsed = parse("generated.go", Language.GO, text)
+    assert parsed.error_count == 0
+    assert_identifiers_exhaustive(Language.GO, text, parsed)
     assert_strings_and_comments_disjoint(parsed)

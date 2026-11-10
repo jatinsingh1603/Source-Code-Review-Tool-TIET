@@ -1,0 +1,4 @@
+function 'shadow' ('shadow')
+  header 3:1-3:23
+  body   3:24-24:2
+  full   3:1-24:2

@@ -1,0 +1,12 @@
+method 'Engine.Engine' ('Engine')
+  header 14:5-14:28
+  body   14:29-16:6
+  full   14:5-16:6
+method 'Engine.accrue' ('accrue')
+  header 19:5-19:34
+  body   19:35-25:6
+  full   19:5-25:6
+method 'Engine.main' ('main')
+  header 27:5-27:43
+  body   27:44-30:6
+  full   27:5-30:6

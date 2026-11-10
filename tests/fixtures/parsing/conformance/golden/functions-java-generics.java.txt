@@ -1,0 +1,8 @@
+method 'Box.convert' ('convert')
+  header 8:5-8:73
+  body   8:74-10:6
+  full   8:5-10:6
+method 'Box.first' ('first')
+  header 12:5-12:41
+  body   12:42-14:6
+  full   12:5-14:6

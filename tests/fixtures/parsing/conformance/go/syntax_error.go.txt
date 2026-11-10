@@ -1,0 +1,9 @@
+package broken
+
+func ok(a int) int { return a }
+
+func bad(a int {
+	return a +
+}
+
+func later(b int) int { return b }

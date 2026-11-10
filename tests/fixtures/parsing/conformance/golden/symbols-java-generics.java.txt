@@ -1,0 +1,77 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+  3 parent=1 function
+symbols:
+  generics.java.txt:1:8 'java' module scope=-1 ref
+  generics.java.txt:1:13 'util' module scope=-1 ref
+  generics.java.txt:1:18 'Map' import scope=0 def
+  generics.java.txt:2:8 'java' module scope=-1 ref
+  generics.java.txt:2:13 'util' module scope=-1 ref
+  generics.java.txt:2:18 'List' import scope=0 def
+  generics.java.txt:4:14 'Box' class scope=0 def
+  generics.java.txt:4:18 'T' class scope=1 def
+  generics.java.txt:4:28 'Number' variable scope=-1 ref
+  generics.java.txt:4:36 'U' class scope=1 def
+  generics.java.txt:5:13 'T' class scope=1 ref
+  generics.java.txt:5:15 'item' field scope=1 def
+  generics.java.txt:6:13 'Map' import scope=0 ref
+  generics.java.txt:6:17 'String' variable scope=-1 ref
+  generics.java.txt:6:25 'List' import scope=0 ref
+  generics.java.txt:6:30 'U' class scope=1 ref
+  generics.java.txt:6:34 'index' field scope=1 def
+  generics.java.txt:8:6 'R' class scope=2 def
+  generics.java.txt:8:9 'R' class scope=2 ref
+  generics.java.txt:8:11 'convert' method scope=1 def
+  generics.java.txt:8:19 'java' variable scope=-1 ref
+  generics.java.txt:8:24 'util' class scope=-1 ref
+  generics.java.txt:8:29 'function' class scope=-1 ref
+  generics.java.txt:8:38 'Function' class scope=-1 ref
+  generics.java.txt:8:55 'T' class scope=1 ref
+  generics.java.txt:8:68 'R' class scope=2 ref
+  generics.java.txt:8:71 'f' parameter scope=2 def
+  generics.java.txt:9:16 'f' parameter scope=2 ref
+  generics.java.txt:9:18 'apply' method scope=-1 ref
+  generics.java.txt:9:24 'item' field scope=1 ref
+  generics.java.txt:12:13 'K' class scope=3 def
+  generics.java.txt:12:16 'V' class scope=3 def
+  generics.java.txt:12:19 'V' class scope=3 ref
+  generics.java.txt:12:21 'first' method scope=1 def
+  generics.java.txt:12:27 'Map' import scope=0 ref
+  generics.java.txt:12:31 'K' class scope=3 ref
+  generics.java.txt:12:34 'V' class scope=3 ref
+  generics.java.txt:12:37 'map' parameter scope=3 def
+  generics.java.txt:13:16 'map' parameter scope=3 ref
+  generics.java.txt:13:20 'values' method scope=-1 ref
+  generics.java.txt:13:29 'iterator' method scope=-1 ref
+  generics.java.txt:13:40 'next' method scope=-1 ref
+extents:
+  'Box' generics.java.txt:4-15
+  'convert' generics.java.txt:8-10
+  'first' generics.java.txt:12-14
+references:
+  'java' scope=-1: 1, 2, 8
+  'util' scope=-1: 1, 2, 8
+  'Map' scope=0: 1, 6, 12
+  'List' scope=0: 2, 6
+  'Box' scope=0: 4
+  'T' scope=1: 4, 5, 8
+  'Number' scope=-1: 4
+  'U' scope=1: 4, 6
+  'item' scope=1: 5, 9
+  'String' scope=-1: 6
+  'index' scope=1: 6
+  'R' scope=2: 8, 8, 8
+  'convert' scope=1: 8
+  'function' scope=-1: 8
+  'Function' scope=-1: 8
+  'f' scope=2: 8, 9
+  'apply' scope=-1: 9
+  'K' scope=3: 12, 12
+  'V' scope=3: 12, 12, 12
+  'first' scope=1: 12
+  'map' scope=3: 12, 13
+  'values' scope=-1: 13
+  'iterator' scope=-1: 13
+  'next' scope=-1: 13

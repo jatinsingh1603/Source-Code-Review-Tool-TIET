@@ -11,7 +11,12 @@ from hypothesis import strategies as st
 from codekavach.core.models import Language
 from codekavach.parsing import REGISTRY
 from codekavach.parsing.symbols import build_symbol_table, count_unclassified
-from tests.support.parsing_generators import javascript_program, python_program
+from tests.support.parsing_generators import (
+    go_program,
+    java_program,
+    javascript_program,
+    python_program,
+)
 from tests.support.symbols import render, table_of
 
 NAMES = st.from_regex(r"v_[a-z]{1,8}", fullmatch=True)
@@ -70,3 +75,13 @@ def test_two_bindings_of_one_spelling_never_share_references(
     assert outer == {1}
     assert 2 in inner
     assert not outer & inner
+
+
+@given(st.permutations(range(8)).map(lambda order: java_program(list(order))))
+def test_java_attribution_is_total_and_deterministic(text: str) -> None:
+    _assert_total_and_deterministic(Language.JAVA, text)
+
+
+@given(st.permutations(range(8)).map(lambda order: go_program(list(order))))
+def test_go_attribution_is_total_and_deterministic(text: str) -> None:
+    _assert_total_and_deterministic(Language.GO, text)

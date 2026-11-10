@@ -1,0 +1,35 @@
+identifiers:
+  strings.java.txt:1:14 'Strings'
+  strings.java.txt:2:5 'String'
+  strings.java.txt:2:12 'text'
+  strings.java.txt:11:5 'String'
+  strings.java.txt:11:12 'query'
+  strings.java.txt:11:18 'String'
+  strings.java.txt:11:25 'id'
+  strings.java.txt:12:9 'String'
+  strings.java.txt:12:16 'sql'
+  strings.java.txt:12:62 'id'
+  strings.java.txt:13:9 'String'
+  strings.java.txt:13:16 'path'
+  strings.java.txt:13:33 'id'
+  strings.java.txt:14:9 'String'
+  strings.java.txt:14:16 'url'
+  strings.java.txt:14:51 'id'
+  strings.java.txt:15:14 'quote'
+  strings.java.txt:16:16 'String'
+  strings.java.txt:16:23 'format'
+  strings.java.txt:16:39 'sql'
+  strings.java.txt:16:49 'path'
+  strings.java.txt:16:56 'url'
+  strings.java.txt:16:62 'quote'
+strings:
+  strings.java.txt:2-4 natural '\n        Hello\n        world'
+  strings.java.txt:4-5 natural '\n        '
+  strings.java.txt:12:23 sql "SELECT name FROM users WHERE id = '"
+  strings.java.txt:12:68 sql "'"
+  strings.java.txt:13:24 path '/etc/'
+  strings.java.txt:14:23 url 'https://example.invalid/'
+  strings.java.txt:16:31 format '%s:%d'
+comments:
+  strings.java.txt:7-10
+error_count: 0

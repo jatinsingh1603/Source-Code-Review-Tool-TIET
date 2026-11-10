@@ -1,0 +1,8 @@
+method 'Lambdas.apply' ('apply')
+  header 7:5-7:36
+  body   7:37-17:6
+  full   7:5-17:6
+method 'Lambdas.larger' ('larger')
+  header 19:5-19:56
+  body   19:57-21:6
+  full   19:5-21:6

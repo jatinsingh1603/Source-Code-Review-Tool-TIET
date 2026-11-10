@@ -1,0 +1,9 @@
+public class Broken {
+    int ok(int a) { return a; }
+
+    int bad(int a {
+        return a +;
+    }
+
+    int later(int b) { return b; }
+}

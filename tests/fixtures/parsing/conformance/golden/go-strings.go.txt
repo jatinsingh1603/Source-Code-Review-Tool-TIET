@@ -1,0 +1,32 @@
+identifiers:
+  strings.go.txt:1:9 'stringsample'
+  strings.go.txt:5:7 'raw'
+  strings.go.txt:8:6 'query'
+  strings.go.txt:8:12 'id'
+  strings.go.txt:8:15 'string'
+  strings.go.txt:8:23 'string'
+  strings.go.txt:9:2 'sql'
+  strings.go.txt:9:49 'id'
+  strings.go.txt:10:2 'path'
+  strings.go.txt:10:20 'id'
+  strings.go.txt:11:2 'url'
+  strings.go.txt:11:38 'id'
+  strings.go.txt:12:2 'letter'
+  strings.go.txt:13:9 'fmt'
+  strings.go.txt:13:13 'Sprintf'
+  strings.go.txt:13:30 'sql'
+  strings.go.txt:13:40 'path'
+  strings.go.txt:13:47 'url'
+  strings.go.txt:13:53 'string'
+  strings.go.txt:13:60 'letter'
+  strings.go.txt:13:70 'raw'
+strings:
+  strings.go.txt:3:9 natural 'fmt'
+  strings.go.txt:5-6 natural 'line one\nline two'
+  strings.go.txt:9:10 sql "SELECT name FROM users WHERE id = '"
+  strings.go.txt:9:55 sql "'"
+  strings.go.txt:10:11 path '/etc/'
+  strings.go.txt:11:10 url 'https://example.invalid/'
+  strings.go.txt:13:22 format '%s:%d'
+comments:
+error_count: 0

@@ -1,0 +1,25 @@
+public class Initialisers extends Base {
+    static int counter;
+    int instanceValue;
+
+    static {
+        counter = 10;
+    }
+
+    {
+        instanceValue = counter + 1;
+    }
+
+    Initialisers() {
+        this(1);
+    }
+
+    Initialisers(int start) {
+        super(start);
+        instanceValue += start;
+    }
+}
+
+class Base {
+    Base(int seed) {}
+}

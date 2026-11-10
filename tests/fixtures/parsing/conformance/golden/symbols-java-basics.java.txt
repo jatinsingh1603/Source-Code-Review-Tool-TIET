@@ -1,0 +1,94 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+  3 parent=1 function
+  4 parent=3 block
+  5 parent=4 block
+  6 parent=1 function
+symbols:
+  basics.java.txt:1:9 'com' module scope=-1 ref
+  basics.java.txt:1:13 'acme' module scope=-1 ref
+  basics.java.txt:1:18 'billing' module scope=-1 ref
+  basics.java.txt:3:8 'java' module scope=-1 ref
+  basics.java.txt:3:13 'util' module scope=-1 ref
+  basics.java.txt:3:18 'List' import scope=0 def
+  basics.java.txt:4:8 'java' module scope=-1 ref
+  basics.java.txt:4:13 'util' module scope=-1 ref
+  basics.java.txt:4:18 'Map' import scope=0 def
+  basics.java.txt:5:15 'java' module scope=-1 ref
+  basics.java.txt:5:20 'lang' module scope=-1 ref
+  basics.java.txt:5:25 'Math' module scope=-1 ref
+  basics.java.txt:5:30 'max' import scope=0 def
+  basics.java.txt:6:8 'com' module scope=-1 ref
+  basics.java.txt:6:12 'acme' module scope=-1 ref
+  basics.java.txt:6:17 'ledger' module scope=-1 ref
+  basics.java.txt:9:14 'Engine' class scope=0 def
+  basics.java.txt:10:30 'DEFAULT_RATE' constant scope=1 def
+  basics.java.txt:11:23 'rate' field scope=1 def
+  basics.java.txt:12:13 'List' import scope=0 ref
+  basics.java.txt:12:18 'String' variable scope=-1 ref
+  basics.java.txt:12:26 'names' field scope=1 def
+  basics.java.txt:14:12 'Engine' class scope=0 ref
+  basics.java.txt:14:23 'rate' parameter scope=2 def
+  basics.java.txt:15:14 'rate' field scope=-1 ref
+  basics.java.txt:15:21 'rate' parameter scope=2 ref
+  basics.java.txt:19:16 'accrue' method scope=1 def
+  basics.java.txt:19:27 'amount' parameter scope=3 def
+  basics.java.txt:20:13 'local' variable scope=3 def
+  basics.java.txt:20:21 'amount' parameter scope=3 ref
+  basics.java.txt:20:30 'rate' field scope=1 ref
+  basics.java.txt:21:18 'i' variable scope=4 def
+  basics.java.txt:21:25 'i' variable scope=4 ref
+  basics.java.txt:21:32 'i' variable scope=4 ref
+  basics.java.txt:22:13 'local' variable scope=3 ref
+  basics.java.txt:22:22 'i' variable scope=4 ref
+  basics.java.txt:24:16 'max' import scope=0 ref
+  basics.java.txt:24:20 'local' variable scope=3 ref
+  basics.java.txt:24:27 'DEFAULT_RATE' constant scope=1 ref
+  basics.java.txt:27:24 'main' method scope=1 def
+  basics.java.txt:27:29 'String' variable scope=-1 ref
+  basics.java.txt:27:38 'args' parameter scope=6 def
+  basics.java.txt:28:9 'Engine' class scope=0 ref
+  basics.java.txt:28:16 'engine' variable scope=6 def
+  basics.java.txt:28:29 'Engine' class scope=0 ref
+  basics.java.txt:29:9 'System' variable scope=-1 ref
+  basics.java.txt:29:16 'out' field scope=-1 ref
+  basics.java.txt:29:20 'println' method scope=-1 ref
+  basics.java.txt:29:28 'engine' variable scope=6 ref
+  basics.java.txt:29:35 'accrue' method scope=-1 ref
+extents:
+  'Engine' basics.java.txt:9-31
+  'Engine' basics.java.txt:14-16
+  'accrue' basics.java.txt:19-25
+  'main' basics.java.txt:27-30
+references:
+  'com' scope=-1: 1, 6
+  'acme' scope=-1: 1, 6
+  'billing' scope=-1: 1
+  'java' scope=-1: 3, 4, 5
+  'util' scope=-1: 3, 4
+  'List' scope=0: 3, 12
+  'Map' scope=0: 4
+  'lang' scope=-1: 5
+  'Math' scope=-1: 5
+  'max' scope=0: 5, 24
+  'ledger' scope=-1: 6
+  'Engine' scope=0: 9, 14, 28, 28
+  'DEFAULT_RATE' scope=1: 10, 24
+  'rate' scope=1: 11, 20
+  'String' scope=-1: 12, 27
+  'names' scope=1: 12
+  'rate' scope=2: 14, 15
+  'rate' scope=-1: 15
+  'accrue' scope=1: 19
+  'amount' scope=3: 19, 20
+  'local' scope=3: 20, 22, 24
+  'i' scope=4: 21, 21, 21, 22
+  'main' scope=1: 27
+  'args' scope=6: 27
+  'engine' scope=6: 28, 29
+  'System' scope=-1: 29
+  'out' scope=-1: 29
+  'println' scope=-1: 29
+  'accrue' scope=-1: 29

@@ -10,7 +10,13 @@ from codekavach.parsing.functions import FunctionRange
 from codekavach.parsing.models import ParsedFile
 from codekavach.parsing.symbols import Symbol, SymbolTable, build_symbol_table
 
-EXTENSIONS = {Language.PYTHON: "py", Language.JAVASCRIPT: "js", Language.TYPESCRIPT: "ts"}
+EXTENSIONS = {
+    Language.PYTHON: "py",
+    Language.JAVASCRIPT: "js",
+    Language.TYPESCRIPT: "ts",
+    Language.JAVA: "java",
+    Language.GO: "go",
+}
 
 
 def table_of(language: Language, text: str) -> tuple[ParsedFile, SymbolTable]:

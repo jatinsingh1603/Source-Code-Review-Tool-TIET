@@ -60,9 +60,15 @@ LINES_PER_TOLERATED_ERROR: Final = 10
 LAZY_AST_CACHE_SIZE: Final = 32
 PROGRESS_MIN_SECONDS: Final = 0.25
 PROGRESS_MIN_FILES: Final = 250
-CONFIG_FILES: Final = ("tsconfig.json", "jsconfig.json", "package.json")
+CONFIG_FILES: Final = ("tsconfig.json", "jsconfig.json", "package.json", "go.mod")
 MAX_CONFIG_BYTES: Final = 256 * 1024
-SUPPORTED: Final = (Language.PYTHON, Language.JAVASCRIPT, Language.TYPESCRIPT)
+SUPPORTED: Final = (
+    Language.PYTHON,
+    Language.JAVASCRIPT,
+    Language.TYPESCRIPT,
+    Language.JAVA,
+    Language.GO,
+)
 NO_SPEC: Final = "no_language_spec"
 
 _log = get_logger("codekavach.parsing.stage")
@@ -168,7 +174,7 @@ class LazyAst(Mapping[str, ParsedFile]):
 
 
 def _internal_names(files: list[SourceFile]) -> frozenset[str]:
-    """Top-level names the scanned Python files themselves define: directory and module names.
+    """Top-level names the scanned Python, Java and Go files define: directory and module names.
 
     A package that sits below ``project_root`` (a monorepo service) is not found by looking at
     the root alone; treating every directory that holds Python as the project's own is the safe
@@ -176,11 +182,12 @@ def _internal_names(files: list[SourceFile]) -> frozenset[str]:
     """
     names: set[str] = set()
     for file in files:
-        if file.language is not Language.PYTHON:
-            continue
-        parts = file.path.split("/")
-        names.update(parts[:-1])
-        names.add(parts[-1].removesuffix(".pyi").removesuffix(".py"))
+        if file.language is Language.PYTHON:
+            parts = file.path.split("/")
+            names.update(parts[:-1])
+            names.add(parts[-1].removesuffix(".pyi").removesuffix(".py"))
+        elif file.language in (Language.JAVA, Language.GO):
+            names.update(file.path.split("/")[:-1])
     names.discard("")
     return frozenset(names)
 

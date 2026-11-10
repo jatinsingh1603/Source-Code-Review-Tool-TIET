@@ -1,0 +1,19 @@
+public class Patterns {
+    sealed interface Shape permits Circle, Square {}
+    record Circle(double radius) implements Shape {}
+    record Square(double side) implements Shape {}
+
+    double area(Object o) {
+        if (o instanceof Circle c && c.radius() > 0) {
+            return 3.14 * c.radius() * c.radius();
+        }
+        if (o instanceof Square(double side)) {
+            return side * side;
+        }
+        return switch (o) {
+            case String s -> s.length();
+            case Integer n when n > 3 -> n;
+            default -> 0;
+        };
+    }
+}

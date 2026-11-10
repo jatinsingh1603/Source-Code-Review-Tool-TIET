@@ -1,0 +1,14 @@
+package stringsample
+
+import "fmt"
+
+const raw = `line one
+line two`
+
+func query(id string) string {
+	sql := "SELECT name FROM users WHERE id = '" + id + "'"
+	path := "/etc/" + id
+	url := "https://example.invalid/" + id
+	letter := 'q'
+	return fmt.Sprintf("%s:%d", sql, 3) + path + url + string(letter) + raw
+}

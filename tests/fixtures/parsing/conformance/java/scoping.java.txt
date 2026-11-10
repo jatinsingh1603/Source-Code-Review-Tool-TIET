@@ -1,0 +1,34 @@
+import java.io.IOException;
+import java.io.Reader;
+
+public class Scoping {
+    private int rate = 1;
+    private int total;
+
+    void shadow(int rate) {
+        int total = rate + this.rate;
+        this.total = total;
+        {
+            int inner = total;
+            total = inner + 1;
+        }
+        for (int i = 0, j = 1; i < j; i++) {
+            total += i;
+        }
+        for (String item : names()) {
+            total += item.length();
+        }
+    }
+
+    int read(Reader source) throws IOException {
+        try (Reader r = source; Reader q = r) {
+            return q.read();
+        } catch (IOException e) {
+            throw e;
+        } finally {
+            total = 0;
+        }
+    }
+
+    String[] names() { return new String[0]; }
+}

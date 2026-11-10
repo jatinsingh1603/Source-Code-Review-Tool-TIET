@@ -27,7 +27,13 @@ FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "pseudonymise" / "
 PROJECT_ROOT = FIXTURES
 # A relative import is internal by construction; any other module name is classified by the
 # resolver, with no project file on disk to make it internal.
-EXTENSIONS = {Language.PYTHON: "py", Language.JAVASCRIPT: "js", Language.TYPESCRIPT: "ts"}
+EXTENSIONS = {
+    Language.PYTHON: "py",
+    Language.JAVASCRIPT: "js",
+    Language.TYPESCRIPT: "ts",
+    Language.JAVA: "java",
+    Language.GO: "go",
+}
 
 
 def table_and_parsed(language: Language, text: str) -> tuple[ParsedFile, SymbolTable]:

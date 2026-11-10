@@ -1,4 +1,4 @@
-"""``LanguageSpec.enclosing_symbol`` for Python and JavaScript (E07-02)."""
+"""``LanguageSpec.enclosing_symbol`` for Python, JavaScript, Java and Go (E07-02, E07-05)."""
 
 import tree_sitter as ts
 
@@ -76,3 +76,37 @@ def test_javascript_node_inside_a_comment_returns_none() -> None:
 def test_typescript_interface_method_uses_the_javascript_logic() -> None:
     source = "class Foo implements Bar { method(): number { return 1; } }"
     assert _enclosing(Language.TYPESCRIPT, source, "return_statement") == "Foo.method"
+
+
+def test_java_method_and_nested_class_method() -> None:
+    source = (
+        "class Foo {\n  int a() { return 1; }\n  class In {\n    int b() { return 2; }\n  }\n}\n"
+    )
+    assert _enclosing(Language.JAVA, source, "return_statement") == "Foo.a"
+    nested = source.replace("return 1;", "int x = 1;")
+    assert _enclosing(Language.JAVA, nested, "return_statement") == "Foo.In.b"
+
+
+def test_java_constructor_and_lambda_belong_to_the_enclosing_member() -> None:
+    source = "class Foo {\n  Foo() { run(() -> { return; }); }\n}\n"
+    assert _enclosing(Language.JAVA, source, "return_statement") == "Foo.Foo"
+
+
+def test_java_field_belongs_to_its_class() -> None:
+    assert _enclosing(Language.JAVA, "class Foo { int x = 1; }\n", "field_declaration") == "Foo"
+
+
+def test_go_function_and_method() -> None:
+    source = "package p\n\nfunc top() int { return 1 }\n"
+    assert _enclosing(Language.GO, source, "return_statement") == "top"
+    method = "package p\n\nfunc (s *Stack) Pop() int { return 1 }\n"
+    assert _enclosing(Language.GO, method, "return_statement") == "(*Stack).Pop"
+
+
+def test_go_function_literal_belongs_to_the_enclosing_function() -> None:
+    source = "package p\n\nfunc outer() func() int {\n\treturn func() int { return 1 }\n}\n"
+    assert _enclosing(Language.GO, source, "return_statement") == "outer"
+
+
+def test_go_package_level_declaration_is_none() -> None:
+    assert _enclosing(Language.GO, "package p\n\nvar x = 1\n", "var_declaration") is None

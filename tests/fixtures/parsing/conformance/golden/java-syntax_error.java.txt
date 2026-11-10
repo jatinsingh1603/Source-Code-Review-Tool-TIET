@@ -1,0 +1,15 @@
+identifiers:
+  syntax_error.java.txt:1:14 'Broken'
+  syntax_error.java.txt:2:9 'ok'
+  syntax_error.java.txt:2:16 'a'
+  syntax_error.java.txt:2:28 'a'
+  syntax_error.java.txt:4:9 'bad'
+  syntax_error.java.txt:4:17 'a'
+  syntax_error.java.txt:5:16 'a'
+  syntax_error.java.txt:5:19 ''
+  syntax_error.java.txt:8:9 'later'
+  syntax_error.java.txt:8:19 'b'
+  syntax_error.java.txt:8:31 'b'
+strings:
+comments:
+error_count: 2

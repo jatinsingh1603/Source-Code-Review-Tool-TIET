@@ -1,0 +1,16 @@
+method '(Base).Describe' ('Describe')
+  header 7:1-7:29
+  body   7:30-7:45
+  full   7:1-7:45
+method '(*Circle).Grow' ('Grow')
+  header 14:1-14:42
+  body   14:43-17:2
+  full   14:1-17:2
+method '(Circle).Kind' ('Kind')
+  header 19:1-19:28
+  body   19:29-19:48
+  full   19:1-19:48
+method '(Circle).Area' ('Area')
+  header 21:1-21:31
+  body   21:32-23:2
+  full   21:1-23:2

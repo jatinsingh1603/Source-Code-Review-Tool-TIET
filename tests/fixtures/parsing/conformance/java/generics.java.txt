@@ -1,0 +1,15 @@
+import java.util.Map;
+import java.util.List;
+
+public class Box<T extends Number, U> {
+    private T item;
+    private Map<String, List<U>> index;
+
+    <R> R convert(java.util.function.Function<? super T, ? extends R> f) {
+        return f.apply(item);
+    }
+
+    static <K, V> V first(Map<K, V> map) {
+        return map.values().iterator().next();
+    }
+}

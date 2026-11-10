@@ -1,0 +1,70 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 class
+  3 parent=1 class
+  4 parent=1 class
+  5 parent=1 function
+  6 parent=5 block
+  7 parent=5 block
+symbols:
+  patterns.java.txt:1:14 'Patterns' class scope=0 def
+  patterns.java.txt:2:22 'Shape' class scope=1 def
+  patterns.java.txt:2:36 'Circle' class scope=1 ref
+  patterns.java.txt:2:44 'Square' class scope=1 ref
+  patterns.java.txt:3:12 'Circle' class scope=1 def
+  patterns.java.txt:3:26 'radius' field scope=3 def
+  patterns.java.txt:3:45 'Shape' class scope=1 ref
+  patterns.java.txt:4:12 'Square' class scope=1 def
+  patterns.java.txt:4:26 'side' field scope=4 def
+  patterns.java.txt:4:43 'Shape' class scope=1 ref
+  patterns.java.txt:6:12 'area' method scope=1 def
+  patterns.java.txt:6:17 'Object' variable scope=-1 ref
+  patterns.java.txt:6:24 'o' parameter scope=5 def
+  patterns.java.txt:7:13 'o' parameter scope=5 ref
+  patterns.java.txt:7:26 'Circle' class scope=1 ref
+  patterns.java.txt:7:33 'c' variable scope=5 def
+  patterns.java.txt:7:38 'c' variable scope=5 ref
+  patterns.java.txt:7:40 'radius' method scope=-1 ref
+  patterns.java.txt:8:27 'c' variable scope=5 ref
+  patterns.java.txt:8:29 'radius' method scope=-1 ref
+  patterns.java.txt:8:40 'c' variable scope=5 ref
+  patterns.java.txt:8:42 'radius' method scope=-1 ref
+  patterns.java.txt:10:13 'o' parameter scope=5 ref
+  patterns.java.txt:10:26 'Square' class scope=1 ref
+  patterns.java.txt:10:40 'side' variable scope=-1 ref
+  patterns.java.txt:11:20 'side' variable scope=-1 ref
+  patterns.java.txt:11:27 'side' variable scope=-1 ref
+  patterns.java.txt:13:24 'o' parameter scope=5 ref
+  patterns.java.txt:14:18 'String' variable scope=-1 ref
+  patterns.java.txt:14:25 's' variable scope=5 def
+  patterns.java.txt:14:30 's' variable scope=5 ref
+  patterns.java.txt:14:32 'length' method scope=-1 ref
+  patterns.java.txt:15:18 'Integer' variable scope=-1 ref
+  patterns.java.txt:15:26 'n' variable scope=5 def
+  patterns.java.txt:15:33 'n' variable scope=5 ref
+  patterns.java.txt:15:42 'n' variable scope=5 ref
+extents:
+  'Patterns' patterns.java.txt:1-19
+  'Shape' patterns.java.txt:2:5
+  'Circle' patterns.java.txt:3:5
+  'Square' patterns.java.txt:4:5
+  'area' patterns.java.txt:6-18
+references:
+  'Patterns' scope=0: 1
+  'Shape' scope=1: 2, 3, 4
+  'Circle' scope=1: 2, 3, 7
+  'Square' scope=1: 2, 4, 10
+  'radius' scope=3: 3
+  'side' scope=4: 4
+  'area' scope=1: 6
+  'Object' scope=-1: 6
+  'o' scope=5: 6, 7, 10, 13
+  'c' scope=5: 7, 7, 8, 8
+  'radius' scope=-1: 7, 8, 8
+  'side' scope=-1: 10, 11, 11
+  'String' scope=-1: 14
+  's' scope=5: 14, 14
+  'length' scope=-1: 14
+  'Integer' scope=-1: 15
+  'n' scope=5: 15, 15, 15

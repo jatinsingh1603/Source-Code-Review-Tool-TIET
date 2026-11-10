@@ -68,6 +68,9 @@ NOT_IN_BUILD: Final = "not available in this build"
 MINIMUM_PYTHON: Final = (3, 12)
 STATE_DIR_MODE: Final = 0o700
 REQUIRED_GRAMMARS: Final = ("python", "javascript")
+# Languages with a registered spec whose grammar is checked too; a missing one is a warning, since
+# a scan skips the files of that language and says so.
+OPTIONAL_GRAMMARS: Final = ("typescript", "java", "go")
 EXTERNAL_CATEGORIES: Final = ("engines", "providers", "report")  # built from the settings
 
 
@@ -455,9 +458,13 @@ def _grammar(language: str) -> Callable[[CliContext], Outcome]:
             epic="E07",
         )
         try:
-            load(language)
+            version = load(language)
         except Exception:  # noqa: BLE001 - the reason is not shown; it may name local paths
             return Outcome(CheckStatus.FAIL, "grammar could not be loaded")
+        if isinstance(version, str):
+            return Outcome(
+                CheckStatus.PASS, f"grammar loads, version {version}", {"grammar_version": version}
+            )
         return Outcome(CheckStatus.PASS, "grammar loads")
 
     return probe
@@ -559,6 +566,13 @@ def _register_local_checks() -> None:
         register_check(
             LocalCheck(
                 f"parsing:grammar:{language}", "parsing", _grammar(language), required=True,
+                remediation="uv sync --all-extras",
+            )
+        )  # fmt: skip
+    for language in OPTIONAL_GRAMMARS:
+        register_check(
+            LocalCheck(
+                f"parsing:grammar:{language}", "parsing", _grammar(language),
                 remediation="uv sync --all-extras",
             )
         )  # fmt: skip

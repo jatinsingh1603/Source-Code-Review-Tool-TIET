@@ -1,0 +1,22 @@
+import java.util.List;
+import java.util.function.Function;
+
+public class Lambdas {
+    int base = 2;
+
+    int apply(List<Integer> values) {
+        Function<Integer, Integer> twice = x -> x * 2;
+        Function<Integer, Integer> plus = (a) -> a + base;
+        Runnable nothing = () -> { base++; };
+        values.forEach(v -> {
+            int doubled = twice.apply(v);
+            base += doubled;
+        });
+        Function<String, Integer> length = String::length;
+        return values.stream().map(plus).mapToInt(Integer::intValue).sum() + length.apply("abc");
+    }
+
+    <T extends Comparable<T>> T larger(T left, T right) {
+        return left.compareTo(right) > 0 ? left : right;
+    }
+}

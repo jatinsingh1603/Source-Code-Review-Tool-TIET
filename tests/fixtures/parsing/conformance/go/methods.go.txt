@@ -1,0 +1,23 @@
+package shapes
+
+type Base struct {
+	ID int
+}
+
+func (b Base) Describe() int { return b.ID }
+
+type Circle struct {
+	Base
+	Radius float64
+}
+
+func (c *Circle) Grow(by float64) *Circle {
+	c.Radius += by
+	return c
+}
+
+func (Circle) Kind() string { return "circle" }
+
+func (c Circle) Area() float64 {
+	return 3.14 * c.Radius * c.Radius
+}

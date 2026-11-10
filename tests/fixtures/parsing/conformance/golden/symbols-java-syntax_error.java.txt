@@ -1,0 +1,32 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+  3 parent=1 function
+  4 parent=1 function
+symbols:
+  syntax_error.java.txt:1:14 'Broken' class scope=0 def
+  syntax_error.java.txt:2:9 'ok' method scope=1 def
+  syntax_error.java.txt:2:16 'a' parameter scope=2 def
+  syntax_error.java.txt:2:28 'a' parameter scope=2 ref
+  syntax_error.java.txt:4:9 'bad' method scope=1 def
+  syntax_error.java.txt:4:17 'a' parameter scope=3 def
+  syntax_error.java.txt:5:16 'a' parameter scope=3 ref
+  syntax_error.java.txt:5:19 '' variable scope=-1 ref
+  syntax_error.java.txt:8:9 'later' method scope=1 def
+  syntax_error.java.txt:8:19 'b' parameter scope=4 def
+  syntax_error.java.txt:8:31 'b' parameter scope=4 ref
+extents:
+  'Broken' syntax_error.java.txt:1-9
+  'ok' syntax_error.java.txt:2:5
+  'bad' syntax_error.java.txt:4-6
+  'later' syntax_error.java.txt:8:5
+references:
+  'Broken' scope=0: 1
+  'ok' scope=1: 2
+  'a' scope=2: 2, 2
+  'bad' scope=1: 4
+  'a' scope=3: 4, 5
+  '' scope=-1: 5
+  'later' scope=1: 8
+  'b' scope=4: 8, 8

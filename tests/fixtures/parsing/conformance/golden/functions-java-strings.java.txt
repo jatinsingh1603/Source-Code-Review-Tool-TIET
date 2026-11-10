@@ -1,0 +1,4 @@
+method 'Strings.query' ('query')
+  header 11:5-11:28
+  body   11:29-17:6
+  full   11:5-17:6

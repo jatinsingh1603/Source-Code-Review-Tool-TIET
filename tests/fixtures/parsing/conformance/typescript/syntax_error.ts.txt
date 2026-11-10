@@ -1,0 +1,11 @@
+export function ok(a: number): number {
+  return a;
+}
+
+export function bad(a: number {
+  return a +;
+}
+
+export function later(b: number): number {
+  return b;
+}

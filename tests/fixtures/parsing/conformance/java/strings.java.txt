@@ -1,0 +1,18 @@
+public class Strings {
+    String text = """
+        Hello
+        world\n
+        """;
+
+    /**
+     * Builds the lookup.
+     * @param id the key
+     */
+    String query(String id) {
+        String sql = "SELECT name FROM users WHERE id = '" + id + "'";
+        String path = "/etc/" + id;
+        String url = "https://example.invalid/" + id;
+        char quote = '"';
+        return String.format("%s:%d", sql, 3) + path + url + quote;
+    }
+}

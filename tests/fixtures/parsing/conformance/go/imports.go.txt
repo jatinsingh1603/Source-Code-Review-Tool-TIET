@@ -1,0 +1,18 @@
+package imports
+
+import (
+	"os"
+	led "github.com/acme/ledger"
+	. "strings"
+	_ "embed"
+	v2 "github.com/acme/thing/v2"
+	"github.com/acme/other/v3"
+)
+
+func use() {
+	_ = os.Args
+	_ = led.Open
+	_ = ToUpper("x")
+	_ = v2.New
+	_ = other.Run
+}

@@ -1,0 +1,28 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+  2 parent=0 function
+  3 parent=0 function
+symbols:
+  syntax_error.ts.txt:1:17 'ok' function scope=0 def
+  syntax_error.ts.txt:1:20 'a' parameter scope=1 def
+  syntax_error.ts.txt:2:10 'a' parameter scope=1 ref
+  syntax_error.ts.txt:5:17 'bad' function scope=0 def
+  syntax_error.ts.txt:5:21 'a' parameter scope=2 def
+  syntax_error.ts.txt:6:10 'a' parameter scope=2 ref
+  syntax_error.ts.txt:6:13 '' variable scope=-1 ref
+  syntax_error.ts.txt:9:17 'later' function scope=0 def
+  syntax_error.ts.txt:9:23 'b' parameter scope=3 def
+  syntax_error.ts.txt:10:10 'b' parameter scope=3 ref
+extents:
+  'ok' syntax_error.ts.txt:1-3
+  'bad' syntax_error.ts.txt:5-7
+  'later' syntax_error.ts.txt:9-11
+references:
+  'ok' scope=0: 1
+  'a' scope=1: 1, 2
+  'bad' scope=0: 5
+  'a' scope=2: 5, 6
+  '' scope=-1: 6
+  'later' scope=0: 9
+  'b' scope=3: 9, 10

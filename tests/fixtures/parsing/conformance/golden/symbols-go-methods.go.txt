@@ -1,0 +1,70 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=0 function
+  3 parent=0 class
+  4 parent=0 function
+  5 parent=0 function
+  6 parent=0 function
+symbols:
+  methods.go.txt:1:9 'shapes' module scope=-1 ref
+  methods.go.txt:3:6 'Base' class scope=0 def
+  methods.go.txt:4:2 'ID' field scope=1 def
+  methods.go.txt:4:5 'int' variable scope=-1 ref
+  methods.go.txt:7:7 'b' parameter scope=2 def
+  methods.go.txt:7:9 'Base' class scope=0 ref
+  methods.go.txt:7:15 'Describe' method scope=1 def
+  methods.go.txt:7:26 'int' variable scope=-1 ref
+  methods.go.txt:7:39 'b' parameter scope=2 ref
+  methods.go.txt:7:41 'ID' field scope=-1 ref
+  methods.go.txt:9:6 'Circle' class scope=0 def
+  methods.go.txt:10:2 'Base' class scope=0 ref
+  methods.go.txt:11:2 'Radius' field scope=3 def
+  methods.go.txt:11:9 'float64' variable scope=-1 ref
+  methods.go.txt:14:7 'c' parameter scope=4 def
+  methods.go.txt:14:10 'Circle' class scope=0 ref
+  methods.go.txt:14:18 'Grow' method scope=3 def
+  methods.go.txt:14:23 'by' parameter scope=4 def
+  methods.go.txt:14:26 'float64' variable scope=-1 ref
+  methods.go.txt:14:36 'Circle' class scope=0 ref
+  methods.go.txt:15:2 'c' parameter scope=4 ref
+  methods.go.txt:15:4 'Radius' field scope=-1 ref
+  methods.go.txt:15:14 'by' parameter scope=4 ref
+  methods.go.txt:16:9 'c' parameter scope=4 ref
+  methods.go.txt:19:7 'Circle' class scope=0 ref
+  methods.go.txt:19:15 'Kind' method scope=3 def
+  methods.go.txt:19:22 'string' variable scope=-1 ref
+  methods.go.txt:21:7 'c' parameter scope=6 def
+  methods.go.txt:21:9 'Circle' class scope=0 ref
+  methods.go.txt:21:17 'Area' method scope=3 def
+  methods.go.txt:21:24 'float64' variable scope=-1 ref
+  methods.go.txt:22:16 'c' parameter scope=6 ref
+  methods.go.txt:22:18 'Radius' field scope=-1 ref
+  methods.go.txt:22:27 'c' parameter scope=6 ref
+  methods.go.txt:22:29 'Radius' field scope=-1 ref
+extents:
+  'Base' methods.go.txt:3-5
+  'Describe' methods.go.txt:7:1
+  'Circle' methods.go.txt:9-12
+  'Grow' methods.go.txt:14-17
+  'Kind' methods.go.txt:19:1
+  'Area' methods.go.txt:21-23
+references:
+  'shapes' scope=-1: 1
+  'Base' scope=0: 3, 7, 10
+  'ID' scope=1: 4
+  'int' scope=-1: 4, 7
+  'b' scope=2: 7, 7
+  'Describe' scope=1: 7
+  'ID' scope=-1: 7
+  'Circle' scope=0: 9, 14, 14, 19, 21
+  'Radius' scope=3: 11
+  'float64' scope=-1: 11, 14, 21
+  'c' scope=4: 14, 15, 16
+  'Grow' scope=3: 14
+  'by' scope=4: 14, 15
+  'Radius' scope=-1: 15, 22, 22
+  'Kind' scope=3: 19
+  'string' scope=-1: 19
+  'c' scope=6: 21, 22, 22
+  'Area' scope=3: 21

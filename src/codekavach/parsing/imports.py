@@ -351,16 +351,81 @@ _JS_HANDLERS: Final = {
 }
 
 
+def _dotted(node: Node) -> list[Node]:
+    """The identifier leaves of a Java qualified name, left to right."""
+    if node.type == "identifier":
+        return [node]
+    leaves: list[Node] = []
+    for child in node.named_children:
+        leaves.extend(_dotted(child))
+    return leaves
+
+
+def _java_import(node: Node) -> list[RawImport]:
+    """``import a.b.C;`` is module ``a.b`` taking ``C``; ``import a.b.*;`` is module ``a.b``."""
+    leaves = _dotted(node)
+    if not leaves:
+        return []
+    wildcard = any(child.type == "asterisk" for child in node.children)
+    if wildcard:
+        return [_import_of(".".join(_text(x) for x in leaves), imported="*", span=node)]
+    if len(leaves) == 1:
+        return [_import_of(_text(leaves[0]), bound=leaves[0], span=node)]
+    module = ".".join(_text(x) for x in leaves[:-1])
+    return [_import_of(module, imported=_text(leaves[-1]), bound=leaves[-1], span=node)]
+
+
+_JAVA_HANDLERS: Final = {"import_declaration": _java_import}
+
+_GO_VERSION_SUFFIX: Final = re.compile(r"v\d+")
+
+
+def _go_default_name(path: str) -> str | None:
+    """The package name an import without an alias binds: the last path element, not ``v2``."""
+    parts = [part for part in path.split("/") if part]
+    if parts and _GO_VERSION_SUFFIX.fullmatch(parts[-1]) and len(parts) > 1:
+        parts.pop()
+    if not parts:
+        return None
+    name = parts[-1].removeprefix("go-").removesuffix(".go").replace("-", "_").replace(".", "_")
+    return name if name.isidentifier() else None
+
+
+def _go_import_spec(node: Node) -> list[RawImport]:
+    path_node = node.child_by_field_name("path")
+    if path_node is None:
+        return []
+    path = "".join(_text(c) for c in path_node.children if c.type.endswith("_content"))
+    if not path:
+        return []
+    name = node.child_by_field_name("name")
+    if name is not None and name.type == "package_identifier":
+        return [_import_of(path, bound=name, alias=name, span=node)]
+    if name is not None and name.type == "dot":
+        return [_import_of(path, imported="*", span=node)]
+    if name is not None:
+        return [_import_of(path, span=node)]  # imported for its side effects: binds nothing
+    default = _go_default_name(path)
+    return [RawImport(path, None, None, default, None, node.start_byte, node.end_byte)]
+
+
+_GO_HANDLERS: Final = {"import_spec": _go_import_spec}
+
+
 def extract_imports(parsed: ParsedFile) -> tuple[RawImport, ...]:
     """Every import of ``parsed`` in source order, from one pass over its syntax tree.
 
     Raises:
-        UnsupportedLanguage: ``parsed.language`` is not Python, JavaScript or TypeScript.
+        UnsupportedLanguage: ``parsed.language`` has no import rules.
     """
     if parsed.language is Language.PYTHON:
         handlers = _PYTHON_HANDLERS
     elif parsed.language in (Language.JAVASCRIPT, Language.TYPESCRIPT):
         handlers = _JS_HANDLERS
+    elif parsed.language is Language.JAVA:
+        handlers = _JAVA_HANDLERS
+    elif parsed.language is Language.GO:
+        handlers = _GO_HANDLERS
     else:
         raise UnsupportedLanguage(parsed.language)
     if parsed.tree is None:
@@ -470,6 +535,29 @@ def _load_js_config(root: Path) -> _JsConfig:
     return _JsConfig(tuple(patterns), base_url)
 
 
+_RESOLVABLE: Final = frozenset(
+    {Language.PYTHON, Language.JAVASCRIPT, Language.TYPESCRIPT, Language.JAVA, Language.GO}
+)
+_JAVA_NAME: Final = re.compile(r"[^\W\d]\w*(\.[^\W\d]\w*)*")
+_JAVA_PLATFORM: Final = frozenset({"java", "javax", "jdk"})
+_JAVA_ROOTS: Final = ("", "src/main/java", "src/test/java", "src", "app/src/main/java")
+_GO_PATH: Final = re.compile(r"[\w.~+-]+(/[\w.~+-]+)*|\.{1,2}(/[\w.~+-]+)*")
+_GO_MODULE_LINE: Final = re.compile(r"^module\s+(\S+)\s*$", re.MULTILINE)
+
+
+def _read_go_module(root: Path) -> str | None:
+    """The ``module`` path of ``root/go.mod``; the file is untrusted data and never executed."""
+    try:
+        with (root / "go.mod").open("rb") as handle:
+            head = handle.read(MAX_CONFIG_BYTES)
+    except OSError:
+        return None
+    match = _GO_MODULE_LINE.search(head.decode("utf-8", errors="replace"))
+    if match is None:
+        return None
+    return match.group(1).strip('"')
+
+
 class DefaultImportResolver:
     """Classifies module strings for one language by the rules in the E07-04 issue.
 
@@ -480,12 +568,13 @@ class DefaultImportResolver:
     """
 
     def __init__(self, language: Language, *, internal_names: Iterable[str] = ()) -> None:
-        if language not in (Language.PYTHON, Language.JAVASCRIPT, Language.TYPESCRIPT):
+        if language not in _RESOLVABLE:
             raise UnsupportedLanguage(language)
         self.language = language
         self._internal_names = frozenset(internal_names)
         self._config: dict[Path, _JsConfig] = {}
         self._on_disk: dict[tuple[Path, str], bool] = {}
+        self._go_modules: dict[Path, str | None] = {}
 
     def classify(self, module: str, *, project_root: Path) -> Origin:
         """``internal``, ``third_party`` or ``stdlib`` for ``module``; never raises."""
@@ -499,6 +588,10 @@ class DefaultImportResolver:
         try:
             if self.language is Language.PYTHON:
                 return self._python(text, project_root)
+            if self.language is Language.JAVA:
+                return self._java(text, project_root)
+            if self.language is Language.GO:
+                return self._go(text, project_root)
             return self._javascript(text, project_root)
         except (OSError, ValueError):
             return Classification("internal", True)
@@ -525,6 +618,48 @@ class DefaultImportResolver:
         if top in python_stdlib_names():
             return Classification("stdlib", False)
         return Classification("third_party", False)
+
+    def _java(self, text: str, root: Path) -> Classification:
+        """Classify a Java package: the platform, a project source root, or a dependency."""
+        if _JAVA_NAME.fullmatch(text) is None:
+            return Classification("internal", True)
+        top = text.split(".", 1)[0]
+        if top in _JAVA_PLATFORM:
+            return Classification("stdlib", False)
+        if top in self._internal_names or any(
+            self._dir_exists(root, base, text.replace(".", "/")) for base in _JAVA_ROOTS
+        ):
+            return Classification("internal", False)
+        return Classification("third_party", False)
+
+    def _dir_exists(self, root: Path, base: str, relative: str) -> bool:
+        key = (root, f"{base}|{relative}")
+        if key not in self._on_disk:
+            target = _contained(root, f"{base}/{relative}" if base else relative)
+            self._on_disk[key] = target is not None and target.is_dir()
+        return self._on_disk[key]
+
+    def _go(self, text: str, root: Path) -> Classification:
+        """Classify a Go import path: standard library, the go.mod module, or a dependency."""
+        if _GO_PATH.fullmatch(text) is None:
+            return Classification("internal", True)
+        if text.startswith("."):
+            return Classification("internal", False)
+        first = text.split("/", 1)[0]
+        module = self._go_module(root)
+        if module and (text == module or text.startswith(module + "/")):
+            return Classification("internal", False)
+        if first in self._internal_names:
+            return Classification("internal", False)
+        if "." not in first:
+            return Classification("stdlib", False)
+        return Classification("third_party", False)
+
+    def _go_module(self, root: Path) -> str | None:
+        """The module path of ``go.mod``: read with a size cap, the ``module`` line only."""
+        if root not in self._go_modules:
+            self._go_modules[root] = _read_go_module(root)
+        return self._go_modules[root]
 
     def _js_config(self, root: Path) -> _JsConfig:
         if root not in self._config:

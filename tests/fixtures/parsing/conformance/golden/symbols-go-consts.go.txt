@@ -1,0 +1,35 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+symbols:
+  consts.go.txt:1:9 'consts' module scope=-1 ref
+  consts.go.txt:4:2 'First' constant scope=0 def
+  consts.go.txt:5:2 'Second' constant scope=0 def
+  consts.go.txt:6:2 'Third' constant scope=0 def
+  consts.go.txt:9:7 'Max' constant scope=0 def
+  consts.go.txt:9:12 'Min' constant scope=0 def
+  consts.go.txt:12:2 'alpha' variable scope=0 def
+  consts.go.txt:13:2 'beta' variable scope=0 def
+  consts.go.txt:13:8 'string' variable scope=-1 ref
+  consts.go.txt:16:6 'values' function scope=0 def
+  consts.go.txt:16:16 'int' variable scope=-1 ref
+  consts.go.txt:16:21 'string' variable scope=-1 ref
+  consts.go.txt:17:9 'alpha' variable scope=0 ref
+  consts.go.txt:17:17 'First' constant scope=0 ref
+  consts.go.txt:17:25 'Max' constant scope=0 ref
+  consts.go.txt:17:31 'Min' constant scope=0 ref
+  consts.go.txt:17:36 'beta' variable scope=0 ref
+extents:
+  'values' consts.go.txt:16-18
+references:
+  'consts' scope=-1: 1
+  'First' scope=0: 4, 17
+  'Second' scope=0: 5
+  'Third' scope=0: 6
+  'Max' scope=0: 9, 17
+  'Min' scope=0: 9, 17
+  'alpha' scope=0: 12, 17
+  'beta' scope=0: 13, 17
+  'string' scope=-1: 13, 16
+  'values' scope=0: 16
+  'int' scope=-1: 16

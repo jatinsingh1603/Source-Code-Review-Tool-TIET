@@ -31,6 +31,27 @@ FIXTURES: list[tuple[Language, str]] = [
     (Language.JAVASCRIPT, "syntax_error.js.txt"),
     (Language.TYPESCRIPT, "basics.ts.txt"),
     (Language.TYPESCRIPT, "generics.ts.txt"),
+    (Language.TYPESCRIPT, "syntax_error.ts.txt"),
+    (Language.JAVA, "basics.java.txt"),
+    (Language.JAVA, "classes.java.txt"),
+    (Language.JAVA, "scoping.java.txt"),
+    (Language.JAVA, "lambdas.java.txt"),
+    (Language.JAVA, "patterns.java.txt"),
+    (Language.JAVA, "annotations.java.txt"),
+    (Language.JAVA, "initialisers.java.txt"),
+    (Language.JAVA, "strings.java.txt"),
+    (Language.JAVA, "generics.java.txt"),
+    (Language.JAVA, "syntax_error.java.txt"),
+    (Language.GO, "basics.go.txt"),
+    (Language.GO, "scoping.go.txt"),
+    (Language.GO, "methods.go.txt"),
+    (Language.GO, "types.go.txt"),
+    (Language.GO, "closures.go.txt"),
+    (Language.GO, "control.go.txt"),
+    (Language.GO, "strings.go.txt"),
+    (Language.GO, "imports.go.txt"),
+    (Language.GO, "consts.go.txt"),
+    (Language.GO, "syntax_error.go.txt"),
 ]
 
 
@@ -63,6 +84,10 @@ IDENTIFIER_NODE_TYPES: dict[Language, frozenset[str]] = {
             "statement_identifier",
             "type_identifier",
         }
+    ),
+    Language.JAVA: frozenset({"identifier", "type_identifier"}),
+    Language.GO: frozenset(
+        {"identifier", "type_identifier", "field_identifier", "package_identifier", "label_name"}
     ),
 }
 

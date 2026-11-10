@@ -1,0 +1,4 @@
+method 'Patterns.area' ('area')
+  header 6:5-6:26
+  body   6:27-18:6
+  full   6:5-18:6

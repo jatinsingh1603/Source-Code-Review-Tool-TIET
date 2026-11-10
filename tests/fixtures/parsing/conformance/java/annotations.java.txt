@@ -1,0 +1,21 @@
+import java.lang.annotation.Retention;
+
+@Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+@interface Tag {
+    String value() default "none";
+    int level() default 1;
+}
+
+@Tag(value = "service", level = 2)
+public class Annotated {
+    @Deprecated
+    private int old;
+
+    @Override
+    public String toString() {
+        return "annotated";
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void generic(@Tag("p") int parameter) {}
+}

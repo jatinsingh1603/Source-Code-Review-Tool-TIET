@@ -1,0 +1,29 @@
+package control
+
+func flow(ch chan int, x interface{}) int {
+	total := 0
+	for i, v := range []int{1, 2, 3} {
+		total += i + v
+	}
+	for key := range map[string]int{"a": 1} {
+		_ = key
+	}
+	switch t := x.(type) {
+	case int:
+		total += t
+	case string:
+		total += len(t)
+	}
+	select {
+	case got := <-ch:
+		total += got
+	default:
+	}
+outer:
+	for {
+		for {
+			break outer
+		}
+	}
+	return total
+}

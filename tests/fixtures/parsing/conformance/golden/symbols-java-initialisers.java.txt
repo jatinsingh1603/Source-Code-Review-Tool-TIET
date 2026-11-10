@@ -1,0 +1,39 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+  3 parent=1 function
+  4 parent=1 function
+  5 parent=1 function
+  6 parent=0 class
+  7 parent=6 function
+symbols:
+  initialisers.java.txt:1:14 'Initialisers' class scope=0 def
+  initialisers.java.txt:1:35 'Base' class scope=0 ref
+  initialisers.java.txt:2:16 'counter' field scope=1 def
+  initialisers.java.txt:3:9 'instanceValue' field scope=1 def
+  initialisers.java.txt:6:9 'counter' field scope=1 ref
+  initialisers.java.txt:10:9 'instanceValue' field scope=1 ref
+  initialisers.java.txt:10:25 'counter' field scope=1 ref
+  initialisers.java.txt:13:5 'Initialisers' class scope=0 ref
+  initialisers.java.txt:17:5 'Initialisers' class scope=0 ref
+  initialisers.java.txt:17:22 'start' parameter scope=5 def
+  initialisers.java.txt:18:15 'start' parameter scope=5 ref
+  initialisers.java.txt:19:9 'instanceValue' field scope=1 ref
+  initialisers.java.txt:19:26 'start' parameter scope=5 ref
+  initialisers.java.txt:23:7 'Base' class scope=0 def
+  initialisers.java.txt:24:5 'Base' class scope=0 ref
+  initialisers.java.txt:24:14 'seed' parameter scope=7 def
+extents:
+  'Initialisers' initialisers.java.txt:1-21
+  'Initialisers' initialisers.java.txt:13-15
+  'Initialisers' initialisers.java.txt:17-20
+  'Base' initialisers.java.txt:23-25
+  'Base' initialisers.java.txt:24:5
+references:
+  'Initialisers' scope=0: 1, 13, 17
+  'Base' scope=0: 1, 23, 24
+  'counter' scope=1: 2, 6, 10
+  'instanceValue' scope=1: 3, 10, 19
+  'start' scope=5: 17, 18, 19
+  'seed' scope=7: 24

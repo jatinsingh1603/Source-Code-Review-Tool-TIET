@@ -1,0 +1,8 @@
+function 'New' ('New')
+  header 20:1-20:27
+  body   20:28-22:2
+  full   20:1-22:2
+method '(*Engine).Accrue' ('Accrue')
+  header 25:1-25:44
+  body   25:45-32:2
+  full   25:1-32:2

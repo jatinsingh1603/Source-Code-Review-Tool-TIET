@@ -21,7 +21,13 @@ from codekavach.parsing.imports import (
 )
 from codekavach.parsing.symbols import build_symbol_table
 
-EXTENSIONS = {Language.PYTHON: "py", Language.JAVASCRIPT: "js", Language.TYPESCRIPT: "ts"}
+EXTENSIONS = {
+    Language.PYTHON: "py",
+    Language.JAVASCRIPT: "js",
+    Language.TYPESCRIPT: "ts",
+    Language.JAVA: "java",
+    Language.GO: "go",
+}
 
 
 def _raws(language: Language, source: str) -> list[tuple[str, str | None, str | None, str | None]]:
@@ -150,11 +156,11 @@ def test_a_syntax_error_does_not_stop_extraction_of_the_rest() -> None:
 
 
 def test_other_languages_raise_unsupported_language() -> None:
-    parsed = parse("A.java", Language.JAVA, "class A {}\n")
+    parsed = parse("a.rb", Language.RUBY, "class A {}\n")
     with pytest.raises(UnsupportedLanguage):
         extract_imports(parsed)
     with pytest.raises(UnsupportedLanguage):
-        DefaultImportResolver(Language.JAVA)
+        DefaultImportResolver(Language.RUBY)
 
 
 # --- python classification -----------------------------------------------------------------
@@ -405,3 +411,122 @@ def test_conservative_classifications_are_counted() -> None:
     )
     assert table.conservative_import_count == 1
     assert table.imports[0].origin == "internal"
+
+
+# --- Java and Go (E07-05) ---------------------------------------------------------------------
+
+
+def test_java_imports_are_extracted_with_module_and_bound_name() -> None:
+    raws = _raws(
+        Language.JAVA,
+        """
+        import java.util.List;
+        import static java.lang.Math.max;
+        import com.acme.ledger.*;
+        """,
+    )
+    assert raws == [
+        ("java.util", "List", None, "List"),
+        ("java.lang.Math", "max", None, "max"),
+        ("com.acme.ledger", "*", None, None),
+    ]
+
+
+def test_go_imports_are_extracted_with_alias_blank_and_dot_forms() -> None:
+    raws = _raws(
+        Language.GO,
+        """
+        package p
+        import (
+            "os"
+            led "github.com/acme/ledger"
+            . "strings"
+            _ "embed"
+            "github.com/acme/other/v3"
+        )
+        """,
+    )
+    assert raws == [
+        ("os", None, None, "os"),
+        ("github.com/acme/ledger", None, "led", "led"),
+        ("strings", "*", None, None),
+        ("embed", None, None, None),
+        ("github.com/acme/other/v3", None, None, "other"),
+    ]
+
+
+@pytest.fixture
+def java_root(tmp_path: Path) -> Path:
+    (tmp_path / "src" / "main" / "java" / "com" / "acme" / "billing").mkdir(parents=True)
+    return tmp_path
+
+
+@pytest.mark.parametrize(
+    ("module", "origin"),
+    [
+        ("java.util", "stdlib"),
+        ("java.util.concurrent", "stdlib"),
+        ("javax.crypto", "stdlib"),
+        ("jdk.internal.misc", "stdlib"),
+        ("com.acme.billing", "internal"),
+        ("com.acme.billing.model", "third_party"),
+        ("org.springframework.web", "third_party"),
+        ("com.google.common.collect", "third_party"),
+    ],
+)
+def test_java_classification(java_root: Path, module: str, origin: str) -> None:
+    resolver = DefaultImportResolver(Language.JAVA)
+    assert resolver.classify(module, project_root=java_root) == origin
+
+
+@pytest.mark.parametrize("module", ["", "has space", "a..b", "1abc", "x/y"])
+def test_an_unresolvable_java_name_is_internal_and_conservative(
+    java_root: Path, module: str
+) -> None:
+    verdict = DefaultImportResolver(Language.JAVA).classify_detailed(module, project_root=java_root)
+    assert (verdict.origin, verdict.conservative) == ("internal", True)
+
+
+@pytest.fixture
+def go_root(tmp_path: Path) -> Path:
+    (tmp_path / "go.mod").write_bytes(b"module github.com/acme/billing\n\ngo 1.22\n")
+    return tmp_path
+
+
+@pytest.mark.parametrize(
+    ("module", "origin"),
+    [
+        ("fmt", "stdlib"),
+        ("net/http", "stdlib"),
+        ("crypto/sha256", "stdlib"),
+        ("github.com/acme/billing", "internal"),
+        ("github.com/acme/billing/internal/ledger", "internal"),
+        ("./sibling", "internal"),
+        ("github.com/acme/billing-other", "third_party"),
+        ("github.com/stretchr/testify/assert", "third_party"),
+        ("golang.org/x/sync/errgroup", "third_party"),
+    ],
+)
+def test_go_classification(go_root: Path, module: str, origin: str) -> None:
+    resolver = DefaultImportResolver(Language.GO)
+    assert resolver.classify(module, project_root=go_root) == origin
+
+
+@pytest.mark.parametrize("module", ["", "has space", "a\b", "//x", " "])
+def test_an_unresolvable_go_path_is_internal_and_conservative(go_root: Path, module: str) -> None:
+    verdict = DefaultImportResolver(Language.GO).classify_detailed(module, project_root=go_root)
+    assert (verdict.origin, verdict.conservative) == ("internal", True)
+
+
+def test_go_mod_is_optional_and_read_only_up_to_the_size_cap(tmp_path: Path) -> None:
+    resolver = DefaultImportResolver(Language.GO)
+    assert resolver.classify("github.com/acme/x", project_root=tmp_path) == "third_party"
+    (tmp_path / "go.mod").write_bytes(b"module github.com/acme/x\n" + b"#" * (MAX_CONFIG_BYTES + 1))
+    other = DefaultImportResolver(Language.GO)
+    assert other.classify("github.com/acme/x", project_root=tmp_path) == "internal"
+
+
+def test_go_internal_directory_names_make_a_dotless_first_element_internal(tmp_path: Path) -> None:
+    resolver = DefaultImportResolver(Language.GO, internal_names={"billing"})
+    assert resolver.classify("billing/ledger", project_root=tmp_path) == "internal"
+    assert resolver.classify("fmt", project_root=tmp_path) == "stdlib"

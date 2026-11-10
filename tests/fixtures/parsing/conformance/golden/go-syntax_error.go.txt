@@ -1,0 +1,19 @@
+identifiers:
+  syntax_error.go.txt:1:9 'broken'
+  syntax_error.go.txt:3:6 'ok'
+  syntax_error.go.txt:3:9 'a'
+  syntax_error.go.txt:3:11 'int'
+  syntax_error.go.txt:3:16 'int'
+  syntax_error.go.txt:3:29 'a'
+  syntax_error.go.txt:5:6 'bad'
+  syntax_error.go.txt:5:10 'a'
+  syntax_error.go.txt:5:12 'int'
+  syntax_error.go.txt:6:9 'a'
+  syntax_error.go.txt:9:6 'later'
+  syntax_error.go.txt:9:12 'b'
+  syntax_error.go.txt:9:14 'int'
+  syntax_error.go.txt:9:19 'int'
+  syntax_error.go.txt:9:32 'b'
+strings:
+comments:
+error_count: 2

@@ -1,0 +1,126 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 class
+  3 parent=2 function
+  4 parent=1 class
+  5 parent=4 function
+  6 parent=1 class
+  7 parent=6 function
+  8 parent=6 function
+  9 parent=1 class
+  10 parent=9 class
+  11 parent=10 function
+  12 parent=9 function
+  13 parent=9 function
+  14 parent=1 class
+  15 parent=14 function
+  16 parent=15 block
+  17 parent=14 function
+  18 parent=1 function
+  19 parent=18 class
+  20 parent=18 class
+  21 parent=20 function
+symbols:
+  classes.java.txt:1:9 'shapes' module scope=-1 ref
+  classes.java.txt:3:14 'Outer' class scope=0 def
+  classes.java.txt:4:17 'value' field scope=1 def
+  classes.java.txt:6:18 'Nested' class scope=1 def
+  classes.java.txt:7:13 'nestedField' field scope=2 def
+  classes.java.txt:8:13 'read' method scope=2 def
+  classes.java.txt:8:29 'nestedField' field scope=2 ref
+  classes.java.txt:11:11 'Inner' class scope=1 def
+  classes.java.txt:12:13 'read' method scope=4 def
+  classes.java.txt:12:29 'value' field scope=1 ref
+  classes.java.txt:15:15 'Shape' class scope=1 def
+  classes.java.txt:16:16 'AREA_SCALE' constant scope=6 def
+  classes.java.txt:17:16 'area' method scope=6 def
+  classes.java.txt:18:17 'String' variable scope=-1 ref
+  classes.java.txt:18:24 'label' method scope=6 def
+  classes.java.txt:21:10 'Color' class scope=1 def
+  classes.java.txt:22:9 'RED' constant scope=9 def
+  classes.java.txt:23:14 'Override' variable scope=-1 ref
+  classes.java.txt:24:17 'weight' method scope=10 def
+  classes.java.txt:26:9 'GREEN' constant scope=9 def
+  classes.java.txt:28:27 'code' field scope=9 def
+  classes.java.txt:30:9 'Color' class scope=1 ref
+  classes.java.txt:30:19 'code' parameter scope=12 def
+  classes.java.txt:30:32 'code' field scope=-1 ref
+  classes.java.txt:30:39 'code' parameter scope=12 ref
+  classes.java.txt:32:13 'weight' method scope=9 def
+  classes.java.txt:32:31 'code' field scope=9 ref
+  classes.java.txt:35:12 'Point' class scope=1 def
+  classes.java.txt:35:22 'x' field scope=14 def
+  classes.java.txt:35:29 'y' field scope=14 def
+  classes.java.txt:36:9 'Point' class scope=1 ref
+  classes.java.txt:37:17 'x' field scope=14 ref
+  classes.java.txt:37:36 'IllegalArgumentException' variable scope=-1 ref
+  classes.java.txt:40:13 'sum' method scope=14 def
+  classes.java.txt:40:28 'x' field scope=14 ref
+  classes.java.txt:40:32 'y' field scope=14 ref
+  classes.java.txt:43:10 'run' method scope=1 def
+  classes.java.txt:44:15 'Local' class scope=18 def
+  classes.java.txt:45:17 'z' field scope=19 def
+  classes.java.txt:47:9 'Runnable' variable scope=-1 ref
+  classes.java.txt:47:18 'task' variable scope=18 def
+  classes.java.txt:47:29 'Runnable' variable scope=-1 ref
+  classes.java.txt:48:17 'count' field scope=20 def
+  classes.java.txt:49:25 'run' method scope=20 def
+  classes.java.txt:49:33 'count' field scope=20 ref
+  classes.java.txt:51:9 'task' variable scope=18 ref
+  classes.java.txt:51:14 'run' method scope=-1 ref
+extents:
+  'Outer' classes.java.txt:3-53
+  'Nested' classes.java.txt:6-9
+  'read' classes.java.txt:8:9
+  'Inner' classes.java.txt:11-13
+  'read' classes.java.txt:12:9
+  'Shape' classes.java.txt:15-19
+  'area' classes.java.txt:17:9
+  'label' classes.java.txt:18:9
+  'Color' classes.java.txt:21-33
+  'weight' classes.java.txt:23-24
+  'Color' classes.java.txt:30:9
+  'weight' classes.java.txt:32:9
+  'Point' classes.java.txt:35-41
+  'Point' classes.java.txt:36-38
+  'sum' classes.java.txt:40:9
+  'run' classes.java.txt:43-52
+  'Local' classes.java.txt:44-46
+  'run' classes.java.txt:49:13
+references:
+  'shapes' scope=-1: 1
+  'Outer' scope=0: 3
+  'value' scope=1: 4, 12
+  'Nested' scope=1: 6
+  'nestedField' scope=2: 7, 8
+  'read' scope=2: 8
+  'Inner' scope=1: 11
+  'read' scope=4: 12
+  'Shape' scope=1: 15
+  'AREA_SCALE' scope=6: 16
+  'area' scope=6: 17
+  'String' scope=-1: 18
+  'label' scope=6: 18
+  'Color' scope=1: 21, 30
+  'RED' scope=9: 22
+  'Override' scope=-1: 23
+  'weight' scope=10: 24
+  'GREEN' scope=9: 26
+  'code' scope=9: 28, 32
+  'code' scope=12: 30, 30
+  'code' scope=-1: 30
+  'weight' scope=9: 32
+  'Point' scope=1: 35, 36
+  'x' scope=14: 35, 37, 40
+  'y' scope=14: 35, 40
+  'IllegalArgumentException' scope=-1: 37
+  'sum' scope=14: 40
+  'run' scope=1: 43
+  'Local' scope=18: 44
+  'z' scope=19: 45
+  'Runnable' scope=-1: 47, 47
+  'task' scope=18: 47, 51
+  'count' scope=20: 48, 49
+  'run' scope=20: 49
+  'run' scope=-1: 51

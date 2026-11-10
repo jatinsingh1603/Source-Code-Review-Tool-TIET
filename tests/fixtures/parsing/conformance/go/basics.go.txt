@@ -1,0 +1,32 @@
+package billing
+
+import (
+	"crypto/sha256"
+	"fmt"
+
+	"github.com/acme/ledger"
+)
+
+const DefaultRate = 3
+
+var counter int
+
+// Engine accrues interest.
+type Engine struct {
+	rate int
+	name string
+}
+
+func New(rate int) *Engine {
+	return &Engine{rate: rate}
+}
+
+// Accrue returns the interest for one period.
+func (e *Engine) Accrue(amount int64) int64 {
+	if rate := e.rate; rate > 0 {
+		return amount * int64(rate)
+	}
+	sum := sha256.Sum256([]byte(e.name))
+	fmt.Println(sum, ledger.Name)
+	return 0
+}

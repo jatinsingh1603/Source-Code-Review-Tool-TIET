@@ -107,13 +107,18 @@ class ScopeTree:
     global_names: tuple[frozenset[str], ...]
     nonlocal_names: tuple[frozenset[str], ...]
     class_body_sees_members: bool
+    class_scopes_visible: bool = False
 
     def _walk(self, name: str, start: int | None, *, first_is_start: bool) -> int | None:
         scope_id = start
         first = first_is_start
         while scope_id is not None:
             scope = self.scopes[scope_id]
-            visible = scope.kind != "class" or (first and self.class_body_sees_members)
+            visible = (
+                scope.kind != "class"
+                or self.class_scopes_visible
+                or (first and self.class_body_sees_members)
+            )
             if visible and name in self.declared[scope_id]:
                 return scope_id
             first = False
@@ -132,8 +137,11 @@ class ScopeTree:
 class ScopeBuilder:
     """Collects scopes and occurrences during one walk, then resolves them in ``build``."""
 
-    def __init__(self, *, class_body_sees_members: bool = True) -> None:
+    def __init__(
+        self, *, class_body_sees_members: bool = True, class_scopes_visible: bool = False
+    ) -> None:
         self._class_body_sees_members = class_body_sees_members
+        self._class_scopes_visible = class_scopes_visible
         self._kinds: list[ScopeKind] = []
         self._parents: list[int | None] = []
         self._comprehensions: set[int] = set()
@@ -212,6 +220,7 @@ class ScopeBuilder:
             global_names=tuple(frozenset(names) for names in self._globals),
             nonlocal_names=tuple(frozenset(names) for names in self._nonlocals),
             class_body_sees_members=self._class_body_sees_members,
+            class_scopes_visible=self._class_scopes_visible,
         )
         ordered = sorted(self._occurrences, key=lambda occurrence: occurrence.start)
         redirected: list[Occurrence] = []

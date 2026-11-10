@@ -1,0 +1,12 @@
+method 'Initialisers.Initialisers' ('Initialisers')
+  header 13:5-13:19
+  body   13:20-15:6
+  full   13:5-15:6
+method 'Initialisers.Initialisers' ('Initialisers')
+  header 17:5-17:28
+  body   17:29-20:6
+  full   17:5-20:6
+method 'Base.Base' ('Base')
+  header 24:5-24:19
+  body   24:20-24:22
+  full   24:5-24:22

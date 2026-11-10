@@ -1,0 +1,18 @@
+package consts
+
+const (
+	First = iota
+	Second
+	Third
+)
+
+const Max, Min = 10, 0
+
+var (
+	alpha = 1
+	beta  string
+)
+
+func values() (int, string) {
+	return alpha + First + Max + Min, beta
+}

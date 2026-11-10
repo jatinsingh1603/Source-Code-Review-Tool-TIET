@@ -1,0 +1,24 @@
+package scoping
+
+func shadow(x int) int {
+	total := x
+	if total := total + 1; total > 2 {
+		x = total
+	} else if other := total * 2; other > 1 {
+		x = other
+	}
+	for i := 0; i < 3; i++ {
+		total := i
+		x += total
+	}
+	{
+		total := 5
+		x += total
+	}
+	switch v := x; {
+	case v > 1:
+		x = v
+	}
+	var total2, other int = 1, 2
+	return x + total2 + other + total
+}

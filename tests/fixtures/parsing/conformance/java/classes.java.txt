@@ -1,0 +1,53 @@
+package shapes;
+
+public class Outer {
+    private int value = 1;
+
+    static class Nested {
+        int nestedField;
+        int read() { return nestedField; }
+    }
+
+    class Inner {
+        int read() { return value; }
+    }
+
+    interface Shape {
+        double AREA_SCALE = 2.0;
+        double area();
+        default String label() { return "shape"; }
+    }
+
+    enum Color {
+        RED(1) {
+            @Override
+            int weight() { return 10; }
+        },
+        GREEN(2);
+
+        private final int code;
+
+        Color(int code) { this.code = code; }
+
+        int weight() { return code; }
+    }
+
+    record Point(int x, int y) {
+        Point {
+            if (x < 0) { throw new IllegalArgumentException(); }
+        }
+
+        int sum() { return x + y; }
+    }
+
+    void run() {
+        class Local {
+            int z;
+        }
+        Runnable task = new Runnable() {
+            int count;
+            public void run() { count++; }
+        };
+        task.run();
+    }
+}

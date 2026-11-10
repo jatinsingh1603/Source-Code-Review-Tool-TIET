@@ -1,0 +1,64 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+  3 parent=1 function
+  4 parent=0 class
+  5 parent=4 function
+  6 parent=4 function
+symbols:
+  annotations.java.txt:1:8 'java' module scope=-1 ref
+  annotations.java.txt:1:13 'lang' module scope=-1 ref
+  annotations.java.txt:1:18 'annotation' module scope=-1 ref
+  annotations.java.txt:1:29 'Retention' import scope=0 def
+  annotations.java.txt:3:2 'Retention' import scope=0 ref
+  annotations.java.txt:3:12 'java' variable scope=-1 ref
+  annotations.java.txt:3:17 'lang' field scope=-1 ref
+  annotations.java.txt:3:22 'annotation' field scope=-1 ref
+  annotations.java.txt:3:33 'RetentionPolicy' field scope=-1 ref
+  annotations.java.txt:3:49 'RUNTIME' field scope=-1 ref
+  annotations.java.txt:4:12 'Tag' class scope=0 def
+  annotations.java.txt:5:5 'String' variable scope=-1 ref
+  annotations.java.txt:5:12 'value' method scope=1 def
+  annotations.java.txt:6:9 'level' method scope=1 def
+  annotations.java.txt:9:2 'Tag' class scope=0 ref
+  annotations.java.txt:9:6 'value' field scope=-1 ref
+  annotations.java.txt:9:25 'level' field scope=-1 ref
+  annotations.java.txt:10:14 'Annotated' class scope=0 def
+  annotations.java.txt:11:6 'Deprecated' variable scope=-1 ref
+  annotations.java.txt:12:17 'old' field scope=4 def
+  annotations.java.txt:14:6 'Override' variable scope=-1 ref
+  annotations.java.txt:15:12 'String' variable scope=-1 ref
+  annotations.java.txt:15:19 'toString' method scope=4 def
+  annotations.java.txt:19:6 'SuppressWarnings' variable scope=-1 ref
+  annotations.java.txt:20:10 'generic' method scope=4 def
+  annotations.java.txt:20:19 'Tag' class scope=0 ref
+  annotations.java.txt:20:32 'parameter' parameter scope=6 def
+extents:
+  'Tag' annotations.java.txt:3-7
+  'value' annotations.java.txt:5:5
+  'level' annotations.java.txt:6:5
+  'Annotated' annotations.java.txt:9-21
+  'toString' annotations.java.txt:14-17
+  'generic' annotations.java.txt:19-20
+references:
+  'java' scope=-1: 1, 3
+  'lang' scope=-1: 1, 3
+  'annotation' scope=-1: 1, 3
+  'Retention' scope=0: 1, 3
+  'RetentionPolicy' scope=-1: 3
+  'RUNTIME' scope=-1: 3
+  'Tag' scope=0: 4, 9, 20
+  'String' scope=-1: 5, 15
+  'value' scope=1: 5
+  'level' scope=1: 6
+  'value' scope=-1: 9
+  'level' scope=-1: 9
+  'Annotated' scope=0: 10
+  'Deprecated' scope=-1: 11
+  'old' scope=4: 12
+  'Override' scope=-1: 14
+  'toString' scope=4: 15
+  'SuppressWarnings' scope=-1: 19
+  'generic' scope=4: 20
+  'parameter' scope=6: 20

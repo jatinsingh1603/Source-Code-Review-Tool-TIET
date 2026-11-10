@@ -1,0 +1,24 @@
+package closures
+
+func counter() func() int {
+	count := 0
+	return func() int {
+		count++
+		return count
+	}
+}
+
+func apply(values []int) int {
+	sum := 0
+	add := func(a int) {
+		sum += a
+	}
+	for _, v := range values {
+		add(v)
+	}
+	defer func() {
+		_ = recover()
+	}()
+	go func(n int) { sum += n }(1)
+	return sum
+}

@@ -15,6 +15,7 @@ from codekavach.core.store.layout import StateLayout
 from codekavach.ingest.models import SourceFile
 from codekavach.parsing import stage as stage_module
 from codekavach.parsing.callgraph import CallGraph
+from codekavach.parsing.loader import grammar_version
 from codekavach.parsing.stage import LAZY_AST_CACHE_SIZE, LazyAst, ParseStage
 from codekavach.parsing.symbols import SymbolsArtefact
 from tests.support.ingest import SALT_HEX, materialise_project, stages_registry
@@ -267,3 +268,68 @@ def test_lazy_ast_evicts_the_oldest_entry(tmp_path: Path) -> None:
     assert len(lazy._cache) == LAZY_AST_CACHE_SIZE
     assert "m0.py" not in lazy._cache
     assert lazy["m0.py"] is not None
+
+
+@pytest.fixture
+def polyglot_repo(tmp_path: Path) -> Path:
+    repo = tmp_path / "repo"
+    files = {
+        "app.py": b"import json\n\n\ndef run():\n    return json.dumps({})\n",
+        "go.mod": b"module github.com/acme/billing\n\ngo 1.22\n",
+        "cmd/main.go": (
+            b'package main\n\nimport (\n\t"fmt"\n\t"github.com/acme/billing/ledger"\n'
+            b'\t"github.com/stretchr/testify/assert"\n)\n\nfunc main() {\n'
+            b"\tfmt.Println(ledger.Name, assert.True)\n}\n"
+        ),
+        "src/main/java/com/acme/App.java": (
+            b"package com.acme;\n\nimport java.util.List;\n"
+            b"import org.apache.commons.lang3.StringUtils;\n"
+            b"import com.acme.util.Helper;\n\npublic class App {\n    List<String> names;\n"
+            b"    void run() { StringUtils.isEmpty(null); }\n}\n"
+        ),
+        "src/main/java/com/acme/util/Helper.java": (
+            b"package com.acme.util;\n\npublic class Helper {}\n"
+        ),
+    }
+    for name, content in files.items():
+        target = repo / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+    return repo
+
+
+def test_java_and_go_files_are_parsed_and_their_imports_classified(polyglot_repo: Path) -> None:
+    outcome = scan(polyglot_repo)
+    assert outcome.scan.status is ScanStatus.COMPLETED
+    symbols = store_of(outcome).get(keys.SYMBOLS, SymbolsArtefact)
+    assert symbols.skipped == {}
+    go = {ref.module: ref.origin for ref in symbols.tables["cmd/main.go"].imports}
+    assert go == {
+        "fmt": "stdlib",
+        "github.com/acme/billing/ledger": "internal",
+        "github.com/stretchr/testify/assert": "third_party",
+    }
+    java = {
+        ref.module: ref.origin for ref in symbols.tables["src/main/java/com/acme/App.java"].imports
+    }
+    assert java == {
+        "java.util": "stdlib",
+        "org.apache.commons.lang3": "third_party",
+        "com.acme.util": "internal",
+    }
+
+
+def test_bumping_one_languages_grammar_pin_invalidates_only_that_language(
+    polyglot_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = scan(polyglot_repo)
+    assert first.result.memo_misses == 4
+    real = grammar_version
+
+    def bumped(language: Language) -> str:
+        return "9.9.9" if language is Language.JAVA else real(language)
+
+    monkeypatch.setattr(stage_module, "grammar_version", bumped)
+    again = scan(polyglot_repo)
+    # the two Java files miss; the Python and Go entries are served from the memo
+    assert (again.result.memo_hits, again.result.memo_misses) == (2, 2)

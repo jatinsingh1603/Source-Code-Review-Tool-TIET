@@ -51,6 +51,9 @@ LOCAL_NAMES = [
     "storage:database",
     "parsing:grammar:python",
     "parsing:grammar:javascript",
+    "parsing:grammar:typescript",
+    "parsing:grammar:java",
+    "parsing:grammar:go",
     "secrets:keyring",
     "plugins:load",
     "plugins:pipeline",
@@ -316,7 +319,8 @@ def test_everything_passes_or_is_skipped_on_a_clean_machine(cli: Cli, project: P
     assert statuses["provider:mock:configured"] == "PASS"
     assert statuses["provider:mock:reachable"] == "SKIP"  # needs --probe-providers
     assert statuses["storage:artefacts"] == "SKIP"
-    assert statuses["parsing:grammar:python"] == "SKIP"
+    assert statuses["parsing:grammar:python"] == "PASS"
+    assert statuses["parsing:grammar:go"] == "PASS"
     assert "not available in this build" in result.stdout
     assert {statuses[name] for name in ("runtime:python", "runtime:package", "config:valid")} == {
         "PASS"
@@ -414,7 +418,6 @@ def test_artefact_and_database_checks(
 
 
 def test_grammar_checks(cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    assert one(cli, project, "parsing:grammar:python")["status"] == "skip"
     loaded: list[str] = []
 
     def load(language: str) -> None:
@@ -428,7 +431,7 @@ def test_grammar_checks(cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
     assert broken.exit_code == 1
     assert "FAIL  parsing:grammar:javascript  grammar could not be loaded" in broken.stdout
     assert "alice" not in broken.stdout + broken.stderr
-    assert loaded == ["python", "python", "javascript"]
+    assert loaded == ["python", "python", "javascript", "typescript", "java", "go"]
 
 
 @dataclass
