@@ -253,6 +253,8 @@ def run_scan(
     resume: str | None = None,
     handle_sigint: bool = False,
     no_send: bool = False,
+    ingest_options: Mapping[str, object] | None = None,
+    keep_work: bool = False,
 ) -> ScanOutcome:
     """Run one scan of ``target`` with the loaded configuration.
 
@@ -263,6 +265,11 @@ def run_scan(
 
     ``no_send`` runs every egress check and writes ``not_sent_dry_run`` ledger entries but sends
     nothing (``--no-send``).
+
+    ``ingest_options`` is the per-run mapping of ingest flags (``--ref``, ``--diff-since``
+    and so on); it is stored with the target and interpreted by the ingest stage only.
+    A materialised working root (git, archive, stdin) is removed when the scan ends
+    unless ``keep_work``.
 
     ``persist`` records the scan in the local database, under the project found by its root
     directory; ``persist=False`` leaves no database file behind.
@@ -295,7 +302,12 @@ def run_scan(
     artefacts = store if store is not None else OnDiskArtefactStore(layout, scan_id)
     if resumed is not None:
         _discard_unfinished(plan, artefacts, resumed)
-    artefacts.put(keys.TARGET, {"target": target})
+    artefacts.put(
+        keys.TARGET,
+        {"target": target, "options": dict(ingest_options)}
+        if ingest_options
+        else {"target": target},
+    )
     recorder = _recorder(layout) if persist else None
     root = str(loaded.project_root)
     project = (
@@ -383,6 +395,7 @@ def run_scan(
             clock=clock,
             resumed=resumed is not None,
             handle_sigint=handle_sigint,
+            keep_work=keep_work,
         )
     )
     scan = assemble_scan(
@@ -475,6 +488,7 @@ class _Execution:
     clock: Callable[[], datetime]
     resumed: bool
     handle_sigint: bool = False
+    keep_work: bool = False
 
 
 def _execute(run: _Execution) -> PipelineResult:
@@ -491,6 +505,7 @@ def _execute(run: _Execution) -> PipelineResult:
             result = dataclasses.replace(result, resumed_from_checkpoint=True)
     finally:
         unsubscribe()
+        ctx.scan_root.close(keep=run.keep_work)
         failure = sys.exc_info()[1]
         status = result.status.value if result is not None else _status_after(failure, ctx)
         stage_runs = result.stage_runs if result is not None else ctx.run_log.snapshot()

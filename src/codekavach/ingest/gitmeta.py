@@ -31,10 +31,13 @@ HEAD_FILE_MAX_BYTES: Final = 4096
 PACKED_REFS_MAX_BYTES: Final = 16 * 1024 * 1024
 STATUS_TIMEOUT_SECONDS: Final = 30.0
 MAX_BRANCH_LENGTH: Final = 255
+GITMODULES_MAX_BYTES: Final = 1024 * 1024
+MAX_SUBMODULES: Final = 1000
 
 _COMMIT = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 _REF_NAME = re.compile(r"^refs/[A-Za-z0-9._/+@-]{1,500}$")
 _HEADS = "refs/heads/"
+_SUBMODULE_PATH = re.compile(r"^[ \t]*path[ \t]*=[ \t]*(\S[^\r\n]*?)[ \t]*$", re.MULTILINE)
 
 
 class GitMetadata(KavachModel):
@@ -166,6 +169,34 @@ def _is_dirty(root: Path, timeout: float) -> bool | None:
         _log.debug("git_status_failed", returncode=completed.returncode)
         return None
     return bool(completed.stdout.strip())
+
+
+def unfetched_submodules(root: Path) -> tuple[str, ...]:
+    """Submodule paths named by ``.gitmodules`` whose directory is missing or empty.
+
+    A scan never fetches submodules (CVE-2024-32002), so these are code the scan did not read;
+    the report states them. The file is attacker-controlled: it is read with a size bound, at
+    most ``MAX_SUBMODULES`` paths are kept and an absolute or ``..`` path is ignored.
+    """
+    text = _read_small(root / ".gitmodules", GITMODULES_MAX_BYTES)
+    if text is None:
+        return ()
+    found: list[str] = []
+    for match in _SUBMODULE_PATH.finditer(text):
+        parts = [part for part in match.group(1).replace("\\", "/").split("/") if part != "."]
+        if not parts or ".." in parts or match.group(1).startswith("/"):
+            continue
+        relative = "/".join(parts)
+        directory = root.joinpath(*parts)
+        try:
+            empty = not directory.is_dir() or not any(directory.iterdir())
+        except OSError:
+            empty = True
+        if empty and relative not in found:
+            found.append(relative)
+        if len(found) >= MAX_SUBMODULES:
+            break
+    return tuple(found)
 
 
 def read_git_metadata(

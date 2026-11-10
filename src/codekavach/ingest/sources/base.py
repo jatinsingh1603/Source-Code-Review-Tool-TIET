@@ -9,7 +9,7 @@ lets E06-03 add git, archive and stdin sources without touching ``IngestStage``.
 """
 
 from pathlib import Path
-from typing import Protocol
+from typing import ClassVar, Protocol
 
 from codekavach.ingest.limits import IngestLimits
 
@@ -21,8 +21,27 @@ class UnsupportedSource(ValueError):  # noqa: N818 - the name is fixed by the M1
     """
 
 
+class UnsafeArchiveEntry(ValueError):  # noqa: N818 - named for what it rejects, like UnsupportedSource
+    """An archive entry breaks a safety rule (a path that escapes, a link, a device member).
+
+    ``reason`` is a short rule name; the message never repeats the entry name, which the author of
+    the archive chose and which may reach a log.
+    """
+
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+        super().__init__(f"unsafe archive entry ({reason})")
+
+
 class Source(Protocol):
-    """Makes a scan target available as a local directory."""
+    """Makes a scan target available as a local directory.
+
+    ``owns_root`` is true when ``materialise`` fills ``into`` with a copy that later stages must
+    read from (a clone, an extracted archive, standard input) and false when it returns the
+    target itself.
+    """
+
+    owns_root: ClassVar[bool]
 
     def materialise(self, target: str, *, limits: IngestLimits, into: Path) -> Path:
         """Return the directory to walk for ``target``, using ``into`` as scratch space.

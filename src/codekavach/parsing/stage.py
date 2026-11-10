@@ -236,7 +236,7 @@ class ParseStage:
     def run(self, ctx: RunContext) -> None:
         """Write ``symbols`` and ``callgraph`` (persisted) and ``ast`` (in memory only)."""
         files = sorted(ctx.artefacts.get_list(keys.FILES, SourceFile), key=lambda f: f.path)
-        root = ctx.project_root
+        root = ctx.source_root
         settings = ctx.config.parsing
         names = _internal_names(files)
         fingerprint = _resolver_fingerprint(root, names)

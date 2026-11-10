@@ -252,7 +252,7 @@ class PrivacyPrepareStage:
         registry = detector_registry(ctx.config)
         numbering = PlaceholderNumbering(ctx.scan_salt)
         generator = PseudonymGenerator(ctx.scan_salt)
-        engine = Pseudonymiser(project_root=ctx.project_root)
+        engine = Pseudonymiser(project_root=ctx.source_root)
         budget = SliceBudget(ctx.config.privacy.slice.max_tokens)
         payloads: list[SanitisedPayload] = []
         slices: list[CodeSlice] = []

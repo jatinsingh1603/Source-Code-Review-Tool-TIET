@@ -18,6 +18,7 @@ import random
 import re
 import string
 import tempfile
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -209,7 +210,7 @@ def example_secret(kind: str) -> str:
     return build_secret(kind, SECRET_SHAPES[kind].example())
 
 
-def make_tree(spec: dict[str, bytes | str]) -> Path:
+def make_tree(spec: Mapping[str, bytes | str]) -> Path:
     """Build a fresh directory from ``spec`` (relative POSIX path -> file content).
 
     A parent directory is created as needed. Returns the new, otherwise-empty root; the caller

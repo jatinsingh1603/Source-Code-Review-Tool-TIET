@@ -35,7 +35,7 @@ def test_stage_metadata_matches_the_m1_pipeline_table() -> None:
     info = describe_stage(IngestStage())
     assert info.name == "ingest"
     assert info.requires == frozenset({keys.TARGET})
-    assert info.provides == frozenset({keys.FILES, keys.LANGUAGES})
+    assert info.provides == frozenset({keys.FILES, keys.LANGUAGES, keys.INGEST_COVERAGE})
     assert info.category is StageCategory.INGEST
     assert info.failure_policy is FailurePolicy.ABORT_SCAN
     assert info.cacheable is False

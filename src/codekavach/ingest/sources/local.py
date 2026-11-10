@@ -10,6 +10,7 @@ byte is read.
 
 import shutil
 from pathlib import Path
+from typing import ClassVar
 
 from codekavach.ingest.limits import IngestLimits, LimitExceededError, LimitKind
 from codekavach.ingest.sources.base import UnsupportedSource
@@ -17,6 +18,8 @@ from codekavach.ingest.sources.base import UnsupportedSource
 
 class LocalPathSource:
     """Serves an existing directory or file path."""
+
+    owns_root: ClassVar[bool] = False
 
     def materialise(self, target: str, *, limits: IngestLimits, into: Path) -> Path:
         """Return ``target`` itself when it is a directory, else ``into`` holding a copy of it."""

@@ -38,13 +38,41 @@ HEAD_SNIFF_BYTES = 8192
 
 @dataclass
 class DiscoveryReport:
-    """Per-``SkipReason`` counts from one discovery run, for the report's coverage appendix."""
+    """What one discovery run left out and why, for the report's coverage appendix.
+
+    ``skipped`` counts files by ``SkipReason``. The remaining fields record the narrowing the
+    run asked for, so that a reduced scan cannot read like a complete one: ``diff_base`` names
+    the base of a diff scan and ``diff_excluded`` the files it left out (``diff_unresolved`` is
+    set when the base could not be resolved and everything was scanned), ``subproject_excluded``
+    the files outside the requested sub-projects, ``subprojects`` the kinds and directories
+    detected, and ``submodules_not_scanned`` the submodule paths that are not checked out.
+    """
 
     skipped: dict[SkipReason, int] = field(default_factory=dict)
+    diff_base: str | None = None
+    diff_excluded: int = 0
+    diff_deleted: int = 0
+    diff_unresolved: bool = False
+    subproject_excluded: int = 0
+    subprojects: tuple[tuple[str, str], ...] = ()
+    submodules_not_scanned: tuple[str, ...] = ()
 
     def record(self, reason: SkipReason) -> None:
         """Count one more skipped candidate against ``reason``."""
         self.skipped[reason] = self.skipped.get(reason, 0) + 1
+
+    def as_record(self) -> dict[str, object]:
+        """The JSON-able record stored as the ``ingest.coverage`` artefact (counts and notes)."""
+        return {
+            "skipped": {reason.value: count for reason, count in sorted(self.skipped.items())},
+            "diff_base": self.diff_base,
+            "diff_excluded": self.diff_excluded,
+            "diff_deleted": self.diff_deleted,
+            "diff_unresolved": self.diff_unresolved,
+            "subproject_excluded": self.subproject_excluded,
+            "subprojects": [list(item) for item in self.subprojects],
+            "submodules_not_scanned": list(self.submodules_not_scanned),
+        }
 
 
 def _is_symlink_like(entry: os.DirEntry[str]) -> bool:
@@ -141,19 +169,21 @@ def discover(
     settings: Settings,
     *,
     on_candidate: Callable[[int, int], None] | None = None,
+    report: DiscoveryReport | None = None,
 ) -> list[SourceFile]:
     """Discover every readable, non-excluded text file under ``root``, sorted by path.
 
     ``on_candidate(done, total)`` is called before each candidate file is read, with the number
     of candidates handled so far and the number found by the walk. It carries counts only, and an
-    exception it raises (cancellation) propagates and stops the run.
+    exception it raises (cancellation) propagates and stops the run. ``report`` receives the
+    skip counts when given.
 
     Raises:
         LimitExceededError: ``ingest.max_files`` or ``ingest.max_total_bytes`` was exceeded.
     """
     limits = IngestLimits.from_settings(settings.ingest)
     ignores = IgnoreSet.from_root(root, settings.ingest)
-    report = DiscoveryReport()
+    report = report if report is not None else DiscoveryReport()
     candidates = _walk(root, limits, ignores, report)
 
     files: list[SourceFile] = []

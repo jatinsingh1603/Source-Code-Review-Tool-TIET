@@ -20,7 +20,7 @@ refusal itself is fail-closed with or without the flag (I4).
 
 import contextlib
 import re
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -53,7 +53,8 @@ if TYPE_CHECKING:
     from codekavach.core.models.finding import Finding
     from codekavach.core.models.summary import ScanSummary
 
-REMOTE_TARGET = re.compile(r"^(https://|git@|ssh://)")
+REMOTE_TARGET = re.compile(r"^(https://|git@|ssh://|file://)")
+STDIN_TARGET = "-"
 ARCHIVE_SUFFIXES = (".zip", ".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tbz2", ".tar.xz", ".txz")
 SEVERITIES = ("critical", "high", "medium", "low", "info")
 LOCAL_KINDS = frozenset({"mock", "replay"})
@@ -155,7 +156,9 @@ def final_exit_code(
 
 def check_target(target: str) -> Path | None:
     """The local path of ``target`` (``None`` for a remote URL); ``UsageError`` otherwise."""
-    if target and REMOTE_TARGET.match(target):
+    if target == STDIN_TARGET:
+        return None
+    if target and (REMOTE_TARGET.match(target) or target.endswith(".git")):
         return None
     path = Path(target) if target else None
     if path is not None and (
@@ -163,6 +166,52 @@ def check_target(target: str) -> Path | None:
     ):
         return path
     raise UsageError(f"scan target does not exist: {target}", code="target_not_found")
+
+
+def ingest_options_from_flags(
+    *,
+    target: str,
+    ref: str | None,
+    depth: int,
+    git_credential: str | None,
+    stdin_filename: str | None,
+    diff_since: str | None,
+    include_deleted: bool,
+    subprojects: tuple[str, ...],
+) -> dict[str, object]:
+    """The per-run ingest mapping for the flags given, validated; empty when none were given.
+
+    The ingest package is imported here, not at module level, so ``scan --help`` stays light.
+    """
+    from codekavach.ingest.options import IngestOptions, OptionsError  # noqa: PLC0415
+    from codekavach.ingest.sources.base import UnsupportedSource  # noqa: PLC0415
+    from codekavach.ingest.sources.git import check_ref  # noqa: PLC0415
+    from codekavach.ingest.sources.stdin import check_stdin_filename  # noqa: PLC0415
+    from codekavach.ingest.subprojects import (  # noqa: PLC0415
+        SubprojectSelectionError,
+        normalise_selection,
+    )
+
+    try:
+        if target == STDIN_TARGET:
+            check_stdin_filename(stdin_filename)
+        elif stdin_filename is not None:
+            raise UsageError("--stdin-filename applies to the target '-'", code="stdin_misuse")
+        if ref is not None:
+            check_ref(ref)
+        for item in subprojects:
+            normalise_selection(item)
+        return IngestOptions(
+            ref=ref,
+            depth=depth,
+            git_credential=git_credential,
+            stdin_filename=stdin_filename,
+            diff_since=diff_since,
+            include_deleted=include_deleted,
+            subprojects=subprojects,
+        ).to_mapping()
+    except (UnsupportedSource, SubprojectSelectionError, OptionsError) as error:
+        raise UsageError(str(error), code="ingest_option_invalid") from None
 
 
 def split_formats(values: Sequence[str]) -> tuple[str, ...]:
@@ -245,6 +294,8 @@ def execute_scan(
     use_cache: bool | None = None,
     refresh: Sequence[str] = (),
     out: Output | None = None,
+    ingest_options: Mapping[str, object] | None = None,
+    keep_work: bool = False,
 ) -> CliScanResult:
     """Run the pipeline through ``run_scan()`` and convert its outcome.
 
@@ -270,6 +321,12 @@ def execute_scan(
     )
     salt = scan_salt(cli_ctx.loaded, resume)
     bus = InMemoryEventBus()
+    # Passed only when given, so a runner written before E06-03 keeps working.
+    extra: dict[str, Any] = {}
+    if ingest_options:
+        extra["ingest_options"] = dict(ingest_options)
+    if keep_work:
+        extra["keep_work"] = True
     try:
         with listen(bus) if listen is not None else contextlib.nullcontext():
             outcome = run_scan(
@@ -283,6 +340,7 @@ def execute_scan(
                 resume=resume,
                 use_cache=use_cache,
                 refresh=tuple(refresh),
+                **extra,
             )
     except ResumeMismatchError as error:
         raise resume_refusal(error) from None
@@ -480,6 +538,53 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
             help="Approve sending sanitised payloads to the remote provider for this run.",
         ),
     ] = False,
+    ref: Annotated[
+        str | None,
+        typer.Option("--ref", help="Branch, tag or commit to clone (git URL targets)."),
+    ] = None,
+    depth: Annotated[int, typer.Option("--depth", min=1, help="History depth of a git clone.")] = 1,
+    git_credential: Annotated[
+        str | None,
+        typer.Option(
+            "--git-credential",
+            metavar="REF",
+            help="Secret reference (env:NAME) for an https git remote; never the secret.",
+        ),
+    ] = None,
+    stdin_filename: Annotated[
+        str | None,
+        typer.Option(
+            "--stdin-filename",
+            metavar="NAME",
+            help="File name for the code read from standard input (target '-').",
+        ),
+    ] = None,
+    diff_since: Annotated[
+        str | None,
+        typer.Option(
+            "--diff-since",
+            metavar="REF_OR_SCAN_ID",
+            help="Scan only files changed since a git ref or an earlier scan.",
+        ),
+    ] = None,
+    include_deleted: Annotated[
+        bool,
+        typer.Option(
+            "--include-deleted/--no-include-deleted",
+            help="Count files deleted since the --diff-since base in the coverage record.",
+        ),
+    ] = False,
+    subproject: Annotated[
+        list[str] | None,
+        typer.Option("--subproject", metavar="PATH", help="Scan only this directory; repeatable."),
+    ] = None,
+    keep_state: Annotated[
+        bool,
+        typer.Option(
+            "--keep-state",
+            help="Keep the working copy made for a git, archive or standard-input target.",
+        ),
+    ] = False,
     progress: Annotated[
         ProgressMode,
         typer.Option(
@@ -500,6 +605,16 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
             "--resume relies on the stage cache and cannot be combined with --no-cache",
             code="resume_no_cache_conflict",
         )
+    ingest_options = ingest_options_from_flags(
+        target=target,
+        ref=ref,
+        depth=depth,
+        git_credential=git_credential,
+        stdin_filename=stdin_filename,
+        diff_since=diff_since,
+        include_deleted=include_deleted,
+        subprojects=tuple(subproject or ()),
+    )
     local = check_target(target)
     if local is not None:
         with_target(ctx, local if local.is_dir() else local.parent)
@@ -541,6 +656,8 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         use_cache=False if no_cache else None,
         refresh=tuple(refresh_stage or ()),
         out=out,
+        ingest_options=ingest_options,
+        keep_work=keep_state,
     )
     level = str(cli_ctx.privacy_level.value)
     threshold = evaluate_threshold(result.findings, cli_ctx.settings.scan.fail_on)

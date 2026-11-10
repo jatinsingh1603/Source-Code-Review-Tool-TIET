@@ -928,6 +928,14 @@ Usage: codekavach scan [OPTIONS] [target]
 | `--no-cache` | flag | off | Run every stage again; use no cached result. |
 | `--refresh-stage` | TEXT (repeatable) |  | Stage or group to run again; repeatable. |
 | `--accept-egress` | flag | off | Approve sending sanitised payloads to the remote provider for this run. |
+| `--ref` | TEXT |  | Branch, tag or commit to clone (git URL targets). |
+| `--depth` | INTEGER >= 1 | 1 | History depth of a git clone. |
+| `--git-credential` | REF |  | Secret reference (env:NAME) for an https git remote; never the secret. |
+| `--stdin-filename` | NAME |  | File name for the code read from standard input (target '-'). |
+| `--diff-since` | REF_OR_SCAN_ID |  | Scan only files changed since a git ref or an earlier scan. |
+| `--include-deleted / --no-include-deleted` | flag | off | Count files deleted since the --diff-since base in the coverage record. |
+| `--subproject` | PATH (repeatable) |  | Scan only this directory; repeatable. |
+| `--keep-state` | flag | off | Keep the working copy made for a git, archive or standard-input target. |
 | `--progress` | auto \| bar \| plain \| json \| off | auto | Progress on stderr: auto picks bar on a terminal, plain when piped, off under --quiet or --json. |
 
 Global options apply.

@@ -93,6 +93,19 @@ next: codekavach report --scan scan_01M4AZVWZEBM2972Q14GCY9GS8
 
 The `demo` profile switches the severity gate off (`threshold: none`). A scan with another profile has a gate, so its exit code can be 1 (section 7).
 
+### Other targets and narrower scans
+
+The target can also be an archive, a git URL or standard input:
+
+```console
+$ codekavach scan code.tar.gz
+$ codekavach scan https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET.git --ref v1.2 --git-credential env:GIT_TOKEN
+$ cat handler.py | codekavach scan - --stdin-filename handler.py
+$ codekavach scan . --diff-since main --subproject services/api
+```
+
+An archive is extracted into a private directory under the scan state, with limits on size, entry count, compression ratio and path shape; an entry that would leave that directory, and every link, is refused or skipped. A clone is shallow (`--depth`, default 1), runs no hooks, checks out no symlinks and fetches no submodule or LFS object; the credential is read from the reference you give and sent to git through its environment. `--diff-since` takes a git ref or a scan id; when it cannot be resolved the scan covers everything and says so. `--subproject` is repeatable and takes a directory that holds a detected manifest. What a narrowing left out is recorded in the `ingest.coverage` artefact, so a smaller scan is not reported as a complete one. The working directory is removed at the end of the scan; `--keep-state` keeps it.
+
 ## 3 See exactly what would be sent
 
 Before you let any code go to a provider, look at what would be sent. Three commands show it, and they apply to the `mock` provider too, where the ledger records what would have been sent.

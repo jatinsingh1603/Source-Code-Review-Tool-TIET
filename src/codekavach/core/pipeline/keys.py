@@ -11,6 +11,7 @@ Key                    Constant                Produced by                 Notes
 ``scan.target``        ``TARGET``              runner (E04-16)             ``{"target": ...}``
 ``files``              ``FILES``               ingest (E06)                raw code
 ``languages``          ``LANGUAGES``           ingest (E06)
+``ingest.coverage``    ``INGEST_COVERAGE``     ingest (E06-03)             counts and notes
 ``ast``                ``AST``                 parse (E07)                 transient, raw code
 ``symbols``            ``SYMBOLS``             parse (E07)                 raw code
 ``callgraph``          ``CALL_GRAPH``          parse (E07)                 raw code
@@ -45,6 +46,7 @@ from codekavach.core.pipeline.stage import MAX_KEY_LENGTH, StageCategory, StageI
 TARGET: Final = "scan.target"
 FILES: Final = "files"
 LANGUAGES: Final = "languages"
+INGEST_COVERAGE: Final = "ingest.coverage"
 AST: Final = "ast"
 SYMBOLS: Final = "symbols"
 CALL_GRAPH: Final = "callgraph"

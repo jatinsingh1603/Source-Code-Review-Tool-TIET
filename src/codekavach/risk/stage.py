@@ -188,7 +188,7 @@ def build_finding(
         cwe=cwe,
         owasp=owasp,
         locations=candidate.locations,
-        evidence=_evidence(candidate, ctx.project_root, cache),
+        evidence=_evidence(candidate, ctx.source_root, cache),
         impact=Impact(level=_IMPACT[severity], narrative=(usable.impact if usable else "")[:4000]),
         likelihood=Likelihood(level=_LIKELIHOOD[confidence]),
         remediation=(usable.remediation if usable else "")[:8000],

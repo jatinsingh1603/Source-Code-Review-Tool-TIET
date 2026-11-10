@@ -45,6 +45,39 @@ class ConsentDecision:
     source: Literal["none", "user-file", "flag", "env"]
 
 
+class ScanRoot:
+    """Where the files of the scan are read from when that is not ``project_root`` (E06-03).
+
+    A git, archive or stdin target is materialised into a working directory by the ingest
+    stage. Every later stage reads source files from ``RunContext.source_root``, which is this
+    directory once the ingest stage has set it. The object is shared by every copy of the
+    context (``dataclasses.replace`` copies the reference), so setting it in one stage is seen
+    by all of them. ``close`` runs the cleanup the ingest stage registered, once.
+    """
+
+    __slots__ = ("_cleanup", "_path")
+
+    def __init__(self) -> None:
+        self._path: Path | None = None
+        self._cleanup: Callable[[], None] | None = None
+
+    @property
+    def path(self) -> Path | None:
+        """The materialised root, or ``None`` when the scan reads ``project_root`` directly."""
+        return self._path
+
+    def set(self, path: Path, *, cleanup: Callable[[], None] | None = None) -> None:
+        """Record the root and the function that removes it."""
+        self._path = path
+        self._cleanup = cleanup
+
+    def close(self, *, keep: bool = False) -> None:
+        """Remove the materialised root unless ``keep``; safe to call more than once."""
+        cleanup, self._cleanup = self._cleanup, None
+        if cleanup is not None and not keep:
+            cleanup()
+
+
 @dataclass(frozen=True, slots=True)
 class RunContext:
     """Everything a stage may use during a scan."""
@@ -65,6 +98,12 @@ class RunContext:
     consent: ConsentDecision | None = None
     no_send: bool = False
     memo: ItemMemo = field(default_factory=NullMemo)
+    scan_root: ScanRoot = field(default_factory=ScanRoot)
+
+    @property
+    def source_root(self) -> Path:
+        """The directory source files are read from: the materialised root, else the project."""
+        return self.scan_root.path or self.project_root
 
     def for_stage(
         self,

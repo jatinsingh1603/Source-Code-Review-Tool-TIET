@@ -155,6 +155,11 @@ class StateLayout:
         scan_id = _component(_SCAN_ID, scan_id, "scan id")
         return self.contain(self.scans_dir / scan_id)
 
+    def work_dir(self, scan_id: str) -> Path:
+        """The working root a git, archive or stdin target is materialised into (E06-03)."""
+        scan_id = _component(_SCAN_ID, scan_id, "scan id")
+        return self.contain(self.root / "work" / scan_id)
+
     def index_dir(self, scan_id: str) -> Path:
         """Logical key to blob bindings of one scan."""
         return self.contain(self.scan_dir(scan_id) / "index")

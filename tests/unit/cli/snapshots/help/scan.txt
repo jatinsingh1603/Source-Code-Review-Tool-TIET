@@ -7,40 +7,81 @@
 │   target      <str>  Directory, archive or git URL to scan. [default: .]                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --fail-on                 <critical|high|medium|low|info|non  Severity that fails the scan.      │
-│                           e>                                                                     │
-│ --no-llm                                                      Run deterministic engines only.    │
-│ --format                  <str>                               Report format(s); repeatable or    │
-│                                                               comma-separated.                   │
-│ --output-dir              <path>                              Directory for report files.        │
-│ --jobs                    <int>                               Worker processes.                  │
-│ --include                 <str>                               Glob to include; repeatable.       │
-│ --exclude                 <str>                               Glob to exclude; repeatable;       │
-│                                                               replaces configured ones.          │
-│ --rules                   <path>                              Extra rule path; repeatable.       │
-│ --engine                  <str>                               Engine to enable; repeatable.      │
-│ --skip-engine             <str>                               Engine to disable; repeatable.     │
-│ --strict                                                      Exit 4 when a stage failed and the │
-│                                                               scan continued.                    │
-│ --strict-privacy                                              Exit 3 when the egress guard       │
-│                                                               blocked a payload.                 │
-│ --resume                  [SCAN_ID|latest]                    Continue an interrupted scan       │
-│                                                               (latest when no id is given).      │
-│                                                               Needs the stored scan salt of the  │
-│                                                               vault (E10); until then it is      │
-│                                                               refused with resume_salt_changed.  │
-│ --no-cache                                                    Run every stage again; use no      │
-│                                                               cached result.                     │
-│ --refresh-stage           <str>                               Stage or group to run again;       │
-│                                                               repeatable.                        │
-│ --accept-egress                                               Approve sending sanitised payloads │
-│                                                               to the remote provider for this    │
-│                                                               run.                               │
-│ --progress                <auto|bar|plain|json|off>           Progress on stderr: auto picks bar │
-│                                                               on a terminal, plain when piped,   │
-│                                                               off under --quiet or --json.       │
-│                                                               [default: auto]                    │
-│ --help            -h                                          Show this message and exit.        │
+│ --fail-on                                      <critical|high|medium|l  Severity that fails the  │
+│                                                ow|info|none>            scan.                    │
+│ --no-llm                                                                Run deterministic        │
+│                                                                         engines only.            │
+│ --format                                       <str>                    Report format(s);        │
+│                                                                         repeatable or            │
+│                                                                         comma-separated.         │
+│ --output-dir                                   <path>                   Directory for report     │
+│                                                                         files.                   │
+│ --jobs                                         <int>                    Worker processes.        │
+│ --include                                      <str>                    Glob to include;         │
+│                                                                         repeatable.              │
+│ --exclude                                      <str>                    Glob to exclude;         │
+│                                                                         repeatable; replaces     │
+│                                                                         configured ones.         │
+│ --rules                                        <path>                   Extra rule path;         │
+│                                                                         repeatable.              │
+│ --engine                                       <str>                    Engine to enable;        │
+│                                                                         repeatable.              │
+│ --skip-engine                                  <str>                    Engine to disable;       │
+│                                                                         repeatable.              │
+│ --strict                                                                Exit 4 when a stage      │
+│                                                                         failed and the scan      │
+│                                                                         continued.               │
+│ --strict-privacy                                                        Exit 3 when the egress   │
+│                                                                         guard blocked a payload. │
+│ --resume                                       [SCAN_ID|latest]         Continue an interrupted  │
+│                                                                         scan (latest when no id  │
+│                                                                         is given). Needs the     │
+│                                                                         stored scan salt of the  │
+│                                                                         vault (E10); until then  │
+│                                                                         it is refused with       │
+│                                                                         resume_salt_changed.     │
+│ --no-cache                                                              Run every stage again;   │
+│                                                                         use no cached result.    │
+│ --refresh-stage                                <str>                    Stage or group to run    │
+│                                                                         again; repeatable.       │
+│ --accept-egress                                                         Approve sending          │
+│                                                                         sanitised payloads to    │
+│                                                                         the remote provider for  │
+│                                                                         this run.                │
+│ --ref                                          <str>                    Branch, tag or commit to │
+│                                                                         clone (git URL targets). │
+│ --depth                                        <int range> [x>=1]       History depth of a git   │
+│                                                                         clone.                   │
+│                                                                         [default: 1]             │
+│ --git-credential                               REF                      Secret reference         │
+│                                                                         (env:NAME) for an https  │
+│                                                                         git remote; never the    │
+│                                                                         secret.                  │
+│ --stdin-filename                               NAME                     File name for the code   │
+│                                                                         read from standard input │
+│                                                                         (target '-').            │
+│ --diff-since                                   REF_OR_SCAN_ID           Scan only files changed  │
+│                                                                         since a git ref or an    │
+│                                                                         earlier scan.            │
+│ --include-deleted      --no-include-deleted                             Count files deleted      │
+│                                                                         since the --diff-since   │
+│                                                                         base in the coverage     │
+│                                                                         record.                  │
+│                                                                         [default:                │
+│                                                                         no-include-deleted]      │
+│ --subproject                                   PATH                     Scan only this           │
+│                                                                         directory; repeatable.   │
+│ --keep-state                                                            Keep the working copy    │
+│                                                                         made for a git, archive  │
+│                                                                         or standard-input        │
+│                                                                         target.                  │
+│ --progress                                     <auto|bar|plain|json|of  Progress on stderr: auto │
+│                                                f>                       picks bar on a terminal, │
+│                                                                         plain when piped, off    │
+│                                                                         under --quiet or --json. │
+│                                                                         [default: auto]          │
+│ --help             -h                                                   Show this message and    │
+│                                                                         exit.                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮
 │ --config                        PATH                        Configuration file to use instead of │

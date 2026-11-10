@@ -93,7 +93,7 @@ class AnalyseRulesStage:
             if file.path in symbols.skipped:
                 continue  # the parse stage judged the file not worth analysing; it said why
             try:
-                parsed = _parsed(file, ast, ctx.project_root, ctx)
+                parsed = _parsed(file, ast, ctx.source_root, ctx)
                 candidates.extend(
                     self._generate(file.language, parsed, symbols.tables.get(file.path))
                 )

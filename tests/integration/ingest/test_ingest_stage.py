@@ -42,7 +42,7 @@ def test_the_entry_point_resolves_into_the_default_order_without_manual_ordering
     registry = ingest_registry()
     info = registry.stage_infos()["ingest"]
     assert info.requires == frozenset({keys.TARGET})
-    assert info.provides == frozenset({keys.FILES, keys.LANGUAGES})
+    assert info.provides == frozenset({keys.FILES, keys.LANGUAGES, keys.INGEST_COVERAGE})
 
 
 def test_a_scan_with_only_the_ingest_stage_completes(repo: Path) -> None:
