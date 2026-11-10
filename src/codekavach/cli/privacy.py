@@ -54,6 +54,11 @@ privacy_app = typer.Typer(
 )
 privacy_app.add_typer(ledger_app, name="ledger")
 privacy_app.add_typer(consent_app, name="consent")
+terms_app = typer.Typer(
+    help="Domain terms: suggestions to review before anything is redacted.",
+    no_args_is_help=True,
+)
+privacy_app.add_typer(terms_app, name="terms")
 
 
 class PayloadSource(Protocol):
@@ -466,3 +471,70 @@ def inspect_command(  # noqa: PLR0917 - Typer maps each parameter to one option
             f"payload text no longer matches the recorded hash for candidate(s) {ids}",
             code="payload_hash_mismatch",
         )
+
+
+@terms_app.command("suggest")
+def terms_suggest_command(
+    ctx: typer.Context,
+    target: Annotated[str, typer.Argument(help="Project directory.")] = ".",
+    scan: Annotated[str, typer.Option("--scan", help="Scan id, or latest.")] = "latest",
+    limit: Annotated[int, typer.Option("--limit", help="Most terms to suggest.")] = 200,
+) -> None:
+    """Suggest domain terms mined from a scan, for you to review.
+
+    Words that are common in this repository and rare in general code (for example "accrual") are
+    written to a file in the state directory, in the format of a terms file. Nothing is redacted
+    from them: a term takes effect only after you copy it into privacy.domain_terms. The list is
+    a summary of your code's vocabulary, so it is written to the private state directory and not
+    to the project, and the terminal shows only a few words; the JSON output carries counts and
+    the file path, never a word.
+    """
+    from codekavach.config.paths import resolve_state_dir  # noqa: PLC0415
+    from codekavach.core.store.layout import StateLayout  # noqa: PLC0415
+
+    if limit < 1:
+        raise UsageError("--limit must be at least 1", code="bad_limit")
+    path = Path(target)
+    if not path.is_dir():
+        raise UsageError(f"project directory does not exist: {target}", code="target_not_found")
+    with_target(ctx, path)
+    loaded = get_context(ctx).loaded
+    state = StateLayout(resolve_state_dir(loaded.project_root, loaded.settings.project.state_dir))
+    scan_id = resolve_scan(state, scan)
+    suggest = load_backend(
+        "codekavach.privacy.suggest",
+        "suggest_terms",
+        feature="domain-term suggestions",
+        epic="E08",
+    )
+    result = suggest(
+        state, scan_id, settings=loaded.settings, project_root=loaded.project_root, limit=limit
+    )
+    data = {
+        "scan_id": result.scan_id,
+        "file": str(result.path),
+        "suggested": result.count,
+        "files_examined": result.files_examined,
+        "applied": False,
+    }
+
+    def render(console: Console) -> None:
+        console.print(
+            f"{result.count} suggested term(s) from {result.files_examined} file(s) of scan "
+            f"{result.scan_id}; none is in effect.",
+            markup=False,
+        )
+        console.print(f"written to {result.path}", markup=False)
+        for item in result.sample:
+            console.print(
+                f"  {item.term}  score {item.score:.1f}, seen {item.occurrences}", markup=False
+            )
+        if result.count > len(result.sample):
+            console.print(
+                f"  ... and {result.count - len(result.sample)} more in the file", markup=False
+            )
+        console.print(
+            "Review the file, then copy the terms you want into privacy.domain_terms.", markup=False
+        )
+
+    get_output(ctx).result(data, human=render)

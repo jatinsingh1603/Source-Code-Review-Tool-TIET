@@ -44,4 +44,5 @@
 │ inspect  Show original code next to the exact payload prepared for the LLM.                      │
 │ ledger   Audit the egress ledger.                                                                │
 │ consent  Show, grant and revoke consent for sending payloads to remote providers.                │
+│ terms    Domain terms: suggestions to review before anything is redacted.                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯

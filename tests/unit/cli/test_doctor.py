@@ -54,6 +54,7 @@ LOCAL_NAMES = [
     "parsing:grammar:typescript",
     "parsing:grammar:java",
     "parsing:grammar:go",
+    "privacy:ner-model",
     "secrets:keyring",
     "plugins:load",
     "plugins:pipeline",
@@ -432,6 +433,20 @@ def test_grammar_checks(cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
     assert "FAIL  parsing:grammar:javascript  grammar could not be loaded" in broken.stdout
     assert "alice" not in broken.stdout + broken.stderr
     assert loaded == ["python", "python", "javascript", "typescript", "java", "go"]
+
+
+def test_the_ner_model_check_warns_when_absent_and_passes_when_installed(
+    cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = "codekavach.privacy.detect.pii.ner.ner_status"
+    fake_backend(monkeypatch, target, lambda: "model missing")
+    absent = one(cli, project, "privacy:ner-model")
+    assert (absent["status"], absent["required"]) == ("warn", False)
+    assert "model missing" in absent["summary"]
+    strict = cli(["doctor", "--category", "privacy", "--strict"], cwd=project)
+    assert strict.exit_code == 1
+    fake_backend(monkeypatch, target, lambda: "ready")
+    assert one(cli, project, "privacy:ner-model")["status"] == "pass"
 
 
 @dataclass

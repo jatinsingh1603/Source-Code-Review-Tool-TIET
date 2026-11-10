@@ -68,12 +68,16 @@ PII_SUBTYPES: Final = frozenset(
         "upi_id",
     }
 )
+# Subtypes only the optional named-entity detector emits (E08-04). They are in the vocabulary so
+# a placeholder such as <PII:person_name:1> is valid, but no format detector produces them, so
+# ``PII_SUBTYPES`` (the formats E08-03 implements) does not list them.
+NER_SUBTYPES: Final = frozenset({"location", "nric_or_national_id", "organisation", "person_name"})
 TERM_SUBTYPES: Final = frozenset({"domain"})
 
 VOCABULARY: Final[Mapping[PlaceholderKind, frozenset[str]]] = MappingProxyType(
     {
         PlaceholderKind.SECRET: SECRET_SUBTYPES,
-        PlaceholderKind.PII: PII_SUBTYPES,
+        PlaceholderKind.PII: PII_SUBTYPES | NER_SUBTYPES,
         PlaceholderKind.TERM: TERM_SUBTYPES,
     }
 )

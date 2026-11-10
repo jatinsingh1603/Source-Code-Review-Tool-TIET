@@ -34,6 +34,7 @@ The first twelve checks do not depend on the settings. The rest are built from t
 | `parsing:grammar:typescript` | parsing | no | no | The tree-sitter grammar loads and reports its pinned version (epic E07). |
 | `parsing:grammar:java` | parsing | no | no | The tree-sitter grammar loads and reports its pinned version (epic E07). |
 | `parsing:grammar:go` | parsing | no | no | The tree-sitter grammar loads and reports its pinned version (epic E07). |
+| `privacy:ner-model` | privacy | no | no | The optional name recogniser (spaCy and an English model) is installed locally; a warning when it is not, because nothing is downloaded at scan time (epic E08). |
 | `secrets:keyring` | secrets | no | no | A usable OS keyring backend exists; no entry is read. |
 | `plugins:load` | plugins | no | no | Every allowed plugin loads. |
 | `plugins:pipeline` | plugins | no | no | The installed stages resolve into a valid order. |

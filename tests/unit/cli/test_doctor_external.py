@@ -194,7 +194,12 @@ def test_category_and_check_filters_reach_the_new_checks(
 
 def test_the_categories_are_completed(cli: Cli, project: Path) -> None:
     assert doctor._complete_category(None, [], "e") == ["engines"]
-    assert doctor._complete_category(None, [], "p") == ["parsing", "plugins", "providers"]
+    assert doctor._complete_category(None, [], "p") == [
+        "parsing",
+        "plugins",
+        "privacy",
+        "providers",
+    ]
 
 
 # engines

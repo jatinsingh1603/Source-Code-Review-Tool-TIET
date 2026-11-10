@@ -1,0 +1,53 @@
+
+ Usage: codekavach privacy terms suggest [OPTIONS] [target]
+
+ Suggest domain terms mined from a scan, for you to review.
+
+ Words that are common in this repository and rare in general code (for example "accrual") are
+ written to a file in the state directory, in the format of a terms file. Nothing is redacted
+ from them: a term takes effect only after you copy it into privacy.domain_terms. The list is
+ a summary of your code's vocabulary, so it is written to the private state directory and not
+ to the project, and the terminal shows only a few words; the JSON output carries counts and
+ the file path, never a word.
+
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│   target      <str>  Project directory. [default: .]                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --scan           <str>  Scan id, or latest. [default: latest]                                    │
+│ --limit          <int>  Most terms to suggest. [default: 200]                                    │
+│ --help   -h             Show this message and exit.                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮
+│ --config                        PATH                        Configuration file to use instead of │
+│                                                             the discovered project file.         │
+│ --profile                       <str>                       Profile to apply (for example demo   │
+│                                                             or ci).                              │
+│ --privacy-level                 [L0|L1|L2|L3|L4]            Privacy level for this run; cannot   │
+│                                                             go below the configured floor.       │
+│ --provider                      <str>                       LLM provider id to use.              │
+│ --model                         <str>                       Model of the selected provider.      │
+│ --offline                                                   Open no connection outside this      │
+│                                                             machine (no remote provider or       │
+│                                                             integration).                        │
+│ --json                                                      Write machine-readable JSON to       │
+│                                                             stdout.                              │
+│ --quiet                 -q                                  Print only results and errors.       │
+│ --verbose               -v      <int range>                 More diagnostics on stderr; repeat   │
+│                                                             for more.                            │
+│ --debug                                                     Print tracebacks and debug logs on   │
+│                                                             stderr.                              │
+│ --log-level                     [debug|info|warning|error]  Lowest level of log events on        │
+│                                                             stderr; wins over --verbose and      │
+│                                                             --quiet.                             │
+│ --log-format                    [console|json]              Format of log events on stderr.      │
+│ --log-file                      PATH                        Also write redacted debug logs to    │
+│                                                             this file (created with mode 0600).  │
+│ --no-input                                                  Never prompt; a question that cannot │
+│                                                             be asked is answered no.             │
+│ --no-user-config                                            Ignore the user configuration file.  │
+│ --trust-project-config                                      Trust restricted keys in the project │
+│                                                             configuration for this run.          │
+│ --set                           KEY=VALUE                   Override one setting; may be         │
+│                                                             repeated.                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯

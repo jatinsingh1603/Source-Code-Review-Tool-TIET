@@ -470,6 +470,22 @@ def _grammar(language: str) -> Callable[[CliContext], Outcome]:
     return probe
 
 
+def _ner_model(_ctx: CliContext) -> Outcome:
+    status = load_backend(
+        "codekavach.privacy.detect.pii.ner",
+        "ner_status",
+        feature="the optional name recogniser",
+        epic="E08",
+    )()
+    if status == "ready":
+        return Outcome(CheckStatus.PASS, "the library and the model are installed")
+    return Outcome(
+        CheckStatus.WARN,
+        f"name recognition is off: {status}",
+        {"state": str(status)},
+    )
+
+
 def _keyring(_ctx: CliContext) -> Outcome:
     from codekavach.config.errors import SecretResolutionError  # noqa: PLC0415
     from codekavach.config.keys import KeyringUnavailableError, open_keyring  # noqa: PLC0415
@@ -576,6 +592,12 @@ def _register_local_checks() -> None:
                 remediation="uv sync --all-extras",
             )
         )  # fmt: skip
+    register_check(
+        LocalCheck(
+            "privacy:ner-model", "privacy", _ner_model,
+            remediation="optional: install spaCy and a model such as en_core_web_sm offline",
+        )
+    )  # fmt: skip
     register_check(
         LocalCheck(
             "secrets:keyring", "secrets", _keyring,

@@ -47,13 +47,15 @@ PASS  parsing:grammar:javascript  grammar loads, version 0.9.0
 PASS  parsing:grammar:typescript  grammar loads, version 0.9.0
 PASS  parsing:grammar:java        grammar loads, version 0.9.0
 PASS  parsing:grammar:go          grammar loads, version 0.9.0
+WARN  privacy:ner-model           name recognition is off: library missing
 WARN  secrets:keyring             the keyring backend is insecure and is refused
 PASS  plugins:load                every allowed plugin loads
 PASS  plugins:pipeline            0 stage(s) resolve into a valid order
 PASS  provider:mock:configured    kind mock
 SKIP  provider:mock:reachable     use --probe-providers
+hint  privacy:ner-model           optional: install spaCy and a model such as en_core_web_sm offline
 hint  secrets:keyring             install a keyring backend or use passphrase mode
-12 passed, 1 warning, 0 failed, 2 skipped
+12 passed, 2 warnings, 0 failed, 2 skipped
 ```
 
 Versions, platform and the keyring line differ between machines. `doctor` diagnoses and changes nothing. It exits with 1 when a required check failed (with `--strict`, also on a warning) and with 0 otherwise. A `WARN` is an optional tool that is missing, such as a keyring or an analysis engine, and the checks are listed in [cli-doctor.md](../reference/cli-doctor.md). `doctor` sends nothing over the network unless you pass `--probe-providers`.

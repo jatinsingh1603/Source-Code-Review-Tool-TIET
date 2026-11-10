@@ -46,6 +46,8 @@ Every command accepts `--help` / `-h`. The global options below are accepted bef
 - [codekavach privacy ledger show](#codekavach-privacy-ledger-show)
 - [codekavach privacy ledger verify](#codekavach-privacy-ledger-verify)
 - [codekavach privacy notice](#codekavach-privacy-notice)
+- [codekavach privacy terms](#codekavach-privacy-terms)
+- [codekavach privacy terms suggest](#codekavach-privacy-terms-suggest)
 - [codekavach providers](#codekavach-providers)
 - [codekavach providers list](#codekavach-providers-list)
 - [codekavach providers test](#codekavach-providers-test)
@@ -808,6 +810,43 @@ Show the privacy notice for the effective settings; it is not marked as shown.
 ```text
 Usage: codekavach privacy notice [OPTIONS]
 ```
+
+Global options apply.
+
+## codekavach privacy terms
+
+Domain terms: suggestions to review before anything is redacted.
+
+```text
+Usage: codekavach privacy terms [OPTIONS] COMMAND [ARGS]...
+```
+
+Run a sub-command with `--help` for its options.
+
+Global options apply.
+
+## codekavach privacy terms suggest
+
+Suggest domain terms mined from a scan, for you to review.
+
+Words that are common in this repository and rare in general code (for example "accrual") are written to a file in the state directory, in the format of a terms file. Nothing is redacted from them: a term takes effect only after you copy it into privacy.domain_terms. The list is a summary of your code's vocabulary, so it is written to the private state directory and not to the project, and the terminal shows only a few words; the JSON output carries counts and the file path, never a word.
+
+```text
+Usage: codekavach privacy terms suggest [OPTIONS] [target]
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `TARGET` | TEXT | . | Project directory. |
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--scan` | TEXT | latest | Scan id, or latest. |
+| `--limit` | INTEGER | 200 | Most terms to suggest. |
 
 Global options apply.
 
