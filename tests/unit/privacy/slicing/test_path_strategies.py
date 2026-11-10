@@ -7,13 +7,19 @@ enclosing function.
 """
 
 import json
+import re
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
+from codekavach.config import Settings
 from codekavach.core.models import CandidateKind, SlicePurpose, SliceStrategy
 from codekavach.privacy.slicing.base import NotApplicableError, SlicingError
 from codekavach.privacy.slicing.budget import SliceBudget
+from codekavach.privacy.slicing.index import never_send_matcher
 from codekavach.privacy.slicing.select import StrategySelector
 from codekavach.privacy.slicing.strategies.backward import BackwardSliceStrategy
 from codekavach.privacy.slicing.strategies.enclosing import EnclosingFunctionStrategy
@@ -289,3 +295,132 @@ def test_a_path_slice_never_contains_text_outside_the_source_files(name: str) ->
         for line in segment.text.expose().split("\n"):
             if line.strip() and not line.lstrip().startswith(("#", "//", "pass")):
                 assert line in original, (name, line)
+
+
+# --- properties and the size comparison ------------------------------------------------------
+
+
+@st.composite
+def programs(draw: st.DrawFn) -> tuple[str, int, int, list[int], dict[int, set[int]]]:
+    """A straight-line function with random data flow and a sink under nested guards."""
+    count = draw(st.integers(min_value=2, max_value=8))
+    deps: dict[int, set[int]] = {0: set()}
+    lines = ["def f(a):", "    v0 = a"]
+    for number in range(1, count):
+        chosen = draw(
+            st.sets(st.integers(min_value=0, max_value=number - 1), min_size=1, max_size=2)
+        )
+        deps[number] = chosen
+        lines.append(f"    v{number} = " + " + ".join(f"v{n}" for n in sorted(chosen)) + " + a")
+    sink_var = draw(st.integers(min_value=0, max_value=count - 1))
+    guards = draw(st.lists(st.integers(min_value=0, max_value=count - 1), max_size=3))
+    for depth, guard in enumerate(guards):
+        lines.append("    " * (depth + 1) + f"if v{guard}:")
+    lines.append("    " * (len(guards) + 1) + f"cur.execute(v{sink_var})")
+    return "\n".join(lines) + "\n", len(lines), sink_var, guards, deps
+
+
+def reachable(start: set[int], deps: dict[int, set[int]]) -> set[int]:
+    seen: set[int] = set()
+    todo = list(start)
+    while todo:
+        current = todo.pop()
+        if current not in seen:
+            seen.add(current)
+            todo.extend(deps[current])
+    return seen
+
+
+PROPERTY_SETTINGS = settings(max_examples=60, deadline=None)
+
+
+@PROPERTY_SETTINGS
+@given(program=programs())
+def test_every_statement_of_a_backward_slice_is_reachable_from_the_sink(
+    program: tuple[str, int, int, list[int], dict[int, set[int]]],
+) -> None:
+    source, sink_line, sink_var, guards, deps = program
+    index = make_index({"f.py": source})
+    built = BackwardSliceStrategy(depth=40).build(
+        candidate_at("f.py", sink_line), index, budget=SliceBudget(8192)
+    )
+    text = slice_text(built)
+    kept = {int(m) for m in re.findall(r"^\s+v(\d+) = ", text, flags=re.MULTILINE)}
+    needed = reachable({sink_var}, deps)
+    allowed = needed | reachable(set(guards), deps)
+    assert needed - {0} <= kept  # nothing the sink depends on is missing
+    assert kept <= allowed  # nothing unreachable from the sink or its guards is kept
+
+
+@PROPERTY_SETTINGS
+@given(program=programs())
+def test_every_slice_keeps_the_candidates_statement_and_all_its_guards(
+    program: tuple[str, int, int, list[int], dict[int, set[int]]],
+) -> None:
+    source, sink_line, sink_var, guards, _ = program
+    index = make_index({"f.py": source})
+    plain = candidate_at("f.py", sink_line)
+    with_path = taint_candidate(("f.py", 2), ("f.py", sink_line))
+    for strategy, candidate in (
+        (BackwardSliceStrategy(), plain),
+        (SinkWindowStrategy(), plain),
+        (TaintPathStrategy(), with_path),
+        (EnclosingFunctionStrategy(), plain),
+    ):
+        text = slice_text(strategy.build(candidate, index, budget=SliceBudget(8192)))
+        assert f"cur.execute(v{sink_var})" in text
+        for guard in guards:
+            assert f"if v{guard}:" in text
+
+
+def test_the_size_of_each_strategy_for_the_same_candidate(
+    record_property: Callable[[str, object], None],
+) -> None:
+    index = make_index({"app.py": WORKED})
+    candidate = taint_candidate(("app.py", 2), ("app.py", 7))
+    sizes = {
+        strategy.name.value: strategy.build(candidate, index, budget=BUDGET).token_estimate
+        for strategy in (
+            TaintPathStrategy(),
+            BackwardSliceStrategy(),
+            ForwardSliceStrategy(),
+            SinkWindowStrategy(),
+            EnclosingFunctionStrategy(),
+        )
+    }
+    record_property("slice_size_tokens", sizes)  # shown in the junit report
+    assert sizes["taint_path"] < sizes["enclosing_function"]
+    assert sizes["backward_slice"] < sizes["enclosing_function"]
+    assert sizes["forward_slice"] < sizes["enclosing_function"]
+    assert sizes["taint_path"] <= sizes["sink_window"]
+
+
+def test_through_the_selector_a_path_gives_a_smaller_slice_than_none() -> None:
+    index = make_index({"app.py": WORKED})
+    candidate = taint_candidate(("app.py", 2), ("app.py", 7))
+    with_path = StrategySelector().build(candidate, index, budget=BUDGET)
+    without = StrategySelector(ceiling=SliceStrategy.ENCLOSING_FUNCTION).build(
+        candidate, index, budget=BUDGET
+    )
+    assert with_path.token_estimate < without.token_estimate
+
+
+def test_a_step_in_a_never_send_file_is_withheld_and_counted() -> None:
+    folder = PATHS / "p06_never_send_step"
+    meta = json.loads((folder / "case.json").read_text(encoding="utf-8"))
+    sources = {
+        p.relative_to(folder / "src").as_posix(): p.read_text(encoding="utf-8")
+        for p in (folder / "src").rglob("*")
+        if p.is_file()
+    }
+    never = never_send_matcher(
+        Settings.model_validate({"privacy": {"never_send": meta["never_send"]}})
+    )
+    index = make_index(sources, never_send=never)
+    steps = [tuple(s) for s in meta["between"]]
+    candidate = taint_candidate(tuple(meta["source"]), tuple(meta["sink"]), *steps)
+    built = TaintPathStrategy().build(candidate, index, budget=BUDGET)
+    assert built.recall is not None
+    assert built.recall.path_steps_withheld == 1
+    assert built.recall.path_steps_included == built.recall.path_steps_total - 1
+    assert "secrets_store" not in "".join(s.path for s in built.segments)

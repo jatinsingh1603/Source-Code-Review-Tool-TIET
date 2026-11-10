@@ -116,6 +116,13 @@
           "minimum": 0,
           "title": "Path Steps Total",
           "type": "integer"
+        },
+        "path_steps_withheld": {
+          "default": 0,
+          "description": "Path steps left out because their file may not be sent (never-send, vendored, generated or minified): the slice ends at the boundary instead of failing.",
+          "minimum": 0,
+          "title": "Path Steps Withheld",
+          "type": "integer"
         }
       },
       "required": [

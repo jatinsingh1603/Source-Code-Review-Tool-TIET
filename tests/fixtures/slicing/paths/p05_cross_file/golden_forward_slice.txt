@@ -2,7 +2,7 @@ status: slice
 strategy: forward_slice
 purpose: triage
 fallback: None
-recall: path_steps_total=3 path_steps_included=3 defuse_found=1 defuse_included=1
+recall: path_steps_total=3 path_steps_included=3 defuse_found=1 defuse_included=1 path_steps_withheld=0
 truncated: False
 tokens: 48
 ---

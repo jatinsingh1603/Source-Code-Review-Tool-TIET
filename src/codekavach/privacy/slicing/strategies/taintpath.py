@@ -83,6 +83,7 @@ class TaintPathStrategy:
             anchors=tuple(anchors),
             path_steps=tuple(step.location for step in path.steps),
             defuse_found=len(found),
+            withheld=hops.dropped,
             extra_stubs=hops.stubs(parsed),
         )
         return build_path_slice(candidate, parsed, budget=budget, plan=plan)

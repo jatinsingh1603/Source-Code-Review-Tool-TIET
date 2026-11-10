@@ -99,6 +99,7 @@ class PathPlan:
     fallback_reason: str | None = None
     path_steps: tuple[Location, ...] = ()
     defuse_found: int = 0
+    withheld: int = 0
     extra_stubs: tuple[Stub, ...] = ()
     truncated: bool = False
 
@@ -299,6 +300,7 @@ def _recall(
         path_steps_included=included,
         defuse_found=found,
         defuse_included=min(defuse, found),
+        path_steps_withheld=min(plan.withheld, len(plan.path_steps) - included),
     )
 
 

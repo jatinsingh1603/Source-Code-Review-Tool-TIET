@@ -83,11 +83,21 @@ class SliceRecall(KavachModel):
     path_steps_included: int = Field(ge=0)
     defuse_found: int = Field(ge=0)
     defuse_included: int = Field(ge=0)
+    path_steps_withheld: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Path steps left out because their file may not be sent (never-send, vendored, "
+            "generated or minified): the slice ends at the boundary instead of failing."
+        ),
+    )
 
     @model_validator(mode="after")
     def _check_counts(self) -> Self:
         if self.path_steps_included > self.path_steps_total:
             raise ValueError("a slice cannot include more path steps than the path has")
+        if self.path_steps_included + self.path_steps_withheld > self.path_steps_total:
+            raise ValueError("included and withheld path steps exceed the steps of the path")
         if self.defuse_included > self.defuse_found:
             raise ValueError("a slice cannot include more def-use predecessors than were found")
         return self
