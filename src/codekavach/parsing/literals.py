@@ -9,6 +9,13 @@ sentence is domain text that should not be. The function takes a little structur
 (``LiteralContext``) rather than a tree-sitter node, so it stays pure and is tested as a plain
 table of inputs and expected kinds, independent of any parser.
 
+**Queries built in pieces (E09-FU-SQL-PIECES).** The language specs pass ``joined_text``: the
+adjacent literals, the ``+`` chain or the template/f-string pieces that build one value, so every
+piece takes the kind of the whole. A piece that stands alone is SQL when it starts with a clause
+keyword, a column and a comparison (``" WHERE id = '"``); a sentence that only contains ``where``
+is not. Measured on the 50,289 string literals of this repository: 17 changed to SQL, 2 of them
+not queries (``set PYTHONUTF8=1``, ``or CODEKAVACH_PROFILE=``).
+
 Rules are tried in a fixed order and the first match wins (``docs/research/INSIGHTS.md`` section
 3.3 item 7): an SQL statement that also contains ``%s`` classifies as ``sql``, not ``format``,
 because the SQL skeleton is the evidence of CWE-89.
@@ -32,6 +39,12 @@ _SQL_LEADING = (
 )
 _SQL_SECONDARY_KEYWORDS = ("where", "join", "order by", "group by")
 _SQL_FROM = re.compile(r"\bfrom\b")
+# A piece of a query split around a value: a clause keyword, a column and a comparison, as in
+# ``" WHERE id = '"`` or ``"' AND role <> "``. Anchored at the start (after quotes and brackets)
+# so that a sentence which merely contains ``where`` or ``and`` is not taken for SQL (E09-FU).
+_SQL_CONDITION = re.compile(
+    r"^[\s'\"`(]*(?:where|and|or|set|on|having)\s+\(*[\w.]+[\s'\"`)]*(?:<=|>=|<>|!=|=|<|>|\blike\b)"
+)
 
 _URL_SCHEME = re.compile(r"^[a-z][a-z0-9+.\-]*://", re.IGNORECASE)
 _URL_PROTOCOL_RELATIVE = re.compile(r"^//[a-zA-Z0-9]")
@@ -81,7 +94,7 @@ class LiteralContext:
 
 
 def _looks_like_sql(folded: str) -> bool:
-    if folded.startswith(_SQL_LEADING):
+    if folded.startswith(_SQL_LEADING) or _SQL_CONDITION.match(folded):
         return True
     return bool(_SQL_FROM.search(folded)) and any(k in folded for k in _SQL_SECONDARY_KEYWORDS)
 

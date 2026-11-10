@@ -1,0 +1,12 @@
+def fetch_row(cur, ledger_table, account_id, status):
+    query = "SELECT col_1 FROM " + ledger_table + " WHERE col_2 = '" + account_id + "'"
+    cur.execute(query)
+    cur.execute(
+        "SELECT col_3 FROM tbl_1 "
+        + "WHERE col_4 = " + account_id
+        + " AND col_5 <> " + status
+    )
+    cur.execute(f"UPDATE {ledger_table} SET col_6 = 1 WHERE col_7 = {account_id}")
+    cur.execute("SELECT 1 " "FROM tbl_2 " "WHERE col_8 > 1")
+    note = "xxxx xxx xxxxxxxx xxxxx xxx xxxxxxxxx xx xxxx"
+    return query, note

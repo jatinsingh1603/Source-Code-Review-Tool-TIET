@@ -1,2 +1,2 @@
 def fn_1(param_1):
-    return f"xxx: {param_1!r:>12}file_1/file_1{param_1:,.2f}"
+    return f"xxx: {param_1!r:>12} / {param_1:,.2f}"

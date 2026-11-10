@@ -106,3 +106,29 @@ def test_classify_literal(text: str, context: LiteralContext | None, expected: s
 def test_a_fragment_alone_would_not_classify_as_sql() -> None:
     """Confirms the joined-text case above is actually testing something."""
     assert classify_literal("ECT * FR") == "natural"
+
+
+# --- the pieces of a query split around a value (E09-FU-SQL-PIECES) ---------------------------
+
+PIECES = [
+    (" WHERE id = '", "sql"),
+    ("' AND role <> ", "sql"),
+    (" AND (status >= ", "sql"),
+    ("  or balance < ", "sql"),
+    (" SET frozen_flag = ", "sql"),
+    (" ON a.id = ", "sql"),
+    ("\" WHERE name LIKE '%", "sql"),
+    ("Tell me where the money goes", "natural"),
+    ("Check where id is stored", "natural"),
+    ("Where do you want to go?", "natural"),
+    ("this and that", "natural"),
+    ("Set up your account first", "natural"),
+    ("or else", "natural"),
+]
+
+
+@pytest.mark.parametrize(("text", "expected"), PIECES)
+def test_a_piece_with_a_clause_keyword_a_column_and_a_comparison_is_sql(
+    text: str, expected: str
+) -> None:
+    assert classify_literal(text) == expected

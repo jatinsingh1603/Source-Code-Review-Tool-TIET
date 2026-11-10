@@ -1,0 +1,8 @@
+function fetchRow(db, ledgerTable, accountId, status) {
+  const query = "SELECT col_1 FROM " + ledgerTable + " WHERE col_2 = '" + accountId + "'";
+  db.query(query);
+  db.query(`UPDATE ${ledgerTable} SET col_3 = 1 WHERE col_4 = ${accountId}`);
+  db.query("SELECT col_5 FROM tbl_1 " + "WHERE col_6 = " + accountId + " AND col_7 <> " + status);
+  const note = "xxxx xxx xxxxxxxx xxxxx xxx xxxxxxxxx xx xxxx";
+  return [query, note];
+}

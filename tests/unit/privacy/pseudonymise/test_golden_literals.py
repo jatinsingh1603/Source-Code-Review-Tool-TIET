@@ -69,3 +69,27 @@ def test_fixtures_cover_all_six_kinds_and_forty_literals() -> None:
         kinds.extend(found)
     assert len(kinds) >= 40
     assert set(kinds) == {"sql", "url", "path", "format", "regex", "natural"}
+
+
+# --- the pieces of a query split around a value (E09-FU-SQL-PIECES) ---------------------------
+
+SPLIT = ("sql_split_py.py", "sql_split_js.js")
+DOMAIN_WORDS = (
+    "balance", "region_name", "branch_offices", "branch_code", "closing_status", "frozen_flag",
+    "holder_ref", "nominal_rate", "statement", "customer",
+)  # fmt: skip
+
+
+@pytest.mark.parametrize("name", SPLIT)
+def test_every_piece_of_a_split_query_is_shaped_as_sql_and_keeps_its_clauses(name: str) -> None:
+    shaped, kinds = shape_source(FIXTURES / name)
+    assert kinds.count("natural") == 1  # the sentence that only contains "where"
+    assert "WHERE col_" in shaped and " AND col_" in shaped
+    assert "xxxxx id" not in shaped  # the keyword is not blanked
+
+
+@pytest.mark.parametrize("name", SPLIT)
+def test_no_domain_word_of_a_split_query_survives_in_its_shaped_output(name: str) -> None:
+    shaped, _ = shape_source(FIXTURES / name)
+    for word in DOMAIN_WORDS:
+        assert word not in shaped, word

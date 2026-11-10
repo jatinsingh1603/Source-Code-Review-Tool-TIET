@@ -112,19 +112,59 @@ def _string_fragments(string_node: TSNode) -> list[str]:
     ]
 
 
-def _concatenation_text(string_node: TSNode) -> str | None:
-    """The joined content of an adjacent-literal concatenation group, or ``None``.
+def _is_plus(node: TSNode) -> bool:
+    if node.type != "binary_operator":
+        return False
+    operator = node.child_by_field_name("operator")
+    return operator is not None and operator.type == "+"
 
-    ``None`` when ``string_node`` is not part of a ``concatenated_string``.
+
+def _plus_literals(node: TSNode, found: list[TSNode]) -> None:
+    """The string literals of a ``+`` chain, in source order; calls and names are not entered."""
+    if node.type == "string":
+        found.append(node)
+    elif node.type == "concatenated_string":
+        found.extend(child for child in node.children if child.type == "string")
+    elif node.type == "parenthesized_expression" or _is_plus(node):
+        for child in node.children:
+            _plus_literals(child, found)
+
+
+def _group_top(string_node: TSNode) -> TSNode:
+    """The outermost node of the ``+`` chain or adjacent-literal group ``string_node`` is in."""
+    top = string_node
+    if top.parent is not None and top.parent.type == "concatenated_string":
+        top = top.parent
+    while top.parent is not None:
+        parent = top.parent
+        if _is_plus(parent):
+            top = parent
+        elif (
+            parent.type == "parenthesized_expression"
+            and parent.parent is not None
+            and _is_plus(parent.parent)
+        ):
+            top = parent.parent
+        else:
+            break
+    return top
+
+
+def _concatenation_text(string_node: TSNode) -> tuple[str | None, TSNode]:
+    """The joined content of the literals that build one value, and the node to climb from.
+
+    Three shapes join their pieces (E09-FU-SQL-PIECES): adjacent literals (``"a" "b"``), a ``+``
+    chain (``"a" + x + "b"``) and the pieces of one f-string around its interpolations. The text
+    is ``None`` when the literal has only one piece. The node is where the enclosing call or
+    assignment is looked up from.
     """
-    parent = string_node.parent
-    if parent is None or parent.type != "concatenated_string":
-        return None
-    parts: list[str] = []
-    for child in parent.children:
-        if child.type == "string":
-            parts.extend(_string_fragments(child))
-    return "".join(parts)
+    top = _group_top(string_node)
+    literals: list[TSNode] = []
+    _plus_literals(top, literals)
+    pieces = [piece for literal in literals for piece in _string_fragments(literal)]
+    if len(pieces) < 2:
+        return None, string_node
+    return "".join(pieces), top
 
 
 def _enclosing_call_or_assignment(start: TSNode) -> tuple[str | None, str | None]:
@@ -154,11 +194,8 @@ def _enclosing_call_or_assignment(start: TSNode) -> tuple[str | None, str | None
 def literal_context(node: TSNode) -> LiteralContext:
     """The classifier context for ``node`` (a ``string_content`` node)."""
     string_node = node.parent if node.parent is not None and node.parent.type == "string" else node
-    joined_text = _concatenation_text(string_node)
-    base = string_node.parent if joined_text is not None else string_node
-    callee_text, assignment_target = (
-        _enclosing_call_or_assignment(base) if base is not None else (None, None)
-    )
+    joined_text, base = _concatenation_text(string_node)
+    callee_text, assignment_target = _enclosing_call_or_assignment(base)
     return LiteralContext(
         callee_text=callee_text, assignment_target=assignment_target, joined_text=joined_text
     )

@@ -371,6 +371,10 @@ def literal_context(node: TSNode) -> LiteralContext:
     if string_node is None or string_node.type not in ("string", "template_string"):
         string_node = node
     joined_text = _plus_chain_text(string_node)
+    if joined_text is None and string_node.type == "template_string":
+        # The pieces of one template literal around its substitutions (E09-FU-SQL-PIECES).
+        pieces = _fragments_of(string_node)
+        joined_text = "".join(pieces) if len(pieces) > 1 else None
     # _plus_chain_text returns non-None only because string_node.parent is a "+"
     # binary_expression; climb to the top of that chain for the enclosing lookup below.
     base = string_node
