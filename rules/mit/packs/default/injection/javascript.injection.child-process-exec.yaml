@@ -1,0 +1,33 @@
+id: javascript.injection.child-process-exec
+languages:
+- javascript
+message: Shell command built from variable data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 78
+  owasp:
+  - A03:2021
+  capec:
+  - 88
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use execFile or spawn with an argument array, or quote each part with shell-quote.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($X, ...)
+    where:
+    - metavariable: $F
+      catalogue: javascript.sink.shell.*
+    - metavariable: $X
+      kind: dynamic_string
+    - metavariable: $X
+      not_regex: shell-quote|quote\(
+  - pattern: $F($X, ...)
+    where:
+    - metavariable: $F
+      catalogue: javascript.sink.shell.*
+    - metavariable: $X
+      kind: request_derived

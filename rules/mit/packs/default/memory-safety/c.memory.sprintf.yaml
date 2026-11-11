@@ -1,0 +1,21 @@
+id: c.memory.sprintf
+languages:
+- c
+- cpp
+message: sprintf and vsprintf write with no length limit
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 120
+  - 787
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use snprintf or vsnprintf with the buffer size.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: sprintf($B, $F, ...)
+  - pattern: vsprintf($B, $F, $A)

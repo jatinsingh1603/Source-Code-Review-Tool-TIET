@@ -1,0 +1,19 @@
+id: python.config.debug-enabled
+languages:
+- python
+message: Debug mode switched on
+severity: high
+confidence: high
+metadata:
+  cwe:
+  - 489
+  owasp:
+  - A05:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Turn debug off outside local development; read the flag from the environment.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $APP.run(..., debug=True, ...)
+  - pattern: DEBUG = True

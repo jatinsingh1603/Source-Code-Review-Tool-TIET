@@ -1,0 +1,34 @@
+id: javascript.xss.response-html-from-input
+languages:
+- javascript
+message: HTML response built from variable or request data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 79
+  - 80
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Escape each value for its output context, or render through a template engine that escapes.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($X)
+    where:
+    - metavariable: $F
+      catalogue: javascript.sink.html.*
+    - metavariable: $X
+      kind: dynamic_string
+    - metavariable: $X
+      not_regex: (?i)escape|sanitiz|purify|encode|xss|quote
+  - pattern: $F($X)
+    where:
+    - metavariable: $F
+      catalogue: javascript.sink.html.*
+    - metavariable: $X
+      kind: request_derived
+    - metavariable: $X
+      not_regex: (?i)escape|sanitiz|purify|encode|xss|quote

@@ -1,0 +1,27 @@
+id: python.deser.yaml-unsafe-load
+languages:
+- python
+message: YAML loaded with a loader that can build arbitrary objects
+severity: high
+confidence: high
+metadata:
+  cwe:
+  - 502
+  owasp:
+  - A08:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use yaml.safe_load, or pass Loader=yaml.SafeLoader.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($X)
+    where:
+    - metavariable: $F
+      catalogue: python.sink.yaml.load
+  - pattern: $F($X, Loader=$L)
+    where:
+    - metavariable: $F
+      catalogue: python.sink.yaml.load
+    - metavariable: $L
+      regex: (^|\.)(Loader|UnsafeLoader|FullLoader)$

@@ -1,0 +1,24 @@
+id: python.authz.route-without-auth-decorator
+languages:
+- python
+message: 'State-changing route with no authorisation decorator: worth checking who may call it'
+severity: medium
+confidence: low
+kind: hotspot
+metadata:
+  cwe:
+  - 862
+  - 863
+  owasp:
+  - A01:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Confirm the handler is meant to be public; otherwise require authentication and check permission.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: 'def $F(...): ...'
+    function_regex: \.route\([^)]*methods\s*=\s*\[[^\]]*['"](POST|PUT|DELETE|PATCH)['"]
+  none:
+  - pattern: 'def $F(...): ...'
+    function_regex: (?i)@[\w.]*(login_required|require_auth|requires_auth|auth_required|jwt_required|permission_required|roles?_required|authenticated|protected)

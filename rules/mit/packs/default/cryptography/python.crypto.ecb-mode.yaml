@@ -1,0 +1,22 @@
+id: python.crypto.ecb-mode
+languages:
+- python
+message: Block cipher in ECB mode
+severity: high
+confidence: high
+metadata:
+  cwe:
+  - 327
+  owasp:
+  - A02:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use an authenticated mode such as GCM with a fresh nonce.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $C.new($K, $M, ...)
+    where:
+    - metavariable: $M
+      regex: MODE_ECB
+  - pattern: modes.ECB()

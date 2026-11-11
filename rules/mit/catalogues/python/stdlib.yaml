@@ -1,0 +1,48 @@
+id: python.stdlib
+language: python
+framework: stdlib
+sources:
+  - {id: python.source.input, type: cli, symbol: builtins.input}
+  - {id: python.source.argv, type: cli, symbol: sys.argv}
+  - {id: python.source.environ, type: environment, symbol: os.environ}
+sinks:
+  - {id: python.sink.shell.os.system, symbol: os.system, arg: 0, context: shell}
+  - {id: python.sink.shell.os.popen, symbol: os.popen, arg: 0, context: shell}
+  - {id: python.sink.shell.subprocess.run, symbol: subprocess.run, arg: 0, context: shell}
+  - {id: python.sink.shell.subprocess.call, symbol: subprocess.call, arg: 0, context: shell}
+  - {id: python.sink.shell.subprocess.popen, symbol: subprocess.Popen, arg: 0, context: shell}
+  - {id: python.sink.shell.subprocess.check-output, symbol: subprocess.check_output, arg: 0, context: shell}
+  - {id: python.sink.shell.subprocess.check-call, symbol: subprocess.check_call, arg: 0, context: shell}
+  - {id: python.sink.code.eval, symbol: builtins.eval, arg: 0}
+  - {id: python.sink.code.exec, symbol: builtins.exec, arg: 0}
+  - {id: python.sink.deserialise.pickle-loads, symbol: pickle.loads, arg: 0, context: deserialisation}
+  - {id: python.sink.deserialise.pickle-load, symbol: pickle.load, arg: 0, context: deserialisation}
+  - {id: python.sink.deserialise.marshal-loads, symbol: marshal.loads, arg: 0, context: deserialisation}
+  - {id: python.sink.deserialise.shelve-open, symbol: shelve.open, arg: 0, context: deserialisation}
+  - {id: python.sink.deserialise.dill-loads, symbol: dill.loads, arg: 0, context: deserialisation}
+  - {id: python.sink.path.open, symbol: builtins.open, arg: 0, context: path}
+  - {id: python.sink.path.os-remove, symbol: os.remove, arg: 0, context: path}
+  - {id: python.sink.path.shutil-copy, symbol: shutil.copy, arg: 0, context: path}
+  - {id: python.sink.http.urlopen, symbol: urllib.request.urlopen, arg: 0, context: url}
+  - {id: python.sink.http.requests-get, symbol: requests.get, arg: 0, context: url}
+  - {id: python.sink.http.requests-post, symbol: requests.post, arg: 0, context: url}
+  - {id: python.sink.http.requests-put, symbol: requests.put, arg: 0, context: url}
+  - {id: python.sink.http.requests-delete, symbol: requests.delete, arg: 0, context: url}
+  - {id: python.sink.http.requests-head, symbol: requests.head, arg: 0, context: url}
+  - {id: python.sink.http.requests-request, symbol: requests.request, arg: 1, context: url}
+  - {id: python.sink.http.httpx-get, symbol: httpx.get, arg: 0, context: url}
+  - {id: python.sink.http.httpx-post, symbol: httpx.post, arg: 0, context: url}
+  - {id: python.sink.yaml.load, symbol: yaml.load, arg: 0, context: deserialisation}
+  - {id: python.sink.xml.etree-parse, symbol: xml.etree.ElementTree.parse, arg: 0, context: xml}
+  - {id: python.sink.xml.etree-fromstring, symbol: xml.etree.ElementTree.fromstring, arg: 0, context: xml}
+  - {id: python.sink.sql.cursor-execute, symbol: sqlite3.Cursor.execute, arg: 0, context: sql}
+  - {id: python.sink.sql.cursor-executemany, symbol: sqlite3.Cursor.executemany, arg: 0, context: sql}
+  - {id: python.sink.weakhash.md5, symbol: hashlib.md5, arg: 0}
+  - {id: python.sink.weakhash.sha1, symbol: hashlib.sha1, arg: 0}
+sanitisers:
+  - {id: python.sanitiser.shlex-quote, symbol: shlex.quote, covers: [shell]}
+  - {id: python.sanitiser.html-escape, symbol: html.escape, covers: [html, html_attr]}
+  - {id: python.sanitiser.url-quote, symbol: urllib.parse.quote, covers: [url]}
+  - {id: python.sanitiser.path-basename, symbol: os.path.basename, covers: [path]}
+  - {id: python.sanitiser.bleach-clean, symbol: bleach.clean, covers: [html]}
+  - {id: python.sanitiser.strip-tags, symbol: django.utils.html.strip_tags, covers: [html]}

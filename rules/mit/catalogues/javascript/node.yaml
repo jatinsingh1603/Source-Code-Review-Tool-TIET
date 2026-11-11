@@ -1,0 +1,34 @@
+id: javascript.node
+language: javascript
+framework: node
+sources:
+  - {id: javascript.source.argv, type: cli, symbol: process.argv}
+  - {id: javascript.source.env, type: environment, symbol: process.env}
+sinks:
+  - {id: javascript.sink.shell.exec, symbol: child_process.exec, arg: 0, context: shell}
+  - {id: javascript.sink.shell.exec-sync, symbol: child_process.execSync, arg: 0, context: shell}
+  - {id: javascript.sink.code.eval, symbol: globalThis.eval, arg: 0}
+  - {id: javascript.sink.code.vm.run, symbol: vm.runInNewContext, arg: 0}
+  - {id: javascript.sink.code.vm.script, symbol: vm.runInThisContext, arg: 0}
+  - {id: javascript.sink.path.read-file, symbol: fs.readFile, arg: 0, context: path}
+  - {id: javascript.sink.path.read-file-sync, symbol: fs.readFileSync, arg: 0, context: path}
+  - {id: javascript.sink.path.create-read-stream, symbol: fs.createReadStream, arg: 0, context: path}
+  - {id: javascript.sink.path.write-file, symbol: fs.writeFile, arg: 0, context: path}
+  - {id: javascript.sink.path.write-file-sync, symbol: fs.writeFileSync, arg: 0, context: path}
+  - {id: javascript.sink.path.unlink, symbol: fs.unlink, arg: 0, context: path}
+  - {id: javascript.sink.http.fetch, symbol: globalThis.fetch, arg: 0, context: url}
+  - {id: javascript.sink.http.http-get, symbol: http.get, arg: 0, context: url}
+  - {id: javascript.sink.http.http-request, symbol: http.request, arg: 0, context: url}
+  - {id: javascript.sink.http.https-get, symbol: https.get, arg: 0, context: url}
+  - {id: javascript.sink.http.axios-get, symbol: axios.get, arg: 0, context: url}
+  - {id: javascript.sink.http.axios-post, symbol: axios.post, arg: 0, context: url}
+  - {id: javascript.sink.http.axios-request, symbol: axios.request, arg: 0, context: url}
+  - {id: javascript.sink.template.ejs-render, symbol: ejs.render, arg: 0, context: template}
+  - {id: javascript.sink.template.pug-render, symbol: pug.render, arg: 0, context: template}
+  - {id: javascript.sink.template.handlebars-compile, symbol: handlebars.compile, arg: 0, context: template}
+  - {id: javascript.sink.template.nunjucks-render-string, symbol: nunjucks.renderString, arg: 0, context: template}
+sanitisers:
+  - {id: javascript.sanitiser.path-basename, symbol: path.basename, covers: [path]}
+  - {id: javascript.sanitiser.encode-uri-component, symbol: globalThis.encodeURIComponent, covers: [url]}
+  - {id: javascript.sanitiser.escape-html, symbol: escape-html, covers: [html]}
+  - {id: javascript.sanitiser.shell-quote, symbol: shell-quote.quote, covers: [shell]}

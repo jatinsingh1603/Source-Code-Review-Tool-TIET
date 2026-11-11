@@ -1,0 +1,23 @@
+id: javascript.crypto.tls-verify-disabled
+languages:
+- javascript
+message: Certificate verification switched off
+severity: high
+confidence: high
+metadata:
+  cwe:
+  - 295
+  owasp:
+  - A07:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Leave verification on; to trust a private CA configure ca instead.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: '$X(..., { ..., rejectUnauthorized: false, ... })'
+  - pattern: '$X = { ..., rejectUnauthorized: false, ... }'
+  - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = $V
+    where:
+    - metavariable: $V
+      regex: ^[\"']?0[\"']?$

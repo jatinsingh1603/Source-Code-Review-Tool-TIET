@@ -1,0 +1,29 @@
+id: javascript.ssti.template-from-input
+languages:
+- javascript
+message: Template source built from variable or request data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 1336
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Keep template text constant and pass data as render variables.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($T, ...)
+    where:
+    - metavariable: $F
+      catalogue: javascript.sink.template.*
+    - metavariable: $T
+      kind: dynamic_string
+  - pattern: $F($T, ...)
+    where:
+    - metavariable: $F
+      catalogue: javascript.sink.template.*
+    - metavariable: $T
+      kind: request_derived

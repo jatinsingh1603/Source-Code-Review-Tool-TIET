@@ -1,0 +1,24 @@
+id: python.authz.object-reference-unscoped
+languages:
+- python
+message: 'Handler takes an object id from the path: worth checking the caller owns it'
+severity: medium
+confidence: low
+kind: hotspot
+metadata:
+  cwe:
+  - 639
+  - 863
+  owasp:
+  - A01:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Compare the object's owner with the authenticated user before returning or changing it.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: 'def $F(...): ...'
+    function_regex: \.route\(\s*['"][^'"]*<[^>]+>
+  none:
+  - pattern: 'def $F(...): ...'
+    function_regex: (?i)(current_user|g\.user|session\[|request\.user|owner|owned|user_id|\.user\b)

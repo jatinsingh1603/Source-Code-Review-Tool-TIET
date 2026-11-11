@@ -108,7 +108,10 @@ def test_the_artefacts_have_the_documented_shapes(
     )
     assert candidates
     for candidate in candidates:
-        assert candidate.engine == "codekavach.rules"
+        assert candidate.engine in {"codekavach.rules", "codekavach-rules"}
+        if candidate.engine == "codekavach-rules":
+            assert candidate.kind is CandidateKind.HOTSPOT  # only what the code matchers miss
+            continue
         assert candidate.kind is CandidateKind.VULNERABILITY
         assert candidate.cwe and candidate.engine_severity is not None
         assert len(candidate.locations) == 1 and candidate.taint_path is None
@@ -144,13 +147,20 @@ def test_no_negative_control_produces_a_candidate(candidates: list[Candidate]) -
 
 def test_nothing_else_is_reported(candidates: list[Candidate]) -> None:
     planted = load_manifest().planted_vulnerabilities
+    findings = [c for c in candidates if c.kind is CandidateKind.VULNERABILITY]
     strays = [
         (c.primary_location.path, c.primary_location.start_line, c.rule_id)
-        for c in candidates
+        for c in findings
         if not any(near(c, entry.file, entry.line) for entry in planted)
     ]
     assert strays == []
-    assert len(candidates) == len(planted)
+    assert len(findings) == len(planted)
+    # The default pack adds an observation where a planted flaw has a second reading: the close
+    # handler takes an account id and checks no owner (a hotspot, never asserted as a finding).
+    extra = [c for c in candidates if c.kind is CandidateKind.HOTSPOT]
+    assert [(c.primary_location.path, c.rule_id) for c in extra] == [
+        ("services/api/handlers.py", "python.authz.object-reference-unscoped")
+    ]
 
 
 def test_a_second_scan_gives_the_same_fingerprints_in_the_same_order(

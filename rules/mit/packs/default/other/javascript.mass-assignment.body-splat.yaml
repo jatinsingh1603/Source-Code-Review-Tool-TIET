@@ -1,0 +1,33 @@
+id: javascript.mass-assignment.body-splat
+languages:
+- javascript
+message: Model built or updated from the whole request body
+severity: medium
+confidence: medium
+metadata:
+  cwe:
+  - 915
+  owasp:
+  - A04:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Copy only the fields the caller may set, or validate with a schema.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $M.create($X)
+    where:
+    - metavariable: $X
+      regex: ^req\.body$
+  - pattern: new $M($X)
+    where:
+    - metavariable: $X
+      regex: ^req\.body$
+  - pattern: Object.assign($T, $X)
+    where:
+    - metavariable: $X
+      regex: ^req\.body$
+  - pattern: $M.update($X, ...)
+    where:
+    - metavariable: $X
+      regex: ^req\.body$

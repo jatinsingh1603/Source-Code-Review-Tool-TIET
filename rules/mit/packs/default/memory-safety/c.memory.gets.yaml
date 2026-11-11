@@ -1,0 +1,20 @@
+id: c.memory.gets
+languages:
+- c
+- cpp
+message: gets cannot limit how much it reads
+severity: critical
+confidence: high
+metadata:
+  cwe:
+  - 242
+  - 120
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use fgets with the buffer size.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: gets($B)

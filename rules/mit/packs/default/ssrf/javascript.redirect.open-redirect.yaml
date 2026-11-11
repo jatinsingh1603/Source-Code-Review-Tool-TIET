@@ -1,0 +1,23 @@
+id: javascript.redirect.open-redirect
+languages:
+- javascript
+message: Redirect to an address taken from the request
+severity: medium
+confidence: medium
+metadata:
+  cwe:
+  - 601
+  owasp:
+  - A01:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Redirect only to relative paths or to hosts on an allow-list.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($U, ...)
+    where:
+    - metavariable: $F
+      catalogue: javascript.sink.redirect.*
+    - metavariable: $U
+      regex: \b(req\.(query|body|params)|ctx\.(query|request\.body))

@@ -1,0 +1,30 @@
+id: c.memory.scanf-unbounded-string
+languages:
+- c
+- cpp
+message: scanf family with an unbounded %s conversion
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 120
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Give the conversion a width (%63s) or read with fgets.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: scanf($F, ...)
+    where:
+    - metavariable: $F
+      regex: '%s'
+  - pattern: fscanf($S, $F, ...)
+    where:
+    - metavariable: $F
+      regex: '%s'
+  - pattern: sscanf($I, $F, ...)
+    where:
+    - metavariable: $F
+      regex: '%s'

@@ -117,8 +117,19 @@ This page contains client code. It is written only where you asked and is never 
   </div>
 </section>
 <section class="pair" id="p9">
-  <h2>9. services/api/security.py:27 &middot; py.static-iv</h2>
+  <h2>9. services/api/handlers.py:39 &middot; python.authz.object-reference-unscoped</h2>
   <p class="meta">candidate <cand-10> &middot; level L3 &middot; ledger: recorded
+    &middot; 0 redaction(s), 14 rename(s) &middot; payload hash 39d763ab95b137399150882d26da466ba944838672b5185ce11f6db1a3f5af95</p>
+  <div class="cols">
+    <div><strong>Original</strong>
+      <pre aria-label="Original code"><span class="ln"><span class="no">5</span>from flask import Flask, abort, g, jsonify, request</span><span class="ln"><span class="no">6</span></span><span class="ln"><span class="no">7</span>import accounts</span><span class="ln"><span class="no">8</span>import db</span><span class="ln"><span class="no">38</span>@app.route(&#34;/api/accounts/&lt;account_id&gt;/close&#34;, methods=[&#34;POST&#34;])</span><span class="ln"><span class="no">39</span>def close_account(account_id):</span><span class="ln"><span class="no">40</span>    conn = db.connect()</span><span class="ln"><span class="no">41</span>    accounts.close(conn, account_id)</span><span class="ln"><span class="no">42</span>    return jsonify(status=&#34;closed&#34;)</span></pre></div>
+    <div><strong>Payload</strong>
+      <pre aria-label="Payload"><span class="ln"><span class="no">1</span># codekavach payload L3</span><span class="ln"><span class="no">2</span># <span class="renamed">file_2</span></span><span class="ln"><span class="no">3</span>from flask import Flask, abort, g, jsonify, request</span><span class="ln"><span class="no">4</span></span><span class="ln"><span class="no">5</span>import <span class="renamed">mod_5</span></span><span class="ln"><span class="no">6</span>import <span class="renamed">mod_4</span></span><span class="ln"><span class="no">7</span># ... elided ...</span><span class="ln"><span class="no">8</span>@app.route(&#34;/<span class="renamed">file_3</span>/<span class="renamed">file_4</span>/<span class="renamed">file_5</span>/<span class="renamed">file_7</span>&#34;, methods=[&#34;POST&#34;])</span><span class="ln"><span class="no">9</span>def <span class="renamed">fn_5</span>(<span class="renamed">param_1</span>):</span><span class="ln"><span class="no">10</span>    <span class="renamed">var_3</span> = <span class="renamed">mod_4</span>.connect()</span><span class="ln"><span class="no">11</span>    <span class="renamed">mod_5</span>.close(<span class="renamed">var_3</span>, <span class="renamed">param_1</span>)</span><span class="ln"><span class="no">12</span>    return jsonify(status=&#34;xxxxxx&#34;)</span><span class="ln"><span class="no">13</span></span></pre></div>
+  </div>
+</section>
+<section class="pair" id="p10">
+  <h2>10. services/api/security.py:27 &middot; py.static-iv</h2>
+  <p class="meta">candidate <cand-11> &middot; level L3 &middot; ledger: recorded
     &middot; 0 redaction(s), 11 rename(s) &middot; payload hash bb61e86ab346975377d36fd0ee271189c0d3ed99d5f0812520db0db557f56192</p>
   <div class="cols">
     <div><strong>Original</strong>
@@ -127,9 +138,9 @@ This page contains client code. It is written only where you asked and is never 
       <pre aria-label="Payload"><span class="ln"><span class="no">1</span># codekavach payload L3</span><span class="ln"><span class="no">2</span># <span class="renamed">file_9</span></span><span class="ln"><span class="no">3</span>from Crypto.Cipher import AES</span><span class="ln"><span class="no">4</span># ... elided ...</span><span class="ln"><span class="no">5</span>def <span class="renamed">fn_8</span>(<span class="renamed">param_7</span>, <span class="renamed">param_8</span>):</span><span class="ln"><span class="no">6</span>    &#34;&#34;&#34;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&#34;&#34;&#34;</span><span class="ln"><span class="no">7</span>    <span class="renamed">var_5</span> = AES.new(<span class="renamed">param_7</span>, AES.MODE_CBC, <span class="renamed">var_6</span>)</span><span class="ln"><span class="no">8</span>    return <span class="renamed">var_5</span>.encrypt(<span class="renamed">param_8</span>.<span class="renamed">field_1</span>(16 * ((len(<span class="renamed">param_8</span>) + 15) // 16)).encode(&#34;xxx-x&#34;))</span><span class="ln"><span class="no">9</span></span></pre></div>
   </div>
 </section>
-<section class="pair" id="p10">
-  <h2>10. services/web/renderer.js:18 &middot; js.reflected-xss</h2>
-  <p class="meta">candidate <cand-11> &middot; level L3 &middot; ledger: recorded
+<section class="pair" id="p11">
+  <h2>11. services/web/renderer.js:18 &middot; js.reflected-xss</h2>
+  <p class="meta">candidate <cand-12> &middot; level L3 &middot; ledger: recorded
     &middot; 0 redaction(s), 7 rename(s) &middot; payload hash 63b191ec875463e20723845d0bf047777de2653d030169722f17977e44c18a5e</p>
   <div class="cols">
     <div><strong>Original</strong>

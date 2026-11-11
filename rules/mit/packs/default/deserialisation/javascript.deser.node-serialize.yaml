@@ -1,0 +1,21 @@
+id: javascript.deser.node-serialize
+languages:
+- javascript
+message: 'node-serialize unserialize call: it executes functions inside the data'
+severity: critical
+confidence: high
+metadata:
+  cwe:
+  - 502
+  owasp:
+  - A08:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use JSON.parse and validate the result; do not use node-serialize.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $S.unserialize($X)
+    where:
+    - metavariable: $X
+      is_constant: false

@@ -1,0 +1,36 @@
+id: python.path.file-from-dynamic-path
+languages:
+- python
+message: File opened with a path built from variable data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 22
+  - 23
+  owasp:
+  - A01:2021
+  capec:
+  - 126
+  licence: MIT
+  source: CodeKavach original
+  remediation: Resolve the path, then check it stays under the allowed directory before opening it.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($P, ...)
+    where:
+    - metavariable: $F
+      catalogue: python.sink.path.*
+    - metavariable: $P
+      kind: dynamic_string
+    - metavariable: $P
+      not_regex: secure_filename|basename|realpath|resolve
+  - pattern: $F($P, ...)
+    where:
+    - metavariable: $F
+      catalogue: python.sink.path.*
+    - metavariable: $P
+      regex: \brequest\.(args|form|values|json|view_args)
+    - metavariable: $P
+      not_regex: secure_filename|basename|realpath|resolve

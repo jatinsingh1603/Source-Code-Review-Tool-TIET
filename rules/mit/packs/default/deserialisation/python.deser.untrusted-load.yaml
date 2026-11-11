@@ -1,0 +1,25 @@
+id: python.deser.untrusted-load
+languages:
+- python
+message: Object deserialised from data that is not a constant
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 502
+  owasp:
+  - A08:2021
+  capec:
+  - 586
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use a data-only format such as JSON and validate it; never unpickle data from outside.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($X, ...)
+    where:
+    - metavariable: $F
+      catalogue: python.sink.deserialise.*
+    - metavariable: $X
+      is_constant: false

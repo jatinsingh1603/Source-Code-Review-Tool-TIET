@@ -4,7 +4,8 @@
       "cited_lines": [],
       "confidence": "high",
       "cwe": [
-        862
+        639,
+        863
       ],
       "impact": "Mock impact statement.",
       "is_vulnerable": true,

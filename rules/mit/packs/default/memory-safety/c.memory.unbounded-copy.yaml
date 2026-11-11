@@ -1,0 +1,33 @@
+id: c.memory.unbounded-copy
+languages:
+- c
+- cpp
+message: strcpy, strcat or stpcpy copy with no length limit
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 120
+  - 787
+  owasp:
+  - A03:2021
+  capec:
+  - 100
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use a bounded copy (snprintf, strlcpy, memcpy with a checked length) and check the result.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: strcpy($D, $S)
+    where:
+    - metavariable: $S
+      is_constant: false
+  - pattern: strcat($D, $S)
+    where:
+    - metavariable: $S
+      is_constant: false
+  - pattern: stpcpy($D, $S)
+    where:
+    - metavariable: $S
+      is_constant: false

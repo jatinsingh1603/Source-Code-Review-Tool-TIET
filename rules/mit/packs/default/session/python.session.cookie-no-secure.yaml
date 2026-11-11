@@ -1,0 +1,20 @@
+id: python.session.cookie-no-secure
+languages:
+- python
+message: Cookie set without the Secure attribute
+severity: medium
+confidence: medium
+metadata:
+  cwe:
+  - 614
+  owasp:
+  - A05:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Pass secure=True so the cookie is only sent over HTTPS.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $R.set_cookie(...)
+  none:
+  - pattern: $R.set_cookie(..., secure=True, ...)

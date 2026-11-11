@@ -1,0 +1,23 @@
+id: python.crypto.static-iv
+languages:
+- python
+message: Initialisation vector is a constant
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 329
+  owasp:
+  - A02:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Generate a fresh random IV for every message and store it with the ciphertext.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $C.new($K, $M, $IV, ...)
+    where:
+    - metavariable: $M
+      regex: MODE_(CBC|CFB|OFB|CTR)
+    - metavariable: $IV
+      kind: constant_binding

@@ -1,0 +1,31 @@
+id: c.memory.unchecked-allocation
+languages:
+- c
+- cpp
+message: Allocation result used without checking it for NULL
+severity: medium
+confidence: low
+metadata:
+  cwe:
+  - 252
+  - 476
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Compare the pointer with NULL (and handle the failure) before the first use.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: '$T *$P = malloc($N);
+
+      $P[$I] = $V;'
+  - pattern: '$T *$P = malloc($N);
+
+      memcpy($P, ...);'
+  - pattern: '$T *$P = malloc($N);
+
+      memset($P, ...);'
+  - pattern: '$T *$P = malloc($N);
+
+      strcpy($P, ...);'

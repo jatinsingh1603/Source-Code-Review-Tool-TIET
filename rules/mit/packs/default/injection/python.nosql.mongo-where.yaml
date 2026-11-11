@@ -1,0 +1,27 @@
+id: python.nosql.mongo-where
+languages:
+- python
+message: MongoDB query takes a $where expression or a whole request document
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 943
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Never pass request data as a query document; build the filter from validated fields.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: '$C.find({"$where": $X})'
+    where:
+    - metavariable: $X
+      is_constant: false
+  - pattern: $C.find($Q)
+    where:
+    - metavariable: $Q
+      regex: \brequest\.(json|form|args|values)
+    - metavariable: $C
+      regex: (?i)(coll|mongo|db|users|accounts)

@@ -1,0 +1,28 @@
+id: python.ssrf.request-derived-url
+languages:
+- python
+message: Outgoing request to an address that comes from the caller
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 918
+  owasp:
+  - A10:2021
+  capec:
+  - 664
+  licence: MIT
+  source: CodeKavach original
+  remediation: 'Allow only known hosts: resolve and compare the address against an allow-list before connecting.'
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($U, ...)
+    where:
+    - metavariable: $F
+      catalogue: python.sink.http.*
+    - metavariable: $U
+      kind: request_derived
+  none:
+  - pattern: $F($U, ...)
+    function_regex: (?i)(allow|whitelist|hostname|netloc|\.host\b)

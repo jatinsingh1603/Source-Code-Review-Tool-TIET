@@ -1,0 +1,14 @@
+id: javascript.koa
+language: javascript
+framework: koa
+entry_points:
+  - {id: javascript.koa.route, type: http_handler, pattern: "$R.get($P, $H)"}
+sources:
+  - {id: javascript.koa.ctx-query, type: http_param, pattern: "ctx.query"}
+  - {id: javascript.koa.ctx-params, type: http_param, pattern: "ctx.params"}
+  - {id: javascript.koa.ctx-request-body, type: http_body, pattern: "ctx.request.body"}
+sinks:
+  - {id: javascript.sink.redirect.ctx-redirect, symbol: koa.Context.redirect, arg: 0, context: url}
+  - {id: javascript.sink.path.ctx-attachment, symbol: koa.Context.attachment, arg: 0, context: path}
+sanitisers:
+  - {id: javascript.sanitiser.koa-escape-html, symbol: escape-html, covers: [html]}

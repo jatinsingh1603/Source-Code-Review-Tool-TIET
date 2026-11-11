@@ -1,0 +1,23 @@
+id: javascript.crypto.jwt-verification-disabled
+languages:
+- javascript
+message: JSON web token accepted without a verified signature
+severity: critical
+confidence: high
+metadata:
+  cwe:
+  - 347
+  owasp:
+  - A02:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Verify the signature with jwt.verify and pin the accepted algorithms; never allow none.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $J.decode($T, ...)
+    where:
+    - metavariable: $J
+      regex: ^(jwt|jsonwebtoken|jwtDecode)$
+  - pattern: '$J.verify($T, $K, { ..., algorithms: ["none"], ... })'
+  - pattern: '$J.sign($P, $K, { ..., algorithm: "none", ... })'

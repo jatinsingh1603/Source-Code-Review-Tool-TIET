@@ -65,12 +65,12 @@ nav.toc ol { padding-left:20px; } nav.toc a { color:var(--accent); text-decorati
 </nav>
 
 <h2 id="summary">Executive summary</h2>
-<p>10 finding(s) from 10 candidate(s) in
-30 file(s) and 984 line(s).
+<p>11 finding(s) from 11 candidate(s) in
+30 file(s) and 985 line(s).
 0 candidate(s) were reviewed by a model.</p>
 <table>
   <tr><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>Info</th></tr>
-  <tr><td>1</td><td>7</td><td>2</td><td>0</td><td>0</td></tr>
+  <tr><td>1</td><td>7</td><td>3</td><td>0</td><td>0</td></tr>
 </table>
 <p class="meta">A model that judges a finding not vulnerable lowers its confidence and ranks it lower. It never removes it,
 and it never changes its status: only a person can mark a finding a false positive.</p>
@@ -84,7 +84,7 @@ and it never changes its status: only a person can mark a finding a false positi
   <tr><td class="axis">Likelihood 3</td>
     <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-n">2</td>    <td class="cell-n">7</td>    <td class="cell-n">1</td></tr>
   <tr><td class="axis">Likelihood 2</td>
-    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td></tr>
+    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-n">1</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td></tr>
   <tr><td class="axis">Likelihood 1</td>
     <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td>    <td class="cell-0">0</td></tr>
   <tr><td class="axis"></td><td class="axis">Impact 1</td><td class="axis">Impact 2</td><td class="axis">Impact 3</td><td class="axis">Impact 4</td><td class="axis">Impact 5</td></tr>
@@ -161,6 +161,13 @@ and it never changes its status: only a person can mark a finding a false positi
     <td>Input from the caller is written into an HTML response without escaping.</td>
     <td>services/web/renderer.js:18</td>
     <td>CWE-79</td>
+    <td>open</td>
+    <td>not reviewed</td></tr>
+  <tr><td><a href="#f11">11</a></td>
+    <td><span class="sev sev-medium">medium</span></td>
+    <td>Handler takes an object id from the path: worth checking the caller owns it</td>
+    <td>services/api/handlers.py:39</td>
+    <td>CWE-639, CWE-863</td>
     <td>open</td>
     <td>not reviewed</td></tr>
 </table>
@@ -246,13 +253,21 @@ and it never changes its status: only a person can mark a finding a false positi
 &middot; OWASP A03:2021 Injection</p>
   <pre class="code" aria-label="Evidence from services/web/renderer.js"><span class="ln"><span class="no">15</span>}</span><span class="ln"><span class="no">16</span></span><span class="ln"><span class="no">17</span>function renderGreeting(req, res) {</span><span class="ln hit"><span class="no">18</span>  <mark>res.send(&#39;&lt;h1&gt;Welcome back, &#39; + req.query.name + &#39;&lt;/h1&gt;&#39;)</mark>;</span><span class="ln"><span class="no">19</span>}</span><span class="ln"><span class="no">20</span></span><span class="ln"><span class="no">21</span>function renderGreetingSafely(req, res) {</span></pre>
 </article>
+<article class="finding" id="f11">
+  <h3>11. Handler takes an object id from the path: worth checking the caller owns it <span class="sev sev-medium">medium</span></h3>
+  <p class="meta">services/api/handlers.py:39
+    &middot; confidence low &middot; status open
+    &middot; rule python.authz.object-reference-unscoped (codekavach-rules)
+&middot; OWASP A01:2021 Broken Access Control</p>
+  <pre class="code" aria-label="Evidence from services/api/handlers.py"><span class="ln"><span class="no">36</span></span><span class="ln"><span class="no">37</span></span><span class="ln"><span class="no">38</span>@app.route(&#34;/api/accounts/&lt;account_id&gt;/close&#34;, methods=[&#34;POST&#34;])</span><span class="ln hit"><span class="no">39</span><mark>def close_account(account_id):</mark></span><span class="ln hit"><span class="no">40</span>    <mark>conn = db.connect()</mark></span><span class="ln hit"><span class="no">41</span>    <mark>accounts.close(conn, account_id)</mark></span><span class="ln hit"><span class="no">42</span>    <mark>return jsonify(status=&#34;closed&#34;)</mark></span><span class="ln"><span class="no">43</span></span><span class="ln"><span class="no">44</span></span><span class="ln"><span class="no">45</span>@app.route(&#34;/api/me/accounts/&lt;account_id&gt;&#34;)</span></pre>
+</article>
 
 <h2 id="privacy">Privacy attestation</h2>
 <table>
   <tr><th>Privacy level (default)</th><td>L3</td></tr>
   <tr><th>Provider and model</th><td>none / none (local)</td></tr>
-<tr><th>slices</th><td>10</td></tr><tr><th>files</th><td>8</td></tr><tr><th>functions</th><td>10</td></tr><tr><th>lines disclosed</th><td>57</td></tr><tr><th>lines prepared total</th><td>61</td></tr><tr><th>tokens estimated</th><td>714</td></tr><tr><th>repository fraction pct</th><td>5.79</td></tr><tr><th>call edges</th><td>3</td></tr><tr><th>context expansions</th><td>0</td></tr><tr><th>strategy enclosing function</th><td>10</td></tr>  <tr><th>Ledger head hash</th><td><ledger-head></td></tr>
-  <tr><th>Ledger entries</th><td>10; not_sent_dry_run: 10</td></tr>
+<tr><th>slices</th><td>11</td></tr><tr><th>files</th><td>8</td></tr><tr><th>functions</th><td>10</td></tr><tr><th>lines disclosed</th><td>57</td></tr><tr><th>lines prepared total</th><td>70</td></tr><tr><th>tokens estimated</th><td>799</td></tr><tr><th>repository fraction pct</th><td>5.79</td></tr><tr><th>call edges</th><td>3</td></tr><tr><th>context expansions</th><td>0</td></tr><tr><th>strategy enclosing function</th><td>10</td></tr><tr><th>strategy hotspot</th><td>1</td></tr>  <tr><th>Ledger head hash</th><td><ledger-head></td></tr>
+  <tr><th>Ledger entries</th><td>11; not_sent_dry_run: 11</td></tr>
   <tr><th>Zero-leak check</th><td>31 listed terms searched in every ledger payload: no occurrence</td></tr>
   <tr><th>Retention</th><td>kept until the vault is destroyed</td></tr>
 </table>

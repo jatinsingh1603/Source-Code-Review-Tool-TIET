@@ -1,0 +1,29 @@
+id: javascript.xss.react-dangerously-set
+languages:
+- javascript
+message: dangerouslySetInnerHTML given data that is not a constant
+severity: medium
+confidence: medium
+metadata:
+  cwe:
+  - 79
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Sanitise the markup with DOMPurify or render the content as text.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: '$H(..., { dangerouslySetInnerHTML: { __html: $X } }, ...)'
+    where:
+    - metavariable: $X
+      is_constant: false
+    - metavariable: $X
+      not_regex: (?i)escape|sanitiz|purify|encode|xss|quote
+  - pattern: 'const $H = { __html: $X }'
+    where:
+    - metavariable: $X
+      is_constant: false
+    - metavariable: $X
+      not_regex: (?i)escape|sanitiz|purify|encode|xss|quote

@@ -1,0 +1,25 @@
+id: javascript.logging.sensitive-data
+languages:
+- javascript
+message: Log call that names a password, token or similar value
+severity: medium
+confidence: low
+metadata:
+  cwe:
+  - 532
+  owasp:
+  - A09:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Do not log secrets or personal data; log an identifier or a masked form.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $L.$M($...A)
+    where:
+    - metavariable: $L
+      regex: ^(console|logger|log)$
+    - metavariable: $M
+      regex: ^(log|info|warn|error|debug)$
+    - metavariable: $...A
+      regex: (?i)(password|passwd|secret|api_?key|cvv|ssn|card_?number)

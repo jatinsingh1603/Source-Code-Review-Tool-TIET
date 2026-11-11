@@ -74,3 +74,20 @@ def test_the_matcher_stays_under_2_ms_per_rule_per_1000_lines() -> None:
     matcher.match_file(parsed, rules)  # compile the patterns once, as a real scan does per run
     elapsed = measure(lambda: matcher.match_file(parsed, rules), repeat=3)
     assert elapsed < budget(0.002 * RULE_COUNT)
+
+
+# --- the default pack (E16-03) -----------------------------------------------------------------
+
+
+def test_the_default_pack_matches_1000_lines_within_its_per_rule_budget() -> None:
+    from codekavach.analysis.rules.coverage import DEFAULT_PACK  # noqa: PLC0415
+
+    pack = load_pack(DEFAULT_PACK)
+    matcher, rules = Matcher.for_packs([pack])
+    python_rules = [rule for rule in rules if "python" in rule.languages]
+    parsed = parse("a.py", Language.PYTHON, source_of(LINES))
+    matcher.match_file(parsed, python_rules)  # compile the patterns once, as a real scan does
+    elapsed = measure(lambda: matcher.match_file(parsed, python_rules), repeat=3)
+    # The synthetic file is a call on every other line, about four times denser than real code,
+    # and the shipped rules use catalogue lookups and sequences, so the allowance is 8 ms a rule.
+    assert elapsed < budget(0.008 * len(python_rules))

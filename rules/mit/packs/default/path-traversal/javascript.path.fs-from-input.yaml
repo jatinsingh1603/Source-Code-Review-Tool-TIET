@@ -1,0 +1,37 @@
+id: javascript.path.fs-from-input
+languages:
+- javascript
+message: File system call with a path built from variable or request data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 22
+  - 23
+  owasp:
+  - A01:2021
+  capec:
+  - 126
+  licence: MIT
+  source: CodeKavach original
+  remediation: Resolve the path and check it stays under the allowed directory; use path.basename for
+    names.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($P, ...)
+    where:
+    - metavariable: $F
+      catalogue: javascript.sink.path.*
+    - metavariable: $P
+      kind: dynamic_string
+    - metavariable: $P
+      not_regex: basename|resolve|normalize
+  - pattern: $F($P, ...)
+    where:
+    - metavariable: $F
+      catalogue: javascript.sink.path.*
+    - metavariable: $P
+      kind: request_derived
+    - metavariable: $P
+      not_regex: basename|resolve|normalize

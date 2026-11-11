@@ -1,0 +1,45 @@
+id: javascript.xss.dom-sink
+languages:
+- javascript
+message: Value assigned to innerHTML, outerHTML or written with document.write
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 79
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Assign to textContent, or sanitise with a maintained library such as DOMPurify first.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $E.innerHTML = $X
+    where:
+    - metavariable: $X
+      kind: dynamic_string
+    - metavariable: $X
+      not_regex: (?i)escape|sanitiz|purify|encode|xss|quote
+  - pattern: $E.outerHTML = $X
+    where:
+    - metavariable: $X
+      kind: dynamic_string
+    - metavariable: $X
+      not_regex: (?i)escape|sanitiz|purify|encode|xss|quote
+  - pattern: document.write($X)
+    where:
+    - metavariable: $X
+      kind: dynamic_string
+    - metavariable: $X
+      not_regex: (?i)escape|sanitiz|purify|encode|xss|quote
+  - pattern: $E.insertAdjacentHTML($P, $X)
+    where:
+    - metavariable: $X
+      kind: dynamic_string
+    - metavariable: $X
+      not_regex: (?i)escape|sanitiz|purify|encode|xss|quote
+  - pattern: $E.innerHTML = $X
+    where:
+    - metavariable: $X
+      regex: location\.(hash|search)|document\.(URL|referrer)

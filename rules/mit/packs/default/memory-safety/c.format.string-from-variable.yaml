@@ -1,0 +1,38 @@
+id: c.format.string-from-variable
+languages:
+- c
+- cpp
+message: printf-style function called with a format that is not a constant
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 134
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: 'Pass a constant format and the data as arguments: printf("%s", text).'
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: printf($F)
+    where:
+    - metavariable: $F
+      is_constant: false
+  - pattern: fprintf($S, $F)
+    where:
+    - metavariable: $F
+      is_constant: false
+  - pattern: syslog($P, $F)
+    where:
+    - metavariable: $F
+      is_constant: false
+  - pattern: sprintf($B, $F)
+    where:
+    - metavariable: $F
+      is_constant: false
+  - pattern: snprintf($B, $N, $F)
+    where:
+    - metavariable: $F
+      is_constant: false

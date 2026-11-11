@@ -1,0 +1,19 @@
+id: python.race.exists-then-open
+languages:
+- python
+message: 'File checked for existence and then opened: the file can change in between'
+severity: low
+confidence: medium
+metadata:
+  cwe:
+  - 367
+  owasp:
+  - A04:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Open the file and handle the error instead of checking first (EAFP), or use O_EXCL.
+  added_in: 1.0.0
+match:
+  all:
+  - pattern: open($P, ...)
+  - pattern_inside: "if os.path.exists($P):\n    ..."

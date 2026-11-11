@@ -229,7 +229,7 @@ def test_payloads_carry_facts_and_a_matching_slice(sent: Run) -> None:
     assert {s.candidate_id for s in sent.slices} == {p.candidate_id for p in sent.payloads}
     for payload in sent.payloads:
         assert payload.facts is not None and payload.facts.rule
-        assert payload.facts.strategy == "enclosing_function"
+        assert payload.facts.strategy in {"enclosing_function", "hotspot"}
 
 
 def test_no_send_writes_dry_run_entries_and_no_verdicts(root: Path) -> None:

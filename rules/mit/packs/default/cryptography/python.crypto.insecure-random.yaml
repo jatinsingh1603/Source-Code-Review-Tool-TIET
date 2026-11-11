@@ -1,0 +1,26 @@
+id: python.crypto.insecure-random
+languages:
+- python
+message: random module used where a secret or token is made
+severity: medium
+confidence: medium
+metadata:
+  cwe:
+  - 338
+  owasp:
+  - A02:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use the secrets module (or os.urandom) for tokens, keys and one-time codes.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: random.$F(...)
+    where:
+    - metavariable: $F
+      regex: ^(random|randint|randrange|choice|choices|getrandbits)$
+  all:
+  - pattern_inside: 'def $FN(...): ...'
+    where:
+    - metavariable: $FN
+      regex: (?i)(token|secret|password|passwd|otp|nonce|salt|session|csrf|api_?key)

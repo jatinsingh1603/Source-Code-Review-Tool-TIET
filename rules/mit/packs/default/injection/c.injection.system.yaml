@@ -1,0 +1,28 @@
+id: c.injection.system
+languages:
+- c
+- cpp
+message: Shell command built from variable data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 78
+  owasp:
+  - A03:2021
+  capec:
+  - 88
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use execve with an argument array, or validate the input against a fixed list.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: system($C)
+    where:
+    - metavariable: $C
+      is_constant: false
+  - pattern: popen($C, $M)
+    where:
+    - metavariable: $C
+      is_constant: false

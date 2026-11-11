@@ -1,0 +1,27 @@
+id: python.crypto.hardcoded-key
+languages:
+- python
+message: Encryption key written into the source
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 321
+  owasp:
+  - A02:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Load the key from a secret store or the environment, never from source.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $C.new($K, ...)
+    where:
+    - metavariable: $C
+      regex: ^(AES|DES|DES3|Blowfish|ARC4|ChaCha20)$
+    - metavariable: $K
+      kind: literal
+  - pattern: Fernet($K)
+    where:
+    - metavariable: $K
+      kind: literal

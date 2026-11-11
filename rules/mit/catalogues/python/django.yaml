@@ -1,0 +1,19 @@
+id: python.django
+language: python
+framework: django
+entry_points:
+  - {id: python.django.view, type: http_handler, pattern: "def $F(request, ...): ..."}
+sources:
+  - {id: python.django.request-get, type: http_param, pattern: "request.GET"}
+  - {id: python.django.request-post, type: http_param, pattern: "request.POST"}
+  - {id: python.django.request-body, type: http_body, pattern: "request.body"}
+  - {id: python.django.request-cookies, type: http_cookie, pattern: "request.COOKIES"}
+sinks:
+  - {id: python.sink.html.mark-safe, symbol: django.utils.safestring.mark_safe, arg: 0, context: html}
+  - {id: python.sink.redirect.django-redirect, symbol: django.shortcuts.redirect, arg: 0, context: url}
+  - {id: python.sink.redirect.http-redirect, symbol: django.http.HttpResponseRedirect, arg: 0, context: url}
+  - {id: python.sink.sql.manager-raw, symbol: django.db.models.Manager.raw, arg: 0, context: sql}
+  - {id: python.sink.sql.raw-sql, symbol: django.db.models.expressions.RawSQL, arg: 0, context: sql}
+sanitisers:
+  - {id: python.sanitiser.django-escape, symbol: django.utils.html.escape, covers: [html, html_attr]}
+  - {id: python.sanitiser.django-allowed-host, symbol: django.utils.http.url_has_allowed_host_and_scheme, covers: [url]}

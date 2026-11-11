@@ -1,0 +1,27 @@
+id: javascript.config.prototype-pollution-merge
+languages:
+- javascript
+message: Request data merged into an object with a recursive merge
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 1321
+  owasp:
+  - A08:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use a merge that blocks __proto__ and constructor keys, or copy known fields.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $M.merge($T, $X)
+    where:
+    - metavariable: $M
+      regex: ^(_|lodash|merge|deepmerge|\\$)$
+    - metavariable: $X
+      regex: \breq\.(body|query|params)\b
+  - pattern: _.defaultsDeep($T, $X)
+    where:
+    - metavariable: $X
+      regex: \breq\.(body|query|params)\b

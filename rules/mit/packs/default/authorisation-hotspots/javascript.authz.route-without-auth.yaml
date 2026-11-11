@@ -1,0 +1,24 @@
+id: javascript.authz.route-without-auth
+languages:
+- javascript
+message: 'Route registered without an authentication middleware: worth checking who may call it'
+severity: medium
+confidence: low
+kind: hotspot
+metadata:
+  cwe:
+  - 862
+  - 863
+  owasp:
+  - A01:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Confirm the route is meant to be public; otherwise add authentication and a permission
+    check.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $APP.post($P, $H)
+  - pattern: $APP.put($P, $H)
+  - pattern: $APP.delete($P, $H)
+  - pattern: $APP.patch($P, $H)

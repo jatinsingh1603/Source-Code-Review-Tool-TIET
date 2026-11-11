@@ -1,0 +1,25 @@
+id: python.flask
+language: python
+framework: flask
+entry_points:
+  - {id: python.flask.route, type: http_handler, pattern: "@$APP.route(...)\ndef $F(...): ..."}
+sources:
+  - {id: python.flask.request-args, type: http_param, symbol: flask.request.args}
+  - {id: python.flask.request-form, type: http_param, symbol: flask.request.form}
+  - {id: python.flask.request-values, type: http_param, symbol: flask.request.values}
+  - {id: python.flask.request-json, type: http_body, symbol: flask.request.json}
+  - {id: python.flask.request-data, type: http_body, symbol: flask.request.data}
+  - {id: python.flask.request-cookies, type: http_cookie, symbol: flask.request.cookies}
+  - {id: python.flask.request-headers, type: http_header, symbol: flask.request.headers}
+  - {id: python.flask.request-files, type: http_upload, symbol: flask.request.files}
+sinks:
+  - {id: python.sink.template.render-string, symbol: flask.render_template_string, arg: 0, context: template}
+  - {id: python.sink.template.jinja-template, symbol: jinja2.Template, arg: 0, context: template}
+  - {id: python.sink.html.flask-markup, symbol: flask.Markup, arg: 0, context: html}
+  - {id: python.sink.html.markupsafe-markup, symbol: markupsafe.Markup, arg: 0, context: html}
+  - {id: python.sink.html.make-response, symbol: flask.make_response, arg: 0, context: html}
+  - {id: python.sink.redirect.flask-redirect, symbol: flask.redirect, arg: 0, context: url}
+  - {id: python.sink.path.send-file, symbol: flask.send_file, arg: 0, context: path}
+sanitisers:
+  - {id: python.sanitiser.markupsafe-escape, symbol: markupsafe.escape, covers: [html, html_attr]}
+  - {id: python.sanitiser.secure-filename, symbol: werkzeug.utils.secure_filename, covers: [path]}

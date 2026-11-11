@@ -1,0 +1,26 @@
+id: python.xss.html-from-dynamic-string
+languages:
+- python
+message: HTML marked safe or returned from a string built with variable data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 79
+  - 80
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Escape each value for its output context before building markup, or use a template engine.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($X)
+    where:
+    - metavariable: $F
+      catalogue: python.sink.html.*
+    - metavariable: $X
+      kind: dynamic_string
+    - metavariable: $X
+      not_regex: (?i)escape|sanitiz|purify|encode|xss|quote

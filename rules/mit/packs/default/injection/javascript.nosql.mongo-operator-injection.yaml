@@ -1,0 +1,33 @@
+id: javascript.nosql.mongo-operator-injection
+languages:
+- javascript
+message: MongoDB query takes the request body or query as the filter
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 943
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Pick and validate each field; reject objects where a string is expected.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $C.find($Q, ...)
+    where:
+    - metavariable: $Q
+      regex: ^req\.(body|query|params)$
+  - pattern: $C.findOne($Q, ...)
+    where:
+    - metavariable: $Q
+      regex: ^req\.(body|query|params)$
+  - pattern: $C.updateOne($Q, ...)
+    where:
+    - metavariable: $Q
+      regex: ^req\.(body|query|params)$
+  - pattern: $C.deleteOne($Q, ...)
+    where:
+    - metavariable: $Q
+      regex: ^req\.(body|query|params)$

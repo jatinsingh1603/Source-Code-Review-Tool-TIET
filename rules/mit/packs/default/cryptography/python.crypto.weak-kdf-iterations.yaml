@@ -1,0 +1,22 @@
+id: python.crypto.weak-kdf-iterations
+languages:
+- python
+message: Key derivation with too few iterations
+severity: medium
+confidence: high
+metadata:
+  cwe:
+  - 916
+  owasp:
+  - A02:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use at least the current OWASP minimum for PBKDF2 (hundreds of thousands) or switch to
+    scrypt or argon2.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: hashlib.pbkdf2_hmac($H, $P, $S, $N, ...)
+    where:
+    - metavariable: $N
+      regex: ^[0-9]{1,4}$

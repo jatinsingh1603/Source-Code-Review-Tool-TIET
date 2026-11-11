@@ -1,0 +1,25 @@
+id: python.redirect.open-redirect
+languages:
+- python
+message: Redirect to an address taken from the request
+severity: medium
+confidence: medium
+metadata:
+  cwe:
+  - 601
+  owasp:
+  - A01:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Redirect only to relative paths or to hosts on an allow-list (url_has_allowed_host_and_scheme).
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($U, ...)
+    where:
+    - metavariable: $F
+      catalogue: python.sink.redirect.*
+    - metavariable: $U
+      regex: \brequest\.(args|form|values|GET|POST|query_params)
+    - metavariable: $U
+      not_regex: url_has_allowed_host_and_scheme|is_safe_url|urlparse

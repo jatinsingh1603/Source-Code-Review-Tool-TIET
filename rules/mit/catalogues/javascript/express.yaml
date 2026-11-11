@@ -1,0 +1,20 @@
+id: javascript.express
+language: javascript
+framework: express
+entry_points:
+  - {id: javascript.express.route, type: http_handler, pattern: "$APP.get($P, $H)"}
+sources:
+  - {id: javascript.express.req-query, type: http_param, pattern: "req.query"}
+  - {id: javascript.express.req-params, type: http_param, pattern: "req.params"}
+  - {id: javascript.express.req-body, type: http_body, pattern: "req.body"}
+  - {id: javascript.express.req-cookies, type: http_cookie, pattern: "req.cookies"}
+  - {id: javascript.express.req-headers, type: http_header, pattern: "req.headers"}
+sinks:
+  - {id: javascript.sink.html.res-send, symbol: express.Response.send, arg: 0, context: html}
+  - {id: javascript.sink.html.res-write, symbol: express.Response.write, arg: 0, context: html}
+  - {id: javascript.sink.html.res-end, symbol: express.Response.end, arg: 0, context: html}
+  - {id: javascript.sink.redirect.res-redirect, symbol: express.Response.redirect, arg: 0, context: url}
+  - {id: javascript.sink.path.send-file, symbol: express.Response.sendFile, arg: 0, context: path}
+  - {id: javascript.sink.path.download, symbol: express.Response.download, arg: 0, context: path}
+sanitisers:
+  - {id: javascript.sanitiser.validator-escape, symbol: validator.escape, covers: [html, html_attr]}

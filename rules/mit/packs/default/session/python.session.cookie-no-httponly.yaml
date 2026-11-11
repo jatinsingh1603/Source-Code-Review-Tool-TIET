@@ -1,0 +1,20 @@
+id: python.session.cookie-no-httponly
+languages:
+- python
+message: Cookie set without the HttpOnly attribute
+severity: medium
+confidence: medium
+metadata:
+  cwe:
+  - 1004
+  owasp:
+  - A05:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Pass httponly=True so scripts in the page cannot read the cookie.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $R.set_cookie(...)
+  none:
+  - pattern: $R.set_cookie(..., httponly=True, ...)

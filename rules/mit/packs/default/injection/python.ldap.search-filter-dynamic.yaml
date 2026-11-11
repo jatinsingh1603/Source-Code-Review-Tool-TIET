@@ -1,0 +1,29 @@
+id: python.ldap.search-filter-dynamic
+languages:
+- python
+message: LDAP search filter built from variable data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 90
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Build the filter with ldap.filter.filter_format or escape each value with escape_filter_chars.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $C.search_s($B, $S, $F, ...)
+    where:
+    - metavariable: $F
+      kind: dynamic_string
+    - metavariable: $F
+      not_regex: escape_filter_chars|filter_format
+  - pattern: $C.search($B, $S, $F, ...)
+    where:
+    - metavariable: $F
+      kind: dynamic_string
+    - metavariable: $F
+      not_regex: escape_filter_chars|filter_format

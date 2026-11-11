@@ -1,0 +1,24 @@
+id: python.xss.html-attribute-sanitiser-inadequate
+languages:
+- python
+message: Value placed in an HTML attribute after a sanitiser that does not cover attributes
+severity: high
+confidence: high
+metadata:
+  cwe:
+  - 79
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Escape for the attribute context (quotes included), for example with html.escape(value,
+    quote=True).
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $A + $B
+    where:
+    - metavariable: $A
+      regex: =\s*['\"]+$
+    - metavariable: $B
+      inadequate_for: html_attr

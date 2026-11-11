@@ -1,0 +1,12 @@
+id: python.fastapi
+language: python
+framework: fastapi
+entry_points:
+  - {id: python.fastapi.route, type: http_handler, pattern: "@$APP.get(...)\ndef $F(...): ..."}
+sources:
+  - {id: python.fastapi.query-params, type: http_param, pattern: "request.query_params"}
+  - {id: python.fastapi.request-json, type: http_body, pattern: "request.json()"}
+sinks:
+  - {id: python.sink.html.html-response, symbol: fastapi.responses.HTMLResponse, arg: 0, context: html}
+  - {id: python.sink.redirect.redirect-response, symbol: fastapi.responses.RedirectResponse, arg: 0, context: url}
+  - {id: python.sink.path.file-response, symbol: fastapi.responses.FileResponse, arg: 0, context: path}

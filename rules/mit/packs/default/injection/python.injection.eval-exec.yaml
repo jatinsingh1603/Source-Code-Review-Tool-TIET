@@ -1,0 +1,29 @@
+id: python.injection.eval-exec
+languages:
+- python
+message: eval or exec on variable data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 95
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Do not evaluate text from outside; use ast.literal_eval or a parser for the format.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($X, ...)
+    where:
+    - metavariable: $F
+      catalogue: python.sink.code.*
+    - metavariable: $X
+      kind: dynamic_string
+  - pattern: $F($X, ...)
+    where:
+    - metavariable: $F
+      catalogue: python.sink.code.*
+    - metavariable: $X
+      kind: request_derived

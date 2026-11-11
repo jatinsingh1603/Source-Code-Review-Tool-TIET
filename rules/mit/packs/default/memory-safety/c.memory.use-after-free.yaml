@@ -1,0 +1,38 @@
+id: c.memory.use-after-free
+languages:
+- c
+- cpp
+message: Pointer used after it was freed in the same block
+severity: high
+confidence: low
+metadata:
+  cwe:
+  - 416
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Set the pointer to NULL after free and do not use it afterwards.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: 'free($P);
+
+      ...
+
+      return $P->$F;'
+  - pattern: 'free($P);
+
+      ...
+
+      $X = $P->$F;'
+  - pattern: 'free($P);
+
+      ...
+
+      $P->$F = $V;'
+  - pattern: 'free($P);
+
+      ...
+
+      return *$P;'

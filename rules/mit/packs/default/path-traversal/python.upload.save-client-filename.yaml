@@ -1,0 +1,24 @@
+id: python.upload.save-client-filename
+languages:
+- python
+message: Uploaded file saved under the file name the client sent
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 434
+  owasp:
+  - A04:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Generate the stored name yourself or pass the name through secure_filename and check the
+    extension.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F.save($P)
+    where:
+    - metavariable: $P
+      regex: \.filename\b
+    - metavariable: $P
+      not_regex: secure_filename|uuid|secrets

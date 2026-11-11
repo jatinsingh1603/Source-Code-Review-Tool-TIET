@@ -1,0 +1,31 @@
+id: c.memory.malloc-multiplication
+languages:
+- c
+- cpp
+message: Allocation size computed by multiplication that can overflow
+severity: medium
+confidence: low
+metadata:
+  cwe:
+  - 190
+  - 680
+  owasp:
+  - A03:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use calloc, or check the multiplication for overflow before allocating.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: malloc($A * $B)
+    where:
+    - metavariable: $A
+      is_constant: false
+    - metavariable: $B
+      is_constant: false
+  - pattern: realloc($P, $A * $B)
+    where:
+    - metavariable: $A
+      is_constant: false
+    - metavariable: $B
+      is_constant: false

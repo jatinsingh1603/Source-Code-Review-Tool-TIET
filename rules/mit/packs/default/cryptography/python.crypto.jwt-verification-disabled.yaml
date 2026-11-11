@@ -1,0 +1,24 @@
+id: python.crypto.jwt-verification-disabled
+languages:
+- python
+message: JSON web token accepted without a verified signature
+severity: critical
+confidence: high
+metadata:
+  cwe:
+  - 347
+  owasp:
+  - A02:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Always verify the signature and pin the accepted algorithms; never allow none.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: jwt.decode($T, ..., verify=False, ...)
+  - pattern: jwt.decode($T, ..., options=$O, ...)
+    where:
+    - metavariable: $O
+      regex: verify_signature.{1,6}False
+  - pattern: jwt.decode($T, ..., algorithms=["none"], ...)
+  - pattern: jwt.encode($P, $K, algorithm="none", ...)

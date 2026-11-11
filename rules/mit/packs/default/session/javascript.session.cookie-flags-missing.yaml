@@ -1,0 +1,21 @@
+id: javascript.session.cookie-flags-missing
+languages:
+- javascript
+message: Cookie set with secure or httpOnly turned off
+severity: medium
+confidence: medium
+metadata:
+  cwe:
+  - 614
+  - 1004
+  owasp:
+  - A05:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: 'Set secure: true and httpOnly: true on session cookies.'
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: '$R.cookie($N, $V, { ..., secure: false, ... })'
+  - pattern: '$R.cookie($N, $V, { ..., httpOnly: false, ... })'
+  - pattern: 'session({ ..., cookie: { ..., secure: false, ... }, ... })'
