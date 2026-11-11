@@ -55,7 +55,7 @@
 │ demo        Run the Demo 1 sequence offline on the mock provider.                                │
 │ vault       Manage the local mapping vault. Its contents never appear in any output.             │
 │ config      Inspect and manage configuration.                                                    │
-│ rules       List, show, validate and bundle native rule packs.                                   │
+│ rules       List, show, validate, test and bundle native rule packs.                             │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
  Exit codes:

@@ -1,7 +1,7 @@
 
  Usage: codekavach rules [OPTIONS] COMMAND [ARGS]...
 
- List, show, validate and bundle native rule packs.
+ List, show, validate, test and bundle native rule packs.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help  -h        Show this message and exit.                                                    │
@@ -44,4 +44,5 @@
 │ show      Print one rule with its metadata, pack and fixture paths.                              │
 │ validate  Check packs and print each problem with its file, code and message.                    │
 │ bundle    Write a deterministic, checksummed archive of the configured packs.                    │
+│ test      Check each rule against its annotated fixture and print what differs.                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯

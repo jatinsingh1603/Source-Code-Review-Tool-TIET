@@ -18,5 +18,7 @@ match:
       where:
         - metavariable: $Q
           kind: concatenation
+        - metavariable: $Q
+          is_constant: false
   none:
     - pattern: $CUR.execute($Q, $PARAMS)

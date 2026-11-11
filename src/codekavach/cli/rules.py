@@ -1,4 +1,4 @@
-"""``codekavach rules list|show|validate|bundle``: work with native rule packs (E16-01).
+"""``codekavach rules list|show|validate|bundle|test``: work with native rule packs (E16-01).
 
 Owning epic: E16. The commands read rule files (data) and never run anything from them. With
 ``engines.native.rules`` off, ``list`` reports zero rules instead of failing.
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from codekavach.analysis.rules.pack import RulePack
 
 rules_app = typer.Typer(
-    help="List, show, validate and bundle native rule packs.", no_args_is_help=True
+    help="List, show, validate, test and bundle native rule packs.", no_args_is_help=True
 )
 
 
@@ -120,7 +120,7 @@ def validate_command(
     packs: list[dict[str, Any]] = []
     problems: list[dict[str, str | None]] = []
     for directory in directories:
-        scan = scan_pack(directory)
+        scan = scan_pack(directory, check_patterns=True)
         issues = [
             {
                 "code": item.code.value,
@@ -171,3 +171,83 @@ def bundle_command(
     digest = write_bundle(packs, out, codekavach_version=get_version())
     rows = [{"id": p.id, "version": p.version, "checksum": p.checksum} for p in packs]
     get_output(ctx).result({"file": str(out), "sha256": digest, "packs": rows})
+
+
+@rules_app.command("test")
+def test_command(
+    ctx: typer.Context,
+    pack: Annotated[str | None, typer.Option("--pack", help="Only this pack id.")] = None,
+    rule: Annotated[str | None, typer.Option("--rule", help="Only this rule id.")] = None,
+    fixtures: Annotated[
+        Path | None,
+        typer.Option("--fixtures", help="Fixture root (default: tests/fixtures/rules)."),
+    ] = None,
+    update: Annotated[
+        bool,
+        typer.Option("--update", help="Rewrite annotations from actual matches (never in CI)."),
+    ] = False,
+) -> None:
+    """Check each rule against its annotated fixture and print what differs."""
+    from codekavach.analysis.rules.loader import default_rules_root  # noqa: PLC0415
+    from codekavach.analysis.rules.matcher import Matcher  # noqa: PLC0415
+    from codekavach.analysis.rules.testing import (  # noqa: PLC0415
+        check_rule,
+        run_rule_tests,
+        update_fixture,
+    )
+
+    if update and os.environ.get("CI"):
+        raise UsageError("--update is refused when CI is set", code="update_in_ci")
+    root = fixtures
+    if root is None:
+        rules_root = default_rules_root()
+        root = (rules_root.parent if rules_root else Path.cwd()) / "tests" / "fixtures" / "rules"
+    packs = [item for item in _packs(ctx) if pack is None or item.id == pack]
+    if update:
+        matcher, _ = Matcher.for_packs(packs)
+        for item in packs:
+            for entry in item.rules:
+                if rule is not None and entry.id != rule:
+                    continue
+                for language in entry.languages:
+                    if check_rule(matcher, entry, language, root).problem != "no fixture":
+                        update_fixture(matcher, entry, language, root)
+    report = run_rule_tests(packs, root, pack_id=pack, rule_id=rule)
+    rows = [
+        {
+            "rule": item.rule_id,
+            "language": item.language,
+            "fixture": item.fixture,
+            "passed": item.passed,
+            "missing": list(item.missing),
+            "unexpected": list(item.unexpected),
+            "known_gaps": item.todo_open,
+            "fixed_gaps": item.todo_fixed,
+            "problem": item.problem,
+        }
+        for item in report.results
+    ]
+
+    def human(console: Any) -> None:
+        for item in report.results:
+            mark = "PASS" if item.passed else "FAIL"
+            console.print(f"{mark} {item.rule_id} [{item.language}]", markup=False)
+            for line in item.missing:
+                console.print(
+                    f"  {item.fixture}:{line}: expected a match, found none", markup=False
+                )
+            for line in item.unexpected:
+                console.print(f"  {item.fixture}:{line}: unexpected match", markup=False)
+            if item.problem:
+                console.print(f"  {item.fixture}: {item.problem}", markup=False)
+        console.print(
+            f"{sum(r.passed for r in report.results)}/{len(report.results)} passed, "
+            f"{report.known_gaps} known gap(s)",
+            markup=False,
+        )
+
+    get_output(ctx).result(
+        {"passed": report.passed, "known_gaps": report.known_gaps, "results": rows}, human=human
+    )
+    if not report.passed:
+        raise UsageError("rule tests failed", code="rules_test_failed")

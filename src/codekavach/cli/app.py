@@ -205,7 +205,7 @@ LAZY_COMMANDS: tuple[LazyEntry, ...] = (
     LazyEntry("config", "codekavach.cli.config:config_app", "group",
               "Inspect and manage configuration.", optional=True),
     LazyEntry("rules", "codekavach.cli.rules:rules_app", "group",
-              "List, show, validate and bundle native rule packs."),
+              "List, show, validate, test and bundle native rule packs."),
 )  # fmt: skip
 
 

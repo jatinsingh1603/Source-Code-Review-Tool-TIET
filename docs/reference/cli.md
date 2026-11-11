@@ -56,6 +56,7 @@ Every command accepts `--help` / `-h`. The global options below are accepted bef
 - [codekavach rules bundle](#codekavach-rules-bundle)
 - [codekavach rules list](#codekavach-rules-list)
 - [codekavach rules show](#codekavach-rules-show)
+- [codekavach rules test](#codekavach-rules-test)
 - [codekavach rules validate](#codekavach-rules-validate)
 - [codekavach scan](#codekavach-scan)
 - [codekavach sync](#codekavach-sync)
@@ -940,7 +941,7 @@ Global options apply.
 
 ## codekavach rules
 
-List, show, validate and bundle native rule packs.
+List, show, validate, test and bundle native rule packs.
 
 ```text
 Usage: codekavach rules [OPTIONS] COMMAND [ARGS]...
@@ -989,6 +990,25 @@ Usage: codekavach rules show [OPTIONS] {rule_id}
 | Argument | Type | Default | Description |
 |---|---|---|---|
 | `RULE_ID` | TEXT | required | Rule id. |
+
+Global options apply.
+
+## codekavach rules test
+
+Check each rule against its annotated fixture and print what differs.
+
+```text
+Usage: codekavach rules test [OPTIONS]
+```
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--pack` | TEXT |  | Only this pack id. |
+| `--rule` | TEXT |  | Only this rule id. |
+| `--fixtures` | PATH |  | Fixture root (default: tests/fixtures/rules). |
+| `--update` | flag | off | Rewrite annotations from actual matches (never in CI). |
 
 Global options apply.
 
