@@ -91,6 +91,12 @@ repos:
         language: system
         pass_filenames: false
         files: ^(src/codekavach/core/models/|docs/schemas/)
+      - id: codekavach-rule-schema
+        name: rule schemas and field reference (E16-01)
+        entry: uv run python -m codekavach.analysis.rules.schema --check
+        language: system
+        pass_filenames: false
+        files: ^(src/codekavach/analysis/rules/(dsl|pack|schema)\.py|docs/schemas/rules/|docs/reference/rule-metadata\.md)
       - id: codekavach-schema-examples
         name: schema example documents (E02-29)
         entry: uv run python tools/schemas/build_examples.py --check

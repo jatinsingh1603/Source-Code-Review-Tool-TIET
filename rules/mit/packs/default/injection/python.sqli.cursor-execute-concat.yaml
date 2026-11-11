@@ -1,0 +1,22 @@
+id: python.sqli.cursor-execute-concat
+languages: [python]
+message: SQL query built by string concatenation
+severity: high
+confidence: medium
+metadata:
+  cwe: [89]
+  owasp: ["A03:2021"]
+  asvs: ["5.3.4"]
+  capec: [66]
+  licence: MIT
+  remediation: Use a parameterised query and pass values as parameters.
+  references: ["https://cwe.mitre.org/data/definitions/89.html"]
+  added_in: "0.1.0"
+match:
+  any:
+    - pattern: $CUR.execute($Q)
+      where:
+        - metavariable: $Q
+          kind: concatenation
+  none:
+    - pattern: $CUR.execute($Q, $PARAMS)

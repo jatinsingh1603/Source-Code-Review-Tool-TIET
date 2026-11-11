@@ -1,0 +1,5 @@
+id: default
+version: 0.1.0
+licence: MIT
+description: CodeKavach's own rules (seed pack; E16-03 fills it).
+languages: [python]

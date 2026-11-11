@@ -1,0 +1,460 @@
+{
+  "$defs": {
+    "Confidence": {
+      "description": "Confidence in a candidate or verdict, in ascending order.",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "Constraint": {
+      "additionalProperties": false,
+      "description": "A condition on one metavariable: exactly one of the condition keys is expected.",
+      "properties": {
+        "catalogue": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Catalogue"
+        },
+        "equals": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Equals"
+        },
+        "is_constant": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Constant"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "metavariable": {
+          "maxLength": 64,
+          "pattern": "^\\$\\.?\\.?\\.?[A-Z][A-Z0-9_]*$",
+          "title": "Metavariable",
+          "type": "string"
+        },
+        "min_length": {
+          "anyOf": [
+            {
+              "maximum": 100000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Length"
+        },
+        "not_regex": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Not Regex"
+        },
+        "one_of": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 256,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "One Of"
+        },
+        "regex": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Regex"
+        }
+      },
+      "required": [
+        "metavariable"
+      ],
+      "title": "Constraint",
+      "type": "object"
+    },
+    "MatchBlock": {
+      "additionalProperties": false,
+      "description": "``any`` clauses are alternatives, ``all`` must all hold and ``none`` must not hold.",
+      "properties": {
+        "all": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PatternClause"
+          },
+          "maxItems": 64,
+          "title": "All",
+          "type": "array"
+        },
+        "any": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PatternClause"
+          },
+          "maxItems": 64,
+          "title": "Any",
+          "type": "array"
+        },
+        "none": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PatternClause"
+          },
+          "maxItems": 64,
+          "title": "None",
+          "type": "array"
+        }
+      },
+      "title": "MatchBlock",
+      "type": "object"
+    },
+    "PatternClause": {
+      "additionalProperties": false,
+      "description": "One clause of a match block: a pattern of one kind, with optional constraints.",
+      "properties": {
+        "pattern": {
+          "anyOf": [
+            {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern"
+        },
+        "pattern_inside": {
+          "anyOf": [
+            {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern Inside"
+        },
+        "pattern_not_inside": {
+          "anyOf": [
+            {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern Not Inside"
+        },
+        "pattern_regex": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern Regex"
+        },
+        "ref": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ref"
+        },
+        "where": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Constraint"
+          },
+          "maxItems": 64,
+          "title": "Where",
+          "type": "array"
+        }
+      },
+      "title": "PatternClause",
+      "type": "object"
+    },
+    "RuleMeta": {
+      "additionalProperties": false,
+      "description": "What a report says about the weakness a rule looks for.",
+      "properties": {
+        "added_in": {
+          "default": "",
+          "maxLength": 32,
+          "title": "Added In",
+          "type": "string"
+        },
+        "asvs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Asvs",
+          "type": "array"
+        },
+        "capec": {
+          "default": [],
+          "items": {
+            "type": "integer"
+          },
+          "maxItems": 16,
+          "title": "Capec",
+          "type": "array"
+        },
+        "cwe": {
+          "default": [],
+          "items": {
+            "ge": 1,
+            "le": 99999,
+            "type": "integer"
+          },
+          "maxItems": 8,
+          "title": "Cwe",
+          "type": "array"
+        },
+        "licence": {
+          "default": "MIT",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Licence",
+          "type": "string"
+        },
+        "owasp": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Owasp",
+          "type": "array"
+        },
+        "references": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "References",
+          "type": "array"
+        },
+        "remediation": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Remediation",
+          "type": "string"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        }
+      },
+      "title": "RuleMeta",
+      "type": "object"
+    },
+    "Severity": {
+      "description": "Severity of a candidate or finding, in ascending order.",
+      "enum": [
+        "info",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "TaintSpec": {
+      "additionalProperties": false,
+      "description": "Catalogue entry ids for a taint rule; stored here, handed to the taint engine by E16-02.",
+      "properties": {
+        "require_path": {
+          "default": false,
+          "title": "Require Path",
+          "type": "boolean"
+        },
+        "sanitisers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 256,
+          "title": "Sanitisers",
+          "type": "array"
+        },
+        "sinks": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 256,
+          "title": "Sinks",
+          "type": "array"
+        },
+        "sources": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 256,
+          "title": "Sources",
+          "type": "array"
+        }
+      },
+      "title": "TaintSpec",
+      "type": "object"
+    }
+  },
+  "$id": "urn:codekavach:schema:rules-rule:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One rule: where it applies, what it matches and what a match means.",
+  "properties": {
+    "confidence": {
+      "$ref": "#/$defs/Confidence"
+    },
+    "fixtures": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 16,
+      "title": "Fixtures",
+      "type": "array"
+    },
+    "id": {
+      "maxLength": 128,
+      "title": "Id",
+      "type": "string"
+    },
+    "languages": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 16,
+      "title": "Languages",
+      "type": "array"
+    },
+    "match": {
+      "$ref": "#/$defs/MatchBlock"
+    },
+    "message": {
+      "maxLength": 500,
+      "title": "Message",
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "#/$defs/RuleMeta"
+    },
+    "severity": {
+      "$ref": "#/$defs/Severity"
+    },
+    "taint": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TaintSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "id",
+    "message",
+    "severity",
+    "confidence"
+  ],
+  "title": "RuleDef",
+  "type": "object"
+}

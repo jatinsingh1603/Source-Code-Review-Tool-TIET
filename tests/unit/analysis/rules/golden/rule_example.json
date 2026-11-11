@@ -1,0 +1,67 @@
+{
+  "confidence": "medium",
+  "fixtures": [],
+  "id": "python.sqli.cursor-execute-concat",
+  "languages": [
+    "python"
+  ],
+  "match": {
+    "all": [],
+    "any": [
+      {
+        "pattern": "$CUR.execute($Q)",
+        "pattern_inside": null,
+        "pattern_not_inside": null,
+        "pattern_regex": null,
+        "ref": null,
+        "where": [
+          {
+            "catalogue": null,
+            "equals": null,
+            "is_constant": null,
+            "kind": "concatenation",
+            "metavariable": "$Q",
+            "min_length": null,
+            "not_regex": null,
+            "one_of": null,
+            "regex": null
+          }
+        ]
+      }
+    ],
+    "none": [
+      {
+        "pattern": "$CUR.execute($Q, $PARAMS)",
+        "pattern_inside": null,
+        "pattern_not_inside": null,
+        "pattern_regex": null,
+        "ref": null,
+        "where": []
+      }
+    ]
+  },
+  "message": "SQL query built by string concatenation",
+  "metadata": {
+    "added_in": "1.0.0",
+    "asvs": [
+      "5.3.4"
+    ],
+    "capec": [
+      66
+    ],
+    "cwe": [
+      89
+    ],
+    "licence": "MIT",
+    "owasp": [
+      "A03:2021"
+    ],
+    "references": [
+      "https://cwe.mitre.org/data/definitions/89.html"
+    ],
+    "remediation": "Use a parameterised query and pass values as parameters.",
+    "source": null
+  },
+  "severity": "high",
+  "taint": null
+}

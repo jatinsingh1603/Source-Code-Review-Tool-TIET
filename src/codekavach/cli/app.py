@@ -204,6 +204,8 @@ LAZY_COMMANDS: tuple[LazyEntry, ...] = (
               "Manage the local mapping vault. Its contents never appear in any output."),
     LazyEntry("config", "codekavach.cli.config:config_app", "group",
               "Inspect and manage configuration.", optional=True),
+    LazyEntry("rules", "codekavach.cli.rules:rules_app", "group",
+              "List, show, validate and bundle native rule packs."),
 )  # fmt: skip
 
 

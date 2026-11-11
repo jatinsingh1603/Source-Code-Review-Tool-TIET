@@ -1,0 +1,78 @@
+{
+  "$defs": {
+    "CatalogueEntry": {
+      "additionalProperties": false,
+      "description": "One source, sink or sanitiser, referred to by id from rules and taint specs.",
+      "properties": {
+        "description": {
+          "default": "",
+          "maxLength": 500,
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/CatalogueKind"
+        },
+        "pattern": {
+          "maxLength": 4000,
+          "title": "Pattern",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "pattern"
+      ],
+      "title": "CatalogueEntry",
+      "type": "object"
+    },
+    "CatalogueKind": {
+      "description": "What a catalogue entry describes.",
+      "enum": [
+        "source",
+        "sink",
+        "sanitiser"
+      ],
+      "title": "CatalogueKind",
+      "type": "string"
+    }
+  },
+  "$id": "urn:codekavach:schema:rules-catalogue:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A ``catalogues/<language>/<framework>.yaml`` file.",
+  "properties": {
+    "entries": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CatalogueEntry"
+      },
+      "maxItems": 2000,
+      "title": "Entries",
+      "type": "array"
+    },
+    "framework": {
+      "maxLength": 64,
+      "title": "Framework",
+      "type": "string"
+    },
+    "language": {
+      "maxLength": 32,
+      "title": "Language",
+      "type": "string"
+    }
+  },
+  "required": [
+    "language",
+    "framework"
+  ],
+  "title": "Catalogue",
+  "type": "object"
+}

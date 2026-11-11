@@ -1,0 +1,46 @@
+{
+  "$id": "urn:codekavach:schema:rules-pack:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The ``pack.yaml`` file of a pack.",
+  "properties": {
+    "description": {
+      "default": "",
+      "maxLength": 500,
+      "title": "Description",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-z][a-z0-9-]{0,63}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "languages": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Languages",
+      "type": "array"
+    },
+    "licence": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Licence",
+      "type": "string"
+    },
+    "version": {
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "licence"
+  ],
+  "title": "PackManifest",
+  "type": "object"
+}

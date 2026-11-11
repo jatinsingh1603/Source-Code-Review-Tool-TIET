@@ -52,6 +52,11 @@ Every command accepts `--help` / `-h`. The global options below are accepted bef
 - [codekavach providers list](#codekavach-providers-list)
 - [codekavach providers test](#codekavach-providers-test)
 - [codekavach report](#codekavach-report)
+- [codekavach rules](#codekavach-rules)
+- [codekavach rules bundle](#codekavach-rules-bundle)
+- [codekavach rules list](#codekavach-rules-list)
+- [codekavach rules show](#codekavach-rules-show)
+- [codekavach rules validate](#codekavach-rules-validate)
 - [codekavach scan](#codekavach-scan)
 - [codekavach sync](#codekavach-sync)
 - [codekavach sync github](#codekavach-sync-github)
@@ -930,6 +935,76 @@ Usage: codekavach report [OPTIONS] [target]
 | `--name` | TEXT | report | File name without extension. |
 | `--overwrite / --no-overwrite` | flag | on | Replace existing files. |
 | `--fail-fast` | flag | off | Stop at the first format that fails. |
+
+Global options apply.
+
+## codekavach rules
+
+List, show, validate and bundle native rule packs.
+
+```text
+Usage: codekavach rules [OPTIONS] COMMAND [ARGS]...
+```
+
+Run a sub-command with `--help` for its options.
+
+Global options apply.
+
+## codekavach rules bundle
+
+Write a deterministic, checksummed archive of the configured packs.
+
+```text
+Usage: codekavach rules bundle [OPTIONS]
+```
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--out` | PATH | required | Where to write the bundle (.ckrules). |
+
+Global options apply.
+
+## codekavach rules list
+
+List every rule of the configured packs.
+
+```text
+Usage: codekavach rules list [OPTIONS]
+```
+
+Global options apply.
+
+## codekavach rules show
+
+Print one rule with its metadata, pack and fixture paths.
+
+```text
+Usage: codekavach rules show [OPTIONS] {rule_id}
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `RULE_ID` | TEXT | required | Rule id. |
+
+Global options apply.
+
+## codekavach rules validate
+
+Check packs and print each problem with its file, code and message.
+
+```text
+Usage: codekavach rules validate [OPTIONS] [path]
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `PATH` | PATH |  | A pack, or a directory of packs. |
 
 Global options apply.
 
