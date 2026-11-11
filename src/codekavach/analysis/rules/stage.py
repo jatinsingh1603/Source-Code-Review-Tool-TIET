@@ -26,7 +26,7 @@ from codekavach.analysis.rules.loader import load_packs
 from codekavach.analysis.rules.matcher import MATCHER_VERSION, Matcher, RuleMatch
 from codekavach.analysis.rules.pack import RulePack
 from codekavach.core.log import get_logger
-from codekavach.core.models import Candidate, Language, Location
+from codekavach.core.models import Candidate, Confidence, Language, Location
 from codekavach.core.models.base import DataClassification, KavachModel
 from codekavach.core.models.enums import CandidateKind
 from codekavach.core.models.fingerprint import FingerprintParts, fingerprint_batch, snippet_hash
@@ -43,7 +43,7 @@ from codekavach.parsing.symbols import SymbolsArtefact, SymbolTable
 
 MATCHER_FAILED: Final = "matcher_failed"
 RULES_ENGINE: Final = "codekavach-rules"
-MEMO_NAMESPACE: Final = "rules.matches.v1"
+MEMO_NAMESPACE: Final = "rules.matches.v2"
 MIN_RULE_SECONDS: Final = 0.25
 MAX_RULE_SECONDS: Final = 10.0
 _log = get_logger("codekavach.analysis.rules.stage")
@@ -94,6 +94,8 @@ class MatchRecord(KavachModel):
     symbol: str | None = None
     snippet_hash: str
     taint_unavailable: bool = False
+    partial: bool = False
+    properties: tuple[tuple[str, str], ...] = ()
 
 
 class _Uncacheable(Exception):  # noqa: N818 - control flow inside this module only
@@ -144,6 +146,8 @@ def _records(
                 symbol=location.symbol,
                 snippet_hash=snippet_hash(lines[location.start_line - 1 : location.end_line]),
                 taint_unavailable=match.taint_unavailable,
+                partial=match.partial,
+                properties=match.properties,
             )
         )
     return records, [(failure.rule_id, failure.code) for failure in result.failures]
@@ -171,6 +175,17 @@ def _match_location(parsed: ParsedFile, match: RuleMatch, path: str) -> Location
     return parsed.line_index.location(path, match.start_byte, match.end_byte, symbol)
 
 
+def _confidence(confidence: Confidence, *, partial: bool) -> Confidence:
+    """One step lower when a symbol was only partially resolved (E16-03)."""
+    if not partial:
+        return confidence
+    return (
+        Confidence.LOW
+        if confidence is Confidence.MEDIUM
+        else (Confidence.MEDIUM if confidence is Confidence.HIGH else Confidence.LOW)
+    )
+
+
 def _candidates(
     packs: _Packs, records: Sequence[MatchRecord], path: str, language: Language
 ) -> list[Candidate]:
@@ -193,6 +208,9 @@ def _candidates(
         properties = [("pack", packs.version[rule.id])]
         if record.taint_unavailable:
             properties.append(("rule.taint", "unavailable"))
+        if record.partial:
+            properties.append(("rule.resolution", "partial"))
+        properties.extend(record.properties)
         found.append(
             Candidate.create(
                 rule_id=rule.id,
@@ -210,15 +228,40 @@ def _candidates(
                     ),
                 ),
                 engine_severity=rule.severity,
-                engine_confidence=rule.confidence,
+                engine_confidence=_confidence(rule.confidence, partial=record.partial),
                 fingerprint=fingerprint,
-                kind=CandidateKind.VULNERABILITY,
+                kind=CandidateKind.HOTSPOT
+                if rule.kind == "hotspot"
+                else CandidateKind.VULNERABILITY,
                 language=language,
                 message=rule.message,
                 properties=tuple(properties),
             )
         )
     return found
+
+
+LEGACY_LINE_TOLERANCE: Final = 2
+
+
+def _not_covered(legacy: Sequence[Candidate], shipped: Sequence[Candidate]) -> list[Candidate]:
+    """The rule-pack candidates that no thin-slice candidate already reports.
+
+    The thin-slice code matchers stay until the shipped packs replace them; a pack candidate on
+    the same file, within two lines and sharing a CWE with one of theirs is the same finding seen
+    twice, so the established one is kept.
+    """
+
+    def covered(item: Candidate) -> bool:
+        place = item.primary_location
+        return any(
+            old.primary_location.path == place.path
+            and abs(old.primary_location.start_line - place.start_line) <= LEGACY_LINE_TOLERANCE
+            and set(old.cwe) & set(item.cwe)
+            for old in legacy
+        )
+
+    return [item for item in shipped if not covered(item)]
 
 
 class AnalyseRulesStage:
@@ -299,7 +342,7 @@ class AnalyseRulesStage:
         if self._registry.for_language(file.language):
             found.extend(self._generate(file.language, parsed(), symbols.tables.get(file.path)))
         if packs is not None and file.language.value in packs.languages:
-            found.extend(self._rules(ctx, file, packs, parsed))
+            found.extend(_not_covered(found, self._rules(ctx, file, packs, parsed)))
         return found
 
     @staticmethod

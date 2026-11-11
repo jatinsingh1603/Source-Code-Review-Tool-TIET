@@ -15,6 +15,7 @@ One rule: where it applies, what it matches and what a match means.
 | `message` | `str` | yes | One-line statement of the problem, shown in the report. |
 | `severity` | `Severity` | yes | `info`, `low`, `medium`, `high` or `critical`. |
 | `confidence` | `Confidence` | yes | `low`, `medium` or `high`: how often a match is a real weakness. |
+| `kind` | `Literal[vulnerability, hotspot]` | no | `vulnerability` (default) or `hotspot`: a hotspot marks code for review and asserts no weakness. |
 | `metadata` | `RuleMeta` | no | What a report says about the weakness (see `RuleMeta`). |
 | `match` | `MatchBlock` | no | The match block (see `MatchBlock`). |
 | `taint` | `TaintSpec | None` | no | Optional taint spec: catalogue entry ids for sources, sinks and sanitisers. |
@@ -57,6 +58,7 @@ One clause of a match block: a pattern of one kind, with optional constraints.
 | `pattern_not_inside` | `str | None` | no | The match must not lie inside code matching this pattern. |
 | `pattern_regex` | `str | None` | no | Regular expression over the matched text (at most 512 characters). |
 | `ref` | `str | None` | no | Id of another rule in the same pack, for reuse. |
+| `function_regex` | `str | None` | no | Regular expression the text of the enclosing function, with its decorators, must match (at most 512 characters); combine with `none` to exclude handlers that already check. |
 | `where` | `tuple[Constraint, ...]` | no | Constraints on the clause's metavariables. |
 
 ## Constraint
@@ -73,7 +75,8 @@ A condition on one metavariable: exactly one of the condition keys is expected.
 | `min_length` | `int | None` | no | Minimum length of the bound text. |
 | `equals` | `str | None` | no | The bound text must equal this value. |
 | `one_of` | `tuple[str, ...] | None` | no | The bound text must equal one of these values. |
-| `catalogue` | `str | None` | no | The bound node must match this catalogue entry id. |
+| `catalogue` | `str | None` | no | The bound node must match this catalogue entry id (by symbol or pattern). |
+| `inadequate_for` | `str | None` | no | The bound node must be a call to a catalogued sanitiser that does not cover this context. |
 
 ## TaintSpec
 
@@ -102,21 +105,42 @@ The ``pack.yaml`` file of a pack.
 
 A ``catalogues/<language>/<framework>.yaml`` file.
 
+    Entries are listed under ``entry_points``, ``sources``, ``sinks`` and ``sanitisers``; the
+    older flat ``entries`` list with an explicit ``kind`` is accepted too. :meth:`items` returns
+    every entry with its ``kind`` filled in.
+
+
 | Field | Type | Required | Meaning |
 |---|---|---|---|
+| `id` | `str | None` | no | Optional id of the catalogue. |
 | `language` | `str` | yes | Language the entries apply to. |
 | `framework` | `str` | yes | Framework or library the entries describe. |
-| `entries` | `tuple[CatalogueEntry, ...]` | no | The sources, sinks and sanitisers. |
+| `entry_points` | `tuple[CatalogueEntry, ...]` | no | Handlers and other places where outside data enters. |
+| `sources` | `tuple[CatalogueEntry, ...]` | no | Symbols that return untrusted data. |
+| `sinks` | `tuple[CatalogueEntry, ...]` | no | Symbols that are dangerous with untrusted data. |
+| `sanitisers` | `tuple[CatalogueEntry, ...]` | no | Symbols that neutralise data, with the contexts they cover. |
+| `entries` | `tuple[CatalogueEntry, ...]` | no | Flat list of entries that each give their own `kind`. |
 
 ## CatalogueEntry
 
-One source, sink or sanitiser, referred to by id from rules and taint specs.
+One entry point, source, sink or sanitiser, referred to by id from rules and taint specs.
+
+    An entry names code either by ``symbol`` (a fully qualified dotted name, matched against the
+    imports of the file) or by a ``pattern`` (a rule pattern). ``context`` is the output context
+    of a sink and ``covers`` the contexts a sanitiser is adequate for; both draw on ``CONTEXTS``.
+    ``kind`` is taken from the section of the catalogue file the entry is listed in.
+
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
 | `id` | `str` | yes | Entry id, referenced from rules and taint specs. |
-| `kind` | `CatalogueKind` | yes | `source`, `sink` or `sanitiser`. |
-| `pattern` | `str` | yes | Code pattern that identifies the entry. |
+| `kind` | `CatalogueKind | None` | no | `entry_point`, `source`, `sink` or `sanitiser`; set by the section the entry is listed in. |
+| `type` | `str` | no | What kind of source or entry point, such as `http_param`. |
+| `symbol` | `str | None` | no | Fully qualified dotted name, matched against the imports of the file. |
+| `pattern` | `str | None` | no | Code pattern that identifies the entry; use instead of `symbol`. |
+| `arg` | `int | None` | no | Index of the dangerous argument of a sink. |
+| `context` | `str | None` | no | Output context of a sink: html, html_attr, js, css, url, sql, shell, path, ldap, xpath, xml, header, log, template or deserialisation. |
+| `covers` | `tuple[str, ...]` | no | Contexts a sanitiser is adequate for; a sanitiser covers a sink only when the sink context is listed. |
 | `description` | `str` | no | What the entry is. |
 
 ## Example

@@ -12,7 +12,7 @@ node and ``...`` matches any sequence of siblings. Matching is E16-02.
 
 import re
 from functools import cached_property
-from typing import ClassVar, Final
+from typing import ClassVar, Final, Literal
 
 from pydantic import Field, field_validator
 
@@ -40,9 +40,22 @@ CONSTRAINT_KINDS: Final = (
     "equals",
     "one_of",
     "catalogue",
+    "inadequate_for",
 )
 NODE_KINDS: Final = frozenset(
-    {"concatenation", "call", "literal", "identifier", "attribute", "interpolation", "argument"}
+    {
+        "concatenation",
+        "call",
+        "literal",
+        "identifier",
+        "attribute",
+        "interpolation",
+        "argument",
+        "parameter",
+        "request_derived",
+        "dynamic_string",
+        "constant_binding",
+    }
 )
 
 
@@ -64,6 +77,7 @@ class Constraint(_RuleModel):
     equals: str | None = Field(default=None, max_length=1000)
     one_of: tuple[str, ...] | None = Field(default=None, max_length=256)
     catalogue: str | None = Field(default=None, max_length=128)
+    inadequate_for: str | None = Field(default=None, max_length=32)
 
     @property
     def conditions(self) -> tuple[str, ...]:
@@ -79,6 +93,7 @@ class PatternClause(_RuleModel):
     pattern_not_inside: str | None = Field(default=None, max_length=4000)
     pattern_regex: str | None = Field(default=None, max_length=MAX_REGEX_LENGTH)
     ref: str | None = Field(default=None, pattern=RULE_ID_PATTERN, max_length=128)
+    function_regex: str | None = Field(default=None, max_length=MAX_REGEX_LENGTH)
     where: tuple[Constraint, ...] = Field(default=(), max_length=MAX_CLAUSES)
 
     @property
@@ -139,6 +154,7 @@ class RuleDef(_RuleModel):
     message: str = Field(max_length=MAX_MESSAGE)
     severity: Severity
     confidence: Confidence
+    kind: Literal["vulnerability", "hotspot"] = "vulnerability"
     metadata: RuleMeta = Field(default_factory=RuleMeta)
     match: MatchBlock = Field(default_factory=MatchBlock)
     taint: TaintSpec | None = None
@@ -160,8 +176,7 @@ class RuleDef(_RuleModel):
         """Every regular expression the rule uses, from clauses and constraints."""
         found: list[str] = []
         for clause in self.match.clauses:
-            if clause.pattern_regex is not None:
-                found.append(clause.pattern_regex)
+            found.extend(x for x in (clause.pattern_regex, clause.function_regex) if x is not None)
             for constraint in clause.where:
                 found.extend(x for x in (constraint.regex, constraint.not_regex) if x is not None)
         return tuple(found)

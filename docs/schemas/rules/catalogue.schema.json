@@ -2,8 +2,44 @@
   "$defs": {
     "CatalogueEntry": {
       "additionalProperties": false,
-      "description": "One source, sink or sanitiser, referred to by id from rules and taint specs.",
+      "description": "One entry point, source, sink or sanitiser, referred to by id from rules and taint specs.\n\nAn entry names code either by ``symbol`` (a fully qualified dotted name, matched against the\nimports of the file) or by a ``pattern`` (a rule pattern). ``context`` is the output context\nof a sink and ``covers`` the contexts a sanitiser is adequate for; both draw on ``CONTEXTS``.\n``kind`` is taken from the section of the catalogue file the entry is listed in.",
       "properties": {
+        "arg": {
+          "anyOf": [
+            {
+              "maximum": 32,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Arg"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context"
+        },
+        "covers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 15,
+          "title": "Covers",
+          "type": "array"
+        },
         "description": {
           "default": "",
           "maxLength": 500,
@@ -17,18 +53,51 @@
           "type": "string"
         },
         "kind": {
-          "$ref": "#/$defs/CatalogueKind"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CatalogueKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "pattern": {
-          "maxLength": 4000,
-          "title": "Pattern",
+          "anyOf": [
+            {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Symbol"
+        },
+        "type": {
+          "default": "",
+          "maxLength": 32,
+          "title": "Type",
           "type": "string"
         }
       },
       "required": [
-        "id",
-        "kind",
-        "pattern"
+        "id"
       ],
       "title": "CatalogueEntry",
       "type": "object"
@@ -36,6 +105,7 @@
     "CatalogueKind": {
       "description": "What a catalogue entry describes.",
       "enum": [
+        "entry_point",
         "source",
         "sink",
         "sanitiser"
@@ -47,7 +117,7 @@
   "$id": "urn:codekavach:schema:rules-catalogue:1",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "A ``catalogues/<language>/<framework>.yaml`` file.",
+  "description": "A ``catalogues/<language>/<framework>.yaml`` file.\n\nEntries are listed under ``entry_points``, ``sources``, ``sinks`` and ``sanitisers``; the\nolder flat ``entries`` list with an explicit ``kind`` is accepted too. :meth:`items` returns\nevery entry with its ``kind`` filled in.",
   "properties": {
     "entries": {
       "default": [],
@@ -58,15 +128,65 @@
       "title": "Entries",
       "type": "array"
     },
+    "entry_points": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CatalogueEntry"
+      },
+      "maxItems": 500,
+      "title": "Entry Points",
+      "type": "array"
+    },
     "framework": {
       "maxLength": 64,
       "title": "Framework",
       "type": "string"
     },
+    "id": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Id"
+    },
     "language": {
       "maxLength": 32,
       "title": "Language",
       "type": "string"
+    },
+    "sanitisers": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CatalogueEntry"
+      },
+      "maxItems": 1000,
+      "title": "Sanitisers",
+      "type": "array"
+    },
+    "sinks": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CatalogueEntry"
+      },
+      "maxItems": 1000,
+      "title": "Sinks",
+      "type": "array"
+    },
+    "sources": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CatalogueEntry"
+      },
+      "maxItems": 1000,
+      "title": "Sources",
+      "type": "array"
     }
   },
   "required": [

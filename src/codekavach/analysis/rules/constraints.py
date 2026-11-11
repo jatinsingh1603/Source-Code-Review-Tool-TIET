@@ -16,6 +16,14 @@ from typing import Final
 from tree_sitter import Node
 
 from codekavach.analysis.rules.dsl import Constraint
+from codekavach.analysis.rules.syntax import (
+    enclosing_function,
+    function_parameters,
+    is_literal,
+    is_request_derived,
+    resolve_string,
+    string_parts,
+)
 
 CALL_TYPES: Final = frozenset(
     {"call", "call_expression", "method_invocation", "invocation_expression", "function_call"}
@@ -47,6 +55,8 @@ NUMBER_TYPES: Final = frozenset(
         "integer",
         "float",
         "number",
+        "number_literal",
+        "char_literal",
         "decimal_integer_literal",
         "int_literal",
         "float_literal",
@@ -116,6 +126,30 @@ def is_constant(node: Node) -> bool:
     return False
 
 
+def _root(node: Node) -> Node:
+    while node.parent is not None:
+        node = node.parent
+    return node
+
+
+def is_parameter(node: Node) -> bool:
+    """An identifier that names a parameter of the function it sits in."""
+    if node.type not in IDENTIFIER_TYPES:
+        return False
+    function = enclosing_function(node)
+    return function is not None and (node.text or b"").decode() in function_parameters(function)
+
+
+def is_constant_binding(node: Node) -> bool:
+    """A literal, or a name whose single assignment is a literal (a module constant)."""
+    return is_literal(resolve_string(node, enclosing_function(node), _root(node)))
+
+
+def is_request_input(node: Node) -> bool:
+    """Request data, a parameter, or a local assigned from one (syntactic, not data flow)."""
+    return is_request_derived(node, enclosing_function(node), _root(node))
+
+
 def has_kind(node: Node, kind: str) -> bool:
     """Whether ``node`` is of the cross-language ``kind``."""
     tests: Mapping[str, Callable[[Node], bool]] = {
@@ -126,6 +160,10 @@ def has_kind(node: Node, kind: str) -> bool:
         "identifier": lambda n: n.type in IDENTIFIER_TYPES,
         "attribute": lambda n: n.type in ATTRIBUTE_TYPES,
         "argument": lambda n: n.parent is not None and n.parent.type in ARGUMENT_PARENTS,
+        "parameter": is_parameter,
+        "request_derived": is_request_input,
+        "dynamic_string": lambda n: bool(string_parts(n)),
+        "constant_binding": is_constant_binding,
     }
     test = tests.get(kind)
     return test(node) if test is not None else False
@@ -145,6 +183,7 @@ def holds(  # noqa: PLR0911 - one return per condition kind
     nodes: tuple[Node, ...],
     compiled: Mapping[str, "re.Pattern[str]"],
     catalogue: Lookup,
+    inadequate: Lookup | None = None,
 ) -> bool:
     """Whether the bound ``nodes`` satisfy the single condition of ``constraint``.
 
@@ -153,9 +192,11 @@ def holds(  # noqa: PLR0911 - one return per condition kind
     """
     text = " ".join(normalised(node) for node in nodes)
     if constraint.regex is not None:
-        return compiled[constraint.regex].search(text) is not None
+        pattern = compiled[constraint.regex]
+        return any(pattern.search(candidate) for candidate in _texts(nodes, text))
     if constraint.not_regex is not None:
-        return compiled[constraint.not_regex].search(text) is None
+        pattern = compiled[constraint.not_regex]
+        return not any(pattern.search(candidate) for candidate in _texts(nodes, text))
     if constraint.min_length is not None:
         values = [literal_value(node) for node in nodes]
         size = sum(
@@ -175,7 +216,20 @@ def holds(  # noqa: PLR0911 - one return per condition kind
         return _equals(nodes, text, set(constraint.one_of))
     if constraint.catalogue is not None:
         return all(catalogue(constraint.catalogue, node) for node in nodes)
+    if constraint.inadequate_for is not None and inadequate is not None:
+        return all(inadequate(constraint.inadequate_for, node) for node in nodes)
     return False
+
+
+def _texts(nodes: tuple[Node, ...], text: str) -> list[str]:
+    """The node text, plus the text of the value a lone local name was assigned (one hop chain)."""
+    texts = [text]
+    if len(nodes) == 1 and nodes[0].type in IDENTIFIER_TYPES:
+        node = nodes[0]
+        value = resolve_string(node, enclosing_function(node), _root(node))
+        if value.id != node.id:
+            texts.append(normalised(value))
+    return texts
 
 
 def _equals(nodes: tuple[Node, ...], text: str, wanted: set[str]) -> bool:

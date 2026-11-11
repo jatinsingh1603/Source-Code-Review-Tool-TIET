@@ -2,6 +2,7 @@
   "confidence": "medium",
   "fixtures": [],
   "id": "python.sqli.cursor-execute-concat",
+  "kind": "vulnerability",
   "languages": [
     "python"
   ],
@@ -9,6 +10,7 @@
     "all": [],
     "any": [
       {
+        "function_regex": null,
         "pattern": "$CUR.execute($Q)",
         "pattern_inside": null,
         "pattern_not_inside": null,
@@ -18,6 +20,7 @@
           {
             "catalogue": null,
             "equals": null,
+            "inadequate_for": null,
             "is_constant": null,
             "kind": "concatenation",
             "metavariable": "$Q",
@@ -31,6 +34,7 @@
     ],
     "none": [
       {
+        "function_regex": null,
         "pattern": "$CUR.execute($Q, $PARAMS)",
         "pattern_inside": null,
         "pattern_not_inside": null,

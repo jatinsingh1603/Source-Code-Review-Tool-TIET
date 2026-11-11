@@ -40,6 +40,19 @@
           "default": null,
           "title": "Equals"
         },
+        "inadequate_for": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inadequate For"
+        },
         "is_constant": {
           "anyOf": [
             {
@@ -173,6 +186,19 @@
       "additionalProperties": false,
       "description": "One clause of a match block: a pattern of one kind, with optional constraints.",
       "properties": {
+        "function_regex": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Function Regex"
+        },
         "pattern": {
           "anyOf": [
             {
@@ -412,6 +438,15 @@
     "id": {
       "maxLength": 128,
       "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "default": "vulnerability",
+      "enum": [
+        "vulnerability",
+        "hotspot"
+      ],
+      "title": "Kind",
       "type": "string"
     },
     "languages": {

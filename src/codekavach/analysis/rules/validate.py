@@ -242,7 +242,10 @@ def _check_catalogues(rule: RuleDef, known: set[str], found: _Issues) -> None:
     for clause in rule.match.clauses:
         wanted.extend(item.catalogue for item in clause.where if item.catalogue is not None)
     for entry in sorted(set(wanted)):
-        if entry not in known:
+        if entry.endswith(".*"):
+            if not any(item.startswith(entry[:-1]) for item in known):
+                found.add(RuleCode.UNKNOWN_CATALOGUE, "a catalogue prefix matches no entry")
+        elif entry not in known:
             found.add(RuleCode.UNKNOWN_CATALOGUE, "a catalogue entry id is in no loaded catalogue")
 
 

@@ -33,6 +33,7 @@ from tree_sitter import Node, Tree
 
 from codekavach.config import Settings
 from codekavach.core.models import Language
+from codekavach.parsing.models import ParsedFile
 from codekavach.parsing.parser import ParseUnavailableError, SourceTooLargeError, parse
 from codekavach.parsing.spec import REGISTRY, UnknownLanguageError
 
@@ -230,17 +231,56 @@ def is_placeholder(node: Node) -> bool:
     return text.startswith((MV_PREFIX, VA_PREFIX)) or text == ELLIPSIS
 
 
+_STATEMENT_LANGUAGES: Final = frozenset({Language.C, Language.CPP})
+_WRAP_HEAD: Final = "void __ck_wrapper__(void) {" + chr(10)
+
+
+def _parse(text: str, language: Language) -> ParsedFile:
+    try:
+        return parse("pattern.txt", language, text, settings=Settings().parsing)
+    except (ParseUnavailableError, SourceTooLargeError) as error:
+        raise PatternSyntaxError(f"no grammar for {language.value}") from error
+
+
+def _wrap_statements(text: str) -> str:
+    """C-family patterns are statements: put them in a function body and end each line.
+
+    A bare ellipsis line and the final line get a semicolon so ``f(x)`` or ``free(p); ... p->v``
+    parse as statements; a pattern that already ends a statement is left alone.
+    """
+    lines = text.strip().splitlines()
+    fixed = [line + ";" if line.strip() == "__ckel__" else line for line in lines]
+    body = chr(10).join(fixed)
+    if not body.rstrip().endswith((";", "}")):
+        body += ";"
+    return f"{_WRAP_HEAD}{body}{chr(10)}}}{chr(10)}"
+
+
+def _wrapped_statements(root: Node) -> list[Node]:
+    for child in root.named_children:
+        if child.type == "function_definition":
+            body = child.child_by_field_name("body")
+            if body is not None:
+                return significant(body.named_children)
+    return []
+
+
 @lru_cache(maxsize=2048)
 def _compile(text: str, language: Language, grammar: str) -> CompiledPattern:
     del grammar  # part of the cache key: a grammar change must recompile
     rewritten, names = rewrite(text)
-    try:
-        parsed = parse("pattern.txt", language, rewritten, settings=Settings().parsing)
-    except (ParseUnavailableError, SourceTooLargeError) as error:
-        raise PatternSyntaxError(f"no grammar for {language.value}") from error
-    if parsed.tree is None or parsed.error_count != 0:
+    parsed = _parse(rewritten, language)
+    top: list[Node] = []
+    if parsed.tree is not None and parsed.error_count == 0:
+        top = significant(parsed.tree.root_node.named_children)
+    elif language in _STATEMENT_LANGUAGES:
+        wrapped = _wrap_statements(rewritten)
+        parsed = _parse(wrapped, language)
+        if parsed.tree is None or parsed.error_count != 0:
+            raise PatternSyntaxError("the pattern does not parse")
+        top = _wrapped_statements(parsed.tree.root_node)
+    else:
         raise PatternSyntaxError("the pattern does not parse")
-    top = significant(parsed.tree.root_node.named_children)
     if not top:
         raise PatternSyntaxError("the pattern is empty")
     roots = tuple(unwrap(item) for item in top)

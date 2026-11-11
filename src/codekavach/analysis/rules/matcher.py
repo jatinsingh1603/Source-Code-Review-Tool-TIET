@@ -57,13 +57,16 @@ from codekavach.analysis.rules.compile import (
 )
 from codekavach.analysis.rules.constraints import holds, normalised
 from codekavach.analysis.rules.dsl import PatternClause, RuleDef
-from codekavach.analysis.rules.pack import CatalogueEntry, RulePack
+from codekavach.analysis.rules.pack import CatalogueEntry, CatalogueKind, RulePack
+from codekavach.analysis.rules.resolve import chain, import_aliases, symbol_match
+from codekavach.analysis.rules.syntax import FUNCTION_TYPES, enclosing_function
 from codekavach.core.log import get_logger
 from codekavach.core.models import Language
 from codekavach.core.models.taint import TaintPath
 from codekavach.parsing.models import ParsedFile
 
-MATCHER_VERSION: Final = "1"
+MATCHER_VERSION: Final = "2"
+CALL_NODES: Final = frozenset({"call", "call_expression"})
 DEFAULT_RULE_SECONDS: Final = 2.0
 MAX_STEPS_PER_CLOCK_CHECK: Final = 512
 _TRIVIA: Final = frozenset({"comment"})
@@ -121,6 +124,8 @@ class RuleMatch:
     bindings: Mapping[str, str] = field(default_factory=dict)
     taint_path: TaintPath | None = None
     taint_unavailable: bool = False
+    properties: tuple[tuple[str, str], ...] = ()
+    partial: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,6 +146,17 @@ class FileResult:
 
 def _norm(nodes: Sequence[Node]) -> str:
     return " ".join(" ".join(normalised(node) for node in nodes).split())
+
+
+def _scope_of(node: Node) -> Node:
+    """The function ``node`` is or sits in (with its decorators), else the root of its tree."""
+    found = node if node.type in FUNCTION_TYPES else enclosing_function(node)
+    if found is not None:
+        parent = found.parent
+        return parent if parent is not None and parent.type == "decorated_definition" else found
+    while node.parent is not None:
+        node = node.parent
+    return node
 
 
 class Matcher:
@@ -164,6 +180,14 @@ class Matcher:
         self._language = Language.PYTHON
         self._stack: list[str] = []
         self._patterns: dict[tuple[str, Language], CompiledPattern] = {}
+        self._aliases: dict[str, str] = {}
+        self._prefixes: dict[
+            tuple[str, Language], tuple[dict[str, list[CatalogueEntry]], list[str]]
+        ] = {}
+        self._partial = False
+        self._props: dict[str, str] = {}
+        self._cl_partial = False
+        self._cl_props: dict[str, str] = {}
 
     @classmethod
     def for_packs(
@@ -180,7 +204,7 @@ class Matcher:
         for pack in packs:
             for catalogue in pack.catalogues:
                 language = _language(catalogue.language)
-                for entry in catalogue.entries:
+                for entry in catalogue.items():
                     if language is not None:
                         catalogues[entry.id] = (language, entry)
             for rule in pack.rules:
@@ -274,7 +298,7 @@ class Matcher:
                 return found
         return None
 
-    def match_at(self, pattern: CompiledPattern, node: Node) -> Env | None:
+    def match_at(self, pattern: CompiledPattern, node: Node, env: Env | None = None) -> Env | None:
         """Match ``pattern`` with ``node`` as its root (or, for a sequence, its first statement)."""
         if node.type != pattern.anchor_kind:
             return None
@@ -283,7 +307,7 @@ class Matcher:
                 text = node.text or b""
                 if any(word not in text for word in pattern.required):
                     return None
-            return self.match_node(pattern.root, node, {})
+            return self.match_node(pattern.root, node, env or {})
         unit = node.parent if node.parent is not None and node.parent.type in _WRAPPERS else node
         parent = unit.parent
         if parent is None:
@@ -293,20 +317,98 @@ class Matcher:
         if position is None:
             return None
         siblings = [unwrap(item) for item in siblings]
-        return self._match_sequence(pattern.items, 0, siblings, position, {}, False)
+        return self._match_sequence(pattern.items, 0, siblings, position, env or {}, False)
 
     # --- clauses and rules ----------------------------------------------------------------
 
+    def _symbol_hit(self, entry: CatalogueEntry, node: Node, language: Language) -> bool:
+        """Whether ``node`` is the code ``entry.symbol`` names; a partial match is recorded."""
+        assert entry.symbol is not None  # noqa: S101 - checked by the caller
+        target: Node | None = node
+        if node.type in CALL_NODES:
+            target = node.child_by_field_name("function")
+        while target is not None:
+            hit = symbol_match(entry.symbol, target, self._aliases, language)
+            if hit is not None:
+                self._cl_partial = self._cl_partial or hit == "partial"
+                return True
+            if entry.kind is not CatalogueKind.SOURCE:
+                return False
+            # A source is read through its members: request.args.get(...) reads request.args.
+            target = target.child_by_field_name("object")
+        return False
+
     def _catalogue_test(self, language: Language) -> Callable[[str, Node], bool]:
         def test(entry_id: str, node: Node) -> bool:
-            found = self.catalogues.get(entry_id)
-            if found is None or found[0] is not language:
+            if entry_id.endswith(".*"):
+                return self._wildcard_hit(entry_id[:-1], node, language)
+            return self._catalogue_entry(entry_id, node, language)
+
+        return test
+
+    def _wildcard_entries(
+        self, prefix: str, language: Language
+    ) -> tuple[dict[str, list[CatalogueEntry]], list[str]]:
+        """Entries under ``prefix``: symbol sinks keyed by last segment, and the other ids."""
+        cached = self._prefixes.get((prefix, language))
+        if cached is None:
+            by_last: dict[str, list[CatalogueEntry]] = {}
+            others: list[str] = []
+            for key, (entry_language, entry) in self.catalogues.items():
+                if entry_language is not language or not key.startswith(prefix):
+                    continue
+                if entry.symbol is not None and entry.kind is not CatalogueKind.SOURCE:
+                    by_last.setdefault(entry.symbol.rsplit(".", 1)[-1], []).append(entry)
+                else:
+                    others.append(key)
+            cached = self._prefixes[(prefix, language)] = (by_last, others)
+        return cached
+
+    def _wildcard_hit(self, prefix: str, node: Node, language: Language) -> bool:
+        by_last, others = self._wildcard_entries(prefix, language)
+        target = node.child_by_field_name("function") if node.type in CALL_NODES else node
+        parts = chain(target) if target is not None else None
+        if parts and any(
+            self._symbol_hit(entry, node, language) for entry in by_last.get(parts[-1], ())
+        ):
+            return True
+        return any(self._catalogue_entry(key, node, language) for key in others)
+
+    def _catalogue_entry(self, entry_id: str, node: Node, language: Language) -> bool:
+        found = self.catalogues.get(entry_id)
+        if found is None or found[0] is not language:
+            return False
+        entry = found[1]
+        if entry.symbol is not None:
+            return self._symbol_hit(entry, node, language)
+        if entry.pattern is None:
+            return False
+        try:
+            pattern = self._pattern(entry.pattern)
+        except PatternSyntaxError:
+            return False
+        return self.match_at(pattern, node) is not None
+
+    def _inadequate_test(self, language: Language) -> Callable[[str, Node], bool]:
+        """A call to a catalogued sanitiser that does not cover ``context`` (E16-03)."""
+
+        def test(context: str, node: Node) -> bool:
+            if node.type not in CALL_NODES:
                 return False
-            try:
-                pattern = compile_pattern(found[1].pattern, language)
-            except PatternSyntaxError:
+            inadequate: str | None = None
+            for found_language, entry in self.catalogues.values():
+                if found_language is not language or entry.kind is not CatalogueKind.SANITISER:
+                    continue
+                if entry.symbol is None or not self._symbol_hit(entry, node, language):
+                    continue
+                if context in entry.covers:
+                    return False
+                inadequate = entry.symbol
+            if inadequate is None:
                 return False
-            return self.match_at(pattern, node) is not None
+            self._cl_props["sanitiser.inadequate"] = inadequate
+            self._cl_props["sanitiser.required_context"] = context
+            return True
 
         return test
 
@@ -325,20 +427,33 @@ class Matcher:
                 binding.nodes,
                 rule.compiled_regexes,
                 self._catalogue_test(self._language),
+                self._inadequate_test(self._language),
             )
             if not ok:
                 return False
         return True
 
     def _clause(self, rule: RuleDef, clause: PatternClause, node: Node, shared: Env) -> Env | None:
+        env = self._clause_core(rule, clause, node, shared)
+        if env is not None and clause.function_regex is not None:
+            scope = _scope_of(node)
+            text = (scope.text or b"").decode("utf-8", errors="replace")
+            if rule.compiled_regexes[clause.function_regex].search(text) is None:
+                return None
+        return env
+
+    def _clause_core(
+        self, rule: RuleDef, clause: PatternClause, node: Node, shared: Env
+    ) -> Env | None:
         if clause.pattern is not None:
             pattern = self._pattern(clause.pattern)
-            env = self.match_at(pattern, node)
-            return (
-                env
-                if env is not None and self._constraints_hold(rule, clause, env, shared)
-                else None
-            )
+            self._cl_partial, self._cl_props = False, {}
+            env = self.match_at(pattern, node, shared)
+            if env is None or not self._constraints_hold(rule, clause, env, shared):
+                return None
+            self._partial = self._partial or self._cl_partial
+            self._props.update(self._cl_props)
+            return env
         if clause.pattern_inside is not None or clause.pattern_not_inside is not None:
             return self._inside(rule, clause, node, shared)
         if clause.pattern_regex is not None:
@@ -356,7 +471,7 @@ class Matcher:
         found: Env | None = None
         ancestor: Node | None = node
         while ancestor is not None and found is None:
-            env = self.match_at(pattern, ancestor)
+            env = self.match_at(pattern, ancestor, shared)
             if env is not None and self._constraints_hold(rule, clause, env, shared):
                 found = env
             ancestor = ancestor.parent
@@ -422,6 +537,7 @@ class Matcher:
         if parsed.tree is None:
             return FileResult(matches, failures)
         self._language = parsed.language
+        self._aliases = import_aliases(parsed.tree.root_node, parsed.language)
         self._rules = {rule.id: rule for rule in rules}
         applicable = [rule for rule in rules if parsed.language.value in rule.languages]
         index: dict[str, list[Node]] | None = None
@@ -461,12 +577,21 @@ class Matcher:
                 span = (node.start_byte, node.end_byte)
                 if span in seen:
                     continue
+                self._partial, self._props = False, {}
                 env = self._at(rule, node)
                 if env is not None:
                     seen.add(span)
                     bindings = {name: value.text for name, value in env.items()}
                     yield RuleMatch(
-                        rule, node.start_byte, node.end_byte, node.type, bindings, None, unavailable
+                        rule,
+                        node.start_byte,
+                        node.end_byte,
+                        node.type,
+                        bindings,
+                        None,
+                        unavailable,
+                        tuple(sorted(self._props.items())),
+                        self._partial,
                     )
         if (
             rule.match.any
