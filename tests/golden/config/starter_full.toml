@@ -87,6 +87,19 @@ name = "payments-api"
 #~ Largest number of AST nodes a parsed file may have.
 # max_node_count = 2000000
 
+#~ Limits of the taint engine's lowering.
+[taint]
+#~ Longest attribute or index path tracked as one place; longer paths are cut.
+# max_access_path = 3
+#~ Most intermediate nodes in one function; larger functions are skipped.
+# max_function_nodes = 20000
+#~ Largest number of basic blocks in one function; larger ones are skipped.
+# max_blocks = 5000
+#~ Time limit for lowering one file, in seconds.
+# timeout_seconds = 10.0
+#~ Record why each taint step was taken, for debugging a missed finding.
+# explain = false
+
 #~ What may leave the machine. L3 sends a redacted, pseudonymised minimal slice.
 #~ What may leave the machine.
 [privacy]

@@ -64,6 +64,13 @@
       "max_source_bytes": 2000000,
       "max_node_count": 2000000
     },
+    "taint": {
+      "max_access_path": 3,
+      "max_function_nodes": 20000,
+      "max_blocks": 5000,
+      "timeout_seconds": 10.0,
+      "explain": false
+    },
     "privacy": {
       "level": "L4",
       "min_level": "L1",
@@ -1183,6 +1190,36 @@
       "contributors": []
     },
     "scan.timeout_seconds": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "taint.explain": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "taint.max_access_path": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "taint.max_blocks": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "taint.max_function_nodes": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "taint.timeout_seconds": {
       "layer": "default",
       "source": null,
       "line": null,

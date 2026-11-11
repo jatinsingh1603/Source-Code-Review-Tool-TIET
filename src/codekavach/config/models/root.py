@@ -20,6 +20,7 @@ from codekavach.config.models.privacy import PrivacySettings
 from codekavach.config.models.project import ProjectSettings
 from codekavach.config.models.reporting import ReportingSettings
 from codekavach.config.models.scan import ScanSettings
+from codekavach.config.models.taint import TaintSettings
 
 
 class Settings(BaseSettings):
@@ -55,6 +56,9 @@ class Settings(BaseSettings):
     )
     parsing: ParsingSettings = Field(
         default_factory=ParsingSettings, description="Resource guards applied while parsing."
+    )
+    taint: TaintSettings = Field(
+        default_factory=TaintSettings, description="Limits of the taint engine's lowering."
     )
     privacy: PrivacySettings = Field(
         default_factory=PrivacySettings, description="What may leave the machine."

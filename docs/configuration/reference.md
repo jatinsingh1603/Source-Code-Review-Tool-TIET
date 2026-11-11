@@ -84,6 +84,18 @@ Resource guards applied while parsing.
 | `parsing.max_source_bytes` | int | `2000000` | `CODEKAVACH_PARSING__MAX_SOURCE_BYTES` |  | Largest source file, in bytes, that is parsed. |
 | `parsing.max_node_count` | int | `2000000` | `CODEKAVACH_PARSING__MAX_NODE_COUNT` |  | Largest number of AST nodes a parsed file may have. |
 
+## `[taint]`
+
+Limits of the taint engine's lowering.
+
+| Key | Type | Default | Environment variable | Markers | Description |
+|-----|------|---------|----------------------|---------|-------------|
+| `taint.max_access_path` | int | `3` | `CODEKAVACH_TAINT__MAX_ACCESS_PATH` |  | Longest attribute or index path tracked as one place; longer paths are cut. |
+| `taint.max_function_nodes` | int | `20000` | `CODEKAVACH_TAINT__MAX_FUNCTION_NODES` |  | Most intermediate nodes in one function; larger functions are skipped. |
+| `taint.max_blocks` | int | `5000` | `CODEKAVACH_TAINT__MAX_BLOCKS` |  | Largest number of basic blocks in one function; larger ones are skipped. |
+| `taint.timeout_seconds` | float | `10.0` | `CODEKAVACH_TAINT__TIMEOUT_SECONDS` | volatile | Time limit for lowering one file, in seconds. |
+| `taint.explain` | bool | `false` | `CODEKAVACH_TAINT__EXPLAIN` |  | Record why each taint step was taken, for debugging a missed finding. |
+
 ## `[privacy]`
 
 What may leave the machine.

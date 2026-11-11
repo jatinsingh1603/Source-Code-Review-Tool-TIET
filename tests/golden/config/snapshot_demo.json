@@ -901,6 +901,36 @@
       "layer": "default",
       "line": null,
       "source": null
+    },
+    "taint.explain": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "taint.max_access_path": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "taint.max_blocks": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "taint.max_function_nodes": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "taint.timeout_seconds": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
     }
   },
   "profile": "demo",
@@ -1156,6 +1186,13 @@
       "stage_timeout_seconds": 1800,
       "stage_timeouts": {},
       "timeout_seconds": 3600
+    },
+    "taint": {
+      "explain": false,
+      "max_access_path": 3,
+      "max_blocks": 5000,
+      "max_function_nodes": 20000,
+      "timeout_seconds": 10.0
     }
   },
   "warnings": []

@@ -1052,6 +1052,10 @@
         "scan": {
           "$ref": "#/$defs/ScanSettings",
           "description": "What to scan and how."
+        },
+        "taint": {
+          "$ref": "#/$defs/TaintSettings",
+          "description": "Limits of the taint engine's lowering."
         }
       },
       "title": "PartialSettings",
@@ -1875,6 +1879,53 @@
       "title": "SliceSettings",
       "type": "object"
     },
+    "TaintSettings": {
+      "additionalProperties": false,
+      "description": "Resource limits and diagnostics of the taint engine.",
+      "properties": {
+        "explain": {
+          "default": false,
+          "description": "Record why each taint step was taken, for debugging a missed finding.",
+          "title": "Explain",
+          "type": "boolean"
+        },
+        "max_access_path": {
+          "default": 3,
+          "description": "Longest attribute or index path tracked as one place; longer paths are cut.",
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Max Access Path",
+          "type": "integer"
+        },
+        "max_blocks": {
+          "default": 5000,
+          "description": "Largest number of basic blocks in one function; larger ones are skipped.",
+          "maximum": 1000000,
+          "minimum": 10,
+          "title": "Max Blocks",
+          "type": "integer"
+        },
+        "max_function_nodes": {
+          "default": 20000,
+          "description": "Most intermediate nodes in one function; larger functions are skipped.",
+          "maximum": 5000000,
+          "minimum": 100,
+          "title": "Max Function Nodes",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 10.0,
+          "description": "Time limit for lowering one file, in seconds.",
+          "maximum": 300,
+          "minimum": 0,
+          "title": "Timeout Seconds",
+          "type": "number",
+          "x-ck-volatile": true
+        }
+      },
+      "title": "TaintSettings",
+      "type": "object"
+    },
     "TaskName": {
       "description": "The LLM tasks a scan may run.",
       "enum": [
@@ -2031,6 +2082,10 @@
     "scan": {
       "$ref": "#/$defs/ScanSettings",
       "description": "What to scan and how."
+    },
+    "taint": {
+      "$ref": "#/$defs/TaintSettings",
+      "description": "Limits of the taint engine's lowering."
     }
   },
   "title": "CodeKavach configuration",
