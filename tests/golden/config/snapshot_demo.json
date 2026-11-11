@@ -1,7 +1,7 @@
 {
   "codekavach_version": "0.0.0-test",
   "created_at": "2026-10-01T09:30:00Z",
-  "fingerprint": "b1a5cbaa56231291b07ee2d0682222f910045e280cf736638e72e696158b57be",
+  "fingerprint": "421284be2fe4adf2df00e2919c834fae2a0f055a809e6bf2bd36e9876e98d1e4",
   "org_policies": [],
   "origins": {
     "config_version": {
@@ -65,6 +65,54 @@
       "source": null
     },
     "engines.rule_paths": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.sandbox.container_runtime": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.sandbox.cpu_seconds": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.sandbox.cpus": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.sandbox.kill_grace_seconds": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.sandbox.max_output_bytes": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.sandbox.memory_mb": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.sandbox.mode": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "engines.sandbox.pids_limit": {
       "contributors": [],
       "layer": "default",
       "line": null,
@@ -875,6 +923,16 @@
         "default"
       ],
       "rule_paths": [],
+      "sandbox": {
+        "container_runtime": "auto",
+        "cpu_seconds": 0,
+        "cpus": 2.0,
+        "kill_grace_seconds": 2.0,
+        "max_output_bytes": 67108864,
+        "memory_mb": 4096,
+        "mode": "auto",
+        "pids_limit": 512
+      },
       "timeout_seconds": 600
     },
     "ingest": {

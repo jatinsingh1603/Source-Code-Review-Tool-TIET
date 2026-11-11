@@ -52,6 +52,7 @@ RESTRICTED_PATTERNS: tuple[str, ...] = (
     "engines.options.*.executable",
     "engines.options.*.args",
     "engines.options.*.env_passthrough",
+    "engines.sandbox.**",
     "reporting.template_dir",
     "integrations.**",
     "privacy.vault.**",

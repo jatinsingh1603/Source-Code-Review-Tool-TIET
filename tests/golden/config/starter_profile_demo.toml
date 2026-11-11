@@ -319,6 +319,25 @@ level = "L3"
 #~ Native infrastructure-as-code checks.
 # iac = true
 
+#~ How engine processes are confined.
+[engines.sandbox]
+#~ Where engines run: a limited child process, a container with no network, or auto (a container when one is available and the engine has a pinned image).
+# mode = "auto"
+#~ Which container runtime to use when engines run in containers.
+# container_runtime = "auto"
+#~ Most bytes kept from an engine's stdout, stderr or output file.
+# max_output_bytes = 67108864
+#~ Memory limit per engine process in MiB; 0 means no limit.
+# memory_mb = 4096
+#~ CPU-time limit per engine process in seconds; 0 means no limit.
+# cpu_seconds = 0
+#~ Most processes inside an engine container.
+# pids_limit = 512
+#~ CPUs an engine container may use.
+# cpus = 2.0
+#~ Seconds between asking an engine to stop and killing its process group.
+# kill_grace_seconds = 2.0
+
 #~ External systems that receive findings; all are off by default.
 #~ External systems that receive findings.
 [integrations]

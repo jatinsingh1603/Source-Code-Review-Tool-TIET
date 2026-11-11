@@ -15,7 +15,7 @@ engine id is accepted here; E14 reports unknown ones.
 
 import re
 from pathlib import Path
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import AfterValidator, BeforeValidator, Field, field_validator, model_validator
 
@@ -34,6 +34,8 @@ MIN_TIMEOUT_SECONDS = 10
 MAX_TIMEOUT_SECONDS = 86_400
 MAX_ARGS = 64
 MAX_ARG_LENGTH = 1024
+MIN_OUTPUT_BYTES = 1024 * 1024
+MAX_OUTPUT_BYTES = 1024 * 1024 * 1024
 BOTH_ENABLED_AND_DISABLED = "[CK-CFG-035]"
 _ENGINE_ID = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
@@ -117,6 +119,64 @@ class EngineOptions(SectionModel):
         return value
 
 
+class EngineSandboxSettings(SectionModel):
+    """How external engine processes are confined (ADR-0002, E14-01).
+
+    Every key here changes what an engine may do, so every key is restricted: an untrusted project
+    file cannot loosen the sandbox (E03-25).
+    """
+
+    mode: Literal["subprocess", "container", "auto"] = Field(
+        default="auto",
+        description=(
+            "Where engines run: a limited child process, a container with no network, or "
+            "auto (a container when one is available and the engine has a pinned image)."
+        ),
+        json_schema_extra=restricted(),
+    )
+    container_runtime: Literal["auto", "docker", "podman"] = Field(
+        default="auto",
+        description="Which container runtime to use when engines run in containers.",
+        json_schema_extra=restricted(),
+    )
+    max_output_bytes: Annotated[
+        int, in_range(MIN_OUTPUT_BYTES, MAX_OUTPUT_BYTES, "engines sandbox max_output_bytes")
+    ] = Field(
+        default=64 * 1024 * 1024,
+        description="Most bytes kept from an engine's stdout, stderr or output file.",
+        json_schema_extra={**restricted(), **bounds(MIN_OUTPUT_BYTES, MAX_OUTPUT_BYTES)},
+    )
+    memory_mb: Annotated[int, in_range(0, 262_144, "engines sandbox memory_mb")] = Field(
+        default=4096,
+        description="Memory limit per engine process in MiB; 0 means no limit.",
+        json_schema_extra={**restricted(), **bounds(0, 262_144)},
+    )
+    cpu_seconds: Annotated[int, in_range(0, 86_400, "engines sandbox cpu_seconds")] = Field(
+        default=0,
+        description="CPU-time limit per engine process in seconds; 0 means no limit.",
+        json_schema_extra={**restricted(), **bounds(0, 86_400)},
+    )
+    pids_limit: Annotated[int, in_range(16, 65_536, "engines sandbox pids_limit")] = Field(
+        default=512,
+        description="Most processes inside an engine container.",
+        json_schema_extra={**restricted(), **bounds(16, 65_536)},
+    )
+    cpus: float = Field(
+        default=2.0,
+        ge=0.1,
+        le=256,
+        description="CPUs an engine container may use.",
+        json_schema_extra=restricted(),
+    )
+    kill_grace_seconds: float = Field(
+        default=2.0,
+        ge=0,
+        le=60,
+        description="Seconds between asking an engine to stop and killing its process group.",
+        json_schema_extra=restricted(),
+    )
+
+
 class EnginesSettings(SectionModel):
     """Which external engines and native analysers run, and how."""
 
@@ -144,6 +204,10 @@ class EnginesSettings(SectionModel):
     native: NativeEngines = Field(default_factory=NativeEngines, description="Built-in analysers.")
     options: dict[EngineId, EngineOptions] = Field(
         default_factory=dict, description="Per-engine overrides keyed by engine id."
+    )
+    sandbox: EngineSandboxSettings = Field(
+        default_factory=EngineSandboxSettings,
+        description="How engine processes are confined.",
     )
 
     @model_validator(mode="after")

@@ -287,6 +287,92 @@
       "title": "EngineOptions",
       "type": "object"
     },
+    "EngineSandboxSettings": {
+      "additionalProperties": false,
+      "description": "How external engine processes are confined (ADR-0002, E14-01).\n\nEvery key here changes what an engine may do, so every key is restricted: an untrusted project\nfile cannot loosen the sandbox (E03-25).",
+      "properties": {
+        "container_runtime": {
+          "default": "auto",
+          "description": "Which container runtime to use when engines run in containers.",
+          "enum": [
+            "auto",
+            "docker",
+            "podman"
+          ],
+          "title": "Container Runtime",
+          "type": "string",
+          "x-ck-restricted": true
+        },
+        "cpu_seconds": {
+          "default": 0,
+          "description": "CPU-time limit per engine process in seconds; 0 means no limit.",
+          "maximum": 86400,
+          "minimum": 0,
+          "title": "Cpu Seconds",
+          "type": "integer",
+          "x-ck-restricted": true
+        },
+        "cpus": {
+          "default": 2.0,
+          "description": "CPUs an engine container may use.",
+          "maximum": 256,
+          "minimum": 0.1,
+          "title": "Cpus",
+          "type": "number",
+          "x-ck-restricted": true
+        },
+        "kill_grace_seconds": {
+          "default": 2.0,
+          "description": "Seconds between asking an engine to stop and killing its process group.",
+          "maximum": 60,
+          "minimum": 0,
+          "title": "Kill Grace Seconds",
+          "type": "number",
+          "x-ck-restricted": true
+        },
+        "max_output_bytes": {
+          "default": 67108864,
+          "description": "Most bytes kept from an engine's stdout, stderr or output file.",
+          "maximum": 1073741824,
+          "minimum": 1048576,
+          "title": "Max Output Bytes",
+          "type": "integer",
+          "x-ck-restricted": true
+        },
+        "memory_mb": {
+          "default": 4096,
+          "description": "Memory limit per engine process in MiB; 0 means no limit.",
+          "maximum": 262144,
+          "minimum": 0,
+          "title": "Memory Mb",
+          "type": "integer",
+          "x-ck-restricted": true
+        },
+        "mode": {
+          "default": "auto",
+          "description": "Where engines run: a limited child process, a container with no network, or auto (a container when one is available and the engine has a pinned image).",
+          "enum": [
+            "subprocess",
+            "container",
+            "auto"
+          ],
+          "title": "Mode",
+          "type": "string",
+          "x-ck-restricted": true
+        },
+        "pids_limit": {
+          "default": 512,
+          "description": "Most processes inside an engine container.",
+          "maximum": 65536,
+          "minimum": 16,
+          "title": "Pids Limit",
+          "type": "integer",
+          "x-ck-restricted": true
+        }
+      },
+      "title": "EngineSandboxSettings",
+      "type": "object"
+    },
     "EnginesSettings": {
       "additionalProperties": false,
       "description": "Which external engines and native analysers run, and how.",
@@ -335,6 +421,10 @@
           },
           "title": "Rule Paths",
           "type": "array"
+        },
+        "sandbox": {
+          "$ref": "#/$defs/EngineSandboxSettings",
+          "description": "How engine processes are confined."
         },
         "timeout_seconds": {
           "default": 600,

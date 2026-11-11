@@ -15,6 +15,16 @@
       "default"
     ],
     "rule_paths": [],
+    "sandbox": {
+      "container_runtime": "auto",
+      "cpu_seconds": 0,
+      "cpus": 2.0,
+      "kill_grace_seconds": 2.0,
+      "max_output_bytes": 67108864,
+      "memory_mb": 4096,
+      "mode": "auto",
+      "pids_limit": 512
+    },
     "timeout_seconds": 600
   },
   "ingest": {

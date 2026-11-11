@@ -207,6 +207,14 @@ Which analysers run and how.
 | `engines.options.*.env_passthrough` | list[str] | `[]` |  | restricted | Names of environment variables the sandboxed engine may see. |
 | `engines.options.*.timeout_seconds` | int \| unset | unset |  | volatile | Time limit for this engine in seconds. |
 | `engines.options.*.options` | table | `{}` |  |  | Engine-specific options passed to its adapter. |
+| `engines.sandbox.mode` | subprocess \| container \| auto | `"auto"` | `CODEKAVACH_ENGINES__SANDBOX__MODE` | restricted | Where engines run: a limited child process, a container with no network, or auto (a container when one is available and the engine has a pinned image). |
+| `engines.sandbox.container_runtime` | auto \| docker \| podman | `"auto"` | `CODEKAVACH_ENGINES__SANDBOX__CONTAINER_RUNTIME` | restricted | Which container runtime to use when engines run in containers. |
+| `engines.sandbox.max_output_bytes` | int | `67108864` | `CODEKAVACH_ENGINES__SANDBOX__MAX_OUTPUT_BYTES` | restricted | Most bytes kept from an engine's stdout, stderr or output file. |
+| `engines.sandbox.memory_mb` | int | `4096` | `CODEKAVACH_ENGINES__SANDBOX__MEMORY_MB` | restricted | Memory limit per engine process in MiB; 0 means no limit. |
+| `engines.sandbox.cpu_seconds` | int | `0` | `CODEKAVACH_ENGINES__SANDBOX__CPU_SECONDS` | restricted | CPU-time limit per engine process in seconds; 0 means no limit. |
+| `engines.sandbox.pids_limit` | int | `512` | `CODEKAVACH_ENGINES__SANDBOX__PIDS_LIMIT` | restricted | Most processes inside an engine container. |
+| `engines.sandbox.cpus` | float | `2.0` | `CODEKAVACH_ENGINES__SANDBOX__CPUS` | restricted | CPUs an engine container may use. |
+| `engines.sandbox.kill_grace_seconds` | float | `2.0` | `CODEKAVACH_ENGINES__SANDBOX__KILL_GRACE_SECONDS` | restricted | Seconds between asking an engine to stop and killing its process group. |
 
 ## `[integrations]`
 

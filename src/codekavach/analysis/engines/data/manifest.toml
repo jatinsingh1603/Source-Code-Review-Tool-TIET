@@ -1,0 +1,28 @@
+# Pinned-version manifest of the external engines (E14-01).
+#
+# One table per engine id, [engines.<id>]. Rows are added by the epic that ships the adapter
+# (E15 pattern engines, E19 dependency scanners, E20 infrastructure engines), together with the
+# adapter's conformance case. A row is data, not a licence opinion: the licence verdict per
+# engine is a human decision recorded in docs/research/INSIGHTS.md.
+#
+# Required keys:  pinned_version, min_version, spdx_licence, distribution, hosted_allowed,
+#                 scans_proprietary_code, install
+# Optional keys:  image (a reference pinned by digest, name@sha256:<64 hex>), signature,
+#                 weight (1 to 16), timeout_seconds, notes,
+#                 telemetry_env (a table of documented opt-out variables),
+#                 telemetry_args (an array of documented opt-out flags),
+#                 no_documented_opt_out (true when the engine documents none; then both
+#                 telemetry_env and telemetry_args must be empty and the adapter must pass the
+#                 engine's explicit disable flag in its own argv).
+#
+# Example (not a shipped row):
+#
+# [engines.example]
+# pinned_version = "1.2.3"
+# min_version = "1.2.0"
+# spdx_licence = "MIT"
+# distribution = "client_installed"     # bundled | client_installed | evaluation_only
+# hosted_allowed = true
+# scans_proprietary_code = true
+# install = "pipx install example-engine"
+# telemetry_env = { EXAMPLE_NO_TELEMETRY = "1" }

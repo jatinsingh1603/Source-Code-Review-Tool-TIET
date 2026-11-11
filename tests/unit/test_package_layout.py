@@ -84,6 +84,17 @@ EXPECTED_PACKAGES: frozenset[str] = frozenset(
 EXPECTED_MODULES: frozenset[str] = frozenset(
     {
         "codekavach.analysis.aggregate.stage",
+        "codekavach.analysis.engines.base",
+        "codekavach.analysis.engines.doctor",
+        "codekavach.analysis.engines.errors",
+        "codekavach.analysis.engines.install",
+        "codekavach.analysis.engines.manifest",
+        "codekavach.analysis.engines.registry",
+        "codekavach.analysis.engines.runner",
+        "codekavach.analysis.engines.sandbox",
+        "codekavach.analysis.engines.scheduler",
+        "codekavach.analysis.engines.stage",
+        "codekavach.analysis.engines.worktree",
         "codekavach.analysis.rules.base",
         "codekavach.analysis.rules.builtin",
         "codekavach.analysis.rules.engine",

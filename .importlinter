@@ -89,6 +89,25 @@ ignore_imports =
     codekavach.privacy.vault.kms -> httpx
 unmatched_ignore_imports_alerting = none
 
+[importlinter:contract:adr0002-no-engine-imports]
+name = ADR-0002 no module imports a third-party analysis engine as a library
+type = forbidden
+source_modules =
+    codekavach
+forbidden_modules =
+    semgrep
+    opengrep
+    bandit
+    pip_audit
+    safety
+    flawfinder
+    checkov
+    cfn_lint
+    njsscan
+    detect_secrets
+    pylint
+unmatched_ignore_imports_alerting = none
+
 [importlinter:contract:vault-network-only-in-kms]
 name = Vault network client only in privacy.vault.kms (ADR-0003 exception)
 type = forbidden

@@ -54,6 +54,14 @@ VIOLATIONS = {
         },
         "i2-llm-no-raw-code",
     ),
+    "engine-adapter-imports-bandit": (
+        {"codekavach/analysis/engines/bad.py": "import bandit\n"},
+        "adr0002-no-engine-imports",
+    ),
+    "engine-adapter-imports-semgrep": (
+        {"codekavach/analysis/engines/bad.py": "from semgrep.semgrep_main import main\n"},
+        "adr0002-no-engine-imports",
+    ),
     "i1-report-httpx": ({"codekavach/report/render/bad.py": "import httpx\n"}, "i1-single-egress"),
     "i1-sca-requests": (
         {"codekavach/analysis/sca/bad.py": "import requests\n"},
