@@ -469,5 +469,15 @@
       "skipped_reason": null
     }
   ],
+  "aliases": [
+    [
+      "os",
+      "os"
+    ],
+    [
+      "request",
+      "flask.request"
+    ]
+  ],
   "degraded_reason": null
 }

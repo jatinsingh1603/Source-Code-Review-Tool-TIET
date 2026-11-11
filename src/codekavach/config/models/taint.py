@@ -53,6 +53,21 @@ class TaintSettings(SectionModel):
             **bounds(int(MIN_TIMEOUT_SECONDS), int(MAX_TIMEOUT_SECONDS)),
         },
     )
+    max_path_steps: Annotated[int, in_range(4, 1_000, "taint.max_path_steps")] = Field(
+        default=64,
+        description="Most steps in one reported taint path; longer paths are trimmed.",
+        json_schema_extra=bounds(4, 1_000),
+    )
+    max_paths_per_sink: Annotated[int, in_range(1, 1_000, "taint.max_paths_per_sink")] = Field(
+        default=10,
+        description="Most paths reported for one sink; the shortest are kept.",
+        json_schema_extra=bounds(1, 1_000),
+    )
+    loop_iterations: Annotated[int, in_range(1, 20, "taint.loop_iterations")] = Field(
+        default=3,
+        description="Extra passes over a function with a loop before taint propagation stops.",
+        json_schema_extra=bounds(1, 20),
+    )
     explain: bool = Field(
         default=False,
         description="Record why each taint step was taken, for debugging a missed finding.",

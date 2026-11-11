@@ -69,6 +69,9 @@
       "max_function_nodes": 20000,
       "max_blocks": 5000,
       "timeout_seconds": 10.0,
+      "max_path_steps": 64,
+      "max_paths_per_sink": 10,
+      "loop_iterations": 3,
       "explain": false
     },
     "privacy": {
@@ -1201,6 +1204,12 @@
       "line": null,
       "contributors": []
     },
+    "taint.loop_iterations": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
     "taint.max_access_path": {
       "layer": "default",
       "source": null,
@@ -1214,6 +1223,18 @@
       "contributors": []
     },
     "taint.max_function_nodes": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "taint.max_path_steps": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "taint.max_paths_per_sink": {
       "layer": "default",
       "source": null,
       "line": null,

@@ -46,6 +46,7 @@ eslint-security = "codekavach.analysis.engines.adapters.eslint_security:EslintSe
 ingest = "codekavach.ingest.stage:IngestStage"
 parse = "codekavach.parsing.stage:ParseStage"
 analyse-rules = "codekavach.analysis.rules.stage:AnalyseRulesStage"
+analyse-taint = "codekavach.analysis.taint.stage:AnalyseTaintStage"
 analyse-engines = "codekavach.analysis.engines.stage:AnalyseEnginesStage"
 aggregate = "codekavach.analysis.aggregate.stage:AggregateStage"
 privacy-prepare = "codekavach.privacy.stages:PrivacyPrepareStage"

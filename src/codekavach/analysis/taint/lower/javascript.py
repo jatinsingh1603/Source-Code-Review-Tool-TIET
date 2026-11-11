@@ -111,6 +111,7 @@ class JavaScriptLowering:
             language=self._language.value,
             lowering_version=VERSION,
             functions=tuple(functions),
+            aliases=tuple(sorted(ctx.aliases.items())),
             degraded_reason="syntax errors in the file" if root.has_error else None,
         )
 

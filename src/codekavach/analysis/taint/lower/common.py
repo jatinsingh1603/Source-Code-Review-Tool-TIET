@@ -73,22 +73,13 @@ class Context:
         self.deadline = time.monotonic() + self.settings.timeout_seconds
 
     def loc(self, node: Node) -> Location:
-        """The location of ``node``; built without re-validating a path the parser checked."""
+        """The location of ``node``, built once per span."""
         key = (node.start_byte, node.end_byte)
         found = self._locations.get(key)
         if found is None:
             index = self.parsed.line_index
             assert index is not None  # noqa: S101 - a parsed tree always has its line index
-            start_line, start_col = index.position(node.start_byte)
-            end_line, end_col = index.position(node.end_byte)
-            found = Location.model_construct(
-                path=self.parsed.path,
-                start_line=start_line,
-                end_line=end_line,
-                start_col=start_col,
-                end_col=end_col,
-                symbol=None,
-            )
+            found = index.location(self.parsed.path, node.start_byte, node.end_byte)
             self._locations[key] = found
         return found
 

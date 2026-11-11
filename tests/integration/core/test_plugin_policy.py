@@ -40,6 +40,7 @@ BUILTIN_STAGES = frozenset(
         "ingest",
         "parse",
         "analyse-rules",
+        "analyse-taint",
         "analyse-engines",
         "aggregate",
         "privacy-prepare",

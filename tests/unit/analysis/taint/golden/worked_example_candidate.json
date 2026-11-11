@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "rule_id": "taint.http_param.sql",
+  "engine": "codekavach-taint",
+  "cwe": [
+    89
+  ],
+  "locations": [
+    {
+      "path": "services/api/transfer.py",
+      "start_line": 7,
+      "end_line": 7,
+      "start_col": 5,
+      "end_col": 19,
+      "symbol": "transfer"
+    }
+  ],
+  "taint_path": {
+    "steps": [
+      {
+        "location": {
+          "path": "services/api/transfer.py",
+          "start_line": 5,
+          "end_line": 5,
+          "start_col": 10,
+          "end_col": 32,
+          "symbol": "transfer"
+        },
+        "role": "source",
+        "note": "source request.args.get"
+      },
+      {
+        "location": {
+          "path": "services/api/transfer.py",
+          "start_line": 6,
+          "end_line": 6,
+          "start_col": 5,
+          "end_col": 51,
+          "symbol": "transfer"
+        },
+        "role": "propagator",
+        "note": "concat"
+      },
+      {
+        "location": {
+          "path": "services/api/transfer.py",
+          "start_line": 7,
+          "end_line": 7,
+          "start_col": 5,
+          "end_col": 19,
+          "symbol": "transfer"
+        },
+        "role": "sink",
+        "note": "cur.execute arg 0"
+      }
+    ]
+  },
+  "engine_severity": "high",
+  "fingerprint": "ckfp1:659fdfa0c188cbb1e78b8d3ac2396d10",
+  "kind": "vulnerability",
+  "language": "python",
+  "message": "Data from a http_param source reaches a sql sink (cur.execute)",
+  "engine_version": null,
+  "engine_confidence": "medium",
+  "properties": [
+    [
+      "taint.sink",
+      "python.sink.sql.cursor-execute"
+    ],
+    [
+      "taint.source",
+      "python.flask.request-args"
+    ],
+    [
+      "taint.sink_match",
+      "method"
+    ]
+  ]
+}

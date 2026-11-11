@@ -232,6 +232,7 @@ class IRModule(_IRModel):
     language: str
     lowering_version: str
     functions: tuple[IRFunction, ...] = ()
+    aliases: tuple[tuple[str, str], ...] = ()
     degraded_reason: str | None = None
 
     def function(self, qualname: str) -> IRFunction | None:

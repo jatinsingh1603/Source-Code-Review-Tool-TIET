@@ -1889,6 +1889,14 @@
           "title": "Explain",
           "type": "boolean"
         },
+        "loop_iterations": {
+          "default": 3,
+          "description": "Extra passes over a function with a loop before taint propagation stops.",
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Loop Iterations",
+          "type": "integer"
+        },
         "max_access_path": {
           "default": 3,
           "description": "Longest attribute or index path tracked as one place; longer paths are cut.",
@@ -1911,6 +1919,22 @@
           "maximum": 5000000,
           "minimum": 100,
           "title": "Max Function Nodes",
+          "type": "integer"
+        },
+        "max_path_steps": {
+          "default": 64,
+          "description": "Most steps in one reported taint path; longer paths are trimmed.",
+          "maximum": 1000,
+          "minimum": 4,
+          "title": "Max Path Steps",
+          "type": "integer"
+        },
+        "max_paths_per_sink": {
+          "default": 10,
+          "description": "Most paths reported for one sink; the shortest are kept.",
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Max Paths Per Sink",
           "type": "integer"
         },
         "timeout_seconds": {

@@ -94,6 +94,9 @@ Limits of the taint engine's lowering.
 | `taint.max_function_nodes` | int | `20000` | `CODEKAVACH_TAINT__MAX_FUNCTION_NODES` |  | Most intermediate nodes in one function; larger functions are skipped. |
 | `taint.max_blocks` | int | `5000` | `CODEKAVACH_TAINT__MAX_BLOCKS` |  | Largest number of basic blocks in one function; larger ones are skipped. |
 | `taint.timeout_seconds` | float | `10.0` | `CODEKAVACH_TAINT__TIMEOUT_SECONDS` | volatile | Time limit for lowering one file, in seconds. |
+| `taint.max_path_steps` | int | `64` | `CODEKAVACH_TAINT__MAX_PATH_STEPS` |  | Most steps in one reported taint path; longer paths are trimmed. |
+| `taint.max_paths_per_sink` | int | `10` | `CODEKAVACH_TAINT__MAX_PATHS_PER_SINK` |  | Most paths reported for one sink; the shortest are kept. |
+| `taint.loop_iterations` | int | `3` | `CODEKAVACH_TAINT__LOOP_ITERATIONS` |  | Extra passes over a function with a loop before taint propagation stops. |
 | `taint.explain` | bool | `false` | `CODEKAVACH_TAINT__EXPLAIN` |  | Record why each taint step was taken, for debugging a missed finding. |
 
 ## `[privacy]`

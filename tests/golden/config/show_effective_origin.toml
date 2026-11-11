@@ -68,6 +68,9 @@ max_access_path = 3       # default
 max_function_nodes = 20000  # default
 max_blocks = 5000         # default
 timeout_seconds = 10.0    # default
+max_path_steps = 64       # default
+max_paths_per_sink = 10   # default
+loop_iterations = 3       # default
 explain = false           # default
 
 [privacy]
