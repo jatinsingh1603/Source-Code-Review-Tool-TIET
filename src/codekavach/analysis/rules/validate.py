@@ -49,6 +49,7 @@ class RuleCode(StrEnum):
     LICENCE_MISMATCH = "CK-RULE-012"
     UNKNOWN_REF = "CK-RULE-013"
     BAD_CONSTRAINT = "CK-RULE-014"
+    REF_CYCLE = "CK-RULE-015"
     FILE_UNUSABLE = "CK-RULE-100"
 
 
@@ -130,8 +131,14 @@ def validate_rule(
     *,
     catalogue_ids: Collection[str] | None = None,
     licence_dir: str | None = None,
+    check_patterns: bool = False,
 ) -> list[RuleIssue]:
-    """Every semantic problem of ``rule``; ``catalogue_ids=None`` skips the catalogue checks."""
+    """Every semantic problem of ``rule``; ``catalogue_ids=None`` skips the catalogue checks.
+
+    ``check_patterns`` also parses every pattern with the grammar of each declared language
+    (``CK-RULE-011``). It is off by default because parsing costs far more than the other checks;
+    ``codekavach rules validate`` and ``rules test`` turn it on.
+    """
     found = _Issues(rule.id)
     if not rule.languages or any(name not in LANGUAGES for name in rule.languages):
         found.add(RuleCode.UNKNOWN_LANGUAGE, "languages must name known languages")
@@ -152,9 +159,52 @@ def validate_rule(
         found.add(RuleCode.MISSING_CWE, "metadata.cwe needs at least one weakness")
     elif any(number in PILLARS or number in TOO_BROAD for number in cwe):
         found.add(RuleCode.BAD_CWE, "metadata.cwe names a Pillar or CWE-20")
+    if check_patterns:
+        _check_patterns(rule, found)
     if licence_dir is not None and rule.metadata.licence.lower() != licence_dir.lower():
         found.add(RuleCode.LICENCE_MISMATCH, "metadata.licence differs from the licence directory")
     return found.items
+
+
+def _check_patterns(rule: RuleDef, found: _Issues) -> None:
+    # Imported here: only validation with check_patterns needs the parsers loaded.
+    from codekavach.analysis.rules.compile import (  # noqa: PLC0415
+        PatternSyntaxError,
+        compile_pattern,
+    )
+    from codekavach.core.models import Language  # noqa: PLC0415
+    from codekavach.parsing.loader import grammar_available  # noqa: PLC0415
+
+    for name in rule.languages:
+        try:
+            language = Language(name)
+        except ValueError:
+            continue  # CK-RULE-001 already says so
+        if not grammar_available(language):
+            continue  # nothing to parse with here; the rule is checked where the grammar is
+        for pattern in rule.patterns:
+            try:
+                compile_pattern(pattern, language)
+            except PatternSyntaxError:
+                found.add(RuleCode.PATTERN_PARSE, f"a pattern does not parse as {name}")
+
+
+def _ref_cycles(rules: list[RuleDef]) -> list[str]:
+    """Ids of the rules that take part in a ``ref`` cycle."""
+    edges = {rule.id: [c.ref for c in rule.match.clauses if c.ref is not None] for rule in rules}
+    cyclic: list[str] = []
+    for start, targets in edges.items():
+        stack, seen = list(targets), set()
+        while stack:
+            current = stack.pop()
+            if current == start:
+                cyclic.append(start)
+                break
+            if current in seen or current not in edges:
+                continue
+            seen.add(current)
+            stack.extend(edges[current])
+    return cyclic
 
 
 def _check_clauses(rule: RuleDef, found: _Issues) -> None:
@@ -201,8 +251,9 @@ def validate_rules(
     *,
     catalogue_ids: Collection[str] | None = None,
     licence_dir: str | None = None,
+    check_patterns: bool = False,
 ) -> list[RuleIssue]:
-    """Validate a pack's rules, plus the pack-level checks: duplicate ids and unknown ``ref``."""
+    """Validate a pack's rules, plus pack-level checks: duplicate ids, bad ``ref``."""
     listed = list(rules)
     found: list[RuleIssue] = []
     seen: set[str] = set()
@@ -211,7 +262,16 @@ def validate_rules(
             message = "the rule id occurs twice in the pack"
             found.append(RuleIssue(RuleCode.DUPLICATE_ID, message, rule.id))
         seen.add(rule.id)
-        found.extend(validate_rule(rule, catalogue_ids=catalogue_ids, licence_dir=licence_dir))
+        found.extend(
+            validate_rule(
+                rule,
+                catalogue_ids=catalogue_ids,
+                licence_dir=licence_dir,
+                check_patterns=check_patterns,
+            )
+        )
+    message = "ref leads back to the rule itself"
+    found.extend(RuleIssue(RuleCode.REF_CYCLE, message, rule_id) for rule_id in _ref_cycles(listed))
     for rule in listed:
         for clause in rule.match.clauses:
             if clause.ref is not None and clause.ref not in seen:

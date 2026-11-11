@@ -212,8 +212,11 @@ def _where(scan: PackScan, rule_id: str | None, base: Path) -> str | None:
     return _relative(path, base) if path is not None else None
 
 
-def scan_pack(directory: Path) -> PackScan:
-    """Read ``directory`` (``<licence>/packs/<id>``), collecting every problem."""
+def scan_pack(directory: Path, *, check_patterns: bool = False) -> PackScan:
+    """Read ``directory`` (``<licence>/packs/<id>``), collecting every problem.
+
+    ``check_patterns`` also parses each pattern (``CK-RULE-011``); see ``validate_rule``.
+    """
     directory = Path(directory)
     licence_root = directory.parent.parent
     scan = PackScan(directory, licence_root.name)
@@ -243,7 +246,10 @@ def scan_pack(directory: Path) -> PackScan:
             except RuleLoadError as error:
                 _unusable(scan, error, base)
     found = validate_rules(
-        rules, catalogue_ids=catalogue_ids(catalogues), licence_dir=scan.licence_dir
+        rules,
+        catalogue_ids=catalogue_ids(catalogues),
+        licence_dir=scan.licence_dir,
+        check_patterns=check_patterns,
     )
     scan.issues.extend(
         RuleIssue(item.code, item.message, item.rule_id, _where(scan, item.rule_id, base))
