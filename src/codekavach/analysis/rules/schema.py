@@ -9,6 +9,7 @@ Both are generated from the models, never edited by hand::
 """
 
 import argparse
+import inspect
 import json
 import sys
 from pathlib import Path
@@ -157,7 +158,9 @@ def reference_text() -> str:
         lines += [
             f"## {model.__name__}",
             "",
-            chr(10).join(line.rstrip() for line in (model.__doc__ or "").splitlines()),
+            chr(10).join(
+                line.rstrip() for line in inspect.cleandoc(model.__doc__ or "").splitlines()
+            ),
             "",
             "| Field | Type | Required | Meaning |",
             "|---|---|---|---|",

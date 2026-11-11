@@ -105,10 +105,9 @@ The ``pack.yaml`` file of a pack.
 
 A ``catalogues/<language>/<framework>.yaml`` file.
 
-    Entries are listed under ``entry_points``, ``sources``, ``sinks`` and ``sanitisers``; the
-    older flat ``entries`` list with an explicit ``kind`` is accepted too. :meth:`items` returns
-    every entry with its ``kind`` filled in.
-
+Entries are listed under ``entry_points``, ``sources``, ``sinks`` and ``sanitisers``; the
+older flat ``entries`` list with an explicit ``kind`` is accepted too. :meth:`items` returns
+every entry with its ``kind`` filled in.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
@@ -125,11 +124,10 @@ A ``catalogues/<language>/<framework>.yaml`` file.
 
 One entry point, source, sink or sanitiser, referred to by id from rules and taint specs.
 
-    An entry names code either by ``symbol`` (a fully qualified dotted name, matched against the
-    imports of the file) or by a ``pattern`` (a rule pattern). ``context`` is the output context
-    of a sink and ``covers`` the contexts a sanitiser is adequate for; both draw on ``CONTEXTS``.
-    ``kind`` is taken from the section of the catalogue file the entry is listed in.
-
+An entry names code either by ``symbol`` (a fully qualified dotted name, matched against the
+imports of the file) or by a ``pattern`` (a rule pattern). ``context`` is the output context
+of a sink and ``covers`` the contexts a sanitiser is adequate for; both draw on ``CONTEXTS``.
+``kind`` is taken from the section of the catalogue file the entry is listed in.
 
 | Field | Type | Required | Meaning |
 |---|---|---|---|
