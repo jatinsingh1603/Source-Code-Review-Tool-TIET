@@ -37,6 +37,11 @@ eval = []        # E36/E37: dataset and metrics tooling
 [project.scripts]
 codekavach = "codekavach.cli.app:main"
 
+[project.entry-points."codekavach.engines"]
+opengrep = "codekavach.analysis.engines.adapters.opengrep:OpengrepAdapter"
+bandit = "codekavach.analysis.engines.adapters.bandit:BanditAdapter"
+eslint-security = "codekavach.analysis.engines.adapters.eslint_security:EslintSecurityAdapter"
+
 [project.entry-points."codekavach.stages"]
 ingest = "codekavach.ingest.stage:IngestStage"
 parse = "codekavach.parsing.stage:ParseStage"

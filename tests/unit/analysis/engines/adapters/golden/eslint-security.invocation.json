@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "node",
+    "<tmp>/tools/node_modules/eslint/bin/eslint.js",
+    "--no-config-lookup",
+    "-c",
+    "<tmp>/tools/codekavach.flat.config.mjs",
+    "--no-inline-config",
+    "--no-warn-ignored",
+    "-f",
+    "json",
+    "-o",
+    "{output_dir}/eslint.json",
+    "."
+  ],
+  "workdir": "{root}",
+  "output_file": "eslint.json",
+  "expect_exit_codes": [
+    0,
+    1
+  ]
+}

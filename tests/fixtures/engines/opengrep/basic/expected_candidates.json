@@ -1,0 +1,76 @@
+[
+  {
+    "cwe": [
+      89
+    ],
+    "engine": "opengrep",
+    "engine_confidence": "high",
+    "engine_severity": "high",
+    "engine_version": "1.33.1",
+    "fingerprint": "ckfp1:2cb4eff83d52ae2fb02d9cc1a77d3cbe",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": 71,
+        "end_line": 11,
+        "path": "app.py",
+        "start_col": 5,
+        "start_line": 11,
+        "symbol": null
+      }
+    ],
+    "message": "SQL query built by string concatenation",
+    "properties": [
+      [
+        "cwe.source",
+        "tags"
+      ],
+      [
+        "engine.run",
+        "Opengrep@1.33.1"
+      ]
+    ],
+    "rule_id": "synthetic.python.sql-concat",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      95
+    ],
+    "engine": "opengrep",
+    "engine_confidence": "medium",
+    "engine_severity": "medium",
+    "engine_version": "1.33.1",
+    "fingerprint": "ckfp1:61660e96df20edc07dc01fb692690f7e",
+    "id": "cand-1",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 13,
+        "end_line": 8,
+        "path": "server.js",
+        "start_col": 3,
+        "start_line": 8,
+        "symbol": null
+      }
+    ],
+    "message": "eval of a non-literal expression",
+    "properties": [
+      [
+        "cwe.source",
+        "tags"
+      ],
+      [
+        "engine.run",
+        "Opengrep@1.33.1"
+      ]
+    ],
+    "rule_id": "synthetic.javascript.eval",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

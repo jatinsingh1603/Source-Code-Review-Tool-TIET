@@ -1,0 +1,11 @@
+{
+  "engine_version": "1.9.4",
+  "output_file": "output.json",
+  "languages": [
+    "python"
+  ],
+  "planted_secrets": [
+    "synthetic-placeholder"
+  ],
+  "recording": "real Bandit 1.9.4 run: bandit -r . -f json --exit-zero --ignore-nosec; code snippets and metrics removed, timestamp fixed"
+}

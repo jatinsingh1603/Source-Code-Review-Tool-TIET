@@ -37,6 +37,7 @@ EXPECTED_PACKAGES: frozenset[str] = frozenset(
         "codekavach.parsing.specs",
         "codekavach.analysis",
         "codekavach.analysis.engines",
+        "codekavach.analysis.engines.adapters",
         "codekavach.analysis.engines.sarif",
         "codekavach.analysis.rules",
         "codekavach.analysis.rules.matchers",
@@ -85,6 +86,10 @@ EXPECTED_PACKAGES: frozenset[str] = frozenset(
 EXPECTED_MODULES: frozenset[str] = frozenset(
     {
         "codekavach.analysis.aggregate.stage",
+        "codekavach.analysis.engines.adapters.bandit",
+        "codekavach.analysis.engines.adapters.common",
+        "codekavach.analysis.engines.adapters.eslint_security",
+        "codekavach.analysis.engines.adapters.opengrep",
         "codekavach.analysis.engines.base",
         "codekavach.analysis.engines.doctor",
         "codekavach.analysis.engines.errors",

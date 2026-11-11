@@ -66,6 +66,24 @@ whatever temporary directory a run uses, which also keeps the cache key stable.
 The manifest row, when there is one, takes precedence over the licence, hosting and weight facts
 in the spec, so a correction is a data change.
 
+## The shipped adapters (E15-01)
+
+| Engine id | Module | Languages | Licence | Pinned | How it is fed |
+|-----------|--------|-----------|---------|--------|---------------|
+| `opengrep` | `adapters/opengrep.py` | Python, JavaScript, TypeScript, Java, Go, PHP, C#, Ruby, C, C++ | LGPL-2.1 | 1.33.1 | SARIF; rules only from `engines.rule_paths`, never a registry, `auto` or a URL |
+| `bandit` | `adapters/bandit.py` | Python | Apache-2.0 | 1.9.4 | JSON converted to SARIF in memory; `--exit-zero --ignore-nosec`; the quoted value of B105 to B107 is dropped |
+| `eslint-security` | `adapters/eslint_security.py` | JavaScript | MIT | 10.14.0 | JSON converted to SARIF in memory; CodeKavach's own flat config; the repository's ESLint config is neither read nor passed |
+
+* Without a rule directory Opengrep has nothing to run and is skipped; the shipped rule pack arrives with E16-03.
+* ESLint and its plugins (`eslint-plugin-security` 4.2.1, `eslint-plugin-no-unsanitized` 4.1.5) are installed in a
+  CodeKavach-owned directory (`engines.options.eslint-security.options.tools_dir`, a restricted setting), never in the
+  scanned project's `node_modules`. `codekavach doctor` reports a missing plugin by name.
+* `eslint-plugin-no-unsanitized` is MPL-2.0 (file-level copyleft). It is installed unmodified from npm; none of its files is copied into this repository.
+* TypeScript is not linted by `eslint-security`: that needs a parser plugin which this rule set does not include.
+* The conformance cases for Bandit and ESLint are real recorded runs. The Opengrep case is written by hand from the documented
+  SARIF shape (its spec.json says so); re-record it with `--engines-live` once the binary is installed.
+* ESLint's `security/*` rules carry no CWE; `data/cwe_fallback.toml` maps only the rules whose documentation names the weakness.
+
 ## Adding a manifest row
 
 Rows live in `src/codekavach/analysis/engines/data/manifest.toml`, one table `[engines.<id>]` per

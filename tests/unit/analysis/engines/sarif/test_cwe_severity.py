@@ -224,7 +224,7 @@ def test_confidence_from_the_engine_table_and_generic_keys(table_path: Path) -> 
 
 
 def test_the_shipped_tables_load() -> None:
-    assert default_cwe_fallback().engines == {}
+    assert set(default_cwe_fallback().engines) == {"eslint-security"}
     assert default_severity_table().engines == {}
 
 

@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "bandit",
+    "-r",
+    ".",
+    "-f",
+    "json",
+    "-o",
+    "{output_dir}/bandit.json",
+    "--exit-zero",
+    "--ignore-nosec",
+    "--quiet"
+  ],
+  "workdir": "{root}",
+  "output_file": "bandit.json",
+  "expect_exit_codes": [
+    0
+  ]
+}

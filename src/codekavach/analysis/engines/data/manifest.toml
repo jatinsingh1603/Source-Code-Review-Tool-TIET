@@ -26,3 +26,44 @@
 # scans_proprietary_code = true
 # install = "pipx install example-engine"
 # telemetry_env = { EXAMPLE_NO_TELEMETRY = "1" }
+
+# --- E15-01: the default no-build stack for Python and JavaScript -------------------------------
+# Versions are the ones the recorded conformance cases were captured with (or, where a case was
+# written from the documented output shape, the release it was written against). The minimum is the
+# pinned version until an older release has been recorded; lower it only with a recorded case.
+
+[engines.opengrep]
+pinned_version = "1.33.1"
+min_version = "1.33.1"
+spdx_licence = "LGPL-2.1"
+distribution = "client_installed"
+hosted_allowed = true
+scans_proprietary_code = true
+install = "download the release binary for your platform from https://github.com/opengrep/opengrep/releases and put it on PATH"
+weight = 2
+no_documented_opt_out = true
+notes = "The scan command has no metrics option (src/osemgrep/cli_scan/Scan_CLI.ml at v1.33.1), so none is passed; --disable-version-check is listed there as an unsupported flag. Rules come only from engines.rule_paths, never from a registry."
+
+[engines.bandit]
+pinned_version = "1.9.4"
+min_version = "1.9.4"
+spdx_licence = "Apache-2.0"
+distribution = "client_installed"
+hosted_allowed = true
+scans_proprietary_code = true
+install = "pipx install bandit"
+weight = 1
+no_documented_opt_out = true
+notes = "Bandit makes no network request and documents no telemetry. Run with --exit-zero and --ignore-nosec."
+
+[engines.eslint-security]
+pinned_version = "10.14.0"
+min_version = "10.14.0"
+spdx_licence = "MIT"
+distribution = "client_installed"
+hosted_allowed = true
+scans_proprietary_code = true
+install = "install Node.js, then in the CodeKavach tools directory run: npm install eslint eslint-plugin-security eslint-plugin-no-unsanitized"
+weight = 4
+telemetry_env = { DO_NOT_TRACK = "1" }
+notes = "Pinned with eslint-plugin-security 4.2.1 (Apache-2.0) and eslint-plugin-no-unsanitized 4.1.5 (MPL-2.0, file-level copyleft, used unmodified). ESLint documents no telemetry; DO_NOT_TRACK is defence in depth."

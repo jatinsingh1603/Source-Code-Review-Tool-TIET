@@ -1,0 +1,144 @@
+[
+  {
+    "cwe": [
+      78
+    ],
+    "engine": "eslint-security",
+    "engine_confidence": "low",
+    "engine_severity": "low",
+    "engine_version": "10.14.0",
+    "fingerprint": "ckfp1:c26e55a2dbb51dcd5d792cf7bb38a86c",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 27,
+        "end_line": 6,
+        "path": "server.js",
+        "start_col": 3,
+        "start_line": 6,
+        "symbol": null
+      }
+    ],
+    "message": "Found child_process.exec() with non Literal first argument",
+    "properties": [
+      [
+        "cwe.source",
+        "fallback"
+      ],
+      [
+        "engine.run",
+        "eslint@unknown"
+      ]
+    ],
+    "rule_id": "security/detect-child-process",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      1333
+    ],
+    "engine": "eslint-security",
+    "engine_confidence": "low",
+    "engine_severity": "low",
+    "engine_version": "10.14.0",
+    "fingerprint": "ckfp1:be2fa29b90c1e25166ca296090801160",
+    "id": "cand-1",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 35,
+        "end_line": 7,
+        "path": "server.js",
+        "start_col": 19,
+        "start_line": 7,
+        "symbol": null
+      }
+    ],
+    "message": "Found non-literal argument to RegExp Constructor",
+    "properties": [
+      [
+        "cwe.source",
+        "fallback"
+      ],
+      [
+        "engine.run",
+        "eslint@unknown"
+      ]
+    ],
+    "rule_id": "security/detect-non-literal-regexp",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      95
+    ],
+    "engine": "eslint-security",
+    "engine_confidence": "low",
+    "engine_severity": "low",
+    "engine_version": "10.14.0",
+    "fingerprint": "ckfp1:5e48ae64ab71617752d3ccf89f81e783",
+    "id": "cand-2",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 13,
+        "end_line": 8,
+        "path": "server.js",
+        "start_col": 3,
+        "start_line": 8,
+        "symbol": null
+      }
+    ],
+    "message": "eval with argument of type Identifier",
+    "properties": [
+      [
+        "cwe.source",
+        "fallback"
+      ],
+      [
+        "engine.run",
+        "eslint@unknown"
+      ]
+    ],
+    "rule_id": "security/detect-eval-with-expression",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [],
+    "engine": "eslint-security",
+    "engine_confidence": null,
+    "engine_severity": "medium",
+    "engine_version": "10.14.0",
+    "fingerprint": "ckfp1:f628fd542abc322ab48b0f46f49fd29c",
+    "id": "cand-3",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 55,
+        "end_line": 9,
+        "path": "server.js",
+        "start_col": 3,
+        "start_line": 9,
+        "symbol": null
+      }
+    ],
+    "message": "Unsafe assignment to innerHTML (Variable 'name' initialized with unsafe value at 5:15)",
+    "properties": [
+      [
+        "engine.run",
+        "eslint@unknown"
+      ]
+    ],
+    "rule_id": "no-unsanitized/property",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

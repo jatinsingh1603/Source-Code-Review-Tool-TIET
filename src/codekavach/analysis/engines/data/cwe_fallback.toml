@@ -13,3 +13,22 @@
 # [engines.example]
 # "EX1" = 89            # exact id or prefix
 # "EX2." = [78, 77]     # prefix, two weaknesses
+
+# eslint-plugin-security (4.2.1) puts no CWE in its output, and its rule documentation names none. The
+# rows below map only the rules whose documentation states the weakness in its own words:
+#   detect-child-process               "child_process & non-literal exec()"       -> CWE-78
+#   detect-eval-with-expression        "run arbitrary code inside your process"   -> CWE-95
+#   detect-non-literal-regexp          "DOS your server with a long-running regexp" -> CWE-1333
+#   detect-unsafe-regex                "very long time to run, blocking the loop" -> CWE-1333
+#   detect-non-literal-fs-filename     links OWASP Path Traversal                 -> CWE-22
+#   detect-disable-mustache-escape     "Cross-Site Scripting (XSS)"               -> CWE-79
+#   detect-no-csrf-before-method-override  csrf middleware set up before method-override -> CWE-352
+# Other rules are left unmapped on purpose.
+[engines.eslint-security]
+"security/detect-child-process" = 78
+"security/detect-eval-with-expression" = 95
+"security/detect-non-literal-regexp" = 1333
+"security/detect-unsafe-regex" = 1333
+"security/detect-non-literal-fs-filename" = 22
+"security/detect-disable-mustache-escape" = 79
+"security/detect-no-csrf-before-method-override" = 352

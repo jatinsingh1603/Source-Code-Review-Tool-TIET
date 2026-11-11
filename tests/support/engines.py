@@ -32,6 +32,7 @@ from codekavach.config import Settings
 from codekavach.core.models import Candidate, Language
 from codekavach.core.pipeline import keys
 from codekavach.core.pipeline.context import RunContext
+from codekavach.ingest.langdetect import detect_language
 from codekavach.ingest.models import SourceFile
 from tests.support.factories import make_candidate
 from tests.support.golden import assert_matches_golden
@@ -164,7 +165,11 @@ def stub_sandboxes(sandbox: SubprocessSandbox) -> SandboxSet:
 
 
 def make_engine_context(
-    tmp_path: Path, *, engines: dict[str, object] | None = None, state: bool = False
+    tmp_path: Path,
+    *,
+    engines: dict[str, object] | None = None,
+    state: bool = False,
+    files: Sequence[SourceFile] | None = None,
 ) -> RunContext:
     """A stage-bound context over a one-file project, with the ``files`` artefact stored."""
     project = tmp_path / "project"
@@ -176,7 +181,7 @@ def make_engine_context(
         project_root=project,
         state_dir=(tmp_path / "state") if state else None,
     ).for_stage("analyse-engines")
-    ctx.artefacts.put(keys.FILES, [source_file()])
+    ctx.artefacts.put(keys.FILES, list(files) if files is not None else [source_file()])
     return ctx
 
 
@@ -218,6 +223,12 @@ class RecordedCase:
     def expected(self) -> Path:
         return self.directory / "expected_candidates.json"
 
+    def settings(self, scratch: Path) -> Settings:
+        """The settings the case runs with: ``{case}`` and ``{tmp}`` in ``spec.json`` are filled."""
+        raw = json.dumps(self.spec.get("settings", {}))
+        raw = raw.replace("{case}", self.directory.as_posix()).replace("{tmp}", scratch.as_posix())
+        return Settings.model_validate(json.loads(raw))
+
     @property
     def label(self) -> str:
         return f"{self.engine_id}/{self.name}"
@@ -236,14 +247,17 @@ def canonical_candidates(candidates: Sequence[Candidate]) -> str:
 
 def tree_files(tree: Path) -> list[SourceFile]:
     """Source-file records for every file of a case's tree."""
-    return [
-        source_file(path.relative_to(tree).as_posix())
-        for path in sorted(tree.rglob("*"))
-        if path.is_file()
-    ]
+    found: list[SourceFile] = []
+    for path in sorted(tree.rglob("*")):
+        if path.is_file():
+            relative = path.relative_to(tree).as_posix()
+            found.append(source_file(relative, detect_language(relative, path.read_bytes()[:4096])))
+    return found
 
 
-def run_adapter_contract(adapter: EngineAdapter, case_dir: Path) -> list[Candidate]:
+def run_adapter_contract(
+    adapter: EngineAdapter, case_dir: Path, settings: Settings | None = None
+) -> list[Candidate]:
     """Check ``adapter`` against one recorded case; return the candidates it parsed.
 
     Asserts: the adapter declares languages and a tier (and the case's languages are among them);
@@ -258,7 +272,7 @@ def run_adapter_contract(adapter: EngineAdapter, case_dir: Path) -> list[Candida
     assert isinstance(spec.tier, BuildTier)
     declared = {language.value for language in spec.languages}
     assert set(case.spec["languages"]) <= declared, f"{case.label}: languages not declared"
-    invocation = adapter.build_invocation(case.tree, tree_files(case.tree), Settings())
+    invocation = adapter.build_invocation(case.tree, tree_files(case.tree), settings or Settings())
     assert invocation is not None, f"{case.label}: no invocation for the recorded project"
     assert invocation.argv, f"{case.label}: empty argument vector"
     assert invocation.argv[0] and not invocation.argv[0].startswith("-")

@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "opengrep",
+    "scan",
+    "--sarif-output={output_dir}/opengrep.sarif",
+    "--quiet",
+    "--taint-intrafile",
+    "--no-rewrite-rule-ids",
+    "--timeout=5",
+    "--max-target-bytes=1000000",
+    "--config",
+    "<tmp>/rules",
+    "."
+  ],
+  "workdir": "{root}",
+  "output_file": "opengrep.sarif",
+  "expect_exit_codes": [
+    0,
+    1
+  ]
+}

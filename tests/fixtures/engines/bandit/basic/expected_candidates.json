@@ -1,0 +1,187 @@
+[
+  {
+    "cwe": [
+      78
+    ],
+    "engine": "bandit",
+    "engine_confidence": "high",
+    "engine_severity": "low",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:f30e904a5366d4909af0aaffb6676f2a",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 4,
+        "path": "app.py",
+        "start_col": null,
+        "start_line": 4,
+        "symbol": null
+      }
+    ],
+    "message": "Consider possible security implications associated with the subprocess module.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B404",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      259
+    ],
+    "engine": "bandit",
+    "engine_confidence": "medium",
+    "engine_severity": "low",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:a6bf7958030d63f9744869ad1ba11579",
+    "id": "cand-1",
+    "kind": "secret",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 6,
+        "path": "app.py",
+        "start_col": null,
+        "start_line": 6,
+        "symbol": null
+      }
+    ],
+    "message": "Possible hardcoded password",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B105",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      89
+    ],
+    "engine": "bandit",
+    "engine_confidence": "medium",
+    "engine_severity": "medium",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:207b03ea0529a09e67f1cd5b11913fc4",
+    "id": "cand-2",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 11,
+        "path": "app.py",
+        "start_col": null,
+        "start_line": 11,
+        "symbol": null
+      }
+    ],
+    "message": "Possible SQL injection vector through string-based query construction.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B608",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      327
+    ],
+    "engine": "bandit",
+    "engine_confidence": "high",
+    "engine_severity": "high",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:0d50761538727f290d1deb1de60e8b69",
+    "id": "cand-3",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 16,
+        "path": "app.py",
+        "start_col": null,
+        "start_line": 16,
+        "symbol": null
+      }
+    ],
+    "message": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B324",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      78
+    ],
+    "engine": "bandit",
+    "engine_confidence": "high",
+    "engine_severity": "high",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:e0712c54c7a72902cb6122242add771c",
+    "id": "cand-4",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 20,
+        "path": "app.py",
+        "start_col": null,
+        "start_line": 20,
+        "symbol": null
+      }
+    ],
+    "message": "subprocess call with shell=True identified, security issue.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B602",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

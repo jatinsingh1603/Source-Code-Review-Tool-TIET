@@ -1,0 +1,17 @@
+{
+  "engine_version": "1.33.1",
+  "output_file": "output.sarif",
+  "languages": [
+    "python",
+    "javascript"
+  ],
+  "planted_secrets": [],
+  "recording": "NOT captured from a run: written from the documented Opengrep SARIF shape against rules authored for this sample. Re-record with --engines-live when the engine is installed.",
+  "settings": {
+    "engines": {
+      "rule_paths": [
+        "{case}/rules"
+      ]
+    }
+  }
+}

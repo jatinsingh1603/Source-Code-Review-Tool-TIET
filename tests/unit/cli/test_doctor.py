@@ -315,8 +315,16 @@ def test_everything_passes_or_is_skipped_on_a_clean_machine(cli: Cli, project: P
     result = cli(["doctor"], cwd=project)
     assert result.exit_code == 0, result.stdout
     statuses = {line.split()[1]: line.split()[0] for line in result.stdout.splitlines()[:-1]}
-    # the default settings enable the mock provider only: no engine, no report prerequisite
-    assert list(statuses) == [*LOCAL_NAMES, "provider:mock:configured", "provider:mock:reachable"]
+    # the default settings enable the mock provider only; the three shipped engine adapters (E15-01)
+    # are probed and reported as skipped when they are not installed
+    engines = ["engine:bandit", "engine:eslint-security", "engine:opengrep"]
+    assert list(statuses) == [
+        *LOCAL_NAMES,
+        *engines,
+        "provider:mock:configured",
+        "provider:mock:reachable",
+    ]
+    assert {statuses[name] for name in engines} <= {"SKIP", "PASS"}
     assert statuses["provider:mock:configured"] == "PASS"
     assert statuses["provider:mock:reachable"] == "SKIP"  # needs --probe-providers
     assert statuses["storage:artefacts"] == "SKIP"

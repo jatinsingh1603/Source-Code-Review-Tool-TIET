@@ -1,0 +1,97 @@
+{
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Opengrep",
+          "semanticVersion": "1.33.1",
+          "rules": [
+            {
+              "id": "synthetic.python.sql-concat",
+              "name": "synthetic.python.sql-concat",
+              "shortDescription": {
+                "text": "SQL query built by string concatenation"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "precision": "high",
+                "tags": [
+                  "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')",
+                  "security"
+                ]
+              }
+            },
+            {
+              "id": "synthetic.javascript.eval",
+              "name": "synthetic.javascript.eval",
+              "shortDescription": {
+                "text": "eval of a non-literal expression"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "precision": "medium",
+                "tags": [
+                  "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')",
+                  "security"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "synthetic.python.sql-concat",
+          "message": {
+            "text": "SQL query built by string concatenation"
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 11,
+                  "startColumn": 5,
+                  "endLine": 11,
+                  "endColumn": 71
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "synthetic.javascript.eval",
+          "message": {
+            "text": "eval of a non-literal expression"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "server.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 8,
+                  "startColumn": 3,
+                  "endLine": 8,
+                  "endColumn": 13
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

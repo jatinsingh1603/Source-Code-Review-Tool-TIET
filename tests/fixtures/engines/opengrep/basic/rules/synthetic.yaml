@@ -1,0 +1,12 @@
+# Synthetic rules for the conformance sample only. Not part of any shipped rule pack.
+rules:
+  - id: synthetic.python.sql-concat
+    languages: [python]
+    severity: ERROR
+    message: SQL query built by string concatenation
+    pattern: $CUR.execute("..." + $X + "...")
+  - id: synthetic.javascript.eval
+    languages: [javascript]
+    severity: WARNING
+    message: eval of a non-literal expression
+    pattern: eval($X)
