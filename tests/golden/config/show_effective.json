@@ -211,7 +211,17 @@
         "sca": true,
         "iac": true
       },
-      "options": {}
+      "options": {},
+      "sandbox": {
+        "mode": "auto",
+        "container_runtime": "auto",
+        "max_output_bytes": 67108864,
+        "memory_mb": 4096,
+        "cpu_seconds": 0,
+        "pids_limit": 512,
+        "cpus": 2.0,
+        "kill_grace_seconds": 2.0
+      }
     },
     "integrations": {
       "github": {
@@ -315,6 +325,54 @@
       "contributors": []
     },
     "engines.rule_paths": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "engines.sandbox.container_runtime": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "engines.sandbox.cpu_seconds": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "engines.sandbox.cpus": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "engines.sandbox.kill_grace_seconds": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "engines.sandbox.max_output_bytes": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "engines.sandbox.memory_mb": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "engines.sandbox.mode": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "engines.sandbox.pids_limit": {
       "layer": "default",
       "source": null,
       "line": null,

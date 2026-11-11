@@ -186,6 +186,16 @@ iac = true                # default
 
 [engines.options]
 
+[engines.sandbox]
+mode = "auto"             # default
+container_runtime = "auto"  # default
+max_output_bytes = 67108864  # default
+memory_mb = 4096          # default
+cpu_seconds = 0           # default
+pids_limit = 512          # default
+cpus = 2.0                # default
+kill_grace_seconds = 2.0  # default
+
 [integrations.github]
 enabled = false           # default
 api_url = "https://api.github.com/"  # default
