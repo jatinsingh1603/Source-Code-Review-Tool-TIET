@@ -53,7 +53,7 @@ _URL_FIXED_PREFIXES = ("mailto:", "jdbc:")
 _WINDOWS_DRIVE = re.compile(r"^[A-Za-z]:[\\/]")
 _PATH_RELATIVE_PREFIXES = ("./", "../", "~/")
 
-_FORMAT_PRINTF = re.compile(r"%[-+0 #]*\d*(?:\.\d+)?[sdifgxXoc]")
+_FORMAT_PRINTF = re.compile(r"%[-+0 #]*\d*(?:\.\d+)?[sdifgxXocvwqTtp]")
 _FORMAT_NAMED = re.compile(r"%\(\w+\)[sdifgxXoc]")
 _FORMAT_BRACE = re.compile(r"\{[\w]*\}")
 _FORMAT_SHELL_STYLE = re.compile(r"\$\{[^{}]*\}")

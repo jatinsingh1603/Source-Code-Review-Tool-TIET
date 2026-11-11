@@ -1,0 +1,18 @@
+package mod_1
+
+import (
+	"fmt"
+
+	mod_2 "file_1.com/file_2/file_3"
+)
+
+type cls_1 struct {
+	field_1 int64
+	field_2         string
+}
+
+func (param_1 *cls_1) fn_1(param_2 int64) int64 {
+	fmt.Println(param_1.field_1)
+	mod_2.field_3(param_2)
+	return param_1.field_1 * param_2
+}

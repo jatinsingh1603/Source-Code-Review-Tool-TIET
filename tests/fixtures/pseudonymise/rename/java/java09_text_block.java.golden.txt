@@ -1,0 +1,9 @@
+package mod_2.mod_3.mod_1;
+
+public class cls_1 {
+    public static final String const_1 = """
+        SELECT col_1, col_2
+        FROM tbl_1
+        WHERE col_3 = 'xxxxxxx'
+        """;
+}

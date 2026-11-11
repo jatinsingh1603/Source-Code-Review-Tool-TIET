@@ -1,0 +1,588 @@
+# Public-name allowlist for Go (E09-06). Read by codekavach.privacy.pseudonymise.allowlist.
+#
+# Source: compiled by hand from the maintainers' working knowledge of the Go standard library and
+#   of the third-party modules named below, limited to the security-relevant surface that the rule
+#   matchers and the triage model need to recognise (sources, sinks, sanitisers, crypto,
+#   serialisation, HTTP, SQL, process and file APIs). No library source code was copied. Names are
+#   listed by package, not exhaustively. The list has NOT yet been checked name by name against
+#   the upstream documentation; that check is a follow-up before a client engagement relies on it.
+# Generated: 2026-11-10 (first curated version; edit by issue, and bump the version below).
+# Version: go-2026.11.10.1
+#
+# Reading rules (the classifier in codekavach.privacy.pseudonymise.classify):
+#   * [packages."<import path>"] lists the members of a package. A standard-library package is
+#     keyed by its full import path (database/sql); a third-party module by host and the first
+#     two path elements (github.com/gin-gonic/gin), or three for golang.org/x. A member is public
+#     when it is accessed on a value known to come from that package (for example sql.Open).
+#   * A package of kind "third_party" is public as an import only when listed here. Standard
+#     library packages are public as imports by origin (E07-04), and their members are listed so
+#     that chains through them stay recognisable. kind "builtin" is the universe scope.
+#   * A name listed under several packages is public by name (the conservative reading).
+#   * Every entry under [framework_contracts] names its framework in the value. Renaming these
+#     names changes behaviour: Go matches interfaces by method name.
+#   * Exported and unexported names of the project are both renamed: export is visibility, not
+#     public API. Only the names here, the keywords and builtins of the language and the user's
+#     public_allowlist_extra are ever public. Adding a name here is a disclosure decision.
+
+version = "go-2026.11.10.1"
+language = "go"
+
+[packages.builtins]
+kind = "builtin"
+# The universe scope: predeclared functions, types and constants, and the error interface.
+members = [
+    "append", "cap", "clear", "close", "complex", "copy", "delete", "imag", "len", "make", "max",
+    "min", "new", "panic", "print", "println", "real", "recover", "bool", "byte", "complex64",
+    "complex128", "error", "float32", "float64", "int", "int8", "int16", "int32", "int64", "rune",
+    "string", "uint", "uint8", "uint16", "uint32", "uint64", "uintptr", "any", "comparable",
+    "true", "false", "iota", "nil", "Error",
+]
+
+[packages."fmt"]
+kind = "stdlib"
+# Formatted I/O. The Printf family writes values; Sprintf with untrusted format is a sink.
+members = [
+    "Print", "Printf", "Println", "Sprint", "Sprintf", "Sprintln", "Fprint", "Fprintf",
+    "Fprintln", "Errorf", "Sscan", "Sscanf", "Sscanln", "Scan", "Scanf", "Scanln", "Fscan",
+    "Fscanf", "Stringer", "Formatter", "String", "Format", "GoStringer", "GoString",
+]
+
+[packages."os"]
+kind = "stdlib"
+# Files, environment, process arguments and exit.
+members = [
+    "Open", "OpenFile", "Create", "CreateTemp", "ReadFile", "WriteFile", "ReadDir", "Remove",
+    "RemoveAll", "Mkdir", "MkdirAll", "MkdirTemp", "Rename", "Stat", "Lstat", "Chmod", "Chown",
+    "Getenv", "LookupEnv", "Setenv", "Environ", "Args", "Exit", "Getwd", "Chdir", "Hostname",
+    "TempDir", "UserHomeDir", "File", "FileInfo", "FileMode", "Stdin", "Stdout", "Stderr",
+    "Getpid", "Executable", "IsNotExist", "IsExist", "ErrNotExist", "O_RDONLY", "O_WRONLY",
+    "O_RDWR", "O_CREATE", "O_APPEND", "O_TRUNC", "Close", "Read", "Write", "WriteString",
+    "Name", "Sync", "Seek", "Readdir", "Symlink", "Readlink", "Expand", "ExpandEnv",
+]
+
+[packages."os/exec"]
+kind = "stdlib"
+# Process creation. The arguments of Command are the classic command-injection sink.
+members = [
+    "Command", "CommandContext", "LookPath", "Cmd", "Run", "Start", "Wait", "Output",
+    "CombinedOutput", "StdinPipe", "StdoutPipe", "StderrPipe", "Stdin", "Stdout", "Stderr",
+    "Env", "Dir", "Args", "Path", "Process", "ExitError", "Error",
+]
+
+[packages."io"]
+kind = "stdlib"
+# Reader and writer interfaces and the helpers around them.
+members = [
+    "Reader", "Writer", "Closer", "ReadCloser", "WriteCloser", "ReadWriter", "ReadAll", "Copy",
+    "CopyN", "CopyBuffer", "WriteString", "ReadFull", "ReadAtLeast", "LimitReader", "MultiReader",
+    "MultiWriter", "TeeReader", "Pipe", "EOF", "ErrUnexpectedEOF", "Discard", "NopCloser",
+    "Read", "Write", "Close", "Seeker", "Seek", "SeekStart", "SeekCurrent", "SeekEnd",
+]
+
+[packages."io/ioutil"]
+kind = "stdlib"
+# The deprecated file helpers that older code still uses.
+members = ["ReadAll", "ReadFile", "WriteFile", "ReadDir", "TempFile", "TempDir", "Discard", "NopCloser"]
+
+[packages."bufio"]
+kind = "stdlib"
+# Buffered readers, writers and scanners.
+members = [
+    "NewReader", "NewWriter", "NewScanner", "NewReadWriter", "Reader", "Writer", "Scanner",
+    "ReadString", "ReadLine", "ReadBytes", "ReadRune", "Scan", "Text", "Bytes", "Err", "Buffer",
+    "Split", "ScanLines", "ScanWords", "WriteString", "Flush",
+]
+
+[packages."net/http"]
+kind = "stdlib"
+# HTTP clients and servers. Request fields are taint sources; ResponseWriter is an output sink.
+members = [
+    "Client", "Get", "Post", "PostForm", "Head", "NewRequest", "NewRequestWithContext", "Request",
+    "Response", "ResponseWriter", "Handler", "HandlerFunc", "Handle", "HandleFunc", "ServeMux",
+    "NewServeMux", "Server", "ListenAndServe", "ListenAndServeTLS", "Serve", "Redirect",
+    "Error", "NotFound", "FileServer", "Dir", "StripPrefix", "Cookie", "SetCookie", "Header",
+    "Transport", "DefaultClient", "DefaultServeMux", "StatusOK", "StatusBadRequest",
+    "StatusUnauthorized", "StatusForbidden", "StatusNotFound", "StatusInternalServerError",
+    "StatusFound", "StatusMovedPermanently", "MethodGet", "MethodPost", "MethodPut",
+    "MethodDelete", "URL", "Form", "PostForm", "Body", "Method", "Host", "RemoteAddr", "Cookies",
+    "Cookie", "FormValue", "PostFormValue", "ParseForm", "ParseMultipartForm", "FormFile",
+    "Context", "WithContext", "Header", "Get", "Set", "Add", "Del", "Write", "WriteHeader",
+    "StatusCode", "Status", "Close", "Do", "ServeHTTP", "MaxBytesReader", "Timeout",
+    "ReadTimeout", "WriteTimeout", "Addr", "TLSConfig", "Shutdown", "ServeFile", "ServeContent",
+]
+
+[packages."net/url"]
+kind = "stdlib"
+# URL parsing and escaping.
+members = [
+    "Parse", "ParseRequestURI", "ParseQuery", "QueryEscape", "QueryUnescape", "PathEscape",
+    "PathUnescape", "URL", "Values", "Query", "Get", "Set", "Add", "Del", "Encode", "Scheme",
+    "Host", "Path", "RawQuery", "Fragment", "User", "String", "Hostname", "Port", "ResolveReference",
+]
+
+[packages."net"]
+kind = "stdlib"
+# Sockets and name resolution.
+members = [
+    "Dial", "DialTimeout", "Listen", "ListenPacket", "Conn", "Listener", "Addr", "TCPConn",
+    "UDPConn", "ParseIP", "ParseCIDR", "IP", "IPNet", "LookupHost", "LookupIP", "LookupAddr",
+    "SplitHostPort", "JoinHostPort", "Accept", "Close", "Read", "Write", "RemoteAddr",
+    "LocalAddr", "SetDeadline", "SetReadDeadline", "SetWriteDeadline", "Dialer",
+]
+
+[packages."database/sql"]
+kind = "stdlib"
+# The database/sql interface. Query, Exec and their Context variants take SQL text: sinks.
+members = [
+    "Open", "DB", "Tx", "Stmt", "Row", "Rows", "Result", "NullString", "NullInt64", "NullBool",
+    "NullFloat64", "NullTime", "ErrNoRows", "Query", "QueryContext", "QueryRow", "QueryRowContext",
+    "Exec", "ExecContext", "Prepare", "PrepareContext", "Begin", "BeginTx", "Commit", "Rollback",
+    "Scan", "Next", "Close", "Err", "Columns", "LastInsertId", "RowsAffected", "Ping",
+    "PingContext", "SetMaxOpenConns", "SetMaxIdleConns", "SetConnMaxLifetime", "Named", "Valid",
+    "String", "Int64", "Value", "Driver",
+]
+
+[packages."encoding/json"]
+kind = "stdlib"
+# JSON encoding. The struct-tag key `json` is part of this API.
+members = [
+    "Marshal", "MarshalIndent", "Unmarshal", "NewEncoder", "NewDecoder", "Encoder", "Decoder",
+    "Encode", "Decode", "SetIndent", "SetEscapeHTML", "DisallowUnknownFields", "UseNumber",
+    "RawMessage", "Number", "Marshaler", "Unmarshaler", "MarshalJSON", "UnmarshalJSON", "Valid",
+    "Indent", "Compact", "HTMLEscape", "SyntaxError", "UnmarshalTypeError", "More", "Token",
+]
+
+[packages."encoding/xml"]
+kind = "stdlib"
+# XML encoding. Decoding untrusted XML needs entity limits.
+members = [
+    "Marshal", "MarshalIndent", "Unmarshal", "NewEncoder", "NewDecoder", "Encoder", "Decoder",
+    "Encode", "Decode", "Token", "RawToken", "Strict", "Name", "StartElement", "EndElement",
+    "CharData", "Header", "EscapeText", "CharsetReader", "Entity",
+]
+
+[packages."encoding/base64"]
+kind = "stdlib"
+# Base64 encodings.
+members = [
+    "StdEncoding", "URLEncoding", "RawStdEncoding", "RawURLEncoding", "NewEncoding",
+    "NewEncoder", "NewDecoder", "EncodeToString", "DecodeString", "Encode", "Decode",
+    "EncodedLen", "DecodedLen", "WithPadding", "NoPadding", "StdPadding",
+]
+
+[packages."encoding/hex"]
+kind = "stdlib"
+members = ["EncodeToString", "DecodeString", "Encode", "Decode", "Dump", "EncodedLen", "DecodedLen"]
+
+[packages."crypto/rand"]
+kind = "stdlib"
+# Cryptographically secure random numbers.
+members = ["Read", "Reader", "Int", "Prime", "Text"]
+
+[packages."math/rand"]
+kind = "stdlib"
+# Pseudo-random numbers. Not for secrets; listed so that misuse stays recognisable.
+members = ["Int", "Intn", "Int31", "Int31n", "Int63", "Int63n", "Float64", "Seed", "New", "NewSource", "Perm", "Shuffle", "Read"]
+
+[packages."crypto/sha256"]
+kind = "stdlib"
+members = ["New", "Sum256", "Sum224", "New224", "Size", "BlockSize", "Write", "Sum", "Reset"]
+
+[packages."crypto/sha512"]
+kind = "stdlib"
+members = ["New", "Sum512", "Sum384", "New384", "Size", "BlockSize", "Write", "Sum", "Reset"]
+
+[packages."crypto/sha1"]
+kind = "stdlib"
+members = ["New", "Sum", "Size", "BlockSize", "Write", "Reset"]
+
+[packages."crypto/md5"]
+kind = "stdlib"
+members = ["New", "Sum", "Size", "BlockSize", "Write", "Reset"]
+
+[packages."crypto/hmac"]
+kind = "stdlib"
+# Keyed message authentication. Equal is the constant-time comparison.
+members = ["New", "Equal", "Write", "Sum", "Reset"]
+
+[packages."crypto/subtle"]
+kind = "stdlib"
+members = ["ConstantTimeCompare", "ConstantTimeSelect", "ConstantTimeByteEq", "ConstantTimeEq", "XORBytes"]
+
+[packages."crypto/aes"]
+kind = "stdlib"
+members = ["NewCipher", "BlockSize", "KeySizeError"]
+
+[packages."crypto/cipher"]
+kind = "stdlib"
+members = [
+    "NewGCM", "NewGCMWithNonceSize", "NewCBCEncrypter", "NewCBCDecrypter", "NewCTR", "NewCFBEncrypter",
+    "NewCFBDecrypter", "NewOFB", "AEAD", "Block", "BlockMode", "Stream", "Seal", "Open",
+    "NonceSize", "Overhead", "CryptBlocks", "XORKeyStream", "StreamReader", "StreamWriter",
+]
+
+[packages."crypto/tls"]
+kind = "stdlib"
+# TLS configuration. InsecureSkipVerify disables certificate checks.
+members = [
+    "Config", "Certificate", "LoadX509KeyPair", "X509KeyPair", "Dial", "Listen", "Client",
+    "Server", "Conn", "InsecureSkipVerify", "MinVersion", "MaxVersion", "VersionTLS12",
+    "VersionTLS13", "Certificates", "RootCAs", "ClientCAs", "ClientAuth", "RequireAndVerifyClientCert",
+    "CipherSuites", "PreferServerCipherSuites", "ServerName", "NextProtos", "GetCertificate",
+]
+
+[packages."crypto/x509"]
+kind = "stdlib"
+members = [
+    "NewCertPool", "SystemCertPool", "ParseCertificate", "ParsePKCS1PrivateKey",
+    "ParsePKCS8PrivateKey", "ParsePKIXPublicKey", "MarshalPKCS1PrivateKey", "CertPool",
+    "Certificate", "AppendCertsFromPEM", "AddCert", "Verify", "VerifyOptions", "CreateCertificate",
+]
+
+[packages."crypto/rsa"]
+kind = "stdlib"
+members = [
+    "GenerateKey", "EncryptOAEP", "DecryptOAEP", "EncryptPKCS1v15", "DecryptPKCS1v15",
+    "SignPKCS1v15", "VerifyPKCS1v15", "SignPSS", "VerifyPSS", "PrivateKey", "PublicKey",
+]
+
+[packages."path/filepath"]
+kind = "stdlib"
+# Path manipulation. Join, Clean and Rel are the path-traversal sanitisers.
+members = [
+    "Join", "Clean", "Abs", "Rel", "Base", "Dir", "Ext", "Split", "Walk", "WalkDir", "Glob",
+    "Match", "EvalSymlinks", "IsAbs", "VolumeName", "ToSlash", "FromSlash", "SplitList",
+    "Separator", "ListSeparator", "SkipDir",
+]
+
+[packages."path"]
+kind = "stdlib"
+members = ["Join", "Clean", "Base", "Dir", "Ext", "Split", "Match", "IsAbs"]
+
+[packages."html/template"]
+kind = "stdlib"
+# Contextually escaping templates: the sanitiser. HTML, JS and URL mark text as already safe.
+members = [
+    "New", "Must", "ParseFiles", "ParseGlob", "Template", "Execute", "ExecuteTemplate", "Parse",
+    "Funcs", "FuncMap", "HTML", "HTMLAttr", "JS", "JSStr", "CSS", "URL", "Srcset",
+    "HTMLEscapeString", "JSEscapeString", "URLQueryEscaper", "Lookup", "Delims", "Option",
+]
+
+[packages."text/template"]
+kind = "stdlib"
+# Text templates do not escape; a template built from untrusted text is a sink.
+members = ["New", "Must", "ParseFiles", "ParseGlob", "Template", "Execute", "ExecuteTemplate", "Parse", "Funcs", "FuncMap", "Lookup", "Delims", "HTMLEscapeString"]
+
+[packages."regexp"]
+kind = "stdlib"
+members = [
+    "Compile", "MustCompile", "MatchString", "Match", "QuoteMeta", "Regexp", "FindString",
+    "FindStringSubmatch", "FindAllString", "FindAllStringSubmatch", "ReplaceAllString",
+    "ReplaceAllStringFunc", "Split", "SubexpNames", "String", "FindStringIndex", "NumSubexp",
+]
+
+[packages."strings"]
+kind = "stdlib"
+members = [
+    "Contains", "ContainsAny", "ContainsRune", "HasPrefix", "HasSuffix", "Index", "IndexByte",
+    "LastIndex", "Join", "Split", "SplitN", "Fields", "Replace", "ReplaceAll", "NewReplacer",
+    "Replacer", "Trim", "TrimSpace", "TrimLeft", "TrimRight", "TrimPrefix", "TrimSuffix",
+    "ToLower", "ToUpper", "Title", "Repeat", "Count", "EqualFold", "Builder", "NewReader",
+    "Reader", "Map", "WriteString", "WriteByte", "String", "Len", "Reset", "Grow", "Cut",
+]
+
+[packages."strconv"]
+kind = "stdlib"
+members = [
+    "Atoi", "Itoa", "ParseInt", "ParseUint", "ParseFloat", "ParseBool", "FormatInt",
+    "FormatUint", "FormatFloat", "FormatBool", "Quote", "Unquote", "AppendInt", "NumError",
+    "ErrSyntax", "ErrRange",
+]
+
+[packages."bytes"]
+kind = "stdlib"
+members = [
+    "Buffer", "NewBuffer", "NewBufferString", "NewReader", "Contains", "Equal", "Compare",
+    "HasPrefix", "HasSuffix", "Index", "Join", "Split", "Trim", "TrimSpace", "ToLower",
+    "ToUpper", "Repeat", "Write", "WriteString", "WriteByte", "String", "Bytes", "Len",
+    "Reset", "Read", "ReadFrom", "WriteTo", "Truncate", "Grow",
+]
+
+[packages."time"]
+kind = "stdlib"
+members = [
+    "Now", "Since", "Until", "Sleep", "After", "AfterFunc", "Tick", "NewTimer", "NewTicker",
+    "Timer", "Ticker", "Time", "Duration", "Parse", "ParseDuration", "Unix", "UnixMilli",
+    "Date", "UTC", "Local", "LoadLocation", "Second", "Millisecond", "Minute", "Hour",
+    "Microsecond", "Nanosecond", "RFC3339", "RFC3339Nano", "Format", "Add", "Sub", "Before",
+    "After", "Equal", "IsZero", "Truncate", "Round", "Stop", "Reset", "C", "Seconds",
+]
+
+[packages."context"]
+kind = "stdlib"
+members = [
+    "Background", "TODO", "WithCancel", "WithTimeout", "WithDeadline", "WithValue", "Context",
+    "CancelFunc", "Canceled", "DeadlineExceeded", "Done", "Err", "Value", "Deadline",
+    "WithCancelCause", "Cause", "AfterFunc", "WithoutCancel",
+]
+
+[packages."errors"]
+kind = "stdlib"
+members = ["New", "Is", "As", "Unwrap", "Join", "ErrUnsupported", "Error"]
+
+[packages."sync"]
+kind = "stdlib"
+members = [
+    "Mutex", "RWMutex", "WaitGroup", "Once", "Pool", "Map", "Cond", "Lock", "Unlock", "RLock",
+    "RUnlock", "TryLock", "Add", "Done", "Wait", "Do", "Get", "Put", "Load", "Store",
+    "LoadOrStore", "Delete", "Range", "NewCond", "Signal", "Broadcast", "OnceFunc", "OnceValue",
+]
+
+[packages."sync/atomic"]
+kind = "stdlib"
+members = [
+    "AddInt32", "AddInt64", "LoadInt32", "LoadInt64", "StoreInt32", "StoreInt64", "CompareAndSwapInt32",
+    "CompareAndSwapInt64", "Int32", "Int64", "Uint32", "Uint64", "Bool", "Value", "Pointer",
+    "Load", "Store", "Add", "Swap", "CompareAndSwap",
+]
+
+[packages."log"]
+kind = "stdlib"
+# Standard logging. A log call is a sink for logged secrets.
+members = [
+    "Print", "Printf", "Println", "Fatal", "Fatalf", "Fatalln", "Panic", "Panicf", "Panicln",
+    "New", "Default", "Logger", "SetFlags", "SetPrefix", "SetOutput", "Flags", "Prefix",
+    "LstdFlags", "Lshortfile", "Llongfile", "Ldate", "Ltime", "Lmicroseconds", "LUTC", "Output",
+]
+
+[packages."log/slog"]
+kind = "stdlib"
+members = [
+    "Info", "Warn", "Error", "Debug", "InfoContext", "WarnContext", "ErrorContext",
+    "DebugContext", "New", "Default", "SetDefault", "With", "Logger", "Handler", "NewJSONHandler",
+    "NewTextHandler", "HandlerOptions", "String", "Int", "Int64", "Bool", "Any", "Duration",
+    "Attr", "Group", "Level", "LevelInfo", "LevelDebug", "LevelWarn", "LevelError",
+]
+
+[packages."flag"]
+kind = "stdlib"
+# Command-line flags: a taint source.
+members = [
+    "String", "StringVar", "Int", "IntVar", "Bool", "BoolVar", "Duration", "DurationVar",
+    "Float64", "Parse", "Parsed", "Args", "Arg", "NArg", "NFlag", "Usage", "PrintDefaults",
+    "NewFlagSet", "FlagSet", "CommandLine", "Var", "Func",
+]
+
+[packages."sort"]
+kind = "stdlib"
+members = [
+    "Slice", "SliceStable", "Sort", "Stable", "Strings", "Ints", "Float64s", "Search",
+    "SearchInts", "SearchStrings", "Interface", "Len", "Less", "Swap", "IsSorted", "Reverse",
+]
+
+[packages."reflect"]
+kind = "stdlib"
+members = [
+    "TypeOf", "ValueOf", "DeepEqual", "Type", "Value", "Kind", "Struct", "Ptr", "Pointer",
+    "Slice", "Map", "Interface", "Elem", "Field", "NumField", "FieldByName", "Method",
+    "MethodByName", "NumMethod", "Call", "Set", "SetString", "SetInt", "Tag", "Get", "Lookup",
+    "Name", "IsNil", "IsValid", "CanSet", "New", "MakeSlice", "MakeMap", "Indirect",
+]
+
+[packages."github.com/gin-gonic/gin"]
+kind = "third_party"
+# Gin: the context is the request, the response and the parameter source in one.
+members = [
+    "Default", "New", "Engine", "Context", "H", "HandlerFunc", "RouterGroup", "Group", "GET",
+    "POST", "PUT", "DELETE", "PATCH", "Use", "Run", "RunTLS", "Param", "Query", "DefaultQuery",
+    "PostForm", "DefaultPostForm", "FormFile", "Bind", "BindJSON", "ShouldBind", "ShouldBindJSON",
+    "ShouldBindQuery", "ShouldBindUri", "JSON", "String", "HTML", "Redirect", "File", "Status",
+    "Header", "GetHeader", "Cookie", "SetCookie", "Set", "Get", "MustGet", "Next", "Abort",
+    "AbortWithStatus", "AbortWithStatusJSON", "ClientIP", "Request", "Writer", "Params",
+    "SetMode", "ReleaseMode", "DebugMode", "Recovery", "Logger", "LoadHTMLGlob", "Static",
+]
+
+[packages."github.com/gorilla/mux"]
+kind = "third_party"
+members = [
+    "NewRouter", "Router", "Route", "Vars", "CurrentRoute", "HandleFunc", "Handle", "Methods",
+    "Path", "PathPrefix", "Queries", "Headers", "Host", "Schemes", "Subrouter", "Use",
+    "MiddlewareFunc", "StrictSlash", "ServeHTTP", "Name", "GetName", "URL",
+]
+
+[packages."github.com/labstack/echo"]
+kind = "third_party"
+members = [
+    "New", "Echo", "Context", "HandlerFunc", "MiddlewareFunc", "GET", "POST", "PUT", "DELETE",
+    "Group", "Use", "Start", "Param", "QueryParam", "FormValue", "Bind", "JSON", "String",
+    "HTML", "Redirect", "Request", "Response", "Cookie", "SetCookie", "Get", "Set", "NoContent",
+    "HTTPError", "NewHTTPError", "Static", "File", "Validator",
+]
+
+[packages."gorm.io/gorm"]
+kind = "third_party"
+# GORM: Raw and Exec take SQL text; Where with a string argument is a sink.
+members = [
+    "Open", "DB", "Model", "Config", "Where", "Or", "Not", "Order", "Limit", "Offset", "Select",
+    "Joins", "Preload", "Group", "Having", "Find", "First", "Last", "Take", "Create", "Save",
+    "Update", "Updates", "Delete", "Raw", "Exec", "Scan", "Row", "Rows", "Count", "Begin",
+    "Commit", "Rollback", "Transaction", "AutoMigrate", "Table", "Debug", "Error", "RowsAffected",
+    "Session", "WithContext", "Clauses", "Expr", "Model", "Association", "ErrRecordNotFound",
+    "BeforeCreate", "AfterCreate", "BeforeSave", "AfterSave", "BeforeUpdate", "AfterUpdate",
+    "BeforeDelete", "AfterDelete", "AfterFind", "TableName",
+]
+
+[packages."github.com/jmoiron/sqlx"]
+kind = "third_party"
+members = [
+    "Open", "Connect", "MustConnect", "DB", "Tx", "NamedStmt", "Get", "Select", "Exec", "Query",
+    "Queryx", "QueryRowx", "NamedExec", "NamedQuery", "In", "Rebind", "Preparex", "Beginx",
+    "MustBegin", "Commit", "Rollback", "StructScan", "MapScan", "Named", "Rows", "Row",
+]
+
+[packages."github.com/lib/pq"]
+kind = "third_party"
+members = ["Open", "NewConnector", "Error", "Array", "CopyIn", "Listener", "NewListener", "QuoteIdentifier", "QuoteLiteral", "ParseURL", "Code"]
+
+[packages."github.com/go-sql-driver/mysql"]
+kind = "third_party"
+members = ["Config", "NewConfig", "ParseDSN", "MySQLError", "FormatDSN", "RegisterTLSConfig", "Number", "Message"]
+
+[packages."github.com/golang-jwt/jwt"]
+kind = "third_party"
+# JWT signing and verification. Parse without a key function that pins the algorithm is a sink.
+members = [
+    "New", "NewWithClaims", "Parse", "ParseWithClaims", "Token", "Claims", "MapClaims",
+    "RegisteredClaims", "StandardClaims", "SigningMethodHS256", "SigningMethodRS256",
+    "SigningMethodES256", "SigningMethodNone", "SigningMethod", "SignedString", "Valid",
+    "Keyfunc", "ParseRSAPrivateKeyFromPEM", "ParseRSAPublicKeyFromPEM", "Header", "Claims",
+    "Method", "Signature", "Raw", "NewNumericDate", "WithValidMethods", "WithLeeway",
+]
+
+[packages."golang.org/x/crypto"]
+kind = "third_party"
+# The x/crypto subpackages: bcrypt, argon2, scrypt, pbkdf2, nacl, ssh and acme.
+members = [
+    "GenerateFromPassword", "CompareHashAndPassword", "DefaultCost", "MinCost", "MaxCost",
+    "IDKey", "Key", "New", "Sum", "Seal", "Open", "GenerateKey", "NewKeyFromBytes",
+    "NewSignerFromKey", "ParsePrivateKey", "ParseAuthorizedKey", "Dial", "ClientConfig",
+    "InsecureIgnoreHostKey", "FixedHostKey", "PublicKeys", "Password", "Client", "NewSession",
+    "Hash", "Salsa20", "Poly1305", "Argon2", "Bcrypt",
+]
+
+[packages."go.uber.org/zap"]
+kind = "third_party"
+members = [
+    "NewProduction", "NewDevelopment", "NewExample", "New", "Logger", "SugaredLogger", "Sugar",
+    "Info", "Infof", "Warn", "Warnf", "Error", "Errorf", "Debug", "Debugf", "Fatal", "Fatalf",
+    "Panic", "With", "Named", "Sync", "String", "Int", "Int64", "Bool", "Any", "Err", "Duration",
+    "Field", "Config", "NewProductionConfig", "Build", "L", "S", "ReplaceGlobals",
+]
+
+[packages."github.com/sirupsen/logrus"]
+kind = "third_party"
+members = [
+    "New", "Logger", "Entry", "Fields", "WithField", "WithFields", "WithError", "Info", "Infof",
+    "Warn", "Warnf", "Error", "Errorf", "Debug", "Debugf", "Fatal", "Fatalf", "Panic",
+    "SetLevel", "SetFormatter", "SetOutput", "JSONFormatter", "TextFormatter", "InfoLevel",
+    "DebugLevel", "WarnLevel", "ErrorLevel", "StandardLogger", "AddHook",
+]
+
+[packages."gopkg.in/yaml.v3"]
+kind = "third_party"
+# YAML decoding. Unmarshal into interface{} on untrusted input needs size limits.
+members = ["Marshal", "Unmarshal", "NewEncoder", "NewDecoder", "Encoder", "Decoder", "Node", "Decode", "Encode", "SetIndent", "KnownFields", "MarshalYAML", "UnmarshalYAML"]
+
+[packages."github.com/stretchr/testify"]
+kind = "third_party"
+members = [
+    "assert", "require", "mock", "suite", "Equal", "NotEqual", "Nil", "NotNil", "True", "False",
+    "NoError", "Error", "Contains", "Len", "Empty", "NotEmpty", "ElementsMatch", "Panics",
+    "EqualError", "ErrorIs", "ErrorContains", "JSONEq", "Eventually", "FailNow", "Fail",
+]
+
+[framework_contracts]
+# Interfaces are satisfied by method name, so these names are a contract with the standard
+# library or a framework and are kept.
+Error = "builtin"
+String = "fmt"
+GoString = "fmt"
+Format = "fmt"
+Unwrap = "errors"
+Is = "errors"
+As = "errors"
+ServeHTTP = "net/http"
+Read = "io"
+Write = "io"
+Close = "io"
+Seek = "io"
+ReadFrom = "io"
+WriteTo = "io"
+Len = "sort"
+Less = "sort"
+Swap = "sort"
+Push = "container/heap"
+Pop = "container/heap"
+MarshalJSON = "encoding/json"
+UnmarshalJSON = "encoding/json"
+MarshalText = "encoding"
+UnmarshalText = "encoding"
+MarshalBinary = "encoding"
+UnmarshalBinary = "encoding"
+MarshalYAML = "yaml"
+UnmarshalYAML = "yaml"
+Scan = "database/sql"
+Value = "database/sql/driver"
+TableName = "gorm"
+BeforeCreate = "gorm"
+AfterCreate = "gorm"
+BeforeSave = "gorm"
+AfterSave = "gorm"
+BeforeUpdate = "gorm"
+AfterUpdate = "gorm"
+BeforeDelete = "gorm"
+AfterDelete = "gorm"
+AfterFind = "gorm"
+Done = "context"
+Err = "context"
+Deadline = "context"
+Lock = "sync"
+Unlock = "sync"
+Next = "iterator"
+main = "go"
+init = "go"
+
+[framework_decorators]
+
+[well_known]
+# Names that mark a taint source, a sink or a sanitiser in Go code.
+sources = [
+    "Args", "Getenv", "LookupEnv", "Environ", "FormValue", "PostFormValue", "ParseForm", "Query",
+    "Param", "PostForm", "Cookie", "Cookies", "Header", "Body", "ReadAll", "ReadString", "Scan",
+    "Text", "ReadLine", "Vars", "URL", "RemoteAddr", "FormFile", "BindJSON", "ShouldBindJSON",
+]
+sinks = [
+    "Command", "CommandContext", "Exec", "ExecContext", "Query", "QueryContext", "QueryRow",
+    "QueryRowContext", "Raw", "Sprintf", "Fprintf", "Redirect", "ServeFile", "Open", "OpenFile",
+    "ReadFile", "WriteFile", "Create", "Remove", "RemoveAll", "Unmarshal", "Decode", "HTML",
+    "JS", "URL", "Eval", "Write", "WriteString", "Println", "Printf", "Fatal", "Fatalf",
+    "InsecureSkipVerify", "MustCompile", "Parse",
+]
+sanitisers = [
+    "QueryEscape", "PathEscape", "HTMLEscapeString", "JSEscapeString", "EscapeText", "Clean",
+    "Join", "Rel", "Base", "Abs", "EvalSymlinks", "QuoteMeta", "Quote", "Atoi", "ParseInt",
+    "ConstantTimeCompare", "Equal", "CompareHashAndPassword", "MaxBytesReader", "Named",
+]
+# Conventional names of a framework application object.
+conventional_instances = ["router", "mux", "engine"]
+
+[reflection]
+# Go reflection takes the field or method name as its first argument (FieldByName("Name")). A
+# string that equals a name this file defines is rewritten with the binding; one that names
+# something this file does not define stays in clear and is counted.
+name_argument = 0
+attribute_calls = ["FieldByName", "MethodByName", "FieldByNameFunc"]
+
+[dynamic_code]
+# Go has no call that executes source text; the list is empty on purpose.
+calls = []

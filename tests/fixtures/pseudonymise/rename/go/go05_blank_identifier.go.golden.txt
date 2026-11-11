@@ -1,0 +1,10 @@
+package mod_1
+
+import _ "github.com/lib/pq"
+
+func fn_1(param_1 int64) {
+	_ = param_1
+	for _, var_1 := range []int64{1, 2} {
+		_ = var_1
+	}
+}

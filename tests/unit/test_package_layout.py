@@ -109,6 +109,8 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.privacy.pseudonymise.numbers",
         "codekavach.privacy.pseudonymise.plan",
         "codekavach.privacy.pseudonymise.renamers.base",
+        "codekavach.privacy.pseudonymise.renamers.go",
+        "codekavach.privacy.pseudonymise.renamers.java",
         "codekavach.privacy.pseudonymise.renamers.javascript",
         "codekavach.privacy.pseudonymise.renamers.python",
         "codekavach.privacy.pseudonymise.renamers.registry",

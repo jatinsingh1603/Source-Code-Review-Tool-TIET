@@ -131,6 +131,8 @@ class SourceFacts:
     specifier_starts: frozenset[int] = field(
         default=frozenset()
     )  # start of the text, not the quote
+    # Go struct tags: (start of the tag text, name of the field the tag belongs to).
+    tag_fields: tuple[tuple[int, str], ...] = ()
 
 
 class ByteOffsets:
@@ -221,6 +223,19 @@ class BaseRenamer:
     def is_name_string(self, node: Node | None) -> bool:
         """Whether a string, by where it sits, names a binding (``__all__``, an annotation)."""
         return False
+
+    def is_public_specifier(self, content: str, allowlist: PublicAllowlist) -> bool:
+        """Whether the text of an import string names a package that stays in clear."""
+        return _is_public_specifier(content, allowlist)
+
+    def literal_edits(
+        self, original: str, start: int, end: int, tokens: dict[str, str], facts: SourceFacts
+    ) -> list[RenameEdit] | None:
+        """The edits a language makes for a string by its place (a Go struct tag), or ``None``.
+
+        ``None`` leaves the string to the common path. An empty list keeps the string as written.
+        """
+        return None
 
     # --- the contract ---------------------------------------------------------------------
 
@@ -371,7 +386,12 @@ class BaseRenamer:
                 raise PseudonymError("a string literal does not sit where the parse says")
             if original in classification.kept_dynamic:
                 continue  # the pair stays in clear and consistent, and is counted as kept
-            if start in facts.specifier_starts and _is_public_specifier(original, allowlist):
+            special = self.literal_edits(original, start, end, tokens, facts)
+            if special is not None:
+                edits.extend(special)
+                name_strings += len(special)
+                continue
+            if start in facts.specifier_starts and self.is_public_specifier(original, allowlist):
                 continue  # ``require('express')``: a listed package is recognisable by name
             token = tokens.get(original)
             if token is not None and (

@@ -217,6 +217,12 @@ _EXTRA_VERDICT: Final = _Verdict(IdentifierClass.PUBLIC, Rule.EXTRA)
 _DEFAULT_VERDICT: Final = _Verdict(IdentifierClass.INTERNAL, Rule.DEFAULT_INTERNAL)
 _RECEIVER_VERDICT: Final = _Verdict(IdentifierClass.PUBLIC, Rule.RECEIVER, depends_on_table=True)
 
+_JAVA_LIBRARY_ROOTS: Final = frozenset({"java", "javax", "jakarta"})
+_ANNOTATIONS: Final = frozenset({"annotation", "marker_annotation"})
+_CALL_BOUND_METHODS: Final = frozenset({Language.JAVA, Language.GO})
+_QUALIFIED_KINDS: Final = frozenset({"class", "variable", "method", "constant"})
+_JAVA_PACKAGE_SEGMENTS: Final = 2  # java.sql, org.springframework
+_GO_HOST_SEGMENTS: Final = 3  # github.com/owner/repo
 # The conventional spellings of the receiver of a method. Only these are kept in clear, so that a
 # receiver spelled after the client (``account``) is still renamed.
 _RECEIVER_NAMES: Final = frozenset({"self", "cls"})
@@ -255,9 +261,20 @@ class _Tally:
 
 
 def _top_package(module: str, language: Language) -> str:
-    """The package of a module string: ``flask.ext`` is ``flask``, ``@x/y/z`` is ``@x/y``."""
+    """The package of a module string: ``flask.ext`` is ``flask``, ``@x/y/z`` is ``@x/y``.
+
+    Java keys a package by its first two segments (``java.sql``, ``org.springframework``); Go
+    keys a standard-library package by its whole path and a hosted module by its first three
+    elements (``github.com/gin-gonic/gin``).
+    """
     if language is Language.PYTHON:
         return module.split(".", 1)[0]
+    if language is Language.JAVA:
+        return ".".join(module.split(".")[:_JAVA_PACKAGE_SEGMENTS])
+    if language is Language.GO:
+        parts = module.split("/")
+        # ``fmt`` and ``database/sql`` are whole; ``github.com/o/r/sub`` is ``github.com/o/r``.
+        return "/".join(parts[:_GO_HOST_SEGMENTS]) if "." in parts[0] else module
     text = module.removeprefix("node:")
     parts = text.split("/")
     if text.startswith("@") and len(parts) >= 2:
@@ -350,6 +367,10 @@ class _Run:
         for ref in table.imports:
             if ref.bound is not None:
                 self._refs.setdefault((ref.bound, ref.scope_id), ref)
+        self._refs_by_name: dict[str, ImportRef] = {}
+        for ref in table.imports:
+            if ref.bound is not None:
+                self._refs_by_name.setdefault(ref.bound, ref)
         self._listing = self._scope_listing()
         self._memo: list[_Verdict | None] = [None] * len(table.symbols)
         self._named_listed: dict[str, _Verdict | None] = {}
@@ -464,16 +485,61 @@ class _Run:
             if ref is not None:
                 return self._import(ref)
         external = scope == UNRESOLVED and not symbol.is_definition
+        if external and symbol.kind != "field" and self._member_base(index) is None:
+            # A package named by an import that binds no symbol of its own (Go ``fmt``).
+            ref = self._refs_by_name.get(name)
+            if ref is not None:
+                return self._import(ref)
         if external:
             return self._external(index, symbol)
         return self._bound(index, symbol)
 
+    def _annotation_element(self, index: int, symbol: Symbol) -> _Verdict | None:
+        """The name of an annotation element (``@Column(name = "x")``) of a public annotation.
+
+        The element names are the annotation type's contract, so they stay with it. An element of
+        an annotation the file declares is renamed with the ``@interface`` method.
+        """
+        context = self._tree()
+        node = None if context is None else context.node_for(symbol.location, symbol.name)
+        pair = None if node is None else node.parent
+        if pair is None or pair.type != "element_value_pair":
+            return None
+        key = pair.child_by_field_name("key")
+        if key is None or key.start_byte != (node.start_byte if node else -1):
+            return None
+        annotation = pair.parent
+        while annotation is not None and annotation.type not in _ANNOTATIONS:
+            annotation = annotation.parent
+        named = None if annotation is None else annotation.child_by_field_name("name")
+        if named is None:
+            return None
+        simple = (named.text or b"").decode("utf-8", errors="replace").rsplit(".", 1)[-1]
+        ref = self._refs_by_name.get(simple)
+        allowlist = self._allowlist
+        if ref is not None:
+            public = self._import(ref).classification is IdentifierClass.PUBLIC
+        else:
+            public = allowlist.is_keyword_or_builtin(simple) or (
+                allowlist.decorator_package(simple) is not None
+            )
+        if not public:
+            return None
+        return _Verdict(IdentifierClass.PUBLIC, Rule.KEYWORD_OF_PUBLIC, depends_on_table=True)
+
     def _external(self, index: int, symbol: Symbol) -> _Verdict:
         """An occurrence with no visible binding: a module segment, a member or a keyword."""
+        if self._language is Language.JAVA:
+            if symbol.kind in {"field", "parameter", "variable"}:
+                element = self._annotation_element(index, symbol)
+                if element is not None:
+                    return element
+            if self._java_library_path(index):
+                return _Verdict(IdentifierClass.PUBLIC, Rule.MEMBER_OF_PUBLIC, ("builtins",))
         if symbol.kind == "module":
             return self._module_segment(symbol)
-        if symbol.kind == "field":
-            return self._member(index, symbol)
+        if symbol.kind == "field" or (symbol.kind in _QUALIFIED_KINDS and self._after_dot(index)):
+            return self._member(index, symbol)  # ``pkg.Name``: a type or value of a package
         if symbol.kind == "parameter":
             return self._keyword(index, symbol)
         # An unbound plain name is not an attribute, so it is decided like a bound name.
@@ -536,6 +602,10 @@ class _Run:
         if scope >= 0 and is_receiver_name and self._receiver_of(scope) == symbol.name:
             return _RECEIVER_VERDICT
         in_class = symbol.is_definition and scope >= 0 and self._table.scopes[scope].kind == "class"
+        if in_class and symbol.kind == "method" and self._language in _CALL_BOUND_METHODS:
+            # A Java or Go method is called by its bare name too; deciding the definition by a
+            # package listing and the call without one would rename only the call.
+            in_class = False
         named = self._name_level(symbol.name, listed=in_class)
         if named is not None:
             return named
@@ -568,14 +638,46 @@ class _Run:
         member of that package and is decided by name.
         """
         for ref in self._table.imports:
-            if ref.module.split(".", 1)[0] == symbol.name and _contains(
-                ref.location, symbol.location
+            if _contains(ref.location, symbol.location) and (
+                self._language is Language.JAVA or ref.module.split(".", 1)[0] == symbol.name
             ):
+                # Java: every segment of ``java.sql`` or ``com.bank.util`` takes the origin of
+                # the import, so the qualifier of a class library import is not renamed.
                 return self._import(ref)
         named = self._name_level(symbol.name, listed=True)
         if named is not None:
             return named
         return _DEFAULT_VERDICT
+
+    def _java_library_path(self, index: int) -> bool:
+        """Whether the identifier is a segment of a qualified name that starts at ``java.``.
+
+        ``java.lang.reflect.Field`` written in code, without an import, is the class library by
+        its first segment, so every segment stays; a qualified name that starts anywhere else is
+        decided segment by segment.
+        """
+        source = self._source
+        position = self._start_of(index)
+        if position <= 0 or source[position - 1] != ".":
+            return False
+        while position > 0 and source[position - 1] == ".":
+            start = position - 1
+            while start > 0 and (source[start - 1].isalnum() or source[start - 1] in "_$"):
+                start -= 1
+            if start == position - 1:
+                return False
+            position = start
+        end = position
+        while end < len(source) and (source[end].isalnum() or source[end] in "_$"):
+            end += 1
+        return source[position:end] in _JAVA_LIBRARY_ROOTS
+
+    def _after_dot(self, index: int) -> bool:
+        """Whether the identifier is written right after a ``.`` (a member, whatever its base)."""
+        dot = self._start_of(index) - 1
+        if not 0 <= dot < len(self._source):
+            return False
+        return self._source[dot] == "." or self._source[dot - 1 : dot + 1] == "::"
 
     def _member_base(self, index: int) -> int | None:
         """The symbol of the identifier that an attribute access is taken from, if it is one.
@@ -742,7 +844,9 @@ class _Run:
         if symbol.scope_id == UNRESOLVED and symbol.kind == "field":
             base = self._member_base(callee)
             base_name = "" if base is None else self._symbols[base].name
-            return self._allowlist.is_reflection_method(base_name, symbol.name)
+            return self._allowlist.is_reflection_method(
+                base_name, symbol.name
+            ) or self._allowlist.is_attribute_call(symbol.name)
         return symbol.scope_id == UNRESOLVED and self._allowlist.is_attribute_call(symbol.name)
 
     def _dynamic_literals(self, names: set[str]) -> set[str]:
@@ -775,9 +879,13 @@ class _Run:
             if previous == "[" and before >= 1 and _is_word(source[before - 1]):
                 if value in names:
                     found.add(value)
-            elif previous == "," and reflective:
+            elif reflective and previous == ("," if self._allowlist.name_argument else "("):
                 paren, commas = self._enclosing_paren(start - 1)
-                if paren is not None and commas == 1 and self._is_reflective_callee(paren):
+                if (
+                    paren is not None
+                    and commas == self._allowlist.name_argument
+                    and self._is_reflective_callee(paren)
+                ):
                     found.add(value)
         return found
 

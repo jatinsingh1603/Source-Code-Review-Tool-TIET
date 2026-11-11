@@ -31,7 +31,13 @@ from codekavach.privacy.pseudonymise.renamers.registry import default_registry
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "pseudonymise" / "rename"
 SALT = ScanSalt(bytes(range(32)))
-EXTENSIONS = {Language.PYTHON: "py", Language.JAVASCRIPT: "js", Language.TYPESCRIPT: "ts"}
+EXTENSIONS = {
+    Language.PYTHON: "py",
+    Language.JAVASCRIPT: "js",
+    Language.TYPESCRIPT: "ts",
+    Language.JAVA: "java",
+    Language.GO: "go",
+}
 _DIRECTIVE = re.compile(r"^(?:#|//)\s*extra:\s*(?P<names>.*)$")
 
 

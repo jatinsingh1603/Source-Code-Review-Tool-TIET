@@ -1,0 +1,12 @@
+package mod_1
+
+import "net/http"
+
+type cls_1 struct {
+	field_1 string
+}
+
+func (param_3 cls_1) ServeHTTP(param_2 http.ResponseWriter, param_1 *http.Request) {
+	var_1 := param_1.FormValue("xxxxxxx")
+	param_2.Write([]byte(param_3.field_1 + var_1))
+}

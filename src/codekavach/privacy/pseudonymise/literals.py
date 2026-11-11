@@ -155,7 +155,7 @@ def _shape_natural(text: str, ctx: _Context) -> str:
 _FORMAT_SPEC: Final = re.compile(
     r"%%"
     r"|%\((?P<pname>[^)]*)\)(?P<pspec>[-+ #0]*\d*(?:\.\d+)?[a-zA-Z])"
-    r"|%[-+ #0]*(?:\*|\d+)?(?:\.(?:\*|\d+))?[diouxXeEfFgGcrsa]"
+    r"|%[-+ #0]*(?:\*|\d+)?(?:\.(?:\*|\d+))?[diouxXeEfFgGcrsavwqTtpU]"
     r"|\{\{|\}\}"
     r"|\{(?P<bname>[^{}!:]*)(?P<bspec>[!:][^{}]*)?\}"
     r"|\$\{(?P<sname>[^{}]*)\}"

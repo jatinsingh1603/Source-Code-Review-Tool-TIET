@@ -1,0 +1,431 @@
+# Public-name allowlist for Java (E09-06). Read by codekavach.privacy.pseudonymise.allowlist.
+#
+# Source: compiled by hand from the maintainers' working knowledge of the Java SE class library
+#   and of the third-party libraries named below, limited to the security-relevant surface that
+#   the rule matchers and the triage model need to recognise (sources, sinks, sanitisers, crypto,
+#   serialisation, HTTP, SQL, process and file APIs). No library source code was copied. Names are
+#   listed by package, not exhaustively. The list has NOT yet been checked name by name against
+#   the upstream documentation; that check is a follow-up before a client engagement relies on it.
+# Generated: 2026-11-10 (first curated version; edit by issue, and bump the version below).
+# Version: java-2026.11.10.1
+#
+# Reading rules (the classifier in codekavach.privacy.pseudonymise.classify):
+#   * [packages."<a.b>"] lists the members of a package, keyed by the first two segments of the
+#     import (java.sql, javax.crypto, org.springframework). A member is public when it is
+#     accessed on a value known to come from that package (for example statement.executeQuery).
+#   * A package of kind "third_party" is public as an import only when listed here. Packages of
+#     the Java SE class library (java.*, javax.*) are public as imports by origin (E07-04), and
+#     their members are listed so that chains through them stay recognisable. kind "builtin" is
+#     java.lang, which needs no import.
+#   * A name listed under several packages is public by name (the conservative reading).
+#   * Every entry under [framework_contracts] and [framework_decorators] names its framework in
+#     the value. Renaming these names changes behaviour as well as hiding the framework contract.
+#   * Only the names here, the keywords and builtins of the language and the user's
+#     public_allowlist_extra are ever public. Adding a name here is a disclosure decision.
+
+version = "java-2026.11.10.1"
+language = "java"
+
+[packages.builtins]
+kind = "builtin"
+# java.lang: Object, String, the boxed types, Math, System, Thread, Runtime and their members.
+members = [
+    "String", "Object", "Integer", "Long", "Double", "Float", "Boolean", "Byte", "Short",
+    "Character", "Number", "Math", "System", "Thread", "Runtime", "Process", "ProcessBuilder",
+    "StringBuilder", "StringBuffer", "Class", "ClassLoader", "Exception", "RuntimeException",
+    "Error", "Throwable", "IllegalArgumentException", "IllegalStateException",
+    "NullPointerException", "SecurityException", "UnsupportedOperationException",
+    "Iterable", "Comparable", "Runnable", "AutoCloseable", "Override", "Deprecated",
+    "SuppressWarnings", "FunctionalInterface", "SafeVarargs", "Record", "Enum", "Void",
+    "length", "charAt", "substring", "indexOf", "lastIndexOf", "equals", "equalsIgnoreCase",
+    "hashCode", "toString", "compareTo", "isEmpty", "isBlank", "trim", "strip", "split", "replace",
+    "replaceAll", "contains", "startsWith", "endsWith", "toLowerCase", "toUpperCase", "format",
+    "valueOf", "parseInt", "parseLong", "parseDouble", "getBytes", "toCharArray", "join", "matches",
+    "append", "insert", "reverse", "getClass", "getName", "getSimpleName", "forName",
+    "newInstance", "getenv", "getDeclaredField", "getField", "getDeclaredMethod", "getMethod",
+    "getDeclaredConstructor", "getConstructor", "setAccessible", "invoke", "loadClass",
+    "getenv", "getProperty", "setProperty", "currentTimeMillis", "nanoTime",
+    "exit", "arraycopy", "exec", "start", "sleep", "interrupt", "getMessage", "getCause",
+    "printStackTrace", "getStackTrace", "abs", "max", "min", "pow", "sqrt", "random", "floor",
+    "ceil", "round", "out", "err", "in", "println", "print", "printf",
+    "longValue", "intValue", "doubleValue", "floatValue", "booleanValue", "shortValue",
+    "byteValue", "compare", "sum", "signum", "hash", "toBinaryString", "toHexString",
+    "Field", "Method", "Constructor", "Modifier", "Instant", "LocalDate", "LocalDateTime", "Duration", "ZoneId",
+    "ZonedDateTime", "DateTimeFormatter", "ChronoUnit", "toList", "name", "ordinal", "values",
+]
+
+[packages."java.io"]
+kind = "stdlib"
+# File and stream I/O, and Java object serialisation.
+members = [
+    "File", "FileInputStream", "FileOutputStream", "FileReader", "FileWriter", "InputStream",
+    "OutputStream", "Reader", "Writer", "BufferedReader", "BufferedWriter", "PrintWriter",
+    "PrintStream", "InputStreamReader", "OutputStreamWriter", "ByteArrayInputStream",
+    "ByteArrayOutputStream", "ObjectInputStream", "ObjectOutputStream", "Serializable",
+    "Closeable", "IOException", "FileNotFoundException", "UncheckedIOException", "readObject",
+    "writeObject", "readLine", "read", "write", "flush", "close", "delete", "exists", "mkdir",
+    "mkdirs", "listFiles", "list", "getPath", "getAbsolutePath", "getCanonicalPath", "isFile",
+    "isDirectory", "createTempFile", "deleteOnExit", "canRead", "canWrite", "length",
+    "readAllBytes", "transferTo", "lines",
+]
+
+[packages."java.nio"]
+kind = "stdlib"
+# java.nio.file and java.nio.charset: paths, files and character sets.
+members = [
+    "Files", "Path", "Paths", "StandardOpenOption", "StandardCharsets", "Charset", "ByteBuffer",
+    "CharBuffer", "FileChannel", "get", "of", "resolve", "normalize", "toAbsolutePath",
+    "toRealPath", "startsWith", "readAllBytes", "readAllLines", "readString", "write",
+    "writeString", "newInputStream", "newOutputStream", "newBufferedReader", "newBufferedWriter",
+    "createTempFile", "createTempDirectory", "createDirectories", "createFile", "delete",
+    "deleteIfExists", "copy", "move", "walk", "list", "exists", "isDirectory", "isRegularFile",
+    "isSymbolicLink", "size", "UTF_8", "ISO_8859_1", "US_ASCII", "UTF_16", "getFileName",
+    "getParent", "toFile", "toUri",
+]
+
+[packages."java.net"]
+kind = "stdlib"
+# URLs, sockets and the JDK HTTP client.
+members = [
+    "URL", "URI", "URLConnection", "HttpURLConnection", "Socket", "ServerSocket",
+    "InetAddress", "InetSocketAddress", "URLEncoder", "URLDecoder", "HttpClient",
+    "HttpRequest", "HttpResponse", "BodyHandlers", "BodyPublishers", "openConnection",
+    "openStream", "getInputStream", "getOutputStream", "setRequestMethod", "setRequestProperty",
+    "setDoOutput", "getResponseCode", "connect", "encode", "decode", "newBuilder", "send",
+    "sendAsync", "uri", "header", "headers", "GET", "POST", "PUT", "DELETE", "build", "body",
+    "toURL", "create", "getHost", "getPort", "getPath", "getQuery", "getProtocol",
+    "getByName", "getHostName", "getHostAddress", "bind", "accept",
+]
+
+[packages."java.sql"]
+kind = "stdlib"
+# JDBC: connections, statements and result sets. executeQuery and the Statement family are sinks.
+members = [
+    "Connection", "DriverManager", "Statement", "PreparedStatement", "CallableStatement",
+    "ResultSet", "ResultSetMetaData", "SQLException", "DataSource", "Types", "Timestamp", "Date",
+    "getConnection", "createStatement", "prepareStatement", "prepareCall", "execute",
+    "executeQuery", "executeUpdate", "executeBatch", "addBatch", "setString", "setInt",
+    "setLong", "setDouble", "setBoolean", "setObject", "setNull", "setTimestamp", "setDate",
+    "setBytes", "getString", "getInt", "getLong", "getDouble", "getBoolean", "getObject",
+    "getTimestamp", "getDate", "getBytes", "next", "close", "commit", "rollback",
+    "setAutoCommit", "getMetaData", "wasNull",
+]
+
+[packages."java.security"]
+kind = "stdlib"
+# Message digests, secure random numbers, key stores and signatures.
+members = [
+    "MessageDigest", "SecureRandom", "KeyStore", "KeyPair", "KeyPairGenerator", "KeyFactory",
+    "PrivateKey", "PublicKey", "Signature", "Key", "Provider", "Security", "NoSuchAlgorithmException",
+    "GeneralSecurityException", "AccessController", "Principal", "getInstance", "digest",
+    "update", "isEqual", "nextBytes", "nextInt", "generateSeed", "setSeed", "getEncoded",
+    "generateKeyPair", "initSign", "initVerify", "sign", "verify", "load", "store", "getKey",
+    "getCertificate", "getAlgorithm", "getProvider", "addProvider", "doPrivileged",
+]
+
+[packages."javax.crypto"]
+kind = "stdlib"
+# Ciphers, MACs and key derivation.
+members = [
+    "Cipher", "Mac", "KeyGenerator", "SecretKey", "SecretKeyFactory", "KeyAgreement",
+    "SealedObject", "BadPaddingException", "IllegalBlockSizeException", "spec",
+    "SecretKeySpec", "IvParameterSpec", "GCMParameterSpec", "PBEKeySpec", "getInstance", "init",
+    "doFinal", "update", "generateKey", "generateSecret", "getIV", "getEncoded", "ENCRYPT_MODE",
+    "DECRYPT_MODE", "WRAP_MODE", "UNWRAP_MODE", "updateAAD", "getBlockSize",
+]
+
+[packages."java.util"]
+kind = "stdlib"
+# Collections, optional values, UUIDs, base64, regular expressions and concurrency.
+members = [
+    "List", "ArrayList", "LinkedList", "Map", "HashMap", "LinkedHashMap", "TreeMap", "Set",
+    "HashSet", "LinkedHashSet", "TreeSet", "Queue", "Deque", "ArrayDeque", "Collections",
+    "Arrays", "Objects", "Optional", "OptionalInt", "UUID", "Base64", "Random", "Date",
+    "Calendar", "Locale", "Properties", "Scanner", "StringJoiner", "Iterator", "Collection",
+    "Comparator", "Pattern", "Matcher", "Stream", "Collectors", "ExecutorService", "Executors",
+    "ConcurrentHashMap", "AtomicInteger", "AtomicLong", "CompletableFuture", "TimeUnit",
+    "add", "addAll", "remove", "removeIf", "get", "put", "putAll", "putIfAbsent", "getOrDefault",
+    "computeIfAbsent", "containsKey", "containsValue", "keySet", "values", "entrySet", "size",
+    "isEmpty", "contains", "stream", "forEach", "map", "filter", "collect", "reduce", "sorted",
+    "findFirst", "orElse", "orElseThrow", "ifPresent", "isPresent", "of", "ofNullable",
+    "randomUUID", "getEncoder", "getDecoder", "encodeToString", "decode", "encode", "compile",
+    "matcher", "find", "group", "matches", "asList", "sort", "toList", "toSet", "joining",
+    "submit", "shutdown", "supplyAsync", "thenApply", "join", "equals", "hash", "requireNonNull",
+    "summingLong", "summingInt", "summingDouble", "counting", "toMap", "groupingBy",
+    "partitioningBy", "averagingInt", "averagingLong", "averagingDouble", "mapping", "toUnmodifiableList",
+    "limit", "skip", "distinct", "flatMap", "anyMatch", "allMatch", "noneMatch", "count", "min",
+    "max", "sum", "average", "mapToInt", "mapToLong", "mapToObj", "boxed", "peek", "iterate",
+    "generate", "range", "rangeClosed", "empty", "concat", "toArray", "findAny", "comparing",
+    "thenComparing", "reversed", "naturalOrder", "reverseOrder", "emptyList", "emptyMap",
+    "singletonList", "unmodifiableList", "unmodifiableMap", "copyOf", "nextLong", "nextDouble",
+    "nextBoolean", "nextGaussian",
+]
+
+[packages."javax.servlet"]
+kind = "third_party"
+# The Servlet API (javax namespace). Request parameters and headers are taint sources.
+members = [
+    "HttpServlet", "HttpServletRequest", "HttpServletResponse", "HttpSession", "ServletException",
+    "ServletContext", "ServletConfig", "Filter", "FilterChain", "Cookie", "RequestDispatcher",
+    "getParameter", "getParameterValues", "getParameterMap", "getHeader", "getHeaders",
+    "getCookies", "getQueryString", "getRequestURI", "getRequestURL", "getInputStream",
+    "getReader", "getSession", "getAttribute", "setAttribute", "getRemoteAddr", "getMethod",
+    "getWriter", "getOutputStream", "setContentType", "setStatus", "setHeader", "addHeader",
+    "addCookie", "sendRedirect", "sendError", "setCharacterEncoding", "forward", "include",
+    "invalidate", "getValue", "getName", "setHttpOnly", "setSecure", "setMaxAge", "setPath",
+    "getRequestDispatcher", "doFilter",
+]
+
+[packages."jakarta.servlet"]
+kind = "third_party"
+# The Servlet API (jakarta namespace): the same surface as javax.servlet.
+members = [
+    "HttpServlet", "HttpServletRequest", "HttpServletResponse", "HttpSession", "ServletException",
+    "ServletContext", "Filter", "FilterChain", "Cookie", "getParameter", "getHeader",
+    "getCookies", "getQueryString", "getRequestURI", "getInputStream", "getReader", "getSession",
+    "getWriter", "setContentType", "setStatus", "setHeader", "addCookie", "sendRedirect",
+    "sendError", "doFilter",
+]
+
+[packages."org.springframework"]
+kind = "third_party"
+# Spring Framework and Spring Boot: web, data, security and the JDBC template.
+members = [
+    "RestController", "Controller", "Service", "Repository", "Component", "Configuration",
+    "Bean", "Autowired", "Value", "RequestMapping", "GetMapping", "PostMapping", "PutMapping",
+    "DeleteMapping", "PatchMapping", "RequestBody", "RequestParam", "PathVariable",
+    "RequestHeader", "ResponseBody", "ResponseStatus", "ResponseEntity", "HttpStatus",
+    "ModelAttribute", "ExceptionHandler", "ControllerAdvice", "RestControllerAdvice", "CrossOrigin",
+    "Transactional", "Query", "Param", "JpaRepository", "CrudRepository", "PagingAndSortingRepository",
+    "JdbcTemplate", "NamedParameterJdbcTemplate", "RestTemplate", "WebClient", "ModelAndView",
+    "Model", "Authentication", "SecurityContextHolder", "PasswordEncoder", "BCryptPasswordEncoder",
+    "HttpSecurity", "EnableWebSecurity", "PreAuthorize", "PostAuthorize", "Secured",
+    "SpringApplication", "SpringBootApplication", "Scheduled", "Valid", "Validated",
+    "query", "queryForObject", "queryForList", "update", "batchUpdate", "execute", "exchange",
+    "getForObject", "postForObject", "getForEntity", "postForEntity", "ok", "badRequest",
+    "notFound", "status", "body", "findById", "findAll", "save", "saveAll", "deleteById",
+    "delete", "existsById", "count", "encode", "matches", "getContext", "getAuthentication",
+    "csrf", "authorizeHttpRequests", "requestMatchers", "permitAll", "authenticated",
+    "hasRole", "hasAnyRole", "csrf", "cors", "disable", "run",
+]
+
+[packages."com.fasterxml"]
+kind = "third_party"
+# Jackson: JSON binding. readValue on untrusted input with default typing is a sink.
+members = [
+    "ObjectMapper", "JsonNode", "JsonProperty", "JsonIgnore", "JsonCreator", "JsonTypeInfo",
+    "JsonSerialize", "JsonDeserialize", "JsonFormat", "JsonInclude", "JsonProcessingException",
+    "TypeReference", "readValue", "readTree", "writeValue", "writeValueAsString",
+    "writeValueAsBytes", "convertValue", "enableDefaultTyping", "activateDefaultTyping",
+    "configure", "registerModule", "get", "path", "asText", "asInt", "fields", "isNull",
+]
+
+[packages."com.google"]
+kind = "third_party"
+# Gson and Guava: JSON binding and common utilities.
+members = [
+    "Gson", "GsonBuilder", "JsonParser", "JsonObject", "JsonElement", "JsonArray", "fromJson",
+    "toJson", "create", "setPrettyPrinting", "parse", "getAsString", "getAsInt", "getAsJsonObject",
+    "ImmutableList", "ImmutableMap", "ImmutableSet", "Lists", "Maps", "Sets", "Preconditions",
+    "checkNotNull", "checkArgument", "checkState", "Joiner", "Splitter", "Strings",
+    "isNullOrEmpty", "Hashing", "sha256", "sha512", "md5", "hashString", "hashBytes",
+]
+
+[packages."org.hibernate"]
+kind = "third_party"
+# Hibernate: sessions, queries and criteria. createQuery and createNativeQuery are sinks.
+members = [
+    "Session", "SessionFactory", "Transaction", "Query", "Criteria", "HibernateException",
+    "createQuery", "createNativeQuery", "createSQLQuery", "createCriteria", "setParameter",
+    "setParameterList", "list", "uniqueResult", "getResultList", "getSingleResult", "save",
+    "saveOrUpdate", "persist", "merge", "remove", "flush", "beginTransaction", "commit",
+    "rollback", "openSession", "getCurrentSession", "buildSessionFactory", "get", "load",
+]
+
+[packages."jakarta.persistence"]
+kind = "third_party"
+# JPA (jakarta namespace): entity annotations and the entity manager.
+members = [
+    "Entity", "Table", "Id", "GeneratedValue", "Column", "JoinColumn", "OneToMany", "ManyToOne",
+    "ManyToMany", "OneToOne", "Embedded", "Embeddable", "Transient", "Query", "NamedQuery",
+    "EntityManager", "EntityManagerFactory", "TypedQuery", "createQuery", "createNativeQuery",
+    "createNamedQuery", "setParameter", "getResultList", "getSingleResult", "persist", "merge",
+    "remove", "find", "flush", "getTransaction", "begin", "commit", "rollback",
+]
+
+[packages."javax.persistence"]
+kind = "third_party"
+# JPA (javax namespace): the same surface as jakarta.persistence.
+members = [
+    "Entity", "Table", "Id", "GeneratedValue", "Column", "JoinColumn", "OneToMany", "ManyToOne",
+    "ManyToMany", "OneToOne", "EntityManager", "TypedQuery", "createQuery", "createNativeQuery",
+    "setParameter", "getResultList", "getSingleResult", "persist", "merge", "remove", "find",
+]
+
+[packages."org.apache"]
+kind = "third_party"
+# Apache Commons (codec, lang, io, text) and the Apache HTTP client.
+members = [
+    "StringUtils", "isBlank", "isEmpty", "isNotBlank", "escapeHtml4", "escapeJava",
+    "escapeXml11", "escapeEcmaScript", "StringEscapeUtils", "DigestUtils", "md5Hex", "sha1Hex",
+    "sha256Hex", "Hex", "Base64", "FileUtils", "IOUtils", "FilenameUtils", "readFileToString",
+    "writeStringToFile", "copyFile", "deleteDirectory", "toString", "toByteArray",
+    "getFullPath", "normalize", "HttpClient", "HttpClients", "CloseableHttpClient", "HttpGet",
+    "HttpPost", "HttpPut", "HttpDelete", "HttpResponse", "EntityUtils", "StringEntity",
+    "execute", "getEntity", "getStatusLine", "getStatusCode", "setHeader", "setEntity",
+]
+
+[packages."org.slf4j"]
+kind = "third_party"
+# SLF4J and Log4j: logging calls. A log call is a sink for logged secrets.
+members = [
+    "Logger", "LoggerFactory", "MDC", "getLogger", "trace", "debug", "info", "warn", "error",
+    "isDebugEnabled", "isInfoEnabled", "put", "remove", "clear",
+]
+
+[packages."org.bouncycastle"]
+kind = "third_party"
+# Bouncy Castle: additional ciphers, digests and key derivation.
+members = [
+    "BouncyCastleProvider", "PKCS5S2ParametersGenerator", "SCrypt", "BCrypt", "generate",
+    "generateDerivedKey", "SHA256Digest", "SHA512Digest", "HMac", "AESEngine", "GCMBlockCipher",
+    "init", "doFinal", "processBytes",
+]
+
+[packages."org.owasp"]
+kind = "third_party"
+# OWASP encoders and the Java HTML sanitizer: sanitisers.
+members = [
+    "Encode", "Encoder", "Encoders", "forHtml", "forHtmlContent", "forHtmlAttribute", "forJavaScript",
+    "forCssString", "forUriComponent", "forXml", "PolicyFactory", "HtmlPolicyBuilder", "sanitize",
+    "Sanitizers", "FORMATTING", "LINKS", "BLOCKS", "toFactory", "allowElements",
+]
+
+[framework_contracts]
+# The Servlet API: the lifecycle and HTTP handler names a container calls.
+doGet = "servlet"
+doPost = "servlet"
+doPut = "servlet"
+doDelete = "servlet"
+doHead = "servlet"
+doOptions = "servlet"
+service = "servlet"
+init = "servlet"
+destroy = "servlet"
+doFilter = "servlet"
+# java.lang.Object, Comparable, Runnable, Callable, AutoCloseable, Iterator, Iterable.
+toString = "java"
+equals = "java"
+hashCode = "java"
+clone = "java"
+finalize = "java"
+compareTo = "java"
+compare = "java"
+run = "java"
+call = "java"
+close = "java"
+iterator = "java"
+hasNext = "java"
+next = "java"
+get = "java"
+accept = "java"
+apply = "java"
+test = "java"
+main = "java"
+getMessage = "java"
+getCause = "java"
+# Java serialisation hooks.
+readObject = "java.io"
+writeObject = "java.io"
+readResolve = "java.io"
+writeReplace = "java.io"
+# JUnit lifecycle methods.
+setUp = "junit"
+tearDown = "junit"
+# Spring lifecycle and security callbacks.
+afterPropertiesSet = "spring"
+postProcessBeforeInitialization = "spring"
+postProcessAfterInitialization = "spring"
+onApplicationEvent = "spring"
+loadUserByUsername = "spring"
+configure = "spring"
+commandLineRunner = "spring"
+
+[framework_decorators]
+# Annotations with a meaning to the language or a framework; the annotation type is kept.
+Override = "java"
+Deprecated = "java"
+SuppressWarnings = "java"
+FunctionalInterface = "java"
+SafeVarargs = "java"
+Test = "junit"
+Before = "junit"
+After = "junit"
+BeforeEach = "junit"
+AfterEach = "junit"
+BeforeAll = "junit"
+AfterAll = "junit"
+RestController = "spring"
+Controller = "spring"
+Service = "spring"
+Repository = "spring"
+Component = "spring"
+Configuration = "spring"
+Bean = "spring"
+Autowired = "spring"
+Value = "spring"
+RequestMapping = "spring"
+GetMapping = "spring"
+PostMapping = "spring"
+PutMapping = "spring"
+DeleteMapping = "spring"
+PatchMapping = "spring"
+RequestBody = "spring"
+RequestParam = "spring"
+PathVariable = "spring"
+Transactional = "spring"
+PreAuthorize = "spring"
+Entity = "jpa"
+Table = "jpa"
+Id = "jpa"
+Column = "jpa"
+GeneratedValue = "jpa"
+JsonProperty = "jackson"
+JsonIgnore = "jackson"
+WebServlet = "servlet"
+Inject = "cdi"
+Named = "cdi"
+
+[well_known]
+# Names that mark a taint source, a sink or a sanitiser in Java code.
+sources = [
+    "getParameter", "getParameterValues", "getParameterMap", "getHeader", "getCookies",
+    "getQueryString", "getRequestURI", "getInputStream", "getReader", "getenv", "getProperty",
+    "readLine", "RequestParam", "PathVariable", "RequestBody", "RequestHeader", "args",
+]
+sinks = [
+    "executeQuery", "executeUpdate", "execute", "prepareStatement", "createStatement",
+    "createQuery", "createNativeQuery", "exec", "start", "getRuntime", "ProcessBuilder",
+    "readObject", "readValue", "forName", "newInstance", "invoke", "sendRedirect", "write",
+    "print", "println", "openConnection", "evaluate", "eval", "lookup", "loadClass",
+]
+sanitisers = [
+    "escapeHtml4", "escapeHtml", "escapeJava", "escapeXml11", "forHtml", "forJavaScript",
+    "forUriComponent", "encode", "sanitize", "setString", "setInt", "setLong", "matches",
+    "normalize", "toRealPath", "getCanonicalPath", "isEqual", "checkArgument",
+]
+# Conventional names of a framework application object.
+conventional_instances = ["logger", "log", "app", "context", "java", "javax", "jakarta"]
+
+[reflection]
+# Java reflection takes the member name as its first argument (getDeclaredField("name")). A string
+# that equals a name this file defines is rewritten with the binding; one that names something
+# this file does not define stays in clear and is counted.
+name_argument = 0
+attribute_calls = [
+    "getDeclaredField", "getField", "getDeclaredMethod", "getMethod", "getDeclaredConstructor",
+]
+
+[dynamic_code]
+# Calls that execute text the classifier cannot see: a file that calls one is marked.
+calls = ["eval"]

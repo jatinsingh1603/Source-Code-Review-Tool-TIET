@@ -42,6 +42,8 @@ _DATA_FILES: Final[Mapping[Language, str]] = {
     Language.PYTHON: "python.toml",
     Language.JAVASCRIPT: "javascript.toml",
     Language.TYPESCRIPT: "javascript.toml",
+    Language.JAVA: "java.toml",
+    Language.GO: "go.toml",
 }
 _PACKAGE_KINDS: Final = frozenset({"stdlib", "third_party", "pseudo", "builtin"})
 _MAGIC_MIN_LENGTH: Final = 5  # "__x__" is the shortest dunder name
@@ -79,6 +81,7 @@ class _Bundle:
     attribute_calls: frozenset[str]
     reflect_objects: Mapping[str, frozenset[str]]
     dynamic_code: frozenset[str]
+    name_argument: int
 
 
 def _strings(table: Mapping[str, object], key: str, where: str) -> tuple[str, ...]:
@@ -127,6 +130,9 @@ def _parse_bundle(text: str, filename: str, language: Language) -> _Bundle:
     well_names: set[str] = set()
     for key in ("sources", "sinks", "sanitisers", "conventional_instances"):
         well_names.update(_strings(well_known, key, f"{filename}:well_known"))
+    name_argument = reflection.get("name_argument", 1)
+    if name_argument not in (0, 1):
+        raise AllowlistDataError(f"{filename}: reflection.name_argument must be 0 or 1")
     return _Bundle(
         version=version,
         packages=packages,
@@ -138,6 +144,7 @@ def _parse_bundle(text: str, filename: str, language: Language) -> _Bundle:
         ),
         reflect_objects={base: frozenset(names) for base, names in reflect_objects.items()},
         dynamic_code=frozenset(_strings(dynamic, "calls", f"{filename}:dynamic_code")),
+        name_argument=name_argument,
     )
 
 
@@ -291,6 +298,11 @@ class PublicAllowlist:
     def is_reflection_method(self, base: str, name: str) -> bool:
         """Whether ``base.name`` is a reflection method that takes a property name second."""
         return name in self._bundle.reflect_objects.get(base, frozenset())
+
+    @property
+    def name_argument(self) -> int:
+        """Which argument of a reflection call holds the name: 0 (first) or 1 (second)."""
+        return self._bundle.name_argument
 
     def reflection_triggers(self) -> frozenset[str]:
         """The names that make a file's string arguments reflective.

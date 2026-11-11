@@ -1,0 +1,8 @@
+package mod_1
+
+type cls_1 struct {
+	field_4 string `json:"field_4,omitempty" db:"field_4"`
+	field_1         int64  `json:"field_1" validate:"required,min=3" gorm:"column:field_1;primaryKey"`
+	field_2      string `json:"-"`
+	field_3           string `custom:"field_3"`
+}

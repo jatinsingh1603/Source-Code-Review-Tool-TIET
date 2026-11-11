@@ -1,0 +1,10 @@
+package mod_1.mod_2.mod_4;
+
+import static java.lang.Math.max;
+import static mod_1.mod_2.mod_4.mod_3.fn_1;
+
+public class cls_1 {
+    public long fn_2(long param_2, long param_1) {
+        return fn_1(max(param_2, param_1));
+    }
+}

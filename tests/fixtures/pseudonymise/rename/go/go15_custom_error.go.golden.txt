@@ -1,0 +1,21 @@
+package mod_1
+
+import (
+	"errors"
+	"fmt"
+)
+
+type cls_1 struct {
+	field_1 int64
+}
+
+func (param_2 *cls_1) Error() string {
+	return fmt.Sprintf("xxxxx %d xxxxxxxx", param_2.field_1)
+}
+
+func fn_1(param_1 int64) error {
+	if param_1 > 100 {
+		return fmt.Errorf("xxxxx: %w", &cls_1{field_1: 100})
+	}
+	return errors.New("ok")
+}

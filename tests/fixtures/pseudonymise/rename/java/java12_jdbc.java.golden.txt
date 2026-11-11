@@ -1,0 +1,17 @@
+package mod_1.mod_2.mod_3;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class cls_1 {
+    public long fn_1(Connection param_1, String param_2) throws SQLException {
+        try (PreparedStatement var_1 =
+                 param_1.prepareStatement("select col_1 from tbl_3 where col_2 = ?")) {
+            var_1.setString(1, param_2);
+            ResultSet var_2 = var_1.executeQuery();
+            return var_2.next() ? var_2.getLong("xxxxxxx") : 0L;
+        }
+    }
+}

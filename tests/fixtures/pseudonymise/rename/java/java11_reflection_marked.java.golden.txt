@@ -1,0 +1,11 @@
+package mod_1.mod_2.mod_3;
+
+public class cls_1 {
+    private long field_1 = 7;
+
+    public Object fn_1(cls_1 param_1) throws Exception {
+        java.lang.reflect.Field var_1 = param_1.getClass().getDeclaredField("field_1");
+        var_1.setAccessible(true);
+        return var_1.get(param_1);
+    }
+}

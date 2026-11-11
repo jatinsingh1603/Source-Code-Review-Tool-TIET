@@ -35,6 +35,8 @@ from codekavach.privacy.pseudonymise.renamers.base import (
     BaseRenamer,
     UnsupportedLanguageError,
 )
+from codekavach.privacy.pseudonymise.renamers.go import GoRenamer
+from codekavach.privacy.pseudonymise.renamers.java import JavaRenamer
 from codekavach.privacy.pseudonymise.renamers.javascript import (
     JavaScriptRenamer,
     TypeScriptRenamer,
@@ -347,12 +349,20 @@ def test_the_registry_returns_each_renamer_by_language() -> None:
     assert isinstance(registry.get(Language.PYTHON), PythonRenamer)
     assert isinstance(registry.get(Language.JAVASCRIPT), JavaScriptRenamer)
     assert isinstance(registry.get(Language.TYPESCRIPT), TypeScriptRenamer)
-    assert registry.languages() == (Language.PYTHON, Language.JAVASCRIPT, Language.TYPESCRIPT)
+    assert isinstance(registry.get(Language.JAVA), JavaRenamer)
+    assert isinstance(registry.get(Language.GO), GoRenamer)
+    assert registry.languages() == (
+        Language.PYTHON,
+        Language.JAVASCRIPT,
+        Language.TYPESCRIPT,
+        Language.JAVA,
+        Language.GO,
+    )
 
 
 def test_a_language_without_a_renamer_is_refused_by_name() -> None:
-    with pytest.raises(UnsupportedLanguageError, match="go"):
-        default_registry().get(Language.GO)
+    with pytest.raises(UnsupportedLanguageError, match="kotlin"):
+        default_registry().get(Language.KOTLIN)
     assert issubclass(UnsupportedLanguageError, PseudonymError)
 
 

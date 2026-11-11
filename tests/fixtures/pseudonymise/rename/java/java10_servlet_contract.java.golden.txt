@@ -1,0 +1,19 @@
+package mod_2.mod_3.mod_1;
+
+import java.io.IOException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public class cls_1 extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest param_1, HttpServletResponse param_3)
+            throws IOException {
+        String param_2 = param_1.getParameter("xxxxxxx");
+        param_3.getWriter().println(fn_1(param_2));
+    }
+
+    private String fn_1(String param_2) {
+        return "xxxxxxxxx for " + param_2;
+    }
+}

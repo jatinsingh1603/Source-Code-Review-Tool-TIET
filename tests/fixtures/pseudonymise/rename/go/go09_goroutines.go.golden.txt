@@ -1,0 +1,22 @@
+package mod_1
+
+import "sync"
+
+func fn_1(param_2 []int64) int64 {
+	var_2 := make(chan int64, len(param_2))
+	var var_5 sync.WaitGroup
+	for _, var_3 := range param_2 {
+		var_5.Add(1)
+		go func(param_1 int64) {
+			defer var_5.Done()
+			var_2 <- param_1 * 2
+		}(var_3)
+	}
+	var_5.Wait()
+	close(var_2)
+	var var_4 int64
+	for var_1 := range var_2 {
+		var_4 += var_1
+	}
+	return var_4
+}

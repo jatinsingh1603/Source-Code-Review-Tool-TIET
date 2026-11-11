@@ -1,0 +1,13 @@
+package mod_2.mod_3.mod_1;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class cls_1 {
+    public long fn_1(List<Long> param_3, long param_2) {
+        return param_3.stream()
+            .filter(param_1 -> param_1 > param_2)
+            .map(param_1 -> param_1 * 2)
+            .collect(Collectors.summingLong(Long::longValue));
+    }
+}

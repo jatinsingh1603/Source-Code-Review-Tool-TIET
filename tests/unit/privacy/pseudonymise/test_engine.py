@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 import codekavach.privacy.pseudonymise.engine as engine_module
-from codekavach.core.models import Language, PrivacyLevel
+from codekavach.core.models import CodeSlice, Language, PrivacyLevel
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.privacy.errors import PseudonymError
 from codekavach.privacy.pseudonymise.engine import (
@@ -50,6 +50,8 @@ def run(slice_, *, level: PrivacyLevel = L3, salt: ScanSalt = SALT, redaction=No
 
 PY = file_slice("handler.py", Language.PYTHON)
 JS = file_slice("route.js", Language.JAVASCRIPT)
+JAVA = file_slice("handler.java", Language.JAVA)
+GO = file_slice("handler.go", Language.GO)
 
 
 # --- golden payloads and the shape of the result --------------------------------------------
@@ -57,12 +59,36 @@ JS = file_slice("route.js", Language.JAVASCRIPT)
 
 @pytest.mark.parametrize(
     ("slice_", "golden"),
-    [(PY, "handler.py.golden.txt"), (JS, "route.js.golden.txt")],
-    ids=["python", "javascript"],
+    [
+        (PY, "handler.py.golden.txt"),
+        (JS, "route.js.golden.txt"),
+        (JAVA, "handler.java.golden.txt"),
+        (GO, "handler.go.golden.txt"),
+    ],
+    ids=["python", "javascript", "java", "go"],
 )
 def test_the_payload_matches_its_golden(slice_, golden: str) -> None:  # type: ignore[no-untyped-def]
     result = run(slice_)
     assert_matches_golden(result.payload.text.expose(), PAYLOADS / golden)
+
+
+@pytest.mark.parametrize(
+    ("slice_", "names"),
+    [
+        (JAVA, ("LoanDisbursement", "festivalBonus", "borrowerRef", "disburse", "limit_amount")),
+        (GO, ("Disbursement", "FestivalBonus", "BorrowerRef", "festival_bonus", "limit_amount")),
+    ],
+    ids=["java", "go"],
+)
+def test_a_java_or_go_payload_validates_and_holds_none_of_the_clients_names(
+    slice_: CodeSlice,
+    names: tuple[str, ...],
+) -> None:
+    result = run(slice_)
+    text = result.payload.text.expose()
+    assert not [name for name in names if name in text]
+    assert result.payload.pseudonym_count == len(result.batch) > 0
+    assert run(slice_).payload.text.expose() == text
 
 
 def test_a_python_payload_validates_and_inverts_its_line_map() -> None:

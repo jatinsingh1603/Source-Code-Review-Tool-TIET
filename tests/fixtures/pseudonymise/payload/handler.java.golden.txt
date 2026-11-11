@@ -1,0 +1,22 @@
+// codekavach payload L3
+// file_1
+package mod_2.mod_3.mod_1;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+
+public class cls_1 {
+    private final long field_1;
+
+    public cls_1(long field_1) {
+        this.field_1 = field_1;
+    }
+
+    public long fn_1(Connection param_1, String param_2) throws Exception {
+        try (PreparedStatement var_1 =
+                 param_1.prepareStatement("select col_2 from tbl_2 where col_3 = ?")) {
+            var_1.setString(1, param_2);
+            return var_1.executeQuery().getLong("xxxxxxxxxxxx") + field_1;
+        }
+    }
+}

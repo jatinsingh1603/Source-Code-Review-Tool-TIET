@@ -1,0 +1,18 @@
+package mod_1
+
+import "database/sql"
+
+func fn_1(param_1 *sql.DB, param_2 string) (int64, error) {
+	var_3, var_2 := param_1.Query("select col_1 from tbl_4 where col_2 = ?", param_2)
+	if var_2 != nil {
+		return 0, var_2
+	}
+	defer var_3.Close()
+	var var_1 int64
+	for var_3.Next() {
+		if var_2 := var_3.Scan(&var_1); var_2 != nil {
+			return 0, var_2
+		}
+	}
+	return var_1, nil
+}

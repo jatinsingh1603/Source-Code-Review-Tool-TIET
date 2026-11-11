@@ -7,12 +7,20 @@ Owning epic: E09. Normative layout: docs/ARCHITECTURE.md section 3.
 touching this module (E09-06).
 """
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
+from typing import Final
 
 from codekavach.core.models import Language
 from codekavach.privacy.pseudonymise.renamers.base import BaseRenamer, UnsupportedLanguageError
+from codekavach.privacy.pseudonymise.renamers.go import GoRenamer
+from codekavach.privacy.pseudonymise.renamers.java import JavaRenamer
 from codekavach.privacy.pseudonymise.renamers.javascript import JavaScriptRenamer, TypeScriptRenamer
 from codekavach.privacy.pseudonymise.renamers.python import PythonRenamer
+
+# Languages that have a ``LanguageSpec`` but no renamer yet, each with the reason. ``get`` raises
+# ``UnsupportedLanguageError`` for them; the registry completeness test fails when a language has
+# neither a renamer nor an entry here.
+NO_RENAMER_YET: Final[Mapping[Language, str]] = {}
 
 
 class RenamerRegistry:
@@ -44,5 +52,13 @@ class RenamerRegistry:
 
 
 def default_registry() -> RenamerRegistry:
-    """A registry holding the Python, JavaScript and TypeScript renamers."""
-    return RenamerRegistry((PythonRenamer(), JavaScriptRenamer(), TypeScriptRenamer()))
+    """A registry holding the renamer of every language that has one."""
+    return RenamerRegistry(
+        (
+            PythonRenamer(),
+            JavaScriptRenamer(),
+            TypeScriptRenamer(),
+            JavaRenamer(),
+            GoRenamer(),
+        )
+    )

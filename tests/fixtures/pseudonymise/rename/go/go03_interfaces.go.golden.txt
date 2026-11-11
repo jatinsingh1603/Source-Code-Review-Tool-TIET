@@ -1,0 +1,19 @@
+package mod_1
+
+type cls_2 interface {
+	fn_2(param_2 int64) error
+	fn_1() int64
+}
+
+type cls_1 struct {
+	field_1 int64
+}
+
+func (param_1 *cls_1) fn_2(param_2 int64) error {
+	param_1.field_1 += param_2
+	return nil
+}
+
+func (param_1 *cls_1) fn_1() int64 {
+	return param_1.field_1
+}

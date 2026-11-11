@@ -1,0 +1,15 @@
+package mod_1.mod_2.mod_3;
+
+public class cls_1 {
+    public String fn_1(String param_1, String... param_2) {
+        StringBuilder var_2 = new StringBuilder();
+        for (String var_1 : param_2) {
+            var_2.append(var_1).append(param_1);
+        }
+        return var_2.toString();
+    }
+
+    public String fn_1(String param_1, int param_3) {
+        return fn_1(param_1, "x", "y");
+    }
+}

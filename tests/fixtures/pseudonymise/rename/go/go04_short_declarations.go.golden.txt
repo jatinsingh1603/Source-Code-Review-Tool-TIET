@@ -1,0 +1,12 @@
+package mod_1
+
+import "strconv"
+
+func fn_1(param_1 string) (int64, error) {
+	var_2, var_3 := strconv.ParseInt(param_1, 10, 64)
+	if var_3 != nil {
+		return 0, var_3
+	}
+	var_1, _ := strconv.Atoi(param_1)
+	return var_2 + int64(var_1), nil
+}

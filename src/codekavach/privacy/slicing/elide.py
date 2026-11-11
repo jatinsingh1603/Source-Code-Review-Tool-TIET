@@ -30,6 +30,8 @@ _BY_LANGUAGE: Final = {
     Language.PYTHON: _HASH_COMMENT,
     Language.JAVASCRIPT: _SLASH_COMMENT,
     Language.TYPESCRIPT: _SLASH_COMMENT,
+    Language.JAVA: _SLASH_COMMENT,
+    Language.GO: _SLASH_COMMENT,
 }
 
 

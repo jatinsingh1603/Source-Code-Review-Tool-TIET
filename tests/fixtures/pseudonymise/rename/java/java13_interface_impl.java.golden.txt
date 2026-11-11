@@ -1,0 +1,29 @@
+package mod_2.mod_3.mod_1;
+
+public interface cls_2 {
+    void fn_1(long param_1);
+}
+
+class cls_1 implements cls_2, Comparable<cls_1> {
+    private long field_1;
+
+    @Override
+    public void fn_1(long param_1) {
+        field_1 += param_1;
+    }
+
+    @Override
+    public int compareTo(cls_1 param_2) {
+        return Long.compare(field_1, param_2.field_1);
+    }
+
+    @Override
+    public boolean equals(Object param_2) {
+        return param_2 instanceof cls_1 var_1 && var_1.field_1 == field_1;
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.hashCode(field_1);
+    }
+}

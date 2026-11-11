@@ -1,0 +1,11 @@
+package mod_1
+
+import "reflect"
+
+type cls_1 struct {
+	field_1 int64
+}
+
+func fn_1(param_1 cls_1) any {
+	return reflect.ValueOf(param_1).FieldByName("field_1").Interface()
+}

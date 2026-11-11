@@ -1,0 +1,16 @@
+package mod_1.mod_2.mod_3;
+
+import java.util.List;
+import java.util.function.Function;
+
+public class cls_3<cls_1 extends Comparable<cls_1>> {
+    private final List<cls_1> field_1;
+
+    public cls_3(List<cls_1> field_1) {
+        this.field_1 = field_1;
+    }
+
+    public <cls_2> List<cls_2> fn_1(Function<cls_1, cls_2> param_1) {
+        return field_1.stream().map(param_1).toList();
+    }
+}

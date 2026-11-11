@@ -1,0 +1,11 @@
+package mod_1
+
+type cls_1 int
+
+const (
+	const_1 cls_1 = iota
+	const_3
+	const_4
+)
+
+const const_2 = 5000

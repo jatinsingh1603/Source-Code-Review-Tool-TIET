@@ -101,3 +101,67 @@ def test_the_second_pass_still_parses_and_keeps_the_shape(names: list[str]) -> N
         once.parsed.tree
     )
     assert not set(names) & set(re.findall(r"\w+", twice.text))
+
+
+JAVA_ALLOWLIST = PublicAllowlist.bundled(Language.JAVA)
+GO_ALLOWLIST = PublicAllowlist.bundled(Language.GO)
+JAVA_TEMPLATE = (
+    "package {pk};\n\n"
+    "public class {C} {{\n"
+    "    private long {a};\n\n"
+    "    public long {f}(long {p}, long {q}) {{\n"
+    "        long {l} = {p} + {q} + this.{a};\n"
+    "        for (int {i} = 0; {i} < 3; {i}++) {{\n"
+    "            {l} += {i};\n"
+    "        }}\n"
+    "        return {l};\n"
+    "    }}\n"
+    "}}\n"
+)
+GO_TEMPLATE = (
+    "package {pk}\n\n"
+    "type {C} struct {{\n"
+    '\t{a} int64 `json:"{k}"`\n'
+    "}}\n\n"
+    "func (r *{C}) {f}({p} int64, {q} int64) int64 {{\n"
+    "\t{l} := {p} + {q} + r.{a}\n"
+    "\tfor {i} := 0; {i} < 3; {i}++ {{\n"
+    "\t\t{l} += int64({i})\n"
+    "\t}}\n"
+    "\treturn {l}\n"
+    "}}\n"
+)
+
+
+@settings(max_examples=60, deadline=None)
+@given(names=internal_names(JAVA_ALLOWLIST, 8))
+def test_java_every_internal_name_is_replaced(names: list[str]) -> None:
+    pk, klass, a, f, p, q, i, l = names  # noqa: E741
+    source = JAVA_TEMPLATE.format(pk=pk, C=klass.capitalize(), a=a, f=f, p=p, q=q, i=i, l=l)
+    renamed = rename_text(Language.JAVA, source, extra=(), path="A.java")
+    words = set(re.findall(r"\w+", renamed.text))
+    assert not (set(names) | {klass.capitalize()}) & words
+    assert {"public", "long", "return"} <= words
+    again = parse("A.java", Language.JAVA, renamed.text)
+    assert again.error_count == 0
+    assert node_types(again.tree) == node_types(renamed.parsed.tree)
+    assert rename_text(Language.JAVA, source, extra=(), path="A.java").text == renamed.text
+
+
+@settings(max_examples=60, deadline=None)
+@given(names=internal_names(GO_ALLOWLIST, 9))
+def test_go_every_internal_name_is_replaced_and_the_tag_follows_the_field(
+    names: list[str],
+) -> None:
+    pk, klass, a, f, p, q, i, k, l = names  # noqa: E741
+    source = GO_TEMPLATE.format(pk=pk, C=klass, a=a, f=f, p=p, q=q, i=i, k=k, l=l)
+    renamed = rename_text(Language.GO, source, extra=(), path="a.go")
+    words = set(re.findall(r"\w+", renamed.text))
+    assert not set(names) & words
+    assert {"func", "int64", "return", "json"} <= words
+    token = re.search(r"(field_\d+) int64", renamed.text)
+    assert token is not None and f'json:"{token.group(1)}"' in renamed.text
+    again = parse("a.go", Language.GO, renamed.text)
+    assert again.error_count == 0
+    assert node_types(again.tree) == node_types(renamed.parsed.tree)
+    assert rename_text(Language.GO, source, extra=(), path="a.go").text == renamed.text

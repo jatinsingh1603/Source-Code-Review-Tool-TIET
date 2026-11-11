@@ -1,0 +1,14 @@
+package mod_1
+
+type cls_2 struct {
+	field_2 string
+}
+
+type cls_1 struct {
+	cls_2
+	field_1 int64
+}
+
+func (param_1 cls_1) fn_1() string {
+	return param_1.field_2
+}

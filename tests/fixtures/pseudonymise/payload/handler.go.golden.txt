@@ -1,0 +1,22 @@
+// codekavach payload L3
+// file_1
+package mod_1
+
+import (
+	"database/sql"
+	"fmt"
+)
+
+type cls_1 struct {
+	field_1 int64  `json:"field_1" db:"field_1"`
+	field_2   string `json:"field_2"`
+}
+
+func (param_2 *cls_1) fn_1(param_1 *sql.DB) (int64, error) {
+	var var_1 int64
+	var_3 := param_1.QueryRow("select col_3 from tbl_4 where col_4 = ?", param_2.field_2)
+	if var_2 := var_3.Scan(&var_1); var_2 != nil {
+		return 0, fmt.Errorf("xxxxxxxx %s: %w", param_2.field_2, var_2)
+	}
+	return var_1 + param_2.field_1, nil
+}

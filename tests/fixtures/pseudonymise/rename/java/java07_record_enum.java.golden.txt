@@ -1,0 +1,15 @@
+package mod_1.mod_2.mod_3;
+
+public record cls_2(long field_1, int field_2) {
+    public long fn_1() {
+        return field_1 / field_2;
+    }
+}
+
+enum cls_1 {
+    const_1, const_3, const_2;
+
+    boolean fn_2() {
+        return this == const_2;
+    }
+}

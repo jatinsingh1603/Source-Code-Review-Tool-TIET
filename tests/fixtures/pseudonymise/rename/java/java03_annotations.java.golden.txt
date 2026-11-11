@@ -1,0 +1,22 @@
+package mod_2.mod_3.mod_1;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@Entity
+@Table(name = "xxxxxxxxxxxxxxxx")
+public class cls_1 {
+    @Column(name = "xxxxxxxxxxxxxx", length = 40)
+    private String field_1;
+
+    @GetMapping(value = "/file_1", produces = "file_2/file_3")
+    public String fn_1() {
+        return field_1;
+    }
+}
+
+@interface cls_2 {
+    String fn_2() default "xxxxxxxx";
+}

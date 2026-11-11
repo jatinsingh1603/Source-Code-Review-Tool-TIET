@@ -1,0 +1,22 @@
+package mod_2.mod_3.mod_1;
+
+public class cls_3 {
+    private int field_3;
+
+    public Runnable fn_1(final int param_1) {
+        class cls_2 {
+            int field_1 = param_1;
+        }
+        cls_2 var_1 = new cls_2();
+        return new Runnable() {
+            @Override
+            public void run() {
+                field_3 += var_1.field_1;
+            }
+        };
+    }
+
+    static class cls_1 {
+        long field_2;
+    }
+}

@@ -1,0 +1,9 @@
+package mod_1
+
+const const_1 = `
+SELECT col_1
+FROM tbl_2
+WHERE col_2 = 'xxxxxxx'
+`
+
+var var_1 = "xxxxxx " + "xxxxxx"
