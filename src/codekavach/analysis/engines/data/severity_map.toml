@@ -1,0 +1,34 @@
+# Per-engine severity and confidence vocabulary (E14-02).
+#
+# Engines do not share a severity vocabulary: a lexical C scanner's "level 5" and a Python linter's
+# HIGH are different claims. This table turns an engine's own words into CodeKavach's Severity and
+# Confidence. The result is only ever `engine_severity`, an opinion: the final severity is decided
+# later (E29).
+#
+# One table per engine id. All keys are optional.
+#
+#   default_level_map     SARIF `level` to Severity for this engine, replacing the default
+#                         error=high, warning=medium, note=low, none=info.
+#   confidence_keys       property names (on the result, then on the rule) that hold the engine's
+#                         own confidence, tried in order.
+#   [engines.<id>.confidence_map]   the engine's confidence words to low | medium | high.
+#   [engines.<id>.rules]            rule id or rule-id prefix (the longest match wins) to a
+#                         Severity: info | low | medium | high | critical. A rule row wins over
+#                         `level` and over `security-severity`.
+#
+# `security-severity` (a 0 to 10 number on the result or rule properties, GitHub's convention) is
+# read for every engine, through Severity.from_cvss_score.
+#
+# The adapters of E15, E19 and E20 add their rows here. No engine ships a row yet.
+#
+# [engines.example]
+# default_level_map = { error = "critical", warning = "high", note = "medium" }
+# confidence_keys = ["issue_confidence"]
+#
+# [engines.example.confidence_map]
+# HIGH = "high"
+# MEDIUM = "medium"
+# UNDEFINED = "low"
+#
+# [engines.example.rules]
+# "EX9" = "low"

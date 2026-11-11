@@ -1,0 +1,148 @@
+[
+  {
+    "cwe": [
+      89
+    ],
+    "engine": "fake",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "1.2.0",
+    "fingerprint": "ckfp1:3a0592f915ee22e587194be81f70d5e6",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "java",
+    "locations": [
+      {
+        "end_col": 62,
+        "end_line": 88,
+        "path": "src/main/java/Accounts.java",
+        "start_col": 9,
+        "start_line": 88,
+        "symbol": null
+      }
+    ],
+    "message": "Query built from user input",
+    "properties": [
+      [
+        "cwe.source",
+        "tags"
+      ],
+      [
+        "engine.run",
+        "alpha@1.2.0"
+      ]
+    ],
+    "rule_id": "java/sql-injection",
+    "schema_version": 1,
+    "taint_path": {
+      "steps": [
+        {
+          "location": {
+            "end_col": null,
+            "end_line": 80,
+            "path": "src/main/java/Accounts.java",
+            "start_col": null,
+            "start_line": 80,
+            "symbol": null
+          },
+          "note": "user input read",
+          "role": "source"
+        },
+        {
+          "location": {
+            "end_col": null,
+            "end_line": 88,
+            "path": "src/main/java/Accounts.java",
+            "start_col": null,
+            "start_line": 88,
+            "symbol": null
+          },
+          "note": "query executed",
+          "role": "sink"
+        }
+      ]
+    }
+  },
+  {
+    "cwe": [
+      328
+    ],
+    "engine": "fake",
+    "engine_confidence": "high",
+    "engine_severity": "medium",
+    "engine_version": "1.2.0",
+    "fingerprint": "ckfp1:213c21acd565df5d62bf93669be3a8be",
+    "id": "cand-1",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 10,
+        "path": "app/util.py",
+        "start_col": null,
+        "start_line": 10,
+        "symbol": null
+      }
+    ],
+    "message": "MD5 is not collision resistant",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "alpha@1.2.0"
+      ],
+      [
+        "sarif.suppressed",
+        "accepted risk"
+      ],
+      [
+        "sarif.partial_fingerprint.primarylocationlinehash",
+        "abc123:1"
+      ]
+    ],
+    "rule_id": "py/weak-hash",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      79
+    ],
+    "engine": "fake",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "3.4.5",
+    "fingerprint": "ckfp1:c9d0eab4170faca82a9932230ba78f76",
+    "id": "cand-2",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 13,
+        "end_line": 3,
+        "path": "web/page.js",
+        "start_col": 12,
+        "start_line": 3,
+        "symbol": null
+      }
+    ],
+    "message": "Unescaped output",
+    "properties": [
+      [
+        "cwe.source",
+        "taxonomy"
+      ],
+      [
+        "engine.run",
+        "beta@3.4.5"
+      ]
+    ],
+    "rule_id": "B100",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

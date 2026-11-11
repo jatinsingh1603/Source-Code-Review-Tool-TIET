@@ -1,0 +1,10 @@
+{
+  "engine_version": "1.0.0",
+  "output_file": "output.json",
+  "languages": [
+    "python"
+  ],
+  "planted_secrets": [
+    "PLANTED-SECRET-MARKER-0001"
+  ]
+}

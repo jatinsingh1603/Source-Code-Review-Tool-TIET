@@ -1,0 +1,110 @@
+{
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "alpha",
+          "version": "1.2.0",
+          "rules": [
+            {
+              "id": "java/sql-injection",
+              "name": "SqlInjection",
+              "shortDescription": {"text": "Query built from user input"},
+              "properties": {"tags": ["security", "external/cwe/cwe-089"]}
+            },
+            {
+              "id": "py/weak-hash",
+              "name": "WeakHash",
+              "properties": {"cwe": "CWE-328", "security-severity": "5.3", "precision": "high"}
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "java/sql-injection",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {"text": "Query built from user input"},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "src/main/java/Accounts.java", "uriBaseId": "%SRCROOT%"},
+                "region": {"startLine": 88, "startColumn": 9, "endLine": 88, "endColumn": 62}
+              }
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {"uri": "src/main/java/Accounts.java"},
+                          "region": {"startLine": 80}
+                        },
+                        "message": {"text": "user input read"}
+                      }
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {"uri": "src/main/java/Accounts.java"},
+                          "region": {"startLine": 88, "snippet": {"text": "NEVER-COPIED"}}
+                        },
+                        "message": {"text": "query executed"}
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "py/weak-hash",
+          "ruleIndex": 1,
+          "level": "note",
+          "message": {"text": "MD5 is not collision resistant"},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "app/util.py"},
+                "region": {"startLine": 10}
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "abc123:1",
+            "codekavachFingerprint/v1": "ckfp1:00000000000000000000000000000000"
+          },
+          "suppressions": [{"kind": "inSource", "justification": "accepted risk"}]
+        }
+      ]
+    },
+    {
+      "tool": {"driver": {"name": "beta", "semanticVersion": "3.4.5"}},
+      "columnKind": "utf16CodeUnits",
+      "taxonomies": [{"name": "CWE"}],
+      "results": [
+        {
+          "ruleId": "B100",
+          "level": "error",
+          "message": {"text": "Unescaped output"},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "web/page.js"},
+                "region": {"startLine": 3, "startColumn": 12, "endColumn": 14}
+              }
+            }
+          ],
+          "taxa": [{"id": "79", "toolComponent": {"name": "CWE"}}]
+        }
+      ]
+    }
+  ]
+}

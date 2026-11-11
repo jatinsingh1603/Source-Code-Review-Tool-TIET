@@ -39,6 +39,16 @@ settings.register_profile("ci", max_examples=200, deadline=None, derandomize=Tru
 settings.register_profile("nightly", max_examples=2000, deadline=None, derandomize=False)
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Register ``--engines-live``: re-record the engine conformance cases (E14-02)."""
+    parser.addoption(
+        "--engines-live",
+        action="store_true",
+        default=False,
+        help="re-record the recorded engine cases with the installed engines (never in CI)",
+    )
+
+
 def pytest_configure(config: pytest.Config) -> None:
     """Load the hypothesis profile named by HYPOTHESIS_PROFILE (default dev)."""
     name = os.environ.get(PROFILE_VARIABLE, "dev")

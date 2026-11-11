@@ -1,19 +1,27 @@
 """Test kit for the engine framework (E14-01): a fake adapter, a stub sandbox and builders."""
 
 import json
+import os
+import shutil
 import sys
 from collections.abc import Collection, Sequence
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 from codekavach.analysis.engines.base import (
     OUTPUT_TOKEN,
     BuildTier,
     DistributionMode,
+    EngineAdapter,
     EngineInvocation,
     EngineProbe,
     EngineRun,
     EngineSpec,
 )
+from codekavach.analysis.engines.runner import RunLimits, run_engine
 from codekavach.analysis.engines.sandbox import (
     SandboxRequest,
     SandboxResult,
@@ -26,6 +34,7 @@ from codekavach.core.pipeline import keys
 from codekavach.core.pipeline.context import RunContext
 from codekavach.ingest.models import SourceFile
 from tests.support.factories import make_candidate
+from tests.support.golden import assert_matches_golden
 from tests.support.pipeline import make_run_context
 
 FAKE_ENGINE = (
@@ -169,3 +178,136 @@ def make_engine_context(
     ).for_stage("analyse-engines")
     ctx.artefacts.put(keys.FILES, [source_file()])
     return ctx
+
+
+# --- the conformance kit (E14-02) -------------------------------------------------------------
+
+FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "engines"
+SHELL_METACHARACTERS = frozenset(";|&`$<>\n\r")
+CI_VARIABLE = "CI"
+
+
+@dataclass(frozen=True)
+class RecordedCase:
+    """One recorded engine run: ``tests/fixtures/engines/<engine-id>/<case>/``.
+
+    The directory holds ``spec.json`` (``engine_version``, ``output_file``, ``languages`` and
+    optionally ``planted_secrets``), the engine's raw output, ``expected_candidates.json`` and a
+    ``tree/`` with the synthetic project the engine scanned.
+    """
+
+    engine_id: str
+    name: str
+    directory: Path
+    spec: dict[str, Any]
+
+    @classmethod
+    def load(cls, directory: Path) -> "RecordedCase":
+        spec = json.loads((directory / "spec.json").read_text(encoding="utf-8"))
+        return cls(directory.parent.name, directory.name, directory, spec)
+
+    @property
+    def tree(self) -> Path:
+        return self.directory / "tree"
+
+    @property
+    def output(self) -> Path:
+        return self.directory / str(self.spec["output_file"])
+
+    @property
+    def expected(self) -> Path:
+        return self.directory / "expected_candidates.json"
+
+    @property
+    def label(self) -> str:
+        return f"{self.engine_id}/{self.name}"
+
+
+def discover_cases(base: Path = FIXTURES) -> list[RecordedCase]:
+    """Every recorded case below ``base``, in a stable order."""
+    return [RecordedCase.load(spec.parent) for spec in sorted(base.glob("*/*/spec.json"))]
+
+
+def canonical_candidates(candidates: Sequence[Candidate]) -> str:
+    """The comparison form: canonical JSON with the random candidate ids replaced by positions."""
+    rows = [{**c.model_dump(mode="json"), "id": f"cand-{n}"} for n, c in enumerate(candidates)]
+    return json.dumps(rows, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+def tree_files(tree: Path) -> list[SourceFile]:
+    """Source-file records for every file of a case's tree."""
+    return [
+        source_file(path.relative_to(tree).as_posix())
+        for path in sorted(tree.rglob("*"))
+        if path.is_file()
+    ]
+
+
+def run_adapter_contract(adapter: EngineAdapter, case_dir: Path) -> list[Candidate]:
+    """Check ``adapter`` against one recorded case; return the candidates it parsed.
+
+    Asserts: the adapter declares languages and a tier (and the case's languages are among them);
+    ``build_invocation`` gives an argument vector with an executable first and no shell
+    metacharacter; ``parse`` of the recorded output equals the golden candidates byte for byte;
+    every candidate validates, every path it names is in the case's tree, and none carries a
+    planted synthetic secret.
+    """
+    case = RecordedCase.load(case_dir)
+    spec = adapter.spec
+    assert spec.languages, f"{case.label}: the adapter declares no language"
+    assert isinstance(spec.tier, BuildTier)
+    declared = {language.value for language in spec.languages}
+    assert set(case.spec["languages"]) <= declared, f"{case.label}: languages not declared"
+    invocation = adapter.build_invocation(case.tree, tree_files(case.tree), Settings())
+    assert invocation is not None, f"{case.label}: no invocation for the recorded project"
+    assert invocation.argv, f"{case.label}: empty argument vector"
+    assert invocation.argv[0] and not invocation.argv[0].startswith("-")
+    for argument in invocation.argv:
+        assert isinstance(argument, str)
+        assert not SHELL_METACHARACTERS & set(argument), f"{case.label}: shell metacharacter"
+    run = EngineRun(
+        engine=spec.id,
+        version=str(case.spec["engine_version"]),
+        exit_code=0,
+        duration_seconds=0.0,
+        status="ok",
+        output_path=case.output,
+    )
+    found = list(adapter.parse(run, case.tree))
+    for candidate in found:
+        Candidate.model_validate(candidate.model_dump())
+        for path in candidate.files:
+            assert (case.tree / path).is_file(), f"{case.label}: {path} is not in the tree"
+        dumped = candidate.model_dump_json()
+        for secret in case.spec.get("planted_secrets", []):
+            assert secret not in dumped, f"{case.label}: a planted secret reached a candidate"
+    assert_matches_golden(canonical_candidates(found), case.expected)
+    return found
+
+
+def record_case(adapter: EngineAdapter, case_dir: Path) -> None:
+    """Re-record a case by running the installed engine on its tree (``--engines-live``).
+
+    Refused when ``CI`` is set. Skips the test when the engine is not installed. Writes the raw
+    output next to ``spec.json``; the golden file is then rewritten by the comparison with
+    ``CODEKAVACH_UPDATE_GOLDEN=1``.
+    """
+    if os.environ.get(CI_VARIABLE):
+        raise pytest.UsageError("--engines-live is refused when CI is set")
+    case = RecordedCase.load(case_dir)
+    probe = adapter.probe(Settings())
+    if not probe.available:
+        pytest.skip(f"{adapter.spec.id} is not installed")
+    invocation = adapter.build_invocation(case.tree, tree_files(case.tree), Settings())
+    assert invocation is not None
+    out_dir = case_dir / "live-output"
+    out_dir.mkdir(exist_ok=True)
+    limits = RunLimits(timeout_seconds=300.0, root=case.tree, out_dir=out_dir)
+    run = run_engine(
+        adapter, invocation, sandbox=SubprocessSandbox(), limits=limits, version=probe.version or ""
+    )
+    assert run.output_path is not None, f"{case.label}: the engine wrote no output"
+    shutil.copyfile(run.output_path, case.output)
+    case.spec["engine_version"] = probe.version or case.spec["engine_version"]
+    (case_dir / "spec.json").write_text(json.dumps(case.spec, indent=2) + "\n", encoding="utf-8")
+    shutil.rmtree(out_dir)

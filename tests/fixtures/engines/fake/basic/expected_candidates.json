@@ -1,0 +1,57 @@
+[
+  {
+    "cwe": [
+      89
+    ],
+    "engine": "fake",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": null,
+    "fingerprint": "ckfp1:58d192700c1c56f2f97f4e2ae1ec20ee",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 88,
+        "path": "src/bank/accounts.py",
+        "start_col": null,
+        "start_line": 88,
+        "symbol": "AccountRepo.find_by_owner"
+      }
+    ],
+    "message": "SQL query built by string concatenation",
+    "properties": [],
+    "rule_id": "fake.rule",
+    "schema_version": 1,
+    "taint_path": {
+      "steps": [
+        {
+          "location": {
+            "end_col": null,
+            "end_line": 86,
+            "path": "src/bank/accounts.py",
+            "start_col": null,
+            "start_line": 86,
+            "symbol": "AccountRepo.find_by_owner"
+          },
+          "note": null,
+          "role": "source"
+        },
+        {
+          "location": {
+            "end_col": null,
+            "end_line": 88,
+            "path": "src/bank/accounts.py",
+            "start_col": null,
+            "start_line": 88,
+            "symbol": "AccountRepo.find_by_owner"
+          },
+          "note": null,
+          "role": "sink"
+        }
+      ]
+    }
+  }
+]

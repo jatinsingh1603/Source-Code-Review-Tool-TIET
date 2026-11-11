@@ -1,0 +1,15 @@
+# Fallback CWE mapping for engines that put no CWE in their SARIF (E14-02).
+#
+# Strategy four of codekavach.analysis.engines.sarif.cwe: used only when the rule properties, the
+# rule tags and the SARIF taxonomies named none. One table per engine id; each key is a rule id or
+# a rule-id prefix (the longest matching key wins) and each value is a CWE number or a list of them.
+#
+# Follow MITRE's mapping guidance: map to the most specific Base or Variant weakness the rule
+# detects, never to a Pillar and never to CWE-20 as a default. A rule with no honest mapping gets
+# no row, and its candidates carry the `cwe.unmapped` marker instead of a poor mapping.
+#
+# The adapters of E15, E19 and E20 add their rows here. No engine ships a row yet.
+#
+# [engines.example]
+# "EX1" = 89            # exact id or prefix
+# "EX2." = [78, 77]     # prefix, two weaknesses
