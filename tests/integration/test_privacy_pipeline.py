@@ -1,8 +1,10 @@
 """KavachBank through ingest, parse, analyse, aggregate, privacy-prepare and llm-review (E13-02).
 
 The mock provider answers, sockets are refused, and the checks are the ones the issue names: one
-request per candidate, a ledger entry per request, no raw text in a payload, ``--no-send`` writes
-``not_sent_dry_run`` entries and no verdict, and a candidate that fails is isolated from the rest.
+triage request per candidate (and, with every task on, one explain and one remediate request per
+confirmed candidate, E23-02), a ledger entry per request, no raw text in a payload,
+``--no-send`` writes ``not_sent_dry_run`` entries and no verdict, and a candidate that fails is
+isolated from the rest.
 """
 
 import re
@@ -123,6 +125,7 @@ class Run:
     findings: list[Finding] = field(default_factory=list)
     summary: ScanSummary | None = None
     ledger: list[Any] = field(default_factory=list)
+    policy_rows: list[PolicyDecisionRow] = field(default_factory=list)
 
 
 def run_and_capture(
@@ -153,6 +156,7 @@ def run_and_capture(
     captured.findings = read(captured.outcome, keys.FINDINGS, Finding)
     captured.summary = store_of(captured.outcome).get(keys.SCAN_SUMMARY, ScanSummary)
     captured.ledger = ledger_of(captured.outcome)
+    captured.policy_rows = read(captured.outcome, keys.POLICY_DECISIONS, PolicyDecisionRow)
     return captured
 
 
@@ -225,12 +229,44 @@ def test_one_request_per_payload_is_sent_and_completed(sent: Run) -> None:
     assert {record.task for record in sent.ledger} <= {"triage", "explain", "remediate"}
 
 
+@pytest.fixture(scope="module")
+def enriched(root: Path) -> Run:
+    """Every review task: triage per payload, then explain and remediate per confirmed finding."""
+    tasks: dict[str, object] = {"llm": {"tasks": ["triage", "explain", "remediate"]}}
+    return run_and_capture(root, home="home-tasks", overrides=tasks)
+
+
+def test_each_task_sends_one_guarded_and_ledgered_request_per_item(enriched: Run) -> None:
+    """E23-02's request model: one triage request per payload and, for every candidate the
+    triage confirmed, one explain and one remediate request. Each request has its own ledger
+    entry pair (sent, then completed), passed the guard (none blocked), and names its task."""
+    per_task = Counter((record.task, record.outcome) for record in enriched.ledger)
+    confirmed = {str(v.candidate_id) for v in enriched.verdicts if v.verdict.is_vulnerable}
+    payload_ids = {str(p.candidate_id) for p in enriched.payloads}
+    assert confirmed and confirmed <= payload_ids
+    expected = {
+        "triage": len(enriched.payloads),
+        "explain": len(confirmed),
+        "remediate": len(confirmed),
+    }
+    for task, count in expected.items():
+        assert per_task[(task, EgressOutcome.SENT)] == count, task
+        assert per_task[(task, EgressOutcome.COMPLETED)] == count, task
+    assert sum(per_task.values()) == 2 * sum(expected.values())  # nothing else, nothing blocked
+    for task in ("explain", "remediate"):
+        sent_for = {
+            str(r.candidate_id)
+            for r in enriched.ledger
+            if r.task == task and r.outcome is EgressOutcome.SENT
+        }
+        assert sent_for == confirmed, task  # one per confirmed candidate, never for another
+    assert open_reader(StateLayout(enriched.outcome.state_dir)).verify_chain().ok
+
+
 def test_every_ledger_entry_records_the_policy_hash_and_rule_key(sent: Run) -> None:
     """E25-03: each entry names the policy that governed it, and nothing path-shaped."""
-    rows = {
-        str(row.candidate_id): row
-        for row in read(sent.outcome, keys.POLICY_DECISIONS, PolicyDecisionRow)
-    }
+    # Captured when the scan ended: a later scan of the same project replaces the stored records.
+    rows = {str(row.candidate_id): row for row in sent.policy_rows}
     assert sent.ledger
     for record in sent.ledger:
         assert record.schema_version == 2
