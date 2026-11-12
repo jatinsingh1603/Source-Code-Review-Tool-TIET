@@ -12,7 +12,7 @@ from pydantic import Field
 
 from codekavach.core.models.base import DataClassification, KavachModel
 
-ECOSYSTEMS = ("PyPI", "npm", "Maven", "Go", "RubyGems", "Packagist", "crates.io")
+ECOSYSTEMS = ("PyPI", "npm", "Maven", "Go", "RubyGems", "Packagist", "crates.io", "NuGet")
 _PURL_TYPE = {
     "PyPI": "pypi",
     "npm": "npm",
@@ -21,6 +21,7 @@ _PURL_TYPE = {
     "RubyGems": "gem",
     "Packagist": "composer",
     "crates.io": "cargo",
+    "NuGet": "nuget",
 }
 
 
@@ -59,6 +60,8 @@ class Dependency(KavachModel):
     is_internal: bool = False
     integrity: str | None = None
     requires: tuple[str, ...] = ()
+    source_url: str | None = None
+    internal_reason: str | None = None
 
 
 class DependencyGraph(KavachModel):

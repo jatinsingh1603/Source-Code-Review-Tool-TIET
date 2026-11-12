@@ -22,6 +22,7 @@ from typing import Any, Final
 
 import yaml
 
+from codekavach.analysis.sca.internal import apply as apply_internal
 from codekavach.analysis.sca.model import Dependency, DependencyGraph, make_purl
 
 Reader = Callable[[str], str | None]
@@ -44,11 +45,13 @@ LOCK_NAMES: Final = frozenset(
         "Gemfile.lock",
         "composer.lock",
         "Cargo.lock",
+        "packages.lock.json",
+        "verification-metadata.xml",
     }
 )
 MANIFEST_NAMES: Final = frozenset(
     {"pyproject.toml", "package.json", "pom.xml", "go.mod", "composer.json", "Cargo.toml"}
-    | {"build.gradle", "build.gradle.kts"}
+    | {"build.gradle", "build.gradle.kts", "verification-metadata.xml", "packages.lock.json"}
 )
 
 
@@ -57,7 +60,12 @@ def is_manifest_path(path: str) -> bool:
     name = posixpath.basename(path)
     if "node_modules/" in path or "/vendor/" in path or "/.venv/" in path:
         return False
-    return bool(name in LOCK_NAMES or name in MANIFEST_NAMES or REQUIREMENT_FILE.match(name))
+    return bool(
+        name in LOCK_NAMES
+        or name in MANIFEST_NAMES
+        or REQUIREMENT_FILE.match(name)
+        or name.endswith(".lockfile")
+    )
 
 
 def _dep(
@@ -73,6 +81,8 @@ def _dep(
     integrity: str | None = None,
     internal: bool = False,
     requires: Iterable[str] = (),
+    licences: Iterable[str] = (),
+    source_url: str | None = None,
 ) -> Dependency:
     return Dependency(
         purl=make_purl(eco, name, version),
@@ -88,7 +98,23 @@ def _dep(
         is_internal=internal or bool(_PRIVATE_HINT.search(name)),
         integrity=integrity,
         requires=tuple(requires),
+        licence_ids=tuple(licences),
+        source_url=source_url,
     )
+
+
+def _licence_ids(value: Any) -> tuple[str, ...]:
+    """SPDX-ish licence identifiers from a string, a list or the legacy ``{type}`` shapes."""
+    if not value:
+        return ()
+    if isinstance(value, str):
+        parts = re.split(r"\s+(?:OR|AND)\s+|[()]", value)
+        return tuple(p.strip() for p in parts if p.strip())
+    if isinstance(value, dict):
+        return _licence_ids(value.get("type"))
+    if isinstance(value, list):
+        return tuple(x for v in value for x in _licence_ids(v))
+    return ()
 
 
 def _line_of(text: str, needle: str) -> int:
@@ -307,6 +333,8 @@ def parse_package_lock(path: str, text: str) -> list[Dependency]:
                     integrity=meta.get("integrity"),
                     line=_line_of(text, f'"{key}"'),
                     requires=list((meta.get("dependencies") or {}).keys()),
+                    licences=_licence_ids(meta.get("license")),
+                    source_url=meta.get("resolved"),
                 )
             )
         return out
@@ -322,6 +350,7 @@ def parse_package_lock(path: str, text: str) -> list[Dependency]:
                         path,
                         scope="dev" if meta.get("dev") else "runtime",
                         integrity=meta.get("integrity"),
+                        source_url=meta.get("resolved"),
                         line=_line_of(text, f'"{name}"'),
                         requires=list((meta.get("requires") or {}).keys()),
                     )
@@ -537,7 +566,127 @@ def parse_composer_lock(path: str, text: str) -> list[Dependency]:
                     "Packagist", pkg["name"], str(pkg["version"]).lstrip("v"), path, scope=scope,
                     line=_line_of(text, f'"{pkg["name"]}"'),
                     requires=[r for r in (pkg.get("require") or {}) if r != "php"],
+                    licences=_licence_ids(pkg.get("license")),
+                    source_url=(pkg.get("dist") or pkg.get("source") or {}).get("url"),
                 )
+            )  # fmt: skip
+    return out
+
+
+def parse_gradle_lockfile(path: str, text: str) -> list[Dependency]:
+    """Gradle ``*.lockfile``: ``group:artifact:version=configuration,...`` lines."""
+    out: list[Dependency] = []
+    for number, raw in enumerate(text.splitlines(), start=1):
+        line = raw.strip()
+        if not line or line.startswith(("#", "empty=")):
+            continue
+        coords, _, configs = line.partition("=")
+        parts = coords.split(":")
+        if len(parts) != 3:
+            continue
+        test_only = bool(configs) and all("test" in c.lower() for c in configs.split(","))
+        out.append(
+            _dep("Maven", f"{parts[0]}:{parts[1]}", parts[2], path,
+                 scope="test" if test_only else "runtime", line=number)
+        )  # fmt: skip
+    return out
+
+
+def parse_gradle_verification(path: str, text: str) -> list[Dependency]:
+    """``gradle/verification-metadata.xml``: components with their pinned checksums."""
+    if "<!DOCTYPE" in text or "<!ENTITY" in text:
+        raise ValueError("verification-metadata.xml with a DTD is refused")
+    import xml.etree.ElementTree as ET  # noqa: PLC0415 - DTDs refused above
+
+    root = ET.fromstring(text)  # noqa: S314
+    out: list[Dependency] = []
+    for comp in root.iter():
+        if comp.tag.rsplit("}", 1)[-1] != "component":
+            continue
+        group, name, version = comp.get("group"), comp.get("name"), comp.get("version")
+        if not (group and name and version):
+            continue
+        digest = next(
+            (
+                f"{c.tag.rsplit('}', 1)[-1]}:{c.get('value')}"
+                for c in comp.iter()
+                if c.tag.rsplit("}", 1)[-1] in {"sha256", "sha512"} and c.get("value")
+            ),
+            None,
+        )
+        out.append(
+            _dep("Maven", f"{group}:{name}", version, path, integrity=digest,
+                 line=_line_of(text, f'name="{name}"'))
+        )  # fmt: skip
+    return out
+
+
+def parse_nuget_lock(path: str, text: str) -> list[Dependency]:
+    """NuGet ``packages.lock.json``: per target framework, ``Direct`` and ``Transitive``."""
+    data = json.loads(text)
+    seen: dict[tuple[str, str], Dependency] = {}
+    for packages in (data.get("dependencies") or {}).values():
+        for name, meta in packages.items():
+            version = meta.get("resolved")
+            if not version:
+                continue  # a Project reference carries no resolved version
+            kind = str(meta.get("type", ""))
+            seen.setdefault(
+                (name.lower(), version),
+                _dep(
+                    "NuGet", name, version, path,
+                    direct=kind == "Direct",
+                    integrity=meta.get("contentHash"),
+                    line=_line_of(text, f'"{name}"'),
+                    requires=list((meta.get("dependencies") or {}).keys()),
+                    internal=kind == "Project",
+                ),
+            )  # fmt: skip
+    return list(seen.values())
+
+
+def parse_composer_json(path: str, text: str) -> list[Dependency]:
+    """``composer.json`` ``require`` and ``require-dev`` (ranges; ``php`` and ``ext-*`` skipped)."""
+    data = json.loads(text)
+    out: list[Dependency] = []
+    for section, scope in (("require", "runtime"), ("require-dev", "dev")):
+        for name, rng in (data.get(section) or {}).items():
+            if name == "php" or name.startswith(("ext-", "lib-")):
+                continue
+            exact = re.fullmatch(r"v?\d+\.\d+\.\d+", str(rng))
+            out.append(
+                _dep("Packagist", name, str(rng).lstrip("v") if exact else "", path,
+                     direct=True, scope=scope, declared=str(rng),
+                     line=_line_of(text, f'"{name}"'))
+            )  # fmt: skip
+    return out
+
+
+def parse_cargo_toml(path: str, text: str) -> list[Dependency]:
+    """``Cargo.toml`` dependency tables; ``path`` and ``git`` dependencies are internal."""
+    data = tomllib.loads(text)
+    tables: list[tuple[dict[str, Any], str]] = []
+    for key, scope in (("dependencies", "runtime"), ("dev-dependencies", "dev"),
+                       ("build-dependencies", "build")):  # fmt: skip
+        tables.append((data.get(key, {}), scope))
+        for target in (data.get("target") or {}).values():
+            tables.append((target.get(key, {}), scope))
+    tables.append(((data.get("workspace") or {}).get("dependencies", {}), "runtime"))
+    out: list[Dependency] = []
+    for table, scope in tables:
+        for name, spec in table.items():
+            local = isinstance(spec, dict) and ("path" in spec or "git" in spec)
+            rng = (
+                spec
+                if isinstance(spec, str)
+                else (spec.get("version", "") if isinstance(spec, dict) else "")
+            )
+            name = spec.get("package", name) if isinstance(spec, dict) else name
+            exact = re.fullmatch(r"=\s*(\d+\.\d+\.\d+(?:[-+][\w.]+)?)", rng or "")
+            out.append(
+                _dep("crates.io", name, exact[1] if exact else "", path, direct=True,
+                     scope=scope, declared=rng or None, internal=local,
+                     line=_line_of(text, name))
             )  # fmt: skip
     return out
 
@@ -561,10 +710,16 @@ def parse_manifest(path: str, text: str, read: Reader | None = None) -> list[Dep
             "build.gradle": lambda: parse_gradle(path, text),
             "build.gradle.kts": lambda: parse_gradle(path, text),
             "go.mod": lambda: parse_go_mod(path, text),
+            "verification-metadata.xml": lambda: parse_gradle_verification(path, text),
+            "packages.lock.json": lambda: parse_nuget_lock(path, text),
+            "composer.json": lambda: parse_composer_json(path, text),
+            "Cargo.toml": lambda: parse_cargo_toml(path, text),
             "go.sum": lambda: parse_go_sum(path, text),
             "Gemfile.lock": lambda: parse_gemfile_lock(path, text),
             "composer.lock": lambda: parse_composer_lock(path, text),
         }
+        if name.endswith(".lockfile"):
+            return parse_gradle_lockfile(path, text)
         parser = table.get(name)
         return parser() if parser else []
     except (ValueError, KeyError, TypeError, AttributeError, yaml.YAMLError) as error:
@@ -576,11 +731,18 @@ def parse_manifest(path: str, text: str, read: Reader | None = None) -> list[Dep
 # --------------------------------------------------------------------------------- graph
 
 
+def _is_lock(path: str) -> bool:
+    name = posixpath.basename(path)
+    return name in LOCK_NAMES or name.endswith(".lockfile")
+
+
 def _norm(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
-def build_graph(files: dict[str, str]) -> tuple[DependencyGraph, list[str]]:
+def build_graph(
+    files: dict[str, str], private_prefixes: Iterable[str] = ()
+) -> tuple[DependencyGraph, list[str]]:
     """The inventory of ``files`` (path to text), and the paths that could not be parsed."""
     by_dir: dict[str, list[tuple[str, list[Dependency]]]] = {}
     failed: list[str] = []
@@ -598,12 +760,12 @@ def build_graph(files: dict[str, str]) -> tuple[DependencyGraph, list[str]]:
     for entries in by_dir.values():
         eco_has_lock: set[str] = set()
         for path, deps in entries:
-            if posixpath.basename(path) in LOCK_NAMES and deps:
+            if _is_lock(path) and deps:
                 eco_has_lock.add(deps[0].ecosystem)
         declared: dict[tuple[str, str], Dependency] = {}
         for path, deps in entries:
             manifests.append(path)
-            is_lock = posixpath.basename(path) in LOCK_NAMES
+            is_lock = _is_lock(path)
             for dep in deps:
                 key = (dep.ecosystem, _norm(dep.name))
                 if is_lock:
@@ -625,7 +787,10 @@ def build_graph(files: dict[str, str]) -> tuple[DependencyGraph, list[str]]:
                         locations=(dep.resolved_from, found.resolved_from),
                     )
     ordered = tuple(
-        sorted(merged.values(), key=lambda d: (d.ecosystem, d.name, d.version, d.resolved_from))
+        sorted(
+            apply_internal(merged.values(), files, private_prefixes),
+            key=lambda d: (d.ecosystem, d.name, d.version, d.resolved_from),
+        )
     )
     index: dict[tuple[str, str], list[str]] = {}
     for d in ordered:

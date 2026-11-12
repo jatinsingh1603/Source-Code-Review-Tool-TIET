@@ -39,7 +39,7 @@ def normalise_name(ecosystem: str, name: str) -> str:
     """The lookup form of a package name."""
     if ecosystem == "PyPI":
         return re.sub(r"[-_.]+", "-", name).lower()
-    return name.lower() if ecosystem in {"npm", "RubyGems", "Packagist"} else name
+    return name.lower() if ecosystem in {"npm", "RubyGems", "Packagist", "NuGet"} else name
 
 
 @dataclass(frozen=True)

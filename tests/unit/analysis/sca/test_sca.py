@@ -178,3 +178,85 @@ def test_sca_keys_are_raw_and_not_required_by_llm_stages() -> None:
     declared = LlmReviewStage.requires | getattr(LlmReviewStage, "optional_requires", frozenset())
     assert not declared & sca_keys.SCA_KEYS
     assert AnalyseScaStage.requires == {keys.FILES}
+
+
+def test_gradle_lockfile_and_verification_metadata() -> None:
+    lock = (
+        "# comment\n"
+        "org.apache.logging.log4j:log4j-core:2.14.1=compileClasspath,runtimeClasspath\n"
+        "junit:junit:4.13=testCompileClasspath\nempty=annotationProcessor\n"
+    )
+    deps = {d.name: d for d in parse_manifest("gradle.lockfile", lock)}
+    assert deps["org.apache.logging.log4j:log4j-core"].version == "2.14.1"
+    assert deps["junit:junit"].scope == "test"
+    meta = (
+        '<?xml version="1.0"?><verification-metadata '
+        'xmlns="https://schema.gradle.org/dependency-verification">'
+        '<components><component group="com.google.guava" name="guava" version="31.0">'
+        '<artifact name="guava-31.0.jar"><sha256 value="abc123"/></artifact></component>'
+        "</components></verification-metadata>"
+    )
+    got = parse_manifest("gradle/verification-metadata.xml", meta)
+    assert got[0].name == "com.google.guava:guava" and got[0].integrity == "sha256:abc123"
+
+
+def test_nuget_composer_and_cargo_manifests() -> None:
+    nuget = json.dumps(
+        {
+            "version": 1,
+            "dependencies": {
+                "net6.0": {
+                    "Newtonsoft.Json": {"type": "Direct", "resolved": "13.0.1", "contentHash": "h"},
+                    "Dep.Two": {"type": "Transitive", "resolved": "1.2.3"},
+                    "My.Project": {"type": "Project"},
+                }
+            },
+        }
+    )
+    deps = {d.name: d for d in parse_manifest("packages.lock.json", nuget)}
+    assert deps["Newtonsoft.Json"].direct and deps["Newtonsoft.Json"].purl.startswith("pkg:nuget/")
+    assert not deps["Dep.Two"].direct and "My.Project" not in deps
+    composer = json.dumps(
+        {
+            "require": {"php": ">=8", "ext-json": "*", "monolog/monolog": "2.0.1"},
+            "require-dev": {"phpunit/phpunit": "^9"},
+        }
+    )
+    cdeps = {d.name: d for d in parse_manifest("composer.json", composer)}
+    assert set(cdeps) == {"monolog/monolog", "phpunit/phpunit"}
+    assert cdeps["monolog/monolog"].version == "2.0.1" and cdeps["phpunit/phpunit"].scope == "dev"
+    cargo = '[dependencies]\nserde = "1.0"\nlocal = { path = "../local" }\nfoo = "=1.2.3"\n'
+    kdeps = {d.name: d for d in parse_manifest("Cargo.toml", cargo)}
+    assert kdeps["local"].is_internal and kdeps["foo"].version == "1.2.3"
+
+
+def test_licences_and_internal_detection() -> None:
+    from codekavach.analysis.sca.internal import private_hosts_from_config  # noqa: PLC0415
+
+    lock = json.dumps(
+        {
+            "lockfileVersion": 3,
+            "packages": {
+                "": {},
+                "node_modules/a": {
+                    "version": "1.0.0",
+                    "license": "MIT OR Apache-2.0",
+                    "resolved": "https://registry.npmjs.org/a/-/a-1.0.0.tgz",
+                },
+                "node_modules/b": {
+                    "version": "2.0.0",
+                    "resolved": "https://npm.bank.example/b/-/b-2.0.0.tgz",
+                },
+                "node_modules/c": {"version": "3.0.0", "resolved": "file:../c"},
+                "node_modules/acme-core": {"version": "1.0.0"},
+            },
+        }
+    )
+    graph, _ = build_graph({"package-lock.json": lock}, private_prefixes=("acme-",))
+    by = {d.name: d for d in graph.dependencies}
+    assert by["a"].licence_ids == ("MIT", "Apache-2.0") and not by["a"].is_internal
+    assert by["b"].is_internal and "not a known public host" in (by["b"].internal_reason or "")
+    assert by["c"].internal_reason == "local path source"
+    assert "private prefix" in (by["acme-core"].internal_reason or "")
+    cfg = {".npmrc": "registry=https://npm.corp.example/\n"}
+    assert "npm.corp.example" in private_hosts_from_config(cfg)
