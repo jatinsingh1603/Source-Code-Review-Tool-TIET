@@ -1,0 +1,11 @@
+# Planted issues of demo-shopfront. Synthetic; never deploy. Lines are 1-based.
+schema_version: 1
+application: {name: Shopfront, language: javascript}
+planted_vulnerabilities:
+  - {id: SF-VULN-001, cwe: 22, class: path_traversal, file: src/server.js, line: 11}
+  - {id: SF-VULN-002, cwe: 79, class: reflected_xss,  file: src/server.js, line: 16}
+  - {id: SF-VULN-003, cwe: 95, class: eval_injection, file: src/server.js, line: 20}
+planted_secrets:
+  - {id: SF-SEC-001, file: src/server.js, line: 7, note: synthetic signing key, not valid anywhere}
+negative_controls:
+  - {file: src/server.js, line: 29, note: path.basename sanitises, must not be reported}
