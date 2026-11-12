@@ -39,7 +39,15 @@ export function ScanTable({
       id: "id",
       header: "Scan",
       rowHeader: true,
-      cell: (s) => <span className="font-mono text-sm font-medium text-fg">{s.id}</span>,
+      cell: (s) =>
+        compact ? (
+          <span className="flex flex-col items-start gap-1">
+            <span className="font-mono text-sm font-medium text-fg">{s.id}</span>
+            <ScanStatusBadge status={s.status} />
+          </span>
+        ) : (
+          <span className="font-mono text-sm font-medium text-fg">{s.id}</span>
+        ),
       sortValue: (s) => s.id,
     },
     ...(showProject
@@ -52,7 +60,7 @@ export function ScanTable({
           },
         ]
       : []),
-    { id: "status", header: "Status", cell: (s) => <ScanStatusBadge status={s.status} />, sortValue: (s) => s.status },
+    ...(compact ? [] : [{ id: "status", header: "Status", cell: (s: Scan) => <ScanStatusBadge status={s.status} />, sortValue: (s: Scan) => s.status }]),
     {
       id: "findings",
       header: "Findings",

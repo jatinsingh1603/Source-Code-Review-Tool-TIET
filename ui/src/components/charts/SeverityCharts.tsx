@@ -99,7 +99,7 @@ export function SeverityDonut({ counts }: { counts: SeverityCounts }) {
                 </span>
               </th>
               <td className="py-1.5 pl-4 text-right font-semibold tabular-nums text-fg">{d.value}</td>
-              <td className="w-14 py-1.5 text-right tabular-nums text-fg-subtle">
+              <td className="w-14 py-1.5 pl-3 text-right tabular-nums text-fg-subtle">
                 {total ? `${Math.round((d.value / total) * 100)}%` : "—"}
               </td>
             </tr>
