@@ -1,0 +1,89 @@
+name: Release
+
+# Tag v*  -> builds the artifacts and publishes a GitHub Release.
+# Manual  -> builds the same artifacts and creates a DRAFT release (never published automatically).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag name for the draft release (need not exist yet)"
+        required: false
+        default: "v0.0.0-draft"
+
+permissions:
+  contents: read
+
+env:
+  DO_NOT_TRACK: "1"
+  PYTHONUTF8: "1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write   # create the release and upload its assets
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Build wheel and sdist
+        run: |
+          uv build --out-dir dist
+          ls -l dist
+
+      - name: Build the VS Code extension (.vsix)
+        run: |
+          if [ -f extensions/vscode/package.json ]; then
+            cd extensions/vscode
+            npm ci
+            npx --yes @vscode/vsce package --no-dependencies --out ../../dist/
+          else
+            echo "extensions/vscode/package.json not present; skipping the .vsix"
+          fi
+          ls -l "$GITHUB_WORKSPACE/dist"
+
+      - name: Build the static sample report
+        # Offline mock provider on the bundled fixture: no key, no network, no secrets.
+        env:
+          CODEKAVACH_LLM_API_KEY: ""
+        run: |
+          uv sync --all-extras --frozen
+          uv run codekavach demo --out sample-report-out
+          mkdir -p sample-report
+          cp sample-report-out/report.html sample-report/
+          cp sample-report-out/verification.txt sample-report/
+          (cd sample-report && zip -r ../dist/codekavach-sample-report.zip .)
+
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum -- * | grep -v ' SHA256SUMS$' > SHA256SUMS
+          cat SHA256SUMS
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-assets
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [ "$EVENT" = "push" ]; then
+            tag="$GITHUB_REF_NAME"; flags=""
+          else
+            tag="${INPUT_TAG:-v0.0.0-draft}"; flags="--draft --target $GITHUB_SHA"
+          fi
+          # shellcheck disable=SC2086
+          gh release create "$tag" dist/* $flags --title "CodeKavach $tag" \
+            --notes "Wheel, sdist, VS Code extension (.vsix, when present), sample report and SHA256SUMS. Verify with: sha256sum -c SHA256SUMS"
