@@ -354,6 +354,12 @@
       "line": null,
       "source": null
     },
+    "llm.max_repair_attempts": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
     "llm.max_retries": {
       "contributors": [],
       "layer": "default",
@@ -1095,6 +1101,7 @@
       "default_provider": "mock",
       "enabled": true,
       "max_output_tokens": 2048,
+      "max_repair_attempts": 1,
       "max_retries": 2,
       "model": null,
       "providers": {

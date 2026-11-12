@@ -42,6 +42,7 @@ from codekavach.llm.providers.base import (
     PreparedRequest,
     ProviderError,
     ProviderParseError,
+    ProviderRefused,
     RawResponse,
     extract_content,
 )
@@ -83,6 +84,9 @@ class _Bound:
         return self._task.static_text(payload)
 
 
+_UNPARSABLE: Final = "unparsable"  # internal: the answer did not parse; may be asked again
+
+
 @dataclass(slots=True)
 class ReviewCounts:
     """Counters the stage logs at the end."""
@@ -96,6 +100,8 @@ class ReviewCounts:
     context_rounds: int = 0
     injection_suspected: int = 0
     calls: int = 0
+    repaired: int = 0
+    refused: int = 0
 
     def as_dict(self) -> dict[str, int]:
         return {name: getattr(self, name) for name in self.__slots__}
@@ -156,8 +162,10 @@ class Reviewer:
         wait_seconds: float,
         build_task: Callable[[str], TemplatedTask],
         canary: str | None = None,
+        repair_attempts: int = 1,
     ) -> None:
         self._canary = canary or new_canary()
+        self._repairs = max(0, repair_attempts)
         self._provider = provider
         self._session = session
         self._enabled = tasks
@@ -202,7 +210,25 @@ class Reviewer:
     def _triage_once(
         self, payload: SanitisedPayload, facts: CandidateFacts, perspective: str, context: str
     ) -> tuple[LLMVerdict | None, str | None]:
-        """One triage call: ``(verdict, failure_code)``; both None for a dry run."""
+        """One triage call: ``(verdict, failure_code)``; both None for a dry run.
+
+        An answer that does not parse against the schema is asked again, at most
+        ``repair_attempts`` times (E22-03). A refusal is recorded and never asked again, and an
+        answer the output defence rejects (a leaked canary, an echoed rubric) is not asked again
+        either: the same material would provoke the same answer.
+        """
+        for attempt in range(self._repairs + 1):
+            verdict, failure = self._triage_attempt(payload, facts, perspective, context)
+            if failure != _UNPARSABLE:
+                return verdict, failure
+            if attempt < self._repairs:
+                self.counts.repaired += 1
+                _log.info("llm_output_reask", attempt=attempt + 1)
+        return None, "invalid"
+
+    def _triage_attempt(  # noqa: PLR0911 - one return per outcome of the call
+        self, payload: SanitisedPayload, facts: CandidateFacts, perspective: str, context: str
+    ) -> tuple[LLMVerdict | None, str | None]:
         task = self._task("triage")
         bound = _Bound(task, perspective=perspective, context=context, canary=self._canary)
         result = self._dispatch(bound, payload)
@@ -228,8 +254,11 @@ class Reviewer:
                 canaries=(self._canary,),
                 shingles=self._shingles["triage"],
             )
+        except ProviderRefused:
+            self.counts.refused += 1
+            return None, "refused"
         except ProviderParseError:
-            return None, "invalid"
+            return None, _UNPARSABLE  # asked again; a rejected (unsafe) answer is not
         except OutputRejected as rejected:
             self.counts.rejected += 1
             _log.warning("llm_output_rejected", reason=rejected.reason)

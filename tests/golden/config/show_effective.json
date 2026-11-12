@@ -41,6 +41,14 @@
       "cache_max_size_mb": 2048,
       "cache_keep_scans": 5
     },
+    "aggregate": {
+      "baseline_file": ".codekavach/baseline.json",
+      "suppressions_file": ".codekavach/suppressions.yaml"
+    },
+    "secrets": {
+      "history": false,
+      "history_max_commits": 200
+    },
     "ingest": {
       "max_file_size_bytes": 5000000,
       "max_files": 50000,
@@ -72,6 +80,9 @@
       "max_path_steps": 64,
       "max_paths_per_sink": 10,
       "loop_iterations": 3,
+      "max_depth": 5,
+      "recursion_iterations": 3,
+      "unknown_callee": "propagate",
       "explain": false
     },
     "privacy": {
@@ -121,6 +132,7 @@
       "egress": {
         "max_payload_bytes": 262144,
         "aggregation_budget_pct": 100.0,
+        "lifetime_budget_pct": null,
         "rate_per_minute": 60,
         "provider_host_allowlist": [],
         "encrypt_at_rest": true,
@@ -156,6 +168,7 @@
       "max_output_tokens": 2048,
       "timeout_seconds": 120,
       "max_retries": 2,
+      "max_repair_attempts": 1,
       "consensus": 1,
       "cache": true,
       "budget": {
@@ -275,6 +288,18 @@
     }
   },
   "origins": {
+    "aggregate.baseline_file": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "aggregate.suppressions_file": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
     "config_version": {
       "layer": "default",
       "source": null,
@@ -619,6 +644,12 @@
       "line": null,
       "contributors": []
     },
+    "llm.max_repair_attempts": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
     "llm.max_retries": {
       "layer": "default",
       "source": null,
@@ -808,6 +839,12 @@
       "contributors": []
     },
     "privacy.egress.encrypt_at_rest": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "privacy.egress.lifetime_budget_pct": {
       "layer": "default",
       "source": null,
       "line": null,
@@ -1205,6 +1242,18 @@
       "line": null,
       "contributors": []
     },
+    "secrets.history": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "secrets.history_max_commits": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
     "taint.explain": {
       "layer": "default",
       "source": null,
@@ -1229,6 +1278,12 @@
       "line": null,
       "contributors": []
     },
+    "taint.max_depth": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
     "taint.max_function_nodes": {
       "layer": "default",
       "source": null,
@@ -1247,7 +1302,19 @@
       "line": null,
       "contributors": []
     },
+    "taint.recursion_iterations": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
     "taint.timeout_seconds": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "taint.unknown_callee": {
       "layer": "default",
       "source": null,
       "line": null,

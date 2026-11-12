@@ -183,6 +183,7 @@ Language models and their providers.
 | `llm.max_output_tokens` | int | `2048` | `CODEKAVACH_LLM__MAX_OUTPUT_TOKENS` |  | Maximum output tokens per request. |
 | `llm.timeout_seconds` | int | `120` | `CODEKAVACH_LLM__TIMEOUT_SECONDS` | volatile | Timeout of one request in seconds. |
 | `llm.max_retries` | int | `2` | `CODEKAVACH_LLM__MAX_RETRIES` | volatile | Retries of a failed request. |
+| `llm.max_repair_attempts` | int | `1` | `CODEKAVACH_LLM__MAX_REPAIR_ATTEMPTS` | volatile | Times an answer that fails to parse or validate is asked again. |
 | `llm.consensus` | int | `1` | `CODEKAVACH_LLM__CONSENSUS` |  | Models or samples asked per candidate. |
 | `llm.cache` | bool | `true` | `CODEKAVACH_LLM__CACHE` | volatile | Cache responses keyed on the payload hash. |
 | `llm.budget.max_requests` | int \| unset | unset | `CODEKAVACH_LLM__BUDGET__MAX_REQUESTS` |  | Maximum LLM requests. |

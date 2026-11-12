@@ -810,6 +810,15 @@
           "title": "Max Output Tokens",
           "type": "integer"
         },
+        "max_repair_attempts": {
+          "default": 1,
+          "description": "Times an answer that fails to parse or validate is asked again.",
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Max Repair Attempts",
+          "type": "integer",
+          "x-ck-volatile": true
+        },
         "max_retries": {
           "default": 2,
           "description": "Retries of a failed request.",

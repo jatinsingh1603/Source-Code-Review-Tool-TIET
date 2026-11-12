@@ -454,6 +454,11 @@ class LLMSettings(SectionModel):
         description="Retries of a failed request.",
         json_schema_extra=bounds(0, 10) | volatile(),
     )
+    max_repair_attempts: Annotated[int, in_range(0, 3, "llm.max_repair_attempts")] = Field(
+        default=1,
+        description="Times an answer that fails to parse or validate is asked again.",
+        json_schema_extra=bounds(0, 3) | volatile(),
+    )
     consensus: Annotated[int, in_range(1, 5, "llm.consensus")] = Field(
         default=1,
         description="Models or samples asked per candidate.",

@@ -251,6 +251,8 @@ level = "L3"
 # timeout_seconds = 120
 #~ Retries of a failed request.
 # max_retries = 2
+#~ Times an answer that fails to parse or validate is asked again.
+# max_repair_attempts = 1
 #~ Models or samples asked per candidate.
 # consensus = 1
 #~ Cache responses keyed on the payload hash.

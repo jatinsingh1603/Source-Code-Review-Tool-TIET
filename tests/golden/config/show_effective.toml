@@ -37,6 +37,14 @@ cache_keep_scans = 5
 
 [scan.stage_timeouts]
 
+[aggregate]
+baseline_file = ".codekavach/baseline.json"
+suppressions_file = ".codekavach/suppressions.yaml"
+
+[secrets]
+history = false
+history_max_commits = 200
+
 [ingest]
 max_file_size_bytes = 5000000
 max_files = 50000
@@ -68,6 +76,9 @@ timeout_seconds = 10.0
 max_path_steps = 64
 max_paths_per_sink = 10
 loop_iterations = 3
+max_depth = 5
+recursion_iterations = 3
+unknown_callee = "propagate"
 explain = false
 
 [privacy]
@@ -144,6 +155,7 @@ temperature = 0.0
 max_output_tokens = 2048
 timeout_seconds = 120
 max_retries = 2
+max_repair_attempts = 1
 consensus = 1
 cache = true
 

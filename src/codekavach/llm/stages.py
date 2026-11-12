@@ -20,7 +20,7 @@ import queue
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import AbstractContextManager
-from typing import cast
+from typing import Final, cast
 
 from pydantic import BaseModel
 
@@ -72,6 +72,15 @@ def _open_session(ctx: RunContext) -> AbstractContextManager[EgressSession]:
 
 
 LLM_REQUEST_FAILED = "llm_request_failed"
+LLM_REFUSED = "llm_refused"  # the model declined; recorded, never retried (E22-03)
+
+
+_FAILURE_CODES: Final = {
+    "blocked": EGRESS_BLOCKED,
+    "failed": LLM_REQUEST_FAILED,
+    "refused": LLM_REFUSED,
+    "invalid": LLM_OUTPUT_INVALID,
+}
 
 
 def _read[Model: BaseModel](ctx: RunContext, key: str, model: type[Model]) -> list[Model]:
@@ -147,6 +156,7 @@ class LlmReviewStage:
                     consensus=llm.consensus,
                     wait_seconds=float(llm.timeout_seconds),
                     build_task=build_task,
+                    repair_attempts=llm.max_repair_attempts,
                 )
 
             # One reviewer per worker: a reviewer's tasks keep per-call state (the injection
@@ -180,12 +190,8 @@ class LlmReviewStage:
                                         candidate_id=payload.candidate_id, verdict=outcome.verdict
                                     )
                                 )
-                            elif outcome.failure == "blocked":
-                                ctx.fail_item(item, EGRESS_BLOCKED)
-                            elif outcome.failure == "failed":
-                                ctx.fail_item(item, LLM_REQUEST_FAILED)
-                            elif outcome.failure == "invalid":
-                                ctx.fail_item(item, LLM_OUTPUT_INVALID)
+                            elif (code := _FAILURE_CODES.get(outcome.failure or "")) is not None:
+                                ctx.fail_item(item, code)
                         ctx.emit_progress(done, len(payloads), "candidates")
                 finally:
                     for future in futures:

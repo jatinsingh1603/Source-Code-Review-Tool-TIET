@@ -86,6 +86,7 @@
     "default_provider": "auto",
     "enabled": true,
     "max_output_tokens": 2048,
+    "max_repair_attempts": 1,
     "max_retries": 1,
     "model": null,
     "providers": {

@@ -408,3 +408,68 @@ def test_a_dismissive_model_cannot_drop_the_candidate_only_lower_its_confidence(
     assert session.tasks == ["triage"]
     # The verdict is kept for the report (it is data), and no enrichment is run for a safe call.
     assert outcome.verdict is not None and outcome.verdict.is_vulnerable is False
+
+
+class BodySession:
+    """Answers every triage call with the next scripted body (the last one repeats)."""
+
+    def __init__(self, *bodies: bytes) -> None:
+        self.bodies = list(bodies)
+        self.calls = 0
+
+    def dispatch(self, request: PreparedRequest, **kwargs: object) -> Dispatch:
+        self.calls += 1
+        body = self.bodies.pop(0) if len(self.bodies) > 1 else self.bodies[0]
+        return Dispatch("answered", status=200, body=body)
+
+
+GOOD = json.dumps(
+    {"choices": [{"message": {"content": verdict().model_dump_json(exclude={"schema_version"})}}]}
+).encode()
+UNPARSABLE = json.dumps({"choices": [{"message": {"content": "I think it is fine."}}]}).encode()
+REFUSAL = json.dumps({"choices": [{"message": {"refusal": "I can't help with that."}}]}).encode()
+
+
+def body_reviewer(session: BodySession, repairs: int) -> Reviewer:
+    from codekavach.config.models.llm import ProviderSettings  # noqa: PLC0415
+    from codekavach.llm.providers.openai_api import OpenAIChatProvider  # noqa: PLC0415
+
+    provider = OpenAIChatProvider(
+        "p",
+        ProviderSettings.model_validate(
+            {"kind": "openai-compatible", "model": "m", "base_url": "https://llm.example.org/v1"}
+        ),
+    )
+    return Reviewer(
+        provider,
+        session,  # type: ignore[arg-type]
+        tasks=frozenset(),
+        consensus=1,
+        wait_seconds=0.0,
+        build_task=build_task,
+        repair_attempts=repairs,
+    )
+
+
+@pytest.mark.parametrize("repairs", [0, 1, 2])
+def test_an_unparsable_answer_is_asked_again_exactly_max_repair_attempts_times(
+    repairs: int,
+) -> None:
+    session = BodySession(UNPARSABLE)
+    rv = body_reviewer(session, repairs)
+    outcome = rv.review(payload())
+    assert outcome.failure == "invalid" and session.calls == repairs + 1
+    assert rv.counts.repaired == repairs
+
+
+def test_a_repaired_answer_is_kept() -> None:
+    session = BodySession(UNPARSABLE, GOOD)
+    outcome = body_reviewer(session, 1).review(payload())
+    assert outcome.verdict is not None and session.calls == 2
+
+
+def test_a_refusal_is_recorded_and_never_asked_again() -> None:
+    session = BodySession(REFUSAL)
+    rv = body_reviewer(session, 3)
+    outcome = rv.review(payload())
+    assert outcome.failure == "refused" and session.calls == 1 and rv.counts.refused == 1
