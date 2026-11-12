@@ -167,6 +167,7 @@
       "providers": {
         "mock": {
           "kind": "mock",
+          "preset": null,
           "enabled": true,
           "model": null,
           "base_url": null,
@@ -697,6 +698,12 @@
       "contributors": []
     },
     "llm.providers.mock.options": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "llm.providers.mock.preset": {
       "layer": "default",
       "source": null,
       "line": null,

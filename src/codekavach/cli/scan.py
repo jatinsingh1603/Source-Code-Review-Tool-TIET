@@ -220,12 +220,11 @@ def split_formats(values: Sequence[str]) -> tuple[str, ...]:
 
 
 def resolve_provider(cli_ctx: "CliContext") -> ProviderChoice:
-    """The provider of this run; ``auto`` means ``mock`` until provider selection (E22)."""
+    """The provider of this run, by the rule the ``llm-review`` stage applies (E22-01)."""
     llm = cli_ctx.settings.llm
     if not llm.enabled:
         return ProviderChoice(id=None, kind=None, remote=False, model=None)
-    provider_id = "mock" if llm.default_provider == "auto" else llm.default_provider
-    provider = llm.providers[provider_id]
+    provider_id, provider = llm.selected_provider()
     model = llm.model or provider.model
     return ProviderChoice(
         id=provider_id, kind=provider.kind.value, remote=provider.is_remote, model=model

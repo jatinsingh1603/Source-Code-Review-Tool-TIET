@@ -427,6 +427,11 @@ def test_the_allow_list_is_the_documented_set() -> None:
         "content-type",
         "accept",
         "user-agent",
+        "originator",
+        "x-goog-api-key",
+        "x-amz-date",
+        "x-amz-content-sha256",
+        "x-amz-security-token",
     } == ALLOWED_HEADERS
 
 

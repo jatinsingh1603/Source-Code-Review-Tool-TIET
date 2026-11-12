@@ -1,26 +1,20 @@
-"""Build the provider a settings entry names (E13-02).
+"""Build the provider a settings entry names (E13-02, E22-01).
 
-Owning epic: E13. MVP; extended by E22, which adds the hosted adapters here.
+Owning epic: E13. Extended by E22: every kind is served through ``registry.build_adapter``.
 """
 
-from codekavach.config.models.llm import ProviderKind, ProviderSettings
-from codekavach.llm.providers.base import LLMProvider, ProviderError
-from codekavach.llm.providers.mock import MockProvider
-from codekavach.llm.providers.ollama import OllamaProvider
-from codekavach.llm.providers.replay import ReplayProvider
+from codekavach.config.models.llm import ProviderSettings
+from codekavach.llm.providers.base import LLMProvider
+from codekavach.llm.providers.registry import build_adapter
 
 
-def build_provider(provider_id: str, settings: ProviderSettings) -> LLMProvider:
+def build_provider(
+    provider_id: str, settings: ProviderSettings, *, model: str | None = None
+) -> LLMProvider:
     """The adapter for ``settings.kind``.
 
     Raises:
-        ProviderError: the kind has no adapter in this build (the hosted ones arrive with E22) or
-            the settings are unusable for it; the message is a reason code and nothing else.
+        ProviderError: the kind has no adapter in this build, its key does not resolve, or the
+            settings are unusable for it; the message is a reason code and nothing else.
     """
-    if settings.kind is ProviderKind.MOCK:
-        return MockProvider(provider_id, settings)
-    if settings.kind is ProviderKind.REPLAY:
-        return ReplayProvider(provider_id, settings)
-    if settings.kind is ProviderKind.OLLAMA:
-        return OllamaProvider(provider_id, settings)
-    raise ProviderError("adapter_unavailable")
+    return build_adapter(provider_id, settings, model=model)

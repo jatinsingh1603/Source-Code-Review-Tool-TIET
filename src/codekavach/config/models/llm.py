@@ -17,10 +17,15 @@ which needs none; failing that, ``mock``.
 """
 
 import ipaddress
+import os
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Any, Self
+from types import MappingProxyType
+from typing import Annotated, Any, Final, Self
 
 from pydantic import AfterValidator, AnyHttpUrl, Field, field_validator, model_validator
 
@@ -66,6 +71,7 @@ class ProviderKind(StrEnum):
     CLI_BRIDGE = "cli-bridge"
     MOCK = "mock"
     REPLAY = "replay"
+    VERTEX = "vertex"
 
 
 class TaskName(StrEnum):
@@ -89,6 +95,86 @@ _REQUIRED_BY_KIND: dict[ProviderKind, tuple[str, ...]] = {
     ProviderKind.REPLAY: ("cassette_dir",),
     ProviderKind.CLI_BRIDGE: ("command",),
 }
+
+AGENTROUTER = "agentrouter"
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderPreset:
+    """Defaults a ``preset = "<name>"`` entry fills in; anything set explicitly wins.
+
+    ``options`` may carry ``wire_api`` (``responses`` or ``chat``) and extra request headers as
+    ``header:<name>`` keys; the transport's header allow-list still applies to them.
+    """
+
+    name: str
+    kind: ProviderKind
+    base_url: str | None
+    model: str | None
+    api_key: str | None = None
+    options: Mapping[str, str | int | float | bool] = dataclass_field(default_factory=dict)
+    description: str = ""
+
+
+PRESETS: Mapping[str, ProviderPreset] = MappingProxyType(
+    {
+        AGENTROUTER: ProviderPreset(
+            name=AGENTROUTER,
+            kind=ProviderKind.OPENAI,
+            base_url="https://agentrouter.org/v1",
+            model="gpt-5.6-sol",
+            api_key="env:CODEKAVACH_AGENTROUTER_API_KEY",
+            options=MappingProxyType(
+                {
+                    "wire_api": "responses",
+                    "header:user-agent": "codex_cli_rs/0.50.0",
+                    "header:originator": "codex_cli_rs",
+                    "reasoning_effort": "low",
+                }
+            ),
+            description="AgentRouter gateway (OpenAI Responses API)",
+        ),
+        "openai": ProviderPreset(
+            "openai", ProviderKind.OPENAI, "https://api.openai.com/v1", None,
+            options=MappingProxyType({"wire_api": "responses"}), description="OpenAI",
+        ),
+        "anthropic": ProviderPreset(
+            "anthropic", ProviderKind.ANTHROPIC, "https://api.anthropic.com", None,
+            description="Anthropic Messages API",
+        ),
+        "gemini": ProviderPreset(
+            "gemini", ProviderKind.GEMINI,
+            "https://generativelanguage.googleapis.com/v1beta", None,
+            description="Google Gemini API",
+        ),
+        "xai": ProviderPreset(
+            "xai", ProviderKind.XAI, "https://api.x.ai/v1", None, description="xAI",
+        ),
+        "openrouter": ProviderPreset(
+            "openrouter", ProviderKind.OPENAI_COMPATIBLE, "https://openrouter.ai/api/v1", None,
+            api_key="env:OPENROUTER_API_KEY", description="OpenRouter (chat completions)",
+        ),
+        "lmstudio": ProviderPreset(
+            "lmstudio", ProviderKind.OPENAI_COMPATIBLE, "http://127.0.0.1:1234/v1", None,
+            description="LM Studio local server",
+        ),
+        "vllm": ProviderPreset(
+            "vllm", ProviderKind.OPENAI_COMPATIBLE, "http://127.0.0.1:8000/v1", None,
+            description="vLLM local server",
+        ),
+        "ollama-openai": ProviderPreset(
+            "ollama-openai", ProviderKind.OPENAI_COMPATIBLE, "http://127.0.0.1:11434/v1", None,
+            description="Ollama through its OpenAI-compatible /v1 endpoint",
+        ),
+    }
+)  # fmt: skip
+# Built-in providers, by id, with the variable that holds their key. Such a provider is added from
+# its preset when it is named as ``default_provider`` (``--provider agentrouter``) or when its key
+# variable is set, unless an entry with the same id is configured. ``auto`` never picks one: a
+# key in the environment is not a decision to send code to that provider.
+BUILTIN_PROVIDERS: Final[Mapping[str, str]] = MappingProxyType(
+    {AGENTROUTER: "CODEKAVACH_AGENTROUTER_API_KEY"}
+)
 
 
 def _address(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
@@ -164,6 +250,10 @@ class ProviderSettings(SectionModel):
     """One named LLM provider."""
 
     kind: ProviderKind = Field(description="Adapter kind.")
+    preset: str | None = Field(
+        default=None,
+        description="Named preset that fills base_url, model, key reference and options.",
+    )
     enabled: bool = Field(default=True, description="Whether the provider may be selected.")
     model: ModelName = Field(default=None, description="Model identifier sent to the provider.")
     base_url: AnyHttpUrl | None = Field(
@@ -202,6 +292,27 @@ class ProviderSettings(SectionModel):
 
     @model_validator(mode="before")
     @classmethod
+    def _apply_preset(cls, value: Any) -> Any:
+        if not isinstance(value, dict) or value.get("preset") is None:
+            return value
+        preset = PRESETS.get(str(value["preset"]))
+        if preset is None:
+            raise ValueError(f"{INVALID} preset must be one of {', '.join(sorted(PRESETS))}")
+        merged: dict[str, Any] = {"kind": preset.kind}
+        if preset.base_url is not None:
+            merged["base_url"] = preset.base_url
+        if preset.model is not None:
+            merged["model"] = preset.model
+        if preset.api_key is not None:
+            merged["api_key"] = preset.api_key
+        merged.update({key: item for key, item in value.items() if item is not None})
+        options = dict(preset.options)
+        options.update(value.get("options") or {})
+        merged["options"] = options
+        return merged
+
+    @model_validator(mode="before")
+    @classmethod
     def _ollama_default_url(cls, value: Any) -> Any:
         if (
             isinstance(value, dict)
@@ -224,6 +335,19 @@ class ProviderSettings(SectionModel):
         if self.base_url is None or self.base_url.host is None:
             return None
         return self.base_url.host.strip("[]")
+
+    @property
+    def preset_host(self) -> str | None:
+        """The host of the preset's own endpoint when ``base_url`` was not changed, else ``None``.
+
+        Such a host ships with the release, so egress treats it as allow-listed.
+        """
+        preset = PRESETS.get(self.preset or "")
+        if preset is None or preset.base_url is None or self.base_url is None:
+            return None
+        if str(self.base_url).rstrip("/") != preset.base_url.rstrip("/"):
+            return None
+        return self.host
 
     @property
     def effective_trust_tier(self) -> TrustTier:
@@ -249,6 +373,12 @@ class ProviderSettings(SectionModel):
         for field in _REQUIRED_BY_KIND.get(self.kind, ()):
             if getattr(self, field) is None:
                 raise ValueError(f"{MISSING_FIELD} {key}.{field} is required for kind {self.kind}")
+        if self.kind is ProviderKind.VERTEX:
+            for option in ("project", "location"):
+                if not self.options.get(option):
+                    raise ValueError(
+                        f"{MISSING_FIELD} {key}.options.{option} is required for kind {self.kind}"
+                    )
         if self.base_url is None:
             return
         host = self.host or ""
@@ -332,9 +462,18 @@ class LLMSettings(SectionModel):
         if not isinstance(value, dict):
             return value
         providers = value.get("providers", {})
-        if isinstance(providers, dict) and MOCK not in providers:
-            return {**value, "providers": {**providers, MOCK: {"kind": ProviderKind.MOCK}}}
-        return value
+        if not isinstance(providers, dict):
+            return value
+        added = dict(providers)
+        if MOCK not in added:
+            added[MOCK] = {"kind": ProviderKind.MOCK}
+        for builtin, variable in BUILTIN_PROVIDERS.items():
+            named = value.get("default_provider") == builtin
+            if builtin not in added and (named or os.environ.get(variable, "").strip()):
+                added[builtin] = {"preset": builtin}
+        if len(added) == len(providers):
+            return value
+        return {**value, "providers": added}
 
     @field_validator("temperature")
     @classmethod
@@ -362,16 +501,95 @@ class LLMSettings(SectionModel):
         """The provider this scan uses: the named default, or the first usable one for ``auto``.
 
         ``auto`` takes the first enabled provider in declaration order that is neither ``mock`` nor
-        ``replay`` and that ``allow_remote`` permits; failing that, ``mock``. Whether a hosted
-        provider's key resolves is checked when it is built (E22), not here.
+        ``replay``, that ``allow_remote`` permits and whose key reference resolves (or which needs
+        none); failing that, ``mock``. Only ``env:`` and ``file:`` references are checked here (a
+        keyring reference counts as present, so selection never opens the keyring).
+        """
+        return self.select_provider()[:2]
+
+    def select_provider(self) -> tuple[str, ProviderSettings, str | None]:
+        """Like ``selected_provider``, with the fallback reason when ``mock`` was chosen.
+
+        The reason is ``no_provider_configured``, ``remote_not_allowed`` or ``no_key_available``
+        for an ``auto`` that fell back, and ``None`` otherwise.
         """
         if self.default_provider != AUTO:
-            return self.default_provider, self.providers[self.default_provider]
+            return self.default_provider, self.providers[self.default_provider], None
+        reason = "no_provider_configured"
         for provider_id, provider in self.providers.items():
             if provider.kind in _OFFLINE or not provider.enabled:
                 continue
+            if provider_id in BUILTIN_PROVIDERS and provider.preset == provider_id:
+                continue  # added from its preset, not configured: never chosen implicitly
             if provider.is_remote and not self.allow_remote:
+                reason = "remote_not_allowed"
                 continue
-            return provider_id, provider
+            if not key_available(provider):
+                if reason == "no_provider_configured":
+                    reason = "no_key_available"
+                continue
+            return provider_id, provider, None
         mock = self.providers.get(MOCK)
-        return MOCK, mock if mock is not None else ProviderSettings(kind=ProviderKind.MOCK)
+        return MOCK, mock if mock is not None else ProviderSettings(kind=ProviderKind.MOCK), reason
+
+
+_KEYED_KINDS: Final = frozenset(
+    {
+        ProviderKind.ANTHROPIC,
+        ProviderKind.OPENAI,
+        ProviderKind.GEMINI,
+        ProviderKind.XAI,
+        ProviderKind.AZURE_OPENAI,
+        ProviderKind.VERTEX,
+        ProviderKind.BEDROCK,
+    }
+)
+_DEFAULT_KEY_VARIABLES: Final[Mapping[ProviderKind, tuple[str, ...]]] = MappingProxyType(
+    {
+        ProviderKind.ANTHROPIC: ("ANTHROPIC_API_KEY",),
+        ProviderKind.OPENAI: ("OPENAI_API_KEY",),
+        ProviderKind.GEMINI: ("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+        ProviderKind.XAI: ("XAI_API_KEY",),
+        ProviderKind.AZURE_OPENAI: ("AZURE_OPENAI_API_KEY",),
+        ProviderKind.VERTEX: ("VERTEX_ACCESS_TOKEN",),
+        ProviderKind.BEDROCK: ("AWS_ACCESS_KEY_ID",),
+    }
+)
+
+
+def key_available(provider: ProviderSettings, env: Mapping[str, str] | None = None) -> bool:
+    """Whether the provider's key reference looks resolvable, without reading any value.
+
+    ``env:`` must be set and non-empty, ``file:`` must name an existing file, ``keyring:`` counts
+    as present. A provider without a reference needs one only for the hosted kinds.
+    """
+    environ = os.environ if env is None else env
+    refs: tuple[str, ...]
+    if provider.api_key:
+        refs = (provider.api_key,)
+    else:
+        refs = tuple(f"env:{name}" for name in _DEFAULT_KEY_VARIABLES.get(provider.kind, ()))
+        if not refs:
+            return provider.kind not in _KEYED_KINDS
+    for ref in refs:
+        scheme, _, locator = ref.partition(":")
+        if scheme == "env" and environ.get(locator, "").strip():
+            return True
+        if scheme == "file" and Path(locator).expanduser().is_file():
+            return True
+        if scheme == "keyring":
+            return True
+    return False
+
+
+def preset_hosts(llm: LLMSettings) -> tuple[str, ...]:
+    """Hosts of enabled providers on their preset's unchanged endpoint (see ``preset_host``)."""
+    return tuple(
+        sorted(
+            {
+                host
+                for provider in llm.providers.values()
+                if provider.enabled and (host := provider.preset_host) is not None
+            }
+        )
+    )

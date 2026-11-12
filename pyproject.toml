@@ -58,6 +58,20 @@ llm-review = "codekavach.llm.stages:LlmReviewStage"
 restore = "codekavach.privacy.restore.stage:RestoreStage"
 rate = "codekavach.risk.stage:RateStage"
 
+[project.entry-points."codekavach.providers"]
+anthropic = "codekavach.llm.providers.registry:anthropic_spec"
+openai = "codekavach.llm.providers.registry:openai_spec"
+gemini = "codekavach.llm.providers.registry:gemini_spec"
+xai = "codekavach.llm.providers.registry:xai_spec"
+bedrock = "codekavach.llm.providers.registry:bedrock_spec"
+azure-openai = "codekavach.llm.providers.registry:azure_openai_spec"
+ollama = "codekavach.llm.providers.registry:ollama_spec"
+openai-compatible = "codekavach.llm.providers.registry:openai_compatible_spec"
+litellm = "codekavach.llm.providers.registry:litellm_spec"
+mock = "codekavach.llm.providers.registry:mock_spec"
+replay = "codekavach.llm.providers.registry:replay_spec"
+vertex = "codekavach.llm.providers.registry:vertex_spec"
+
 [project.entry-points."codekavach.renderers"]
 html = "codekavach.report.render.html:HtmlRenderer"
 pdf = "codekavach.report.render.pdf:PdfRenderer"

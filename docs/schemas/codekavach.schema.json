@@ -1322,7 +1322,8 @@
         "litellm",
         "cli-bridge",
         "mock",
-        "replay"
+        "replay",
+        "vertex"
       ],
       "title": "ProviderKind",
       "type": "string"
@@ -1481,6 +1482,19 @@
           "description": "Adapter-specific options.",
           "title": "Options",
           "type": "object"
+        },
+        "preset": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Named preset that fills base_url, model, key reference and options.",
+          "title": "Preset"
         },
         "region": {
           "anyOf": [

@@ -82,9 +82,10 @@ def test_table_matches_the_golden_file(cli: Cli, project: Path, adapters_install
     assert result.exit_code == 0, result.stderr
     assert_matches_golden(result.stdout, GOLDEN)
     lines = result.stdout.splitlines()
-    assert [line.split()[1] for line in lines if line.startswith("*")] == ["mock"]
-    assert lines[-1] == 'default: mock (llm.default_provider = "auto")'
-    assert "warning[auto_resolution_unavailable]" in result.stderr
+    # auto: primary has no key in this environment, so the local runner is the first usable one
+    assert [line.split()[1] for line in lines if line.startswith("*")] == ["lab"]
+    assert lines[-1] == 'default: lab (llm.default_provider = "auto")'
+    assert "warning[auto_resolution_unavailable]" not in result.stderr
     assert "gateway" not in result.stdout  # disabled providers need --all
 
 
@@ -92,7 +93,7 @@ def test_json_has_the_same_fields(cli: Cli, project: Path, adapters_installed: N
     result = listing(cli, project, "--json")
     data = result.json["data"]
     assert set(data) == {"default", "llm_enabled", "allow_remote", "providers"}
-    assert (data["default"], data["llm_enabled"], data["allow_remote"]) == ("mock", True, True)
+    assert (data["default"], data["llm_enabled"], data["allow_remote"]) == ("lab", True, True)
     rows = by_id(result)
     assert list(rows) == ["mock", "primary", "lab"]
     assert rows["primary"] == {
@@ -117,12 +118,10 @@ def test_json_has_the_same_fields(cli: Cli, project: Path, adapters_installed: N
         },
         "default": False,
     }
-    assert (rows["mock"]["default"], rows["mock"]["credential"]) == (True, "not-required")
+    assert (rows["mock"]["default"], rows["mock"]["credential"]) == (False, "not-required")
     assert (rows["lab"]["locality"], rows["lab"]["adapter"]) == ("local", "missing")
     assert rows["lab"]["capabilities"] is None
-    assert [warning["code"] for warning in result.json["warnings"]] == [
-        "auto_resolution_unavailable"
-    ]
+    assert [warning["code"] for warning in result.json["warnings"]] == []
 
 
 def test_default_marking(
@@ -263,6 +262,6 @@ def test_kinds_with_an_invalid_configuration_load_only_the_core_distribution(
     assert received[0].plugins.allow_distributions == ["codekavach"]
 
 
-def test_real_registry_without_adapters(cli: Cli, project: Path) -> None:
+def test_real_registry_has_every_configured_adapter(cli: Cli, project: Path) -> None:
     rows = by_id(listing(cli, project, "--json"))
-    assert {row["adapter"] for row in rows.values()} == {"missing"}
+    assert {row["adapter"] for row in rows.values()} == {"available"}

@@ -168,6 +168,7 @@ Language models and their providers.
 | `llm.budget.max_total_output_tokens` | int \| unset | unset | `CODEKAVACH_LLM__BUDGET__MAX_TOTAL_OUTPUT_TOKENS` |  | Maximum output tokens across all requests. |
 | `llm.budget.max_cost_usd` | float \| unset | unset | `CODEKAVACH_LLM__BUDGET__MAX_COST_USD` |  | Maximum estimated cost in US dollars. |
 | `llm.providers.*.kind` | ProviderKind | required |  | restricted | Adapter kind. |
+| `llm.providers.*.preset` | str \| unset | unset |  | restricted | Named preset that fills base_url, model, key reference and options. |
 | `llm.providers.*.enabled` | bool | `true` |  | restricted | Whether the provider may be selected. |
 | `llm.providers.*.model` | str \| unset | unset |  | restricted | Model identifier sent to the provider. |
 | `llm.providers.*.base_url` | url \| unset | unset |  | restricted | Endpoint URL; where payloads and the API key are sent. |

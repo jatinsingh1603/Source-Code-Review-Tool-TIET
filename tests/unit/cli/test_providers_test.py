@@ -107,7 +107,8 @@ def test_mock_is_a_local_test_double(cli: Cli, project: Path, probe: FakeProbe) 
     assert (call["consent"], call["timeout"], call["structured"]) == (None, 30.0, False)
     default = run(cli, project)
     assert default.exit_code == 0
-    assert probe.calls[1]["provider_id"] == "mock"  # auto resolves to mock until E22 lands
+    # auto: primary (anthropic) has no key here, so the local runner is the first usable one
+    assert probe.calls[1]["provider_id"] == "lab"
 
 
 def test_local_provider_output_and_json(cli: Cli, project: Path, probe: FakeProbe) -> None:
@@ -297,8 +298,11 @@ def probe_in_this_build() -> bool:
     reason="needs the provider adapters (E22) and the egress ledger (E12)",
 )
 def test_mock_probe_writes_a_ledger_entry(cli: Cli, project: Path) -> None:
+    # no OS keyring in the test environment: the project ledger is kept in clear here
+    with (project / "codekavach.toml").open("a", encoding="utf-8") as config:
+        config.write("\n[privacy.egress]\nencrypt_at_rest = false\n")
     result = run(cli, project, "mock", "--json")
     assert result.exit_code == 0, result.stderr
     assert result.json["data"]["results"][0]["ledger_seq"] is not None
-    shown = cli(["privacy", "ledger", "show", "--json"], cwd=project)
+    shown = cli(["privacy", "ledger", "show", "--json", TRUST], cwd=project)
     assert "probe" in shown.stdout

@@ -65,7 +65,21 @@ _log = get_logger(__name__)
 
 ALLOWED_METHODS: Final = frozenset({"POST", "GET"})
 ALLOWED_HEADERS: Final = frozenset(
-    {"authorization", "x-api-key", "api-key", "content-type", "accept", "user-agent"}
+    {
+        "authorization",
+        "x-api-key",
+        "api-key",
+        "content-type",
+        "accept",
+        "user-agent",
+        # gateways that accept only their own client identify it with this header (AgentRouter)
+        "originator",
+        "x-goog-api-key",
+        # AWS Signature Version 4 (Bedrock)
+        "x-amz-date",
+        "x-amz-content-sha256",
+        "x-amz-security-token",
+    }
 )
 _VERSION_HEADER: Final = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*-version$")
 MAX_RESPONSE_BYTES: Final = 8 * 1024 * 1024
@@ -297,7 +311,7 @@ class _Policy:
                 raise TransportRefused(Refusal.SCHEME)
             return
         allowlist = self._settings.privacy.egress.provider_host_allowlist
-        if not host_allowed(host, allowlist):
+        if not host_allowed(host, allowlist) and host != provider.preset_host:
             raise TransportRefused(Refusal.HOST)
         if provider.effective_trust_tier is TrustTier.PUBLIC and not _only_global(
             self._addresses_of(host)

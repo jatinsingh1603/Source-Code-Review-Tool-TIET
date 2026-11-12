@@ -17,9 +17,10 @@ payload hash, task, prompt version and hash) and nothing from the client's code.
 """
 
 import json
+import re
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
-from typing import Final, Protocol, runtime_checkable
+from typing import Any, Final, Protocol, runtime_checkable
 
 from pydantic import ValidationError
 
@@ -31,8 +32,8 @@ from codekavach.llm.tasks.base import ReviewTask
 
 MAX_RESPONSE_BYTES: Final = 1_048_576
 OFFLINE_KINDS: Final = frozenset({ProviderKind.MOCK, ProviderKind.REPLAY})
-# The kinds that have an adapter in this build; E22 adds the hosted ones.
-SUPPORTED_KINDS: Final = OFFLINE_KINDS | {ProviderKind.OLLAMA}
+# The kinds that have an adapter in this build; the command bridge has none (see registry).
+SUPPORTED_KINDS: Final = frozenset(ProviderKind) - {ProviderKind.CLI_BRIDGE}
 
 
 class ProviderError(Exception):
@@ -47,6 +48,29 @@ class ProviderParseError(ProviderError):
     """The response is not a schema-valid verdict. The message never repeats the response text."""
 
 
+class ProviderRefused(ProviderParseError):  # noqa: N818 - the name is the issue's wording
+    """The model declined to answer (a content-policy refusal); never retried or repaired."""
+
+
+class ProviderUnavailable(ProviderParseError):  # noqa: N818 - the name is the issue's wording
+    """The provider answered with an error status (unauthorised, rate limited, server error)."""
+
+    def __init__(self, reason: str, status: int = 0) -> None:
+        super().__init__(reason)
+        self.status = status
+
+
+class StructuredMode:
+    """How an adapter asks for a verdict-shaped answer, strongest first."""
+
+    JSON_SCHEMA: Final = "json_schema"  # strict schema-constrained decoding
+    TOOL: Final = "tool"  # a forced tool call whose input is the verdict
+    JSON_OBJECT: Final = "json_object"  # any JSON object, validated afterwards
+    PROMPT: Final = "prompt"  # the schema is stated in the prompt only
+
+    ORDER: Final = (JSON_SCHEMA, TOOL, JSON_OBJECT, PROMPT)
+
+
 @dataclass(frozen=True, slots=True)
 class ProviderCapabilities:
     """What a provider can do, read by the stage and by the policy."""
@@ -56,6 +80,16 @@ class ProviderCapabilities:
     tool_calling: bool = False
     batch: bool = False
     local: bool = False
+    structured_modes: tuple[str, ...] = (StructuredMode.PROMPT,)
+    streaming: bool = False
+
+    @property
+    def best_structured_mode(self) -> str:
+        """The strongest structured-output mode this adapter supports."""
+        for mode in StructuredMode.ORDER:
+            if mode in self.structured_modes:
+                return mode
+        return StructuredMode.PROMPT
 
 
 @dataclass(frozen=True, slots=True, repr=False)
@@ -126,49 +160,114 @@ class OfflineProvider(LLMProvider, Protocol):
         ...
 
 
-def _responses_text(output: list[object]) -> str | None:
-    """The answer text of an OpenAI Responses ``output`` array (``message`` items only)."""
+def _dict(value: object) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _list(value: object) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _from_parts(parts: list[Any]) -> object:
+    """The text (or tool input) of a list of content parts; a refusal part raises."""
     texts: list[str] = []
-    for item in output:
-        if isinstance(item, dict) and item.get("type") == "message":
-            texts.extend(
-                part["text"]
-                for part in item.get("content") or []
-                if isinstance(part, dict) and isinstance(part.get("text"), str)
-            )
-    return "".join(texts) or None
+    for part in parts:
+        item = _dict(part)
+        kind = item.get("type")
+        if kind == "refusal" or ("refusal" in item and item.get("refusal")):
+            raise ProviderRefused("model_refused")
+        if kind in {"tool_use", "function_call"} and isinstance(item.get("input"), dict):
+            return item["input"]
+        tool = _dict(item.get("toolUse"))  # Bedrock Converse
+        if isinstance(tool.get("input"), dict):
+            return tool["input"]
+        call = _dict(item.get("functionCall"))  # Gemini
+        if isinstance(call.get("args"), dict):
+            return call["args"]
+        if isinstance(item.get("text"), str) and not item.get("thought"):
+            texts.append(item["text"])
+    return "".join(texts) if texts else None
+
+
+def _content_of(document: dict[str, Any]) -> object:  # noqa: PLR0911, PLR0912
+    message = document.get("message")
+    choices = document.get("choices")
+    if document.get("stop_reason") == "refusal":  # Anthropic
+        raise ProviderRefused("model_refused")
+    if "content" in document:
+        content = document["content"]
+        return _from_parts(content) if isinstance(content, list) else content
+    if isinstance(message, dict):
+        if message.get("refusal"):
+            raise ProviderRefused("model_refused")
+        content = message.get("content")
+        return _from_parts(content) if isinstance(content, list) else content
+    if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+        inner = _dict(choices[0].get("message"))
+        if inner.get("refusal") or choices[0].get("finish_reason") == "content_filter":
+            raise ProviderRefused("model_refused")
+        for call in _list(inner.get("tool_calls")):
+            arguments = _dict(_dict(call).get("function")).get("arguments")
+            if isinstance(arguments, str):
+                return arguments
+        return inner.get("content")
+    if isinstance(document.get("output"), list):  # OpenAI Responses API
+        for item in document["output"]:
+            entry = _dict(item)
+            if entry.get("type") == "message":
+                found = _from_parts(_list(entry.get("content")))
+                if found is not None:
+                    return found
+            if entry.get("type") == "function_call" and isinstance(entry.get("arguments"), str):
+                return entry["arguments"]
+        return document.get("output_text")
+    if isinstance(document.get("output"), dict):  # Bedrock Converse
+        content = _dict(_dict(document["output"]).get("message")).get("content")
+        if document.get("stopReason") == "content_filtered":
+            raise ProviderRefused("model_refused")
+        return _from_parts(_list(content))
+    if "candidates" in document or "promptFeedback" in document:  # Gemini
+        if _dict(document.get("promptFeedback")).get("blockReason"):
+            raise ProviderRefused("model_refused")
+        candidates = _list(document.get("candidates"))
+        if not candidates:
+            raise ProviderRefused("model_refused")
+        first = _dict(candidates[0])
+        if first.get("finishReason") in {"SAFETY", "RECITATION", "PROHIBITED_CONTENT", "BLOCKLIST"}:
+            raise ProviderRefused("model_refused")
+        return _from_parts(_list(_dict(first.get("content")).get("parts")))
+    if "output_text" in document:
+        return document["output_text"]
+    return None
+
+
+def _document(body: bytes) -> object:
+    if len(body) > MAX_RESPONSE_BYTES:
+        raise ProviderParseError("response_too_large")
+    try:
+        return json.loads(body)
+    except ValueError:
+        raise ProviderParseError("response_not_json") from None
 
 
 def extract_content(body: bytes) -> str:
     """The model's text from the usual response envelopes.
 
-    Understands ``{"content": ...}``, ``{"message": {"content": ...}}`` (Ollama) and
-    ``{"choices": [{"message": {"content": ...}}]}`` (OpenAI-compatible). The content may itself be
-    the JSON object (already decoded) or a string holding it.
+    Understands ``{"content": ...}``, ``{"message": {"content": ...}}`` (Ollama),
+    ``{"choices": [{"message": {"content": ...}}]}`` (OpenAI Chat Completions and compatible
+    servers, including tool calls), ``{"output": [{"type": "message", ...}]}`` (OpenAI Responses),
+    a list of content parts (Anthropic Messages, including a forced ``tool_use``),
+    ``{"candidates": [...]}`` (Gemini) and ``{"output": {"message": ...}}`` (Bedrock Converse).
+    The content may itself be the JSON object (already decoded) or a string holding it.
 
     Raises:
+        ProviderRefused: the envelope says the model refused or a safety filter blocked it.
         ProviderParseError: not JSON, not an envelope, or the content is missing.
     """
-    if len(body) > MAX_RESPONSE_BYTES:
-        raise ProviderParseError("response_too_large")
-    try:
-        document = json.loads(body)
-    except ValueError:
-        raise ProviderParseError("response_not_json") from None
+    document = _document(body)
     content: object = None
     if isinstance(document, dict):
-        message = document.get("message")
-        choices = document.get("choices")
-        output = document.get("output")
-        if "content" in document:
-            content = document["content"]
-        elif isinstance(output, list):
-            content = _responses_text(output)
-        elif isinstance(message, dict):
-            content = message.get("content")
-        elif isinstance(choices, list) and choices and isinstance(choices[0], dict):
-            inner = choices[0].get("message")
-            content = inner.get("content") if isinstance(inner, dict) else None
+        content = _content_of(document)
     if isinstance(content, dict):
         return json.dumps(content)
     if not isinstance(content, str) or not content.strip():
@@ -176,14 +275,68 @@ def extract_content(body: bytes) -> str:
     return content
 
 
+@dataclass(frozen=True, slots=True)
+class Usage:
+    """Token counts reported by the provider (zero when it reports none)."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+
+def _int(value: object) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+
+
+def usage_of(body: bytes) -> Usage:
+    """The token usage in a response envelope, from whichever field the vendor uses."""
+    try:
+        document = json.loads(body)
+    except ValueError:
+        return Usage()
+    if not isinstance(document, dict):
+        return Usage()
+    usage = _dict(document.get("usage")) or _dict(document.get("usageMetadata"))
+    input_tokens = (
+        _int(usage.get("input_tokens"))
+        or _int(usage.get("prompt_tokens"))
+        or _int(usage.get("inputTokens"))
+        or _int(usage.get("promptTokenCount"))
+        or _int(document.get("prompt_eval_count"))
+    )
+    output_tokens = (
+        _int(usage.get("output_tokens"))
+        or _int(usage.get("completion_tokens"))
+        or _int(usage.get("outputTokens"))
+        or _int(usage.get("candidatesTokenCount"))
+        or _int(document.get("eval_count"))
+    )
+    return Usage(input_tokens, output_tokens)
+
+
+_FENCE = re.compile(r"^```[a-zA-Z0-9_-]*\s*\n(?P<body>.*?)\n?```$", re.DOTALL)
+
+
+def unwrap_json(text: str) -> str:
+    """``text`` without one surrounding Markdown code fence; anything else is left alone.
+
+    Prose before or after the object is not stripped: an answer that mixes the two is rejected by
+    validation, because which object to trust would be a guess.
+    """
+    stripped = text.strip()
+    match = _FENCE.match(stripped)
+    return match.group("body").strip() if match else stripped
+
+
 def verdict_from_text(text: str) -> LLMVerdict:
     """Validate ``text`` as an ``LLMVerdict``; the error names the failure, never the text.
+
+    A single surrounding Markdown code fence is accepted and removed.
 
     Raises:
         ProviderParseError: not JSON, or it breaks the verdict schema.
     """
     try:
-        return LLMVerdict.model_validate_json(text)
+        return LLMVerdict.model_validate_json(unwrap_json(text))
     except ValidationError:
         raise ProviderParseError("verdict_violates_schema") from None
     except ValueError:
@@ -191,9 +344,15 @@ def verdict_from_text(text: str) -> LLMVerdict:
 
 
 def parse_response(raw: RawResponse) -> LLMVerdict:
-    """The verdict in a successful response (shared by the adapters)."""
+    """The verdict in a successful response (shared by the adapters).
+
+    Raises:
+        ProviderUnavailable: the status is not 2xx (the reason names the status only).
+        ProviderRefused: the model refused.
+        ProviderParseError: the answer is not a schema-valid verdict.
+    """
     if not 200 <= raw.status < 300:
-        raise ProviderParseError(f"http_status_{raw.status}")
+        raise ProviderUnavailable(f"http_status_{raw.status}", raw.status)
     return verdict_from_text(extract_content(raw.body))
 
 

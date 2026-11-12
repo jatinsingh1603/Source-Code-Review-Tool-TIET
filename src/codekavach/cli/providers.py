@@ -423,6 +423,17 @@ def preflight(
     )
 
 
+def _state_dir(cli_ctx: CliContext) -> Any:
+    """The project's state directory, where the probe's ledger entries go (or ``None``)."""
+    from codekavach.config.paths import resolve_state_dir  # noqa: PLC0415
+
+    loaded = cli_ctx.loaded
+    try:
+        return resolve_state_dir(loaded.project_root, loaded.settings.project.state_dir)
+    except (OSError, ValueError):
+        return None
+
+
 def _targets(
     cli_ctx: CliContext, out: Output, provider_id: str | None, everything: bool
 ) -> list[str]:
@@ -492,6 +503,7 @@ def test_command(  # noqa: PLR0917 - Typer maps each parameter to one option
             structured=structured,
             timeout=timeout,
             consent=consent.decision(),
+            state_dir=_state_dir(cli_ctx),
         )
         results.append(probe_data(outcome, provider_id=name, kind=kind))
     lines = [line for data in results for line in probe_lines(data)]

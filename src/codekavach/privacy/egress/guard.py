@@ -405,7 +405,10 @@ class EgressGuard:
         if not provider.is_remote:
             return True
         allowlist = settings.privacy.egress.provider_host_allowlist
-        return settings.llm.allow_remote and host_allowed(provider.host, allowlist)
+        return settings.llm.allow_remote and (
+            host_allowed(provider.host, allowlist)
+            or (provider.host is not None and provider.host == provider.preset_host)
+        )
 
     @staticmethod
     def _level_permitted(

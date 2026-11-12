@@ -45,6 +45,7 @@ MINIMAL: dict[ProviderKind, dict[str, Any]] = {
     ProviderKind.CLI_BRIDGE: {"model": "m", "command": ["tool", "--json"]},
     ProviderKind.MOCK: {},
     ProviderKind.REPLAY: {"cassette_dir": "cassettes"},
+    ProviderKind.VERTEX: {"model": "m", "options": {"project": "p", "location": "europe-west4"}},
 }
 
 

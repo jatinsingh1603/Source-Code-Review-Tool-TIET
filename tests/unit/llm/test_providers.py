@@ -285,6 +285,7 @@ def test_the_probe_reports_without_opening_a_connection() -> None:
                         "model": "m",
                         "base_url": "https://api.example.test/v1",
                     },
+                    "bridge": {"kind": "cli-bridge", "model": "m", "command": ["tool"]},
                 }
             }
         }
@@ -292,5 +293,6 @@ def test_the_probe_reports_without_opening_a_connection() -> None:
     assert probe_provider("m", settings).ok and not probe_provider("m", settings).network
     assert probe_provider("off", settings).reason == "provider_disabled"
     assert probe_provider("local", settings).ok and probe_provider("local", settings).network
-    assert probe_provider("hosted", settings).reason == "adapter_unavailable"
+    assert probe_provider("hosted", settings).reason == "ready"
+    assert probe_provider("bridge", settings).reason == "adapter_unavailable"
     assert probe_provider("nope", settings).reason == "provider_not_configured"

@@ -69,6 +69,7 @@ LLM_NEUTRAL_ALLOWLIST: Mapping[str, str] = {
 LLM_FILE_IO_ALLOWLIST: Mapping[str, str] = {
     "src/codekavach/llm/prompts/loader.py": "reads the prompt templates shipped with the package",
     "src/codekavach/llm/providers/replay.py": "reads and writes recorded responses (cassettes)",
+    "src/codekavach/llm/cache.py": "reads and writes cached verdict responses, keyed by hash (E22)",
 }
 # Files under src/codekavach/llm/ allowed to call .expose() on sanitised text. A prompt has to
 # contain the payload, so exactly one place does it: the task that assembles the prompt. The

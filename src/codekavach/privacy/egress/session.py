@@ -79,6 +79,7 @@ class Dispatch:
     body: bytes = b""
     headers: Mapping[str, str] = field(default_factory=dict)
     error_kind: str | None = None
+    ledger_seq: int | None = None  # the ``sent`` (or ``blocked``) entry of this request
 
     def __repr__(self) -> str:
         return f"Dispatch({self.kind}, block={self.block_code}, status={self.status})"
@@ -234,8 +235,8 @@ class EgressSession:
 
         if not decision.allowed or decision.ticket is None:
             code = decision.block_code or "scanner_error"
-            ledger.append(draft(EgressOutcome.BLOCKED, block_code=code), text)
-            return Dispatch("blocked", block_code=code)
+            entry = ledger.append(draft(EgressOutcome.BLOCKED, block_code=code), text)
+            return Dispatch("blocked", block_code=code, ledger_seq=entry.seq)
         ticket = decision.ticket
         if self._dry_run:
             return self._dry(transport, guard, request, ticket, respond, ledger, draft, payload)
@@ -254,15 +255,19 @@ class EgressSession:
                 status, body, headers = answer.status, answer.body, {}
         except EgressBlocked as blocked:
             self._follow_up(ledger, draft, EgressOutcome.FAILED, sent.seq, 0)
-            return Dispatch("failed", block_code=blocked.block_code, error_kind="refused")
+            return Dispatch(
+                "failed", block_code=blocked.block_code, error_kind="refused", ledger_seq=sent.seq
+            )
         except TransportError as error:
             self._follow_up(ledger, draft, EgressOutcome.FAILED, sent.seq, 0)
-            return Dispatch("failed", error_kind=error.kind)
+            return Dispatch("failed", error_kind=error.kind, ledger_seq=sent.seq)
         except Exception:  # noqa: BLE001 - an offline provider may raise anything; text is dropped
             self._follow_up(ledger, draft, EgressOutcome.FAILED, sent.seq, 0)
-            return Dispatch("failed", error_kind="provider_error")
+            return Dispatch("failed", error_kind="provider_error", ledger_seq=sent.seq)
         self._follow_up(ledger, draft, EgressOutcome.COMPLETED, sent.seq, len(body))
-        return Dispatch("answered", status=status, body=body, headers=dict(headers))
+        return Dispatch(
+            "answered", status=status, body=body, headers=dict(headers), ledger_seq=sent.seq
+        )
 
     @staticmethod
     def _follow_up(
