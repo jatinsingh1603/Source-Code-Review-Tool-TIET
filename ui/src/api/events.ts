@@ -144,7 +144,8 @@ export function subscribeScanEvents(scanId: string, opts: SubscribeOptions): () 
       for (;;) {
         const { value, done } = await reader.read();
         if (done) break;
-        for (const msg of parser.push(decoder.decode(value, { stream: true }))) {
+        const chunk = typeof value === "string" ? value : decoder.decode(value, { stream: true });
+        for (const msg of parser.push(chunk)) {
           if (msg.id !== undefined) lastId = msg.id;
           const ev = toScanEvent(msg);
           if (!ev) continue;
