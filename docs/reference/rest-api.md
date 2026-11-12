@@ -62,6 +62,7 @@ same way.
 | create and change projects, start and cancel scans, triage findings | yes | yes | yes | no |
 | privacy summary, ledger entries, ledger verification | yes | yes | yes | no |
 | original-versus-sent pair of a ledger entry (`/ledger/{seq}`) | yes | yes | no | no |
+| on-demand model review of one finding (`POST /findings/{id}/review`) | yes | yes | no | no |
 | audit log | yes | yes | no | no |
 | users, settings, policy | yes | no | no | no |
 
@@ -85,12 +86,13 @@ All paths are below `/api/v1`. Errors have the body
 | `GET /projects`, `POST /projects` | List and create. Source `{type: sample\|path\|git\|upload, path?, url?, ref?}`. |
 | `GET/PATCH/DELETE /projects/{id}` | Read, rename or re-point, delete with its scans. |
 | `POST /projects/{id}/upload` | Multipart `file`: a zip or tar archive, checked before it is kept. |
-| `POST /projects/{id}/scans` | `{privacy_level, provider, model?, send, rules?}`; returns the queued scan. |
+| `POST /projects/{id}/scans` | `{privacy_level, provider, model?, send, rules?, review_limit?}`; returns the queued scan. `review_limit` reviews only the N most severe candidates with the model (0 = all; unset = the provider's default, 8 for `agentrouter`). |
 | `GET /scans?project_id=`, `GET /scans/{id}`, `DELETE /scans/{id}` | Scan status: `queued`, `running`, `completed`, `failed`, `cancelled`; `stage`, `progress`, counts by severity. |
 | `GET /scans/{id}/events` | Server-sent events `stage`, `progress`, `log`, `finding`, `done`; resumes after `Last-Event-ID`. `GET /scans/{id}/log` returns the same events as JSON. |
 | `POST /scans/{id}/cancel` | Cancel a queued or running scan. |
 | `GET /scans/{id}/findings?severity=&status=&cwe=&q=&engine=&path=` | Findings, most severe first. |
 | `GET /findings/{id}`, `PATCH /findings/{id}`, `GET /findings/{id}/history` | Detail (code with line numbers, taint path, LLM verdict, CVSS, compliance), triage (`status`, `assignee`, `comment`), history. |
+| `POST /findings/{id}/review` | Ask the model about this one finding now; returns the updated finding (see below). |
 | `GET /scans/{id}/privacy` | Level, payloads, blocked, placeholders by type, pseudonyms, tokens sent, chain state, zero-leak check, attestation text. |
 | `GET /scans/{id}/ledger`, `GET /scans/{id}/ledger/{seq}`, `POST /scans/{id}/ledger/verify` | Egress ledger entries; one entry with `payload_text`, `original_text` and change `markup`; chain and payload verification. |
 | `GET /scans/{id}/reports`, `GET /scans/{id}/reports/{fmt}` | Formats of the installed renderers; download (`?inline=1` to view an HTML report in the dashboard). Reports are rendered again after triage changes. |
@@ -135,3 +137,47 @@ file times.
 - The database is SQLite; PostgreSQL and Alembic migrations for the server tables are not
   implemented.
 - `markup` marks replaced spans on the payload side only.
+
+## Fast model review on a serial provider
+
+Some gateways, `agentrouter` among them, answer one request at a time per key, at roughly 10 to
+15 seconds a request; running requests in parallel does not help. Three settings keep a live review
+short without changing what leaves the machine: every request still carries one candidate's slice
+and nothing else, and goes through the egress guard and the ledger.
+
+- **One request per candidate.** `llm.review_mode = "combined"` (the default) asks the `review`
+  task, which returns the triage verdict, the impact, an exploit scenario and the fix with a
+  secure example (in pseudonym space) in one strict JSON answer, instead of triage, explain and
+  remediate apart. `separate` keeps three requests; `auto` uses `combined` only for providers whose
+  `options.serial` is true. With triage as the only task, one triage request is sent as before.
+- **Most severe first.** Candidates are queued by engine severity, then CWE family. As each verdict
+  lands, the scan's event stream carries a `finding` event with `phase: "verdict"`, the candidate's
+  id, its engine severity, `verdict` (`vulnerable`, `not_vulnerable`, `undecided`), `confidence`
+  and `reviewed`/`total`. The rated findings follow when the scan ends as ordinary `finding` events,
+  each with the `candidate_ids` it came from, so a client can replace the live entry.
+- **Quick review.** `review_limit` (scan request) or `llm.review_limit` (configuration) sends only
+  the N most severe candidates that can be sliced; the others keep their deterministic evidence and
+  are listed in the report as not reviewed (`llm_review_limit`). The `agentrouter` preset defaults
+  to 8 (`options.review_limit`); 0 reviews every candidate.
+- **Cache.** A repeated scan of unchanged code with the same scan salt asks the same questions, and
+  the response cache answers them without egress (`llm.cache`, on by default), for the combined
+  task as for the others.
+
+### `POST /findings/{id}/review`
+
+Permission `finding:review` (auditor and admin). Body, all optional:
+`{"provider": "<id>", "model": "<name>"}`; by default the scan's own provider and model.
+
+The server runs the real pipeline again over the scan's source with `llm.review_only` set to the
+finding's fingerprint, so exactly that one candidate is sliced, redacted and pseudonymised, checked
+by the egress guard, recorded in the scan's ledger (same hash chain, new pipeline scan id), sent
+with the combined `review` task and restored locally. Calling the endpoint is the operator's consent
+to send that one sanitised slice, as `send: true` is for a scan. The finding keeps its id, status,
+assignee and history; its model verdict, confidence, impact and remediation are replaced, a history
+entry with action `llm_review` is added, and the scan's reports are rendered again on the next
+download. The response is the finding as `GET /findings/{id}` returns it.
+
+Errors: `404 not_found` (unknown finding), `409 scan_not_completed`, `409 review_in_progress`
+(another review of the same scan is running), `400 provider_unknown`, and `502 review_failed` when
+the request was blocked, failed or gave no usable verdict (the message names the item codes, for
+example `egress_blocked`).

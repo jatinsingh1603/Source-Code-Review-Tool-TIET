@@ -9,6 +9,11 @@ and translates the pipeline's token-only events into the dashboard's stream. Aft
 the findings, computes the privacy summary from the ledger and renders the reports. The server
 never talks to a model itself: when a remote provider is chosen and ``send`` is set, the request
 carries the operator's consent into the pipeline, whose egress guard decides what leaves (I1, I4).
+
+While the LLM stage runs, each verdict that lands is streamed at once as a ``finding`` event with
+``phase = "verdict"`` and the candidate's id (most severe candidates are reviewed first); the
+rated findings follow as ordinary ``finding`` events when the scan ends, each naming its
+``candidate_ids`` so a client can replace the live entry.
 """
 
 import json
@@ -64,6 +69,12 @@ STAGE_LABELS: Final = {
     "report": "Rendering reports",
 }
 TERMS_FILE: Final = Path("ground-truth") / "terms.txt"
+OPTIONS_FILE: Final = "scan-options.json"  # per-scan request options (review_limit)
+VERDICT_WORDS: Final = {
+    "vulnerable": "confirmed by the model",
+    "not_vulnerable": "judged not exploitable by the model",
+    "undecided": "undecided by the model",
+}
 POLICY_FILE: Final = "codekavach.policy.toml"
 EAGER_FORMATS: Final = ("html", "json", "sarif")
 
@@ -91,6 +102,7 @@ class _Progress:
         self.done = 0
         self.findings_hint = 0
         self.counts: dict[str, tuple[Any, Any]] = {}
+        self.queued: dict[str, tuple[str, list[int]]] = {}
 
     def _update(self, *, stage: str | None = None, progress: int | None = None) -> None:
         with self.job.state.db.transaction() as session:
@@ -156,6 +168,20 @@ class _Progress:
             percent = self.percent()
             self.log.append("progress", {"percent": percent, "message": f"{label} {status}"})
             self._update(progress=percent)
+        elif kind == "item.queued":
+            cwe = data.get("cwe")
+            self.queued[str(data.get("item_id"))] = (
+                str(data.get("severity") or "medium"),
+                [int(c) for c in cwe if isinstance(c, int)] if isinstance(cwe, list) else [],
+            )
+        elif kind == "item.reviewed":
+            self._verdict(data)
+        elif kind == "item.failed" and data.get("error_code") == "llm_review_limit":
+            self.log.append(
+                "log",
+                {"level": "info", "message": f"item {data.get('item_id')} kept with its "
+                 "deterministic evidence; not reviewed by the model (review limit)"},
+            )  # fmt: skip
         elif kind == "item.failed":
             self.log.append(
                 "log",
@@ -164,6 +190,27 @@ class _Progress:
             )  # fmt: skip
         elif kind == "warning":
             self.log.append("log", {"level": "warning", "message": str(data.get("code"))})
+
+    def _verdict(self, data: dict[str, Any]) -> None:
+        """A model verdict landed: stream it as a live ``finding`` event (codes only)."""
+        item = str(data.get("item_id"))
+        severity, cwe = self.queued.get(item, ("medium", []))
+        verdict = str(data.get("verdict"))
+        label = ", ".join(f"CWE-{number}" for number in cwe) or "Candidate"
+        self.log.append(
+            "finding",
+            {
+                "id": item,
+                "phase": "verdict",
+                "severity": severity,
+                "title": f"{label}: {VERDICT_WORDS.get(verdict, verdict)}",
+                "verdict": verdict,
+                "confidence": data.get("confidence"),
+                "cwe": cwe,
+                "reviewed": data.get("current"),
+                "total": data.get("total"),
+            },
+        )
 
 
 def _materialise(project: Project, paths: ScanPaths, job: ScanJob) -> None:
@@ -212,10 +259,24 @@ def _overrides(row: ScanRow, base: dict[str, Any]) -> dict[str, Any]:
         llm["default_provider"] = row.provider
         if row.model:
             llm["model"] = row.model
+    options = _options(row)
+    if llm["enabled"] and isinstance(options.get("review_limit"), int):
+        llm["review_limit"] = options["review_limit"]
     overrides: dict[str, Any] = {"privacy": {"level": row.privacy_level}, "llm": llm}
     if row.rules:
         overrides["rules"] = {"paths": [str(item) for item in row.rules]}
     return overrides
+
+
+def _options(row: ScanRow) -> dict[str, Any]:
+    """The request options stored beside the scan (``scan-options.json``), or none."""
+    if not row.workspace:
+        return {}
+    try:
+        found = json.loads((Path(row.workspace) / OPTIONS_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return found if isinstance(found, dict) else {}
 
 
 def _terms_file(project: Project, job: ScanJob, paths: ScanPaths) -> Path | None:
@@ -405,6 +466,7 @@ def _store(  # noqa: PLR0917 - the parts of one result
                 "id": str(finding.id),
                 "severity": str(finding.severity.value),
                 "title": finding.title,
+                "candidate_ids": [str(item) for item in finding.provenance.candidate_ids],
             },
         )
     log.append(

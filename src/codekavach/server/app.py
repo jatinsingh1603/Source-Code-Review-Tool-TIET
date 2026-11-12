@@ -47,6 +47,7 @@ def _api_router() -> APIRouter:
         admin,
         auth,
         evaluation,
+        finding_review,
         findings,
         me,
         platform,
@@ -57,7 +58,10 @@ def _api_router() -> APIRouter:
     )
 
     router = APIRouter(prefix=API_PREFIX)
-    modules = (system, platform, privacy, evaluation, auth, admin, me, projects, scans, findings)
+    modules = (
+        system, platform, privacy, evaluation, auth, admin, me, projects, scans, findings,
+        finding_review,
+    )  # fmt: skip
     for module in modules:
         router.include_router(module.router)
     return router

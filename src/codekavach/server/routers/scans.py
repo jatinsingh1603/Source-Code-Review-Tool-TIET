@@ -193,6 +193,10 @@ def start_scan(
         created_by=principal.user_id,
     )  # fmt: skip
     Path(str(row.workspace)).mkdir(parents=True, exist_ok=True)
+    if body.review_limit is not None:  # read by the job (jobs.scan._options)
+        (Path(str(row.workspace)) / "scan-options.json").write_text(
+            json.dumps({"review_limit": body.review_limit}), encoding="utf-8"
+        )
     session.add(row)
     session.commit()
     audit.record(state.db, actor=principal.username, action="scan.create", resource=scan_id,

@@ -350,3 +350,85 @@ def test_cancel_a_queued_scan(server: tuple[TestClient, Any], admin: dict[str, s
     state.runner.wait(created["id"], timeout=300)
     final = client.get(f"/api/v1/scans/{created['id']}", headers=admin).json()
     assert final["status"] == "cancelled"
+
+
+SEVERITY_RANK = {"critical": 5, "high": 4, "medium": 3, "low": 2, "info": 1}
+
+
+def _events(client: TestClient, scan_id: str, headers: dict[str, str]) -> list[dict[str, Any]]:
+    response = client.get(f"/api/v1/scans/{scan_id}/log", headers=headers)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    return list(body if isinstance(body, list) else body.get("events", []))
+
+
+def _finish(client: TestClient, state: Any, scan_id: str, headers: dict[str, str]) -> Any:
+    state.runner.wait(scan_id, timeout=300)
+    deadline = time.time() + 60
+    body: dict[str, Any] = {}
+    while time.time() < deadline:
+        body = client.get(f"/api/v1/scans/{scan_id}", headers=headers).json()
+        if body["status"] in {"completed", "failed", "cancelled"}:
+            break
+        time.sleep(0.2)
+    return body
+
+
+def test_verdicts_stream_live_most_severe_first(
+    server: tuple[TestClient, Any], scan: dict[str, Any], admin: dict[str, str]
+) -> None:
+    client = server[0]
+    events = _events(client, scan["id"], admin)
+    findings = [e for e in events if e["type"] == "finding"]
+    live = [e["data"] for e in findings if e["data"].get("phase") == "verdict"]
+    final = [e["data"] for e in findings if e["data"].get("phase") != "verdict"]
+    assert live and final
+    # every live verdict arrives before the first rated finding, in review order
+    first_final = next(i for i, e in enumerate(findings) if e["data"].get("phase") != "verdict")
+    assert all(e["data"].get("phase") == "verdict" for e in findings[:first_final])
+    ranks = [SEVERITY_RANK[item["severity"]] for item in live]
+    assert ranks == sorted(ranks, reverse=True)
+    assert {item["verdict"] for item in live} <= {"vulnerable", "not_vulnerable", "undecided"}
+    reviewed = {cid for item in final for cid in item["candidate_ids"]}
+    assert {item["id"] for item in live} <= reviewed
+
+
+def test_a_quick_review_then_an_on_demand_review_of_one_finding(
+    server: tuple[TestClient, Any],
+    scan: dict[str, Any],
+    admin: dict[str, str],
+    users: dict[str, dict[str, str]],
+) -> None:
+    client, state = server
+    full = client.get(f"/api/v1/scans/{scan['id']}/findings", headers=admin).json()
+    reviewed_before = {item["fingerprint"] for item in full if item["llm_reviewed"]}
+    projects = client.get("/api/v1/projects", headers=admin).json()
+    sample = next(item for item in projects if item["source"]["type"] == "sample")
+    created = client.post(
+        f"/api/v1/projects/{sample['id']}/scans",
+        json={"privacy_level": "L2", "provider": "mock", "send": True, "review_limit": 1},
+        headers=admin,
+    )
+    assert created.status_code == 201, created.text
+    quick = _finish(client, state, created.json()["id"], admin)
+    assert quick["status"] == "completed", quick
+    findings = client.get(f"/api/v1/scans/{quick['id']}/findings", headers=admin).json()
+    assert sum(1 for item in findings if item["llm_reviewed"]) == 1
+    target = next(
+        item
+        for item in findings
+        if not item["llm_reviewed"] and item["fingerprint"] in reviewed_before
+    )
+    url = f"/api/v1/findings/{target['id']}/review"
+    assert client.post(url, headers=users["developer"]).status_code == 403
+    answered = client.post(url, json={}, headers=users["auditor"])
+    assert answered.status_code == 200, answered.text
+    detail = answered.json()
+    assert detail["id"] == target["id"]
+    assert detail["llm_reviewed"] is True
+    assert detail["llm_verdict"]["provider"] == "mock"
+    assert detail["history"][-1]["action"] == "llm_review"
+    again = client.get(f"/api/v1/scans/{quick['id']}/findings", headers=admin).json()
+    assert sum(1 for item in again if item["llm_reviewed"]) == 2
+    missing = client.post("/api/v1/findings/nope/review", headers=users["auditor"])
+    assert missing.status_code == 404

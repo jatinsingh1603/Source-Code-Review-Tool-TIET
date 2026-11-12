@@ -59,6 +59,9 @@ class ScanCreate(_Body):
     model: str | None = Field(default=None, max_length=128)
     send: bool | None = None
     rules: list[str] | None = None
+    # Quick review: the model reviews only the N most severe candidates (0 = all; unset = the
+    # provider's default, 8 for agentrouter). The rest keep their deterministic evidence.
+    review_limit: int | None = Field(default=None, ge=0, le=100_000)
 
 
 class FindingPatch(_Body):

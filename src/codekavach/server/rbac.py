@@ -37,6 +37,7 @@ class Permission(StrEnum):
     users_admin = "users:admin"
     sync = "sync:github"
     audit_read = "audit:read"
+    finding_review = "finding:review"  # send one finding to the model on demand
 
 
 _ALL = frozenset(Permission)
@@ -52,7 +53,11 @@ _DEVELOPER = frozenset(
         Permission.sync,
     }
 )
-_AUDITOR = _DEVELOPER | {Permission.original_read, Permission.audit_read}
+_AUDITOR = _DEVELOPER | {
+    Permission.original_read,
+    Permission.audit_read,
+    Permission.finding_review,
+}
 _VIEWER = frozenset({Permission.read, Permission.report_read})
 
 PERMISSIONS: Mapping[Role, frozenset[Permission]] = MappingProxyType(
