@@ -1,0 +1,7 @@
+# Listed terms for the zero-leak check: the planted secret, then business terms.
+# The server reads .codekavach-terms.txt from the root of an uploaded project.
+shopfront-demo-signing-key-not-real
+shopfront
+SIGNING_PEPPER
+loyaltyDiscount
+loyalty pricing

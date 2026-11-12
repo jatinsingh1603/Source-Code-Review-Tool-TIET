@@ -1,0 +1,8 @@
+# Listed terms for the zero-leak check: the planted secret, then business terms.
+# The server reads .codekavach-terms.txt from the root of an uploaded project.
+ledgerly-demo-not-a-real-password
+ledgerly
+late payment surcharge
+grace period
+accountants
+desktop client
