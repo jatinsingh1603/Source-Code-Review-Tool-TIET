@@ -7,6 +7,17 @@
 
 > Status: foundations in place: packaging, quality gates, the test harness, CI and the contributor documents are set up, and the product is built milestone by milestone on top of them. Follow progress on the [project board](../../projects) and in the [issue tracker](../../issues).
 
+## Quickstart
+
+The dashboard, REST API and CLI in one container (needs Docker with the compose plugin):
+
+```bash
+cp .env.example .env          # set CODEKAVACH_ADMIN_PASSWORD; add CODEKAVACH_AGENTROUTER_API_KEY for a real model
+docker compose up -d --build  # then open http://127.0.0.1:8080 and log in as admin
+```
+
+The sample project **KavachBank (sample)** is ready to scan. Without a key, scan with the `mock` or `replay` provider; nothing leaves the machine. Offline from a checkout, without Docker: `uv sync --all-extras && uv run codekavach demo --out demo-out`. More: [installation](docs/guide/install.md), [deployment (compose, Helm, air-gapped)](docs/guide/deploy.md), [dashboard demo runbook](docs/demo/DEMO2.md).
+
 ## The problem
 
 LLMs are good at reasoning about vulnerable code, but a bank, a hospital or a product company cannot paste its source code into a third-party model. The code *is* the business: pricing rules, risk engines, fraud logic, partner integrations, and, too often, hardcoded credentials and customer data in fixtures. Conventional SAST tools keep code local but produce noisy results with little reasoning, and they cannot explain impact the way an auditor does.
