@@ -6,6 +6,7 @@ import { PRIVACY_LEVELS, type PrivacyLevel, type ProviderTestResult } from "@/ap
 import { atLeastAsStrict } from "@/lib/format";
 import { LEVEL_NAME } from "@/lib/display";
 import { egressSummary } from "@/lib/egress";
+import { shortProviderName } from "@/lib/domain";
 import { Button, Content, PageHeader, Skeleton, useToast } from "@/components/ui";
 import { ENGINE_GROUPS, STAGES } from "@/lib/pipeline";
 
@@ -145,8 +146,8 @@ export default function ScanLaunchPage() {
                 }}
               >
                 {list.map((x) => (
-                  <option key={x.id} value={x.id} disabled={!x.configured}>
-                    {x.name}
+                  <option key={x.id} value={x.id} disabled={!x.configured} title={x.name}>
+                    {shortProviderName(x.name)}
                     {x.configured ? "" : " · no key"}
                   </option>
                 ))}

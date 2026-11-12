@@ -6,7 +6,7 @@ import { qk, useCancelScan, usePrivacy, useProject, useProviders, useScan } from
 import type { PrivacySummary, Scan, ScanEvent } from "@/api/types";
 import { useSession } from "@/app/session";
 import { fmtBytes, fmtClock, fmtElapsed, fmtInt, fmtTime, findingLabel, LEVEL_NAME, scanLabel, secondsBetween } from "@/lib/display";
-import { providerName } from "@/lib/domain";
+import { providerName, shortProviderName } from "@/lib/domain";
 import {
   Button,
   Content,
@@ -517,8 +517,8 @@ function LaunchSummary({
       <div className="g" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
         <div className="fld">
           <label htmlFor="sc-p">Provider</label>
-          <select id="sc-p" className="inp" disabled value="x">
-            <option value="x">{providerName(scan.provider, providers as never)}</option>
+          <select id="sc-p" className="inp" disabled value="x" title={providerName(scan.provider, providers as never)}>
+            <option value="x">{shortProviderName(providerName(scan.provider, providers as never))}</option>
           </select>
         </div>
         <div className="fld">

@@ -49,6 +49,11 @@ export function providerName(id: string | null | undefined, providers?: Provider
   return providers?.find((p) => p.id === id)?.name ?? id;
 }
 
+/** "AgentRouter (OpenAI Responses)" → "AgentRouter", for narrow form columns. */
+export function shortProviderName(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, "") || name;
+}
+
 /** The "Target" text of a scan row: mode and ref when the server reports them, else the project source. */
 export function scanTarget(s: Scan, project?: Project | null): string {
   if (s.ref) return `${s.mode ?? "branch"} · ${s.ref}`;
