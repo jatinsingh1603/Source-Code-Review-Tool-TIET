@@ -2,17 +2,17 @@
   "body": {
     "content": {
       "cited_lines": [],
-      "confidence": "low",
+      "confidence": "medium",
       "cwe": [
         22
       ],
       "impact": "Mock impact statement.",
       "is_vulnerable": false,
       "needs_context": [],
-      "reasoning": "Mock analysis of payload 833b089cb574: the data flow was not executed.",
+      "reasoning": "Mock analysis of payload c1fd7c404098: the data flow was not executed.",
       "remediation": "Mock remediation: validate the input before it reaches the sink."
     }
   },
-  "payload_hash": "833b089cb5749e2256abe88993af43729fe424dcc2b75f1e640857debd4a5a4d",
+  "payload_hash": "c1fd7c404098e47e1e5f2b6ef5f56a2b7f1e20b66479d9b26c13e16bdc0c44da",
   "status": 200
 }
