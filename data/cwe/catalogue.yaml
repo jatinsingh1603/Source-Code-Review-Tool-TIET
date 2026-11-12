@@ -1,0 +1,174 @@
+# CWE knowledge base: the weaknesses CodeKavach's rule packs, engines and the KavachBank ground
+# truth emit, plus the 2024 CWE Top 25 and the CWEs of the OWASP Top 10 2021 categories we report.
+#
+# Owning epic: E29. Provenance: data/SOURCES.yaml.
+# - name, abstraction: MITRE CWE List v4.15 (source "cwe"). Summaries are our short paraphrases.
+# - top25: rank in the 2024 CWE Top 25 Most Dangerous Software Weaknesses (source "cwe-top25-2024").
+# - owasp: OWASP Top 10 2021 category. "official" when the CWE is listed in the category's
+#   "List of Mapped CWEs" (source "owasp-top10-2021"); "derived" when it is our assignment.
+# - asvs: OWASP ASVS 4.0.3 requirement ids (source "owasp-asvs-4.0.3"), our mapping ("derived").
+# - capec: CAPEC ids from the CWE entry's Related Attack Patterns (source "capec").
+# - family: key into data/cwe/families.yaml (default CVSS vectors, remediation, compliance).
+schema_version: 1
+catalogue_version: "4.15"
+weaknesses:
+  - {id: 20, name: Improper Input Validation, abstraction: class, family: input-validation, top25: 12, owasp: A03, owasp_basis: official, asvs: [V5.1.3, V5.1.4], capec: [],
+     summary: "The product receives input but does not validate, or incorrectly validates, that it has the properties needed to process it safely."}
+  - {id: 22, name: "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')", abstraction: base, family: path-traversal, top25: 5, owasp: A01, owasp_basis: official, asvs: [V12.3.1, V12.3.2], capec: [126, 64],
+     summary: "A path built from external input can escape the intended directory through sequences such as '../', exposing or overwriting arbitrary files."}
+  - {id: 23, name: Relative Path Traversal, abstraction: base, family: path-traversal, owasp: A01, owasp_basis: official, asvs: [V12.3.1], capec: [139],
+     summary: "Relative path sequences in external input resolve to locations outside the restricted directory."}
+  - {id: 59, name: "Improper Link Resolution Before File Access ('Link Following')", abstraction: base, family: race-condition, owasp: A01, owasp_basis: official, asvs: [V12.3.1], capec: [132],
+     summary: "A file is accessed by name without checking whether the name resolves through a link to an unintended resource."}
+  - {id: 77, name: "Improper Neutralization of Special Elements used in a Command ('Command Injection')", abstraction: class, family: command-injection, top25: 13, owasp: A03, owasp_basis: official, asvs: [V5.3.8], capec: [15, 40, 43, 75, 76],
+     summary: "A command is constructed from external input without neutralising elements that change the command's meaning."}
+  - {id: 78, name: "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')", abstraction: base, family: command-injection, top25: 7, owasp: A03, owasp_basis: official, asvs: [V5.3.8], capec: [88, 108, 15, 43],
+     summary: "An operating-system command is built from external input, so an attacker can run commands of their choice with the application's privileges."}
+  - {id: 79, name: "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')", abstraction: base, family: xss, top25: 1, owasp: A03, owasp_basis: official, asvs: [V5.3.3, V5.2.1], capec: [63, 588, 591, 592],
+     summary: "Untrusted input is placed in a web page without encoding, so script supplied by an attacker runs in other users' browsers."}
+  - {id: 80, name: Improper Neutralization of Script-Related HTML Tags in a Web Page (Basic XSS), abstraction: variant, family: xss, owasp: A03, owasp_basis: official, asvs: [V5.3.3], capec: [18, 32, 86, 193],
+     summary: "Script tags in input are not neutralised before the input is rendered in a page."}
+  - {id: 89, name: "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')", abstraction: base, family: sql-injection, top25: 3, owasp: A03, owasp_basis: official, asvs: [V5.3.4, V5.3.5], capec: [66, 7, 108, 109, 110, 470],
+     summary: "An SQL statement is built from external input, so an attacker can read or change data, bypass authentication or run database commands."}
+  - {id: 90, name: "Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')", abstraction: base, family: sql-injection, owasp: A03, owasp_basis: official, asvs: [V5.3.7], capec: [136],
+     summary: "An LDAP query is built from external input without neutralising its special elements."}
+  - {id: 94, name: "Improper Control of Generation of Code ('Code Injection')", abstraction: base, family: command-injection, top25: 11, owasp: A03, owasp_basis: official, asvs: [V5.2.4], capec: [242, 35, 77],
+     summary: "Code is generated or evaluated from external input, letting an attacker run code inside the application."}
+  - {id: 95, name: "Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')", abstraction: variant, family: command-injection, owasp: A03, owasp_basis: official, asvs: [V5.2.4], capec: [35],
+     summary: "External input reaches eval(), exec() or an equivalent, so it is executed as code."}
+  - {id: 117, name: Improper Output Neutralization for Logs, abstraction: base, family: log-injection, owasp: A09, owasp_basis: official, asvs: [V7.3.1], capec: [93],
+     summary: "Untrusted data written to logs is not neutralised, allowing forged or misleading log entries."}
+  - {id: 119, name: Improper Restriction of Operations within the Bounds of a Memory Buffer, abstraction: class, family: memory-safety, top25: 20, asvs: [V5.4.1], capec: [100, 123],
+     summary: "Memory is read or written outside the bounds of the intended buffer."}
+  - {id: 120, name: "Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')", abstraction: base, family: memory-safety, asvs: [V5.4.1], capec: [100, 92],
+     summary: "An input buffer is copied to an output buffer without checking that it fits."}
+  - {id: 125, name: Out-of-bounds Read, abstraction: base, family: memory-safety, top25: 6, asvs: [V5.4.1], capec: [540],
+     summary: "Data is read past the end, or before the beginning, of the intended buffer."}
+  - {id: 134, name: Use of Externally-Controlled Format String, abstraction: base, family: memory-safety, asvs: [V5.4.2], capec: [135, 67],
+     summary: "A format string comes from an external source, enabling memory disclosure or corruption."}
+  - {id: 190, name: Integer Overflow or Wraparound, abstraction: base, family: memory-safety, top25: 23, asvs: [V5.4.3], capec: [92],
+     summary: "An arithmetic result exceeds the type's range and wraps, often sizing a buffer or bypassing a check."}
+  - {id: 200, name: Exposure of Sensitive Information to an Unauthorized Actor, abstraction: class, family: information-exposure, top25: 17, owasp: A01, owasp_basis: official, asvs: [V8.3.1, V8.3.4], capec: [116, 13, 169],
+     summary: "Sensitive information is exposed to an actor who is not authorised to see it."}
+  - {id: 208, name: Observable Timing Discrepancy, abstraction: base, family: weak-cryptography, owasp: A02, owasp_basis: derived, asvs: [], capec: [462],
+     summary: "Execution time depends on secret data (for example a non-constant-time comparison), leaking it to an observer."}
+  - {id: 209, name: Generation of Error Message Containing Sensitive Information, abstraction: base, family: information-exposure, owasp: A04, owasp_basis: official, asvs: [V7.4.1], capec: [215, 54, 7],
+     summary: "Error messages reveal sensitive details about the system, its data or its users."}
+  - {id: 214, name: Invocation of Process Using Visible Sensitive Information, abstraction: base, family: information-exposure, owasp: A04, owasp_basis: derived, asvs: [], capec: [],
+     summary: "A process is started with secrets on its command line or environment where other local users can read them."}
+  - {id: 242, name: Use of Inherently Dangerous Function, abstraction: base, family: memory-safety, asvs: [V5.4.1], capec: [],
+     summary: "A function that can never be used safely (for example gets) is called."}
+  - {id: 252, name: Unchecked Return Value, abstraction: base, family: input-validation, asvs: [], capec: [],
+     summary: "The return value of a function is not checked, so a failure goes unnoticed."}
+  - {id: 259, name: Use of Hard-coded Password, abstraction: variant, family: hardcoded-secret, owasp: A07, owasp_basis: official, asvs: [V2.10.4, V6.4.1], capec: [191, 70],
+     summary: "A password is embedded in the source code or configuration shipped with it."}
+  - {id: 269, name: Improper Privilege Management, abstraction: class, family: broken-access-control, top25: 15, owasp: A04, owasp_basis: official, asvs: [V4.1.3], capec: [122, 233, 58],
+     summary: "Privileges are not properly assigned, modified, tracked or checked, giving an actor unintended control."}
+  - {id: 287, name: Improper Authentication, abstraction: class, family: broken-authentication, top25: 14, owasp: A07, owasp_basis: official, asvs: [], capec: [114, 115, 151, 194],
+     summary: "A claim of identity is not proven, or is proven insufficiently."}
+  - {id: 295, name: Improper Certificate Validation, abstraction: base, family: security-misconfiguration, owasp: A07, owasp_basis: official, asvs: [V9.2.1], capec: [459, 475],
+     summary: "TLS certificates are not validated (for example verify=False), enabling interception of the connection."}
+  - {id: 306, name: Missing Authentication for Critical Function, abstraction: base, family: broken-authentication, top25: 25, owasp: A07, owasp_basis: official, asvs: [], capec: [12, 36, 62],
+     summary: "A function that needs a proven identity, or consumes significant resources, does not require authentication."}
+  - {id: 311, name: Missing Encryption of Sensitive Data, abstraction: class, family: weak-cryptography, owasp: A04, owasp_basis: official, asvs: [V6.1.1, V8.3.4], capec: [157, 37],
+     summary: "Sensitive data is stored or transmitted without encryption."}
+  - {id: 312, name: Cleartext Storage of Sensitive Information, abstraction: base, family: weak-cryptography, owasp: A04, owasp_basis: official, asvs: [V6.1.1], capec: [37],
+     summary: "Sensitive information is stored in cleartext where others may read it."}
+  - {id: 319, name: Cleartext Transmission of Sensitive Information, abstraction: base, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V9.1.1, V9.2.2], capec: [65, 102, 117, 383],
+     summary: "Sensitive data is sent over a channel that can be sniffed."}
+  - {id: 321, name: Use of Hard-coded Cryptographic Key, abstraction: variant, family: hardcoded-secret, owasp: A02, owasp_basis: official, asvs: [V2.10.4, V6.4.1], capec: [191],
+     summary: "A cryptographic key is embedded in the code, so anyone with the code can decrypt or forge data."}
+  - {id: 326, name: Inadequate Encryption Strength, abstraction: class, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V6.2.1], capec: [20, 112],
+     summary: "Data is protected with an algorithm or key size that is too weak."}
+  - {id: 327, name: Use of a Broken or Risky Cryptographic Algorithm, abstraction: class, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V6.2.2, V6.2.5], capec: [20, 97, 459, 473, 475, 608, 614],
+     summary: "A broken or risky algorithm such as DES, RC4, MD5 or ECB mode protects sensitive data."}
+  - {id: 328, name: Use of Weak Hash, abstraction: base, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V6.2.5], capec: [68],
+     summary: "A hash function whose collision or preimage resistance is broken (MD5, SHA-1) is used for a security purpose."}
+  - {id: 329, name: Generation of Predictable IV with CBC Mode, abstraction: variant, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V6.2.6], capec: [],
+     summary: "A static or predictable initialisation vector is used with CBC mode, weakening the encryption."}
+  - {id: 330, name: Use of Insufficiently Random Values, abstraction: class, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V6.3.1, V6.3.2], capec: [112, 485, 59],
+     summary: "Values that must be unpredictable come from an insufficiently random source."}
+  - {id: 338, name: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG), abstraction: base, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V6.3.1, V6.3.2], capec: [],
+     summary: "A non-cryptographic PRNG (for example Python random) produces tokens, keys or nonces."}
+  - {id: 347, name: Improper Verification of Cryptographic Signature, abstraction: base, family: broken-authentication, owasp: A02, owasp_basis: official, asvs: [V3.5.3], capec: [463, 475],
+     summary: "A cryptographic signature (for example a JWT's) is not verified, or verified incorrectly."}
+  - {id: 352, name: Cross-Site Request Forgery (CSRF), abstraction: compound, family: csrf, top25: 4, owasp: A01, owasp_basis: official, asvs: [V4.2.2], capec: [62, 111, 462, 467],
+     summary: "A state-changing request is accepted without verifying that the user intended to send it."}
+  - {id: 359, name: Exposure of Private Personal Information to an Unauthorized Actor, abstraction: base, family: information-exposure, owasp: A01, owasp_basis: official, asvs: [V8.3.1, V8.3.4], capec: [464, 467, 498, 508],
+     summary: "Personal data (PII) is exposed to actors who are not authorised to access it."}
+  - {id: 367, name: Time-of-check Time-of-use (TOCTOU) Race Condition, abstraction: base, family: race-condition, asvs: [V11.1.6], capec: [27, 29],
+     summary: "A resource is checked and then used, and its state can change in between."}
+  - {id: 377, name: Insecure Temporary File, abstraction: class, family: race-condition, owasp: A01, owasp_basis: official, asvs: [], capec: [149, 155],
+     summary: "A temporary file is created insecurely (predictable name, unsafe permissions), exposing or corrupting data."}
+  - {id: 384, name: Session Fixation, abstraction: compound, family: broken-authentication, owasp: A07, owasp_basis: official, asvs: [V3.2.1], capec: [196, 21, 31, 39, 59, 60, 61],
+     summary: "The session identifier is not renewed on login, so an attacker who fixed it can hijack the session."}
+  - {id: 400, name: Uncontrolled Resource Consumption, abstraction: class, family: denial-of-service, top25: 24, asvs: [], capec: [147, 227, 492],
+     summary: "Resource use driven by an attacker is not limited, leading to denial of service."}
+  - {id: 409, name: Improper Handling of Highly Compressed Data (Data Amplification), abstraction: base, family: denial-of-service, asvs: [V12.1.2], capec: [],
+     summary: "Compressed input that expands enormously (a zip bomb) is decompressed without limits."}
+  - {id: 416, name: Use After Free, abstraction: variant, family: memory-safety, top25: 8, asvs: [V5.4.1], capec: [],
+     summary: "Memory is used after it has been freed, which can corrupt data or execute code."}
+  - {id: 426, name: Untrusted Search Path, abstraction: base, family: integrity, owasp: A08, owasp_basis: official, asvs: [], capec: [38],
+     summary: "Programs or libraries are located through a search path an attacker can influence."}
+  - {id: 427, name: Uncontrolled Search Path Element, abstraction: base, family: integrity, owasp: A08, owasp_basis: derived, asvs: [], capec: [38, 471],
+     summary: "A search path contains an element that may point to resources outside the product's control."}
+  - {id: 434, name: Unrestricted Upload of File with Dangerous Type, abstraction: base, family: file-upload, top25: 10, owasp: A04, owasp_basis: official, asvs: [V12.1.1, V12.2.1, V12.5.2], capec: [1],
+     summary: "Files of dangerous types can be uploaded and then processed or served, often leading to code execution."}
+  - {id: 476, name: NULL Pointer Dereference, abstraction: base, family: memory-safety, top25: 21, asvs: [], capec: [],
+     summary: "A pointer expected to be valid is NULL when dereferenced, typically crashing the process."}
+  - {id: 489, name: Active Debug Code, abstraction: base, family: security-misconfiguration, owasp: A05, owasp_basis: derived, asvs: [V14.3.2], capec: [121],
+     summary: "Debug code or debug mode (for example Flask debug=True) is left enabled in deployed code."}
+  - {id: 502, name: Deserialization of Untrusted Data, abstraction: base, family: deserialisation, top25: 16, owasp: A08, owasp_basis: official, asvs: [V5.5.1, V5.5.3], capec: [586],
+     summary: "Untrusted data is deserialised with a mechanism that can instantiate objects, often leading to remote code execution."}
+  - {id: 532, name: Insertion of Sensitive Information into Log File, abstraction: base, family: information-exposure, owasp: A09, owasp_basis: official, asvs: [V7.1.1, V7.1.2], capec: [215],
+     summary: "Secrets, credentials or personal data are written to log files."}
+  - {id: 598, name: Use of GET Request Method With Sensitive Query Strings, abstraction: variant, family: information-exposure, owasp: A04, owasp_basis: official, asvs: [V8.3.1], capec: [],
+     summary: "Sensitive data travels in URL query strings, where it is logged and cached."}
+  - {id: 601, name: "URL Redirection to Untrusted Site ('Open Redirect')", abstraction: base, family: csrf, owasp: A01, owasp_basis: official, asvs: [V5.1.5], capec: [178],
+     summary: "A redirect target taken from input lets an attacker send users to a malicious site from a trusted domain."}
+  - {id: 611, name: Improper Restriction of XML External Entity Reference, abstraction: base, family: xml-external-entities, owasp: A05, owasp_basis: official, asvs: [V5.5.2], capec: [221],
+     summary: "An XML parser resolves external entities, exposing local files or internal services."}
+  - {id: 613, name: Insufficient Session Expiration, abstraction: base, family: security-misconfiguration, owasp: A07, owasp_basis: official, asvs: [V3.3.1, V3.3.2], capec: [60],
+     summary: "Sessions or tokens stay valid too long, extending the window for reuse."}
+  - {id: 614, name: "Sensitive Cookie in HTTPS Session Without 'Secure' Attribute", abstraction: variant, family: security-misconfiguration, owasp: A05, owasp_basis: official, asvs: [V3.4.1], capec: [102],
+     summary: "A session cookie lacks the Secure attribute and may be sent over plain HTTP."}
+  - {id: 639, name: Authorization Bypass Through User-Controlled Key, abstraction: base, family: broken-access-control, owasp: A01, owasp_basis: official, asvs: [V4.2.1], capec: [1, 122],
+     summary: "A record is looked up by an identifier from the request without checking that the user may access it (IDOR)."}
+  - {id: 643, name: "Improper Neutralization of Data within XPath Expressions ('XPath Injection')", abstraction: base, family: sql-injection, owasp: A03, owasp_basis: official, asvs: [V5.3.10], capec: [83],
+     summary: "An XPath query is built from external input without neutralisation."}
+  - {id: 680, name: Integer Overflow to Buffer Overflow, abstraction: compound, family: memory-safety, asvs: [V5.4.3], capec: [10, 100, 14, 24, 45, 46, 47, 8, 9, 92],
+     summary: "An integer overflow causes less memory to be allocated than needed, leading to a buffer overflow."}
+  - {id: 732, name: Incorrect Permission Assignment for Critical Resource, abstraction: class, family: broken-access-control, owasp: A01, owasp_basis: derived, asvs: [V4.1.3], capec: [1, 17, 122, 127],
+     summary: "A security-critical resource (file, key, directory) is given permissions that let unintended actors read or modify it."}
+  - {id: 776, name: "Improper Restriction of Recursive Entity References in DTDs ('XML Entity Expansion')", abstraction: base, family: xml-external-entities, owasp: A05, owasp_basis: official, asvs: [V5.5.2], capec: [197],
+     summary: "Recursive entity definitions in a DTD are expanded without limit (billion laughs)."}
+  - {id: 787, name: Out-of-bounds Write, abstraction: base, family: memory-safety, top25: 2, asvs: [V5.4.1], capec: [100, 123],
+     summary: "Data is written past the end, or before the beginning, of the intended buffer."}
+  - {id: 798, name: Use of Hard-coded Credentials, abstraction: base, family: hardcoded-secret, top25: 22, owasp: A07, owasp_basis: official, asvs: [V2.10.4, V6.4.1], capec: [191, 70],
+     summary: "Credentials such as passwords, API keys or tokens are embedded in the source code."}
+  - {id: 862, name: Missing Authorization, abstraction: class, family: broken-access-control, top25: 9, owasp: A01, owasp_basis: official, asvs: [V4.1.1, V4.1.3, V4.2.1], capec: [665],
+     summary: "An action or resource is reachable without any check that the actor is allowed to use it."}
+  - {id: 863, name: Incorrect Authorization, abstraction: class, family: broken-access-control, top25: 18, owasp: A01, owasp_basis: official, asvs: [V4.1.3, V4.2.1], capec: [122, 1],
+     summary: "An authorisation check exists but is wrong, so it can be bypassed."}
+  - {id: 915, name: Improperly Controlled Modification of Dynamically-Determined Object Attributes, abstraction: base, family: integrity, owasp: A08, owasp_basis: official, asvs: [V5.1.2], capec: [],
+     summary: "Request data is bound to object attributes without an allow-list (mass assignment)."}
+  - {id: 916, name: Use of Password Hash With Insufficient Computational Effort, abstraction: base, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V2.4.1, V2.4.2], capec: [55],
+     summary: "Passwords are hashed with a fast hash instead of a slow, salted password hashing function."}
+  - {id: 918, name: Server-Side Request Forgery (SSRF), abstraction: base, family: ssrf, top25: 19, owasp: A10, owasp_basis: official, asvs: [V5.2.6, V12.6.1], capec: [664],
+     summary: "The server fetches a URL supplied by an attacker, reaching internal services or cloud metadata."}
+  - {id: 942, name: Permissive Cross-domain Policy with Untrusted Domains, abstraction: variant, family: security-misconfiguration, owasp: A05, owasp_basis: official, asvs: [V14.5.3], capec: [],
+     summary: "A cross-domain policy (for example CORS with credentials and a wildcard or reflected origin) trusts untrusted domains."}
+  - {id: 943, name: Improper Neutralization of Special Elements in Data Query Logic, abstraction: class, family: sql-injection, owasp: A03, owasp_basis: derived, asvs: [V5.3.4], capec: [676],
+     summary: "A data query (for example a NoSQL filter) is built from external input without neutralisation."}
+  - {id: 1004, name: "Sensitive Cookie Without 'HttpOnly' Flag", abstraction: variant, family: security-misconfiguration, owasp: A05, owasp_basis: official, asvs: [V3.4.2], capec: [],
+     summary: "A session cookie lacks HttpOnly, so script injected into the page can read it."}
+  - {id: 1104, name: Use of Unmaintained Third Party Components, abstraction: base, family: integrity, owasp: A06, owasp_basis: official, asvs: [V14.2.1], capec: [],
+     summary: "The product depends on third-party components that are no longer maintained."}
+  - {id: 1321, name: "Improperly Controlled Modification of Object Prototype Attributes ('Prototype Pollution')", abstraction: variant, family: integrity, owasp: A08, owasp_basis: derived, asvs: [], capec: [1, 180],
+     summary: "Input can add or change attributes of an object prototype, affecting every object."}
+  - {id: 1333, name: Inefficient Regular Expression Complexity, abstraction: base, family: denial-of-service, asvs: [], capec: [492],
+     summary: "A regular expression with exponential worst case is applied to untrusted input (ReDoS)."}
+  - {id: 1336, name: Improper Neutralization of Special Elements Used in a Template Engine, abstraction: base, family: command-injection, owasp: A03, owasp_basis: derived, asvs: [V5.2.5], capec: [242],
+     summary: "Input is compiled as a template (server-side template injection), which usually allows code execution."}
+  - {id: 1395, name: Dependency on Vulnerable Third-Party Component, abstraction: class, family: integrity, owasp: A06, owasp_basis: derived, asvs: [V14.2.1], capec: [],
+     summary: "The product depends on a third-party component that contains a known vulnerability."}

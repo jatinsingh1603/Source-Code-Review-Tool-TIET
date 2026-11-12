@@ -1,0 +1,171 @@
+# Compliance mapping: control groups -> clauses of each framework.
+#
+# Owning epic: E29. Every framework cites a real document listed in data/SOURCES.yaml. Clause ids
+# and titles are taken from those documents (titles shortened); placing a weakness family in a
+# control group, and a control group against a clause, is CodeKavach's interpretation, so every
+# row here has basis "derived". Where we cite a framework at section or category level rather than
+# at a numbered requirement, the row says so in its title. A finding mapped here is evidence for an
+# auditor to consider, not a compliance opinion.
+#
+# "baseline" applies to every finding (the code review itself); the other groups are selected by
+# the "compliance" list of the weakness family in data/cwe/families.yaml.
+schema_version: 1
+frameworks:
+  pci-dss: {title: PCI DSS, version: "4.0.1", source: pci-dss-4.0.1}
+  iso27001: {title: ISO/IEC 27001:2022 Annex A, version: "2022", source: iso-27001-2022}
+  nist-ssdf: {title: NIST SSDF (SP 800-218), version: "1.1", source: nist-sp-800-218}
+  rbi: {title: RBI Cyber Security Framework in Banks, version: "2016", source: rbi-csf-2016}
+  rbi-itgrca: {title: "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices", version: "2023", source: rbi-md-itgrca-2023}
+  sebi: {title: SEBI CSCRF, version: "2024", source: sebi-cscrf-2024}
+  cert-in: {title: CERT-In Directions and Guidelines, version: "2022", source: cert-in-directions-2022}
+groups:
+  baseline:
+    pci-dss:
+      - {id: "6.2.3", title: "Bespoke and custom software is reviewed prior to release to identify and correct coding vulnerabilities"}
+      - {id: "6.3.1", title: "Security vulnerabilities are identified and managed"}
+    iso27001:
+      - {id: A.8.28, title: "Secure coding"}
+      - {id: A.8.29, title: "Security testing in development and acceptance"}
+      - {id: A.8.8, title: "Management of technical vulnerabilities"}
+    nist-ssdf:
+      - {id: PW.7.2, title: "Review and/or analyze human-readable code to identify vulnerabilities"}
+      - {id: RV.2.2, title: "Plan and implement risk responses for vulnerabilities"}
+    rbi:
+      - {id: "Annex 1: ASLC", title: "Application Security Life Cycle (ASLC) (Annex 1 section; cited at section level)"}
+    rbi-itgrca:
+      - {id: Information security, title: "Application security controls in the IT governance direction (framework level)"}
+    sebi:
+      - {id: ID.RA, title: "Identify: risk assessment, including vulnerability assessment (category level)"}
+  secure-coding-injection:
+    pci-dss:
+      - {id: "6.2.4", title: "Software engineering techniques prevent or mitigate common software attacks (injection, data structure, cryptography, business logic, access control, XSS, CSRF)"}
+    iso27001:
+      - {id: A.8.26, title: "Application security requirements"}
+    nist-ssdf:
+      - {id: PW.5.1, title: "Follow all secure coding practices appropriate to the languages and environment"}
+    rbi:
+      - {id: "Annex 1: ASLC", title: "Application Security Life Cycle (ASLC) (Annex 1 section; cited at section level)"}
+    sebi:
+      - {id: PR.PS, title: "Protect: platform and application security (category level)"}
+  access-control:
+    pci-dss:
+      - {id: "7.2.1", title: "An access control model is defined and includes granting access appropriately"}
+      - {id: "7.2.2", title: "Access is assigned based on job classification and least privilege"}
+    iso27001:
+      - {id: A.5.15, title: "Access control"}
+      - {id: A.8.3, title: "Information access restriction"}
+    nist-ssdf:
+      - {id: PW.5.1, title: "Follow all secure coding practices appropriate to the languages and environment"}
+    rbi:
+      - {id: "Annex 1: User access control", title: "User Access Control / Management (Annex 1 section; cited at section level)"}
+    sebi:
+      - {id: PR.AA, title: "Protect: identity management, authentication and access control (category level)"}
+  authentication:
+    pci-dss:
+      - {id: "8.3.1", title: "User access is authenticated via at least one authentication factor"}
+      - {id: "8.3.2", title: "Strong cryptography renders authentication factors unreadable in transmission and storage"}
+    iso27001:
+      - {id: A.8.5, title: "Secure authentication"}
+      - {id: A.5.17, title: "Authentication information"}
+    nist-ssdf:
+      - {id: PW.5.1, title: "Follow all secure coding practices appropriate to the languages and environment"}
+    rbi:
+      - {id: "Annex 1: Customer authentication", title: "Authentication Framework for Customers (Annex 1 section; cited at section level)"}
+    sebi:
+      - {id: PR.AA, title: "Protect: identity management, authentication and access control (category level)"}
+  credentials:
+    pci-dss:
+      - {id: "8.6.2", title: "Passwords for application and system accounts are not hard coded in scripts, configuration files or source code"}
+    iso27001:
+      - {id: A.5.17, title: "Authentication information"}
+      - {id: A.8.4, title: "Access to source code"}
+    nist-ssdf:
+      - {id: PS.1.1, title: "Store all forms of code based on the principle of least privilege"}
+      - {id: PW.5.1, title: "Follow all secure coding practices appropriate to the languages and environment"}
+    rbi:
+      - {id: "Annex 1: User access control", title: "User Access Control / Management (Annex 1 section; cited at section level)"}
+    sebi:
+      - {id: PR.AA, title: "Protect: identity management, authentication and access control (category level)"}
+  cryptography:
+    pci-dss:
+      - {id: "3.6.1", title: "Procedures protect cryptographic keys against disclosure and misuse"}
+      - {id: "4.2.1", title: "Strong cryptography protects data during transmission over open, public networks"}
+    iso27001:
+      - {id: A.8.24, title: "Use of cryptography"}
+    nist-ssdf:
+      - {id: PW.5.1, title: "Follow all secure coding practices appropriate to the languages and environment"}
+    rbi:
+      - {id: "Annex 1: Data leak prevention", title: "Data Leak prevention strategy (Annex 1 section; cited at section level)"}
+    sebi:
+      - {id: PR.DS, title: "Protect: data security (category level)"}
+  data-protection:
+    pci-dss:
+      - {id: "3.5.1", title: "PAN is rendered unreadable anywhere it is stored"}
+    iso27001:
+      - {id: A.8.11, title: "Data masking"}
+      - {id: A.8.12, title: "Data leakage prevention"}
+      - {id: A.5.34, title: "Privacy and protection of PII"}
+    nist-ssdf:
+      - {id: PW.5.1, title: "Follow all secure coding practices appropriate to the languages and environment"}
+    rbi:
+      - {id: "Annex 1: Data leak prevention", title: "Data Leak prevention strategy (Annex 1 section; cited at section level)"}
+    sebi:
+      - {id: PR.DS, title: "Protect: data security (category level)"}
+  logging:
+    pci-dss:
+      - {id: "10.2.1", title: "Audit logs are enabled and active for all system components"}
+      - {id: "10.3.2", title: "Audit log files are protected to prevent modification"}
+    iso27001:
+      - {id: A.8.15, title: "Logging"}
+    nist-ssdf:
+      - {id: PW.5.1, title: "Follow all secure coding practices appropriate to the languages and environment"}
+    rbi:
+      - {id: "Annex 1: Audit logs", title: "Maintenance, Monitoring, and Analysis of Audit Logs (Annex 1 section; cited at section level)"}
+    sebi:
+      - {id: DE.CM, title: "Detect: continuous monitoring (category level)"}
+    cert-in:
+      - {id: "Directions 2022 (iv)", title: "Logs of ICT systems are maintained securely for a rolling period of 180 days"}
+  availability:
+    pci-dss:
+      - {id: "6.2.4", title: "Software engineering techniques prevent or mitigate common software attacks (injection, data structure, cryptography, business logic, access control, XSS, CSRF)"}
+    iso27001:
+      - {id: A.8.6, title: "Capacity management"}
+    nist-ssdf:
+      - {id: PW.5.1, title: "Follow all secure coding practices appropriate to the languages and environment"}
+    sebi:
+      - {id: PR.PS, title: "Protect: platform and application security (category level)"}
+  secure-configuration:
+    pci-dss:
+      - {id: "2.2.1", title: "Configuration standards are developed, implemented and maintained"}
+    iso27001:
+      - {id: A.8.9, title: "Configuration management"}
+    nist-ssdf:
+      - {id: PW.9.1, title: "Define a secure baseline by determining how to configure each setting"}
+    rbi:
+      - {id: "Annex 1: Secure configuration", title: "Secure Configuration (Annex 1 section; cited at section level)"}
+    sebi:
+      - {id: PR.PS, title: "Protect: platform and application security (category level)"}
+  integrity:
+    pci-dss:
+      - {id: "6.3.2", title: "An inventory of bespoke, custom and third-party software components is maintained"}
+      - {id: "6.3.3", title: "System components are protected from known vulnerabilities by installing patches"}
+    iso27001:
+      - {id: A.8.8, title: "Management of technical vulnerabilities"}
+      - {id: A.8.27, title: "Secure system architecture and engineering principles"}
+    nist-ssdf:
+      - {id: PW.4.4, title: "Verify that acquired commercial, open-source and other third-party software components comply with requirements"}
+    rbi:
+      - {id: "Annex 1: Patch and vulnerability management", title: "Patch/Vulnerability and Change Management (Annex 1 section; cited at section level)"}
+    sebi:
+      - {id: PR.PS, title: "Protect: platform and application security (category level)"}
+  network-security:
+    pci-dss:
+      - {id: "1.3.2", title: "Outbound traffic from the CDE is restricted"}
+    iso27001:
+      - {id: A.8.20, title: "Networks security"}
+    nist-ssdf:
+      - {id: PW.5.1, title: "Follow all secure coding practices appropriate to the languages and environment"}
+    rbi:
+      - {id: "Annex 1: Network security", title: "Network Management and Security (Annex 1 section; cited at section level)"}
+    sebi:
+      - {id: PR.PS, title: "Protect: platform and application security (category level)"}

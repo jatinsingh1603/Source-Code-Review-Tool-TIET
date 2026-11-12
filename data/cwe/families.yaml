@@ -1,0 +1,478 @@
+# Weakness families: the default CVSS Base vectors, remediation guidance, references and
+# compliance mapping shared by every CWE in the family (data/cwe/catalogue.yaml names the family).
+#
+# Owning epic: E29. Provenance: data/SOURCES.yaml.
+# - cvss4 / cvss31 are CodeKavach's default Base vectors for a typical instance of the family in a
+#   network-facing application ("derived": our interpretation, not a NVD or vendor score). The rate
+#   stage adjusts them with code evidence (entry point, authentication, user interaction).
+# - compliance rows cite real clauses of the documents listed in data/SOURCES.yaml; the mapping
+#   from a weakness family to a clause is CodeKavach's interpretation and is marked "derived".
+schema_version: 1
+families:
+  command-injection:
+    title: Injection leading to code or command execution
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+    threat:
+      skill: 5
+      motive: 9
+      opportunity: 7
+      size: 9
+      ease_of_discovery: 7
+      ease_of_exploit: 7
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Do not build commands, code or templates from untrusted input. Call the program directly
+      with an argument list (for example subprocess.run([...], shell=False)) instead of a shell
+      string, never pass request data to eval/exec or a template compiler, and validate input
+      against a strict allow-list of expected values before it reaches the sink.
+    references:
+      - title: OWASP OS Command Injection Defense Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+      - title: OWASP Injection Prevention Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html
+    compliance: [secure-coding-injection]
+  sql-injection:
+    title: Injection into a query language
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:L/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:L
+    threat:
+      skill: 5
+      motive: 9
+      opportunity: 7
+      size: 9
+      ease_of_discovery: 7
+      ease_of_exploit: 7
+      awareness: 9
+      intrusion_detection: 8
+    remediation: >-
+      Use parameterised queries or prepared statements for every query that includes external
+      data (for example cursor.execute("... WHERE id = %s", (value,)) or an ORM's bound
+      parameters). Never concatenate or format request data into the query text; apply
+      least-privilege database accounts so a successful injection reaches as little as possible.
+    references:
+      - title: OWASP SQL Injection Prevention Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+      - title: OWASP Query Parameterization Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html
+    compliance: [secure-coding-injection]
+  xss:
+    title: Cross-site scripting
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:P/VC:N/VI:N/VA:N/SC:L/SI:L/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N
+    threat:
+      skill: 4
+      motive: 6
+      opportunity: 7
+      size: 9
+      ease_of_discovery: 7
+      ease_of_exploit: 6
+      awareness: 9
+      intrusion_detection: 8
+    remediation: >-
+      Encode untrusted data for the output context (HTML body, attribute, JavaScript, URL) using
+      the template engine's auto-escaping, and never mark request data as safe (Markup,
+      |safe, dangerouslySetInnerHTML, innerHTML). Add a restrictive Content-Security-Policy as
+      defence in depth.
+    references:
+      - title: OWASP Cross Site Scripting Prevention Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+    compliance: [secure-coding-injection]
+  path-traversal:
+    title: Path traversal and file access
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    threat:
+      skill: 4
+      motive: 7
+      opportunity: 7
+      size: 9
+      ease_of_discovery: 7
+      ease_of_exploit: 7
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Do not use request data as a file path. Map user input to an identifier in an allow-list,
+      or resolve the joined path (os.path.realpath / Path.resolve) and reject it unless it stays
+      inside the intended base directory; use werkzeug.utils.safe_join or an equivalent helper.
+    references:
+      - title: OWASP Input Validation Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+      - title: OWASP File Upload Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+    compliance: [secure-coding-injection, access-control]
+  ssrf:
+    title: Server-side request forgery
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:L/VA:N/SC:H/SI:L/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:L/I:L/A:N
+    threat:
+      skill: 5
+      motive: 7
+      opportunity: 7
+      size: 9
+      ease_of_discovery: 6
+      ease_of_exploit: 6
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Do not fetch URLs taken from requests. Where the feature needs it, allow-list the scheme,
+      host and port, resolve the host and refuse private, loopback and link-local addresses
+      (including cloud metadata endpoints), disable redirects, and send outbound requests through
+      an egress proxy.
+    references:
+      - title: OWASP Server Side Request Forgery Prevention Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    compliance: [secure-coding-injection, network-security]
+  deserialisation:
+    title: Unsafe deserialisation of untrusted data
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+    threat:
+      skill: 6
+      motive: 9
+      opportunity: 7
+      size: 9
+      ease_of_discovery: 5
+      ease_of_exploit: 5
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Never deserialise untrusted data with a format that can instantiate arbitrary objects
+      (pickle, marshal, yaml.load without SafeLoader, Java native serialisation). Use a data-only
+      format such as JSON with schema validation, or yaml.safe_load; sign and verify serialised
+      state that must round-trip through the client.
+    references:
+      - title: OWASP Deserialization Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+    compliance: [secure-coding-injection, integrity]
+  xml-external-entities:
+    title: XML external entity and entity expansion
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:L/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:L
+    threat:
+      skill: 5
+      motive: 7
+      opportunity: 7
+      size: 9
+      ease_of_discovery: 6
+      ease_of_exploit: 6
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Disable DTD processing and external entity resolution in the XML parser, or use a hardened
+      parser such as defusedxml in Python.
+    references:
+      - title: OWASP XML External Entity Prevention Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+    compliance: [secure-coding-injection, secure-configuration]
+  hardcoded-secret:
+    title: Hard-coded credentials and keys
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:H/VI:H/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N
+    threat:
+      skill: 3
+      motive: 8
+      opportunity: 5
+      size: 6
+      ease_of_discovery: 7
+      ease_of_exploit: 8
+      awareness: 9
+      intrusion_detection: 9
+    remediation: >-
+      Remove the credential from source code and version history, rotate it immediately, and
+      load secrets at run time from a secrets manager or the environment. Add secret scanning
+      to the pre-commit hooks and CI so a new secret is caught before it is pushed.
+    references:
+      - title: OWASP Secrets Management Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+    compliance: [credentials, cryptography]
+  weak-cryptography:
+    title: Weak or misused cryptography
+    cvss4: CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:L/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:L/A:N
+    threat:
+      skill: 7
+      motive: 6
+      opportunity: 4
+      size: 6
+      ease_of_discovery: 5
+      ease_of_exploit: 3
+      awareness: 6
+      intrusion_detection: 9
+    remediation: >-
+      Use current, vetted primitives from a maintained library: AES-GCM or ChaCha20-Poly1305 for
+      encryption with a fresh random nonce per message, SHA-256 or better for integrity, a
+      password hashing function (Argon2id, scrypt, bcrypt) for passwords, and the operating
+      system CSPRNG (Python secrets / os.urandom) for keys, tokens and IVs.
+    references:
+      - title: OWASP Cryptographic Storage Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      - title: OWASP Password Storage Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+    compliance: [cryptography]
+  broken-access-control:
+    title: Missing or incorrect authorisation
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N
+    threat:
+      skill: 3
+      motive: 8
+      opportunity: 7
+      size: 6
+      ease_of_discovery: 7
+      ease_of_exploit: 7
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Enforce authorisation on the server for every request: check that the authenticated
+      principal owns or may act on the referenced object (deny by default), derive the owner
+      from the session rather than from request parameters, and centralise the check in a
+      decorator or policy layer so no handler can skip it.
+    references:
+      - title: OWASP Authorization Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+      - title: OWASP Insecure Direct Object Reference Prevention Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html
+    compliance: [access-control]
+  broken-authentication:
+    title: Missing or broken authentication
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N
+    threat:
+      skill: 4
+      motive: 8
+      opportunity: 7
+      size: 9
+      ease_of_discovery: 6
+      ease_of_exploit: 6
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Require authentication for every non-public function through a shared mechanism, verify
+      token signatures and algorithms explicitly, and use the framework's session management
+      rather than custom tokens.
+    references:
+      - title: OWASP Authentication Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+      - title: OWASP Session Management Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    compliance: [authentication]
+  csrf:
+    title: Cross-site request forgery and unsafe redirects
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:A/VC:N/VI:H/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:H/A:N
+    threat:
+      skill: 4
+      motive: 6
+      opportunity: 6
+      size: 9
+      ease_of_discovery: 6
+      ease_of_exploit: 5
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Protect state-changing requests with the framework's anti-CSRF token and SameSite cookies,
+      and validate redirect targets against an allow-list of relative paths or known hosts.
+    references:
+      - title: OWASP Cross-Site Request Forgery Prevention Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+      - title: OWASP Unvalidated Redirects and Forwards Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+    compliance: [secure-coding-injection, authentication]
+  information-exposure:
+    title: Exposure of sensitive information
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N
+    threat:
+      skill: 3
+      motive: 5
+      opportunity: 6
+      size: 6
+      ease_of_discovery: 6
+      ease_of_exploit: 6
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Do not write secrets, credentials, tokens or personal data to logs, error messages or URLs.
+      Mask or omit sensitive fields at the logging boundary, return generic error messages to
+      clients, and keep detailed diagnostics server-side.
+    references:
+      - title: OWASP Logging Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+      - title: OWASP Error Handling Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+    compliance: [data-protection, logging]
+  log-injection:
+    title: Log injection and insufficient logging
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:L/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N
+    threat:
+      skill: 3
+      motive: 4
+      opportunity: 7
+      size: 9
+      ease_of_discovery: 5
+      ease_of_exploit: 7
+      awareness: 4
+      intrusion_detection: 8
+    remediation: >-
+      Encode or strip CR/LF and other control characters from untrusted values before logging,
+      prefer structured (JSON) logging with fields instead of string concatenation, and log
+      security-relevant events with enough context to investigate them.
+    references:
+      - title: OWASP Logging Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+    compliance: [logging]
+  denial-of-service:
+    title: Uncontrolled resource consumption
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H
+    threat:
+      skill: 4
+      motive: 4
+      opportunity: 7
+      size: 9
+      ease_of_discovery: 5
+      ease_of_exploit: 6
+      awareness: 4
+      intrusion_detection: 6
+    remediation: >-
+      Bound every resource an attacker can drive: limit request and upload sizes, decompressed
+      archive sizes and entry counts, use regular expressions without nested quantifiers (or a
+      linear-time engine) on untrusted input, and set time-outs and rate limits.
+    references:
+      - title: OWASP Denial of Service Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+    compliance: [availability]
+  memory-safety:
+    title: Memory-safety errors
+    cvss4: CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H
+    threat:
+      skill: 7
+      motive: 7
+      opportunity: 5
+      size: 6
+      ease_of_discovery: 4
+      ease_of_exploit: 3
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Check every length and index before copying or indexing, use bounded functions (snprintf,
+      strlcpy) or safer containers, check integer arithmetic for overflow before it sizes a
+      buffer, and build with compiler hardening (stack protector, FORTIFY_SOURCE, sanitizers in
+      testing).
+    references:
+      - title: OWASP C-Based Toolchain Hardening Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/C-Based_Toolchain_Hardening_Cheat_Sheet.html
+    compliance: [secure-coding-injection]
+  race-condition:
+    title: Race conditions and unsafe file handling
+    cvss4: CVSS:4.0/AV:L/AC:H/AT:P/PR:L/UI:N/VC:H/VI:H/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:N
+    threat:
+      skill: 7
+      motive: 5
+      opportunity: 4
+      size: 4
+      ease_of_discovery: 3
+      ease_of_exploit: 3
+      awareness: 4
+      intrusion_detection: 9
+    remediation: >-
+      Operate on file descriptors rather than re-checking paths, create temporary files with
+      tempfile.mkstemp / NamedTemporaryFile, open files with O_NOFOLLOW where links matter, and
+      make check-and-act sequences atomic.
+    references:
+      - title: "CWE-367: Time-of-check Time-of-use (TOCTOU) Race Condition"
+        url: https://cwe.mitre.org/data/definitions/367.html
+    compliance: [secure-coding-injection]
+  security-misconfiguration:
+    title: Insecure configuration and session handling
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:P/VC:L/VI:L/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N
+    threat:
+      skill: 4
+      motive: 5
+      opportunity: 6
+      size: 9
+      ease_of_discovery: 7
+      ease_of_exploit: 5
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Ship secure defaults: disable debug mode in production, set Secure, HttpOnly and SameSite
+      on session cookies, expire sessions, verify TLS certificates, and restrict CORS to the
+      origins that need it.
+    references:
+      - title: OWASP Session Management Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+      - title: OWASP Transport Layer Security Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html
+    compliance: [secure-configuration]
+  file-upload:
+    title: Unrestricted file upload
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H
+    threat:
+      skill: 4
+      motive: 8
+      opportunity: 6
+      size: 6
+      ease_of_discovery: 6
+      ease_of_exploit: 6
+      awareness: 6
+      intrusion_detection: 8
+    remediation: >-
+      Allow-list file types by content and extension, generate the stored file name on the
+      server, store uploads outside the web root without execute permission, and limit their
+      size.
+    references:
+      - title: OWASP File Upload Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+    compliance: [secure-coding-injection, access-control]
+  integrity:
+    title: Mass assignment, prototype pollution and untrusted code loading
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:L/VI:H/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:H/A:N
+    threat:
+      skill: 5
+      motive: 6
+      opportunity: 6
+      size: 6
+      ease_of_discovery: 5
+      ease_of_exploit: 5
+      awareness: 4
+      intrusion_detection: 8
+    remediation: >-
+      Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted
+      objects into prototypes or configuration, and load code and libraries only from fixed,
+      trusted locations.
+    references:
+      - title: OWASP Mass Assignment Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
+      - title: OWASP Prototype Pollution Prevention Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Prototype_Pollution_Prevention_Cheat_Sheet.html
+    compliance: [integrity]
+  input-validation:
+    title: Improper input validation (generic)
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:L/VA:L/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L
+    threat:
+      skill: 4
+      motive: 5
+      opportunity: 6
+      size: 6
+      ease_of_discovery: 5
+      ease_of_exploit: 5
+      awareness: 4
+      intrusion_detection: 8
+    remediation: >-
+      Validate untrusted input on the server against an allow-list of type, length, format and
+      range before use, and pick the specific weakness (injection, traversal, resource
+      consumption) the missing validation enables to choose the right fix.
+    references:
+      - title: OWASP Input Validation Cheat Sheet
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+    compliance: [secure-coding-injection]

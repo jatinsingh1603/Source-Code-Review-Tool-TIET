@@ -1,0 +1,114 @@
+# Sources of every table under data/. Owning epic: E29.
+#
+# Each table names the source ids it draws on. "basis" says how a table uses a source:
+#   official - values copied from the document (identifiers, names, clause numbers, scores);
+#   derived  - CodeKavach's own interpretation (which weakness maps to which clause, default
+#              CVSS vectors per weakness family). Derived rows are labelled as such in reports.
+# Only identifiers and short titles are reproduced; no document text is redistributed.
+# URLs were checked to return HTTP 200 on the retrieval date (the ISO catalogue page sits behind
+# a bot check and is listed as the publisher's catalogue entry).
+schema_version: 1
+retrieved: "2026-11-13"
+sources:
+  cvss-v4.0:
+    title: Common Vulnerability Scoring System v4.0 Specification Document
+    publisher: FIRST
+    version: "4.0 (November 2023)"
+    url: https://www.first.org/cvss/v4.0/specification-document
+    used_for: CVSS v4.0 metrics, macrovector scoring algorithm, qualitative severity scale
+  cvss-v4.0-calculator:
+    title: FIRST CVSS v4.0 reference calculator (cvss_lookup.js, max_composed.js, max_severity.js)
+    publisher: FIRST, Red Hat and contributors (BSD-2-Clause)
+    version: main branch, retrieved on the date above
+    url: https://github.com/FIRSTdotorg/cvss-v4-calculator
+    used_for: macrovector score table transcribed into src/codekavach/risk/cvss/_v4_tables.py
+  cvss-v3.1:
+    title: Common Vulnerability Scoring System v3.1 Specification Document
+    publisher: FIRST
+    version: "3.1 (June 2019)"
+    url: https://www.first.org/cvss/v3.1/specification-document
+    used_for: CVSS v3.1 Base score equations and Roundup
+  owasp-risk-rating:
+    title: OWASP Risk Rating Methodology
+    publisher: OWASP Foundation
+    url: https://owasp.org/www-community/OWASP_Risk_Rating_Methodology
+    used_for: likelihood and impact factors, 0-9 scales, low/medium/high bands, overall severity table
+  cwe:
+    title: Common Weakness Enumeration (CWE) List
+    publisher: The MITRE Corporation
+    version: "4.15"
+    url: https://cwe.mitre.org/data/downloads.html
+    used_for: CWE identifiers, names and abstraction levels in data/cwe/catalogue.yaml
+  cwe-top25-2024:
+    title: 2024 CWE Top 25 Most Dangerous Software Weaknesses
+    publisher: The MITRE Corporation
+    url: https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html
+    used_for: top25 rank in data/cwe/catalogue.yaml
+  capec:
+    title: Common Attack Pattern Enumeration and Classification (CAPEC)
+    publisher: The MITRE Corporation
+    url: https://capec.mitre.org/
+    used_for: CAPEC identifiers related to each CWE
+  owasp-top10-2021:
+    title: OWASP Top 10:2021
+    publisher: OWASP Foundation
+    url: https://owasp.org/Top10/
+    used_for: category ids and titles, and the "List of Mapped CWEs" behind owasp_basis official
+  owasp-asvs-4.0.3:
+    title: OWASP Application Security Verification Standard 4.0.3
+    publisher: OWASP Foundation
+    version: "4.0.3 (October 2021)"
+    url: https://owasp.org/www-project-application-security-verification-standard/
+    used_for: ASVS requirement identifiers per CWE (basis derived)
+  owasp-cheat-sheets:
+    title: OWASP Cheat Sheet Series
+    publisher: OWASP Foundation
+    url: https://cheatsheetseries.owasp.org/
+    used_for: remediation references per weakness family
+  pci-dss-4.0.1:
+    title: Payment Card Industry Data Security Standard, Requirements and Testing Procedures
+    publisher: PCI Security Standards Council
+    version: "4.0.1 (June 2024)"
+    url: https://www.pcisecuritystandards.org/document_library/
+    used_for: requirement numbers in data/compliance/controls.yaml (mapping basis derived)
+  iso-27001-2022:
+    title: ISO/IEC 27001:2022 Information security management systems, Annex A
+    publisher: ISO/IEC
+    version: "2022"
+    url: https://www.iso.org/standard/27001
+    used_for: Annex A control numbers and names (mapping basis derived)
+  nist-sp-800-218:
+    title: NIST SP 800-218, Secure Software Development Framework (SSDF) Version 1.1
+    publisher: National Institute of Standards and Technology
+    version: "1.1 (February 2022)"
+    url: https://csrc.nist.gov/pubs/sp/800/218/final
+    used_for: SSDF practice and task identifiers (mapping basis derived)
+  rbi-csf-2016:
+    title: Cyber Security Framework in Banks (RBI/2015-16/418, DBS.CO/CSITE/BC.11/33.01.001/2015-16), Annex 1 Baseline Cyber Security and Resilience Requirements
+    publisher: Reserve Bank of India
+    version: "June 2, 2016"
+    url: https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=10435
+    used_for: Annex 1 sections, cited at section level (mapping basis derived)
+  rbi-md-itgrca-2023:
+    title: Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, DoS.CO.CSITEG/SEC.7/31.01.015/2023-24)
+    publisher: Reserve Bank of India
+    version: "November 7, 2023"
+    url: https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562
+    used_for: cited at framework level only (mapping basis derived)
+  sebi-cscrf-2024:
+    title: Cybersecurity and Cyber Resilience Framework (CSCRF) for SEBI Regulated Entities (circular of August 20, 2024)
+    publisher: Securities and Exchange Board of India
+    version: "2024"
+    url: https://www.sebi.gov.in/legal/circulars/aug-2024/cybersecurity-and-cyber-resilience-framework-cscrf-for-sebi-regulated-entities-res-_85964.html
+    used_for: cited at function and category level using the NIST CSF 2.0 style category codes the framework is organised around (mapping basis derived)
+  cert-in-directions-2022:
+    title: CERT-In Directions under sub-section (6) of section 70B of the Information Technology Act, 2000 (No. 20(3)/2022-CERT-In)
+    publisher: Indian Computer Emergency Response Team (CERT-In)
+    version: "April 28, 2022"
+    url: https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf
+    used_for: direction (iv), log retention for 180 days (mapping basis derived)
+tables:
+  data/cwe/catalogue.yaml: [cwe, cwe-top25-2024, capec, owasp-top10-2021, owasp-asvs-4.0.3]
+  data/cwe/families.yaml: [cvss-v4.0, cvss-v3.1, owasp-risk-rating, owasp-cheat-sheets]
+  data/taxonomy/owasp-top10-2021.yaml: [owasp-top10-2021]
+  data/compliance/controls.yaml: [pci-dss-4.0.1, iso-27001-2022, nist-sp-800-218, rbi-csf-2016, rbi-md-itgrca-2023, sebi-cscrf-2024, cert-in-directions-2022]
