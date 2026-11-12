@@ -25,6 +25,10 @@ export default function ScanLaunchPage() {
   const [providerId, setProviderId] = useState("");
   const [model, setModel] = useState("");
   const [dryRun, setDryRun] = useState(false);
+  // Quick review for remote providers (serial gateways answer one request at a time); every
+  // candidate for a local model. The rest keep their deterministic evidence and can be reviewed
+  // one by one from the finding page.
+  const [reviewLimit, setReviewLimit] = useState<number | null>(null);
   const [testResult, setTestResult] = useState<ProviderTestResult | null>(null);
   const [ready, setReady] = useState(false);
   const list = useMemo(() => providers.data ?? [], [providers.data]);
@@ -46,6 +50,7 @@ export default function ScanLaunchPage() {
 
   const floorBlocked = !!provider?.min_level && level !== "L0" && !atLeastAsStrict(level, provider.min_level);
   const summary = egressSummary(level, provider, !dryRun);
+  const limit = reviewLimit ?? (provider && !provider.local ? 8 : 0);
 
   const submit = async () => {
     if (!id) return;
@@ -57,6 +62,7 @@ export default function ScanLaunchPage() {
           provider: level === "L0" ? "none" : providerId,
           model: level === "L0" ? undefined : model || undefined,
           send: level === "L0" ? false : !dryRun,
+          ...(level === "L0" ? {} : { review_limit: limit }),
         },
       });
       toast.success("Scan started", "Opening the live view.");
@@ -157,6 +163,19 @@ export default function ScanLaunchPage() {
                 ))}
               </select>
             </div>
+          </div>
+          <div className="fld">
+            <label htmlFor="sc-r">Model review</label>
+            <select id="sc-r" className="inp" value={limit} disabled={level === "L0"} onChange={(e) => setReviewLimit(Number(e.target.value))}>
+              <option value={8}>Quick · the 8 most severe candidates</option>
+              <option value={20}>The 20 most severe candidates</option>
+              <option value={0}>Every candidate</option>
+            </select>
+            <span className="xs faint">
+              {level === "L0"
+                ? "No model at L0."
+                : "Candidates not sent keep their engine evidence; review any of them later from the finding page."}
+            </span>
           </div>
           {floorBlocked && (
             <div className="banner warn sm">

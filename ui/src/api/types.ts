@@ -147,6 +147,8 @@ export interface ScanCreate {
   model?: string;
   send: boolean;
   rules?: string[];
+  /** Quick review: the model reviews only the N most severe candidates (0 = every candidate). */
+  review_limit?: number;
 }
 
 export interface Scan {
