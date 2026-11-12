@@ -129,7 +129,10 @@ class OpengrepAdapter:
         argv.extend(extra_args(settings, ENGINE_ID))
         argv.append(".")
         return EngineInvocation(
-            argv=tuple(argv), output_file=OUTPUT_FILE, expect_exit_codes=SPEC.expect_exit_codes
+            argv=tuple(argv),
+            output_file=OUTPUT_FILE,
+            expect_exit_codes=SPEC.expect_exit_codes,
+            read_only_paths=tuple(str(directory) for directory in rules),
         )
 
     def parse(self, run: EngineRun, root: Path) -> Sequence[Candidate]:

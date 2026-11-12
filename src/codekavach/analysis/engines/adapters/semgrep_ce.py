@@ -66,6 +66,10 @@ class SemgrepCeAdapter(CliAdapter):
     hint = "pipx install semgrep  and set engines.rule_paths to your rule files"
     output_file = OUTPUT_FILE
 
+    def read_only_paths(self, settings: Settings) -> tuple[str, ...]:
+        """The operator's rule files and directories."""
+        return tuple(str(resolve_path(str(p))) for p in settings.engines.rule_paths)
+
     def options(
         self, root: Path, files: Sequence[SourceFile], settings: Settings
     ) -> tuple[list[str], list[str]] | None:

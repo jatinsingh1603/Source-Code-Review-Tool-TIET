@@ -24,7 +24,7 @@ from codekavach.analysis.engines.errors import (
     EngineUnavailable,
 )
 from codekavach.analysis.engines.install import GENERIC_HINT, install_hint, verify_installed
-from codekavach.analysis.engines.manifest import parse_manifest
+from codekavach.analysis.engines.manifest import load_manifest, parse_manifest
 from codekavach.analysis.engines.registry import HOSTED_VARIABLE, EngineRegistry, default_registry
 from codekavach.analysis.engines.runner import RunLimits, _sandbox_limits, run_engine
 from codekavach.analysis.engines.sandbox import SandboxLimits, SandboxSet, SubprocessSandbox
@@ -362,3 +362,22 @@ def test_an_engine_that_needs_address_space_raises_the_memory_limit() -> None:
     assert _sandbox_limits(16384, SandboxLimits(memory_mb=32768)).memory_mb == 32768
     assert _sandbox_limits(16384, SandboxLimits(memory_mb=0)).memory_mb == 0
     assert _sandbox_limits(0, SandboxLimits(memory_mb=4096)).memory_mb == 4096
+
+
+def test_the_manifest_telemetry_opt_out_reaches_the_engine_process(tmp_path: Path) -> None:
+    sandbox = StubSandbox()
+    ctx = make_engine_context(tmp_path).for_stage("analyse-engines")
+    view = tmp_path / "view"
+    view.mkdir()
+    scheduler.run_all(
+        [FakeAdapter("eslint-security", version="99.0.0")],
+        ctx,
+        languages=[Language.PYTHON],
+        files=[source_file()],
+        view=view,
+        work_dir=tmp_path / "work",
+        sandboxes=stub_sandboxes(sandbox),
+        manifest=load_manifest(),
+    )
+    assert sandbox.requests[0].env["DO_NOT_TRACK"] == "1"
+    assert "DO_NOT_TRACK" not in " ".join(sandbox.requests[0].argv)

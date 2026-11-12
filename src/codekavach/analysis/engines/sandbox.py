@@ -47,6 +47,7 @@ from codekavach.core.log import get_logger
 
 CONTAINER_ROOT: Final = "/src"
 CONTAINER_OUT: Final = "/out"
+CONTAINER_RULES: Final = "/rules"
 CONTAINER_TMP: Final = "/tmp"  # noqa: S108 - the path inside the container, not on the host
 FORBIDDEN_PREFIX: Final = "CODEKAVACH_"
 NETWORK_WARNING: Final = "engine_network_not_isolated"
@@ -116,6 +117,7 @@ class SandboxRequest:
     passthrough: tuple[str, ...] = ()
     limits: SandboxLimits = field(default_factory=SandboxLimits)
     image: str | None = None
+    read_only_paths: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -414,6 +416,33 @@ class SubprocessSandbox:
         )
 
 
+def _container_path(index: int) -> str:
+    return f"{CONTAINER_RULES}/{index}"
+
+
+def _rule_mounts(paths: tuple[str, ...]) -> list[str]:
+    """``--mount`` arguments that expose each read-only host path inside the container."""
+    mounts: list[str] = []
+    for index, path in enumerate(paths):
+        mounts += ["--mount", f"type=bind,source={path},target={_container_path(index)},readonly"]
+    return mounts
+
+
+def _rewrite_paths(argument: str, request: SandboxRequest) -> str:
+    """``argument`` with a host path from ``request.read_only_paths`` replaced by its mount.
+
+    Matches a whole argument, or the value of ``--option=value``; the longest path wins.
+    """
+    ordered = sorted(enumerate(request.read_only_paths), key=lambda item: -len(item[1]))
+    for index, path in ordered:
+        inside = _container_path(index)
+        prefix, _, value = argument.partition("=")
+        for head, tail in (("", argument), (prefix + "=", value)):
+            if tail == path or tail.startswith(path + os.sep):
+                return head + inside + tail[len(path) :]
+    return argument
+
+
 class ContainerSandbox:
     """Runs the engine in a container with no network (see the module docstring)."""
 
@@ -460,6 +489,7 @@ class ContainerSandbox:
             f"type=bind,source={request.root},target={CONTAINER_ROOT},readonly",
             "--mount",
             f"type=bind,source={request.out_dir},target={CONTAINER_OUT}",
+            *_rule_mounts(request.read_only_paths),
             "-w",
             check_container_workdir(
                 request.engine_id,
@@ -481,7 +511,10 @@ class ContainerSandbox:
         for name in sorted(environment):
             command += ["-e", f"{name}={environment[name]}"]
         command.append(request.image)
-        command += [substitute(p, root=CONTAINER_ROOT, out=CONTAINER_OUT) for p in request.argv]
+        command += [
+            _rewrite_paths(substitute(p, root=CONTAINER_ROOT, out=CONTAINER_OUT), request)
+            for p in request.argv
+        ]
         return command
 
     def run(self, request: SandboxRequest) -> SandboxResult:

@@ -119,6 +119,7 @@ def run_engine(
         passthrough=limits.passthrough,
         limits=_sandbox_limits(adapter.spec.min_memory_mb, limits.sandbox),
         image=limits.image,
+        read_only_paths=invocation.read_only_paths,
     )
     try:
         result = sandbox.run(request)

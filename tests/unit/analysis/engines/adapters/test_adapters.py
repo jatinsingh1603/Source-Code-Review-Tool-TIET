@@ -414,3 +414,15 @@ def test_run_dataclass_is_what_parse_receives(tmp_path: Path) -> None:
     run = EngineRun("bandit", "1.9.4", 0, 0.0, "ok")
     with pytest.raises(SarifFormatError):
         BanditAdapter().parse(run, tmp_path)
+
+
+def test_the_rule_and_tool_directories_are_declared_for_a_container_mount(
+    tmp_path: Path,
+) -> None:
+    settings = settings_for(tmp_path)
+    opengrep = OpengrepAdapter().build_invocation(tmp_path, FILES, settings)
+    eslint = EslintSecurityAdapter().build_invocation(tmp_path, FILES, settings)
+    assert opengrep is not None and eslint is not None
+    assert opengrep.read_only_paths == (str(tmp_path / "rules"),)
+    assert eslint.read_only_paths == (str(tmp_path / "tools"),)
+    assert BanditAdapter().build_invocation(tmp_path, FILES, settings) is not None

@@ -66,7 +66,8 @@ PLUGINS: Final = ("eslint", "eslint-plugin-security", "eslint-plugin-no-unsaniti
 INSTALL_HINT: Final = (
     "install Node.js, then in the CodeKavach tools directory run: "
     "npm install eslint eslint-plugin-security eslint-plugin-no-unsanitized "
-    "(the directory is shown by `codekavach doctor`)"
+    "(the directory is shown by `codekavach doctor`); add @typescript-eslint/parser and "
+    "typescript there to lint TypeScript too"
 )
 _LEVELS: Final = {2: "warning", 1: "note"}
 
@@ -240,7 +241,10 @@ class EslintSecurityAdapter:
             *targets,
         ]
         return EngineInvocation(
-            argv=tuple(argv), output_file=OUTPUT_FILE, expect_exit_codes=SPEC.expect_exit_codes
+            argv=tuple(argv),
+            output_file=OUTPUT_FILE,
+            expect_exit_codes=SPEC.expect_exit_codes,
+            read_only_paths=(str(directory),),
         )
 
     def parse(self, run: EngineRun, root: Path) -> Sequence[Candidate]:

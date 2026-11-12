@@ -1,0 +1,1 @@
+ESLint now lints TypeScript when `@typescript-eslint/parser` and `typescript` are installed in the tools directory, container runs mount `engines.rule_paths` and the ESLint tools directory read-only and rewrite their paths in the argument vector, and the Semgrep CE, njsscan, Flawfinder, Bandit and ESLint conformance cases are recorded from real runs.

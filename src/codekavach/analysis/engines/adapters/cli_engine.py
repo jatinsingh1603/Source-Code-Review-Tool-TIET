@@ -90,7 +90,13 @@ class CliAdapter:
             output_file=None if self.stdout_is_output else self.output_file,
             stdout_is_output=self.stdout_is_output,
             expect_exit_codes=self.spec.expect_exit_codes,
+            read_only_paths=self.read_only_paths(settings),
         )
+
+    def read_only_paths(self, settings: Settings) -> tuple[str, ...]:
+        """Host paths the argument vector names that a container run must mount read-only."""
+        del settings
+        return ()
 
     def parse(self, run: EngineRun, root: Path) -> Sequence[Candidate]:
         """Candidates from the engine's recorded output."""

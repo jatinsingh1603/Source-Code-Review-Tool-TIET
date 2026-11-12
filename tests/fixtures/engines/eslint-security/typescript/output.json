@@ -1,0 +1,54 @@
+[
+  {
+    "filePath": "/src/server.ts",
+    "messages": [
+      {
+        "ruleId": "security/detect-child-process",
+        "severity": 1,
+        "message": "Found child_process.exec() with non Literal first argument",
+        "line": 10,
+        "column": 3,
+        "nodeType": "CallExpression",
+        "endLine": 10,
+        "endColumn": 27
+      },
+      {
+        "ruleId": "security/detect-non-literal-regexp",
+        "severity": 1,
+        "message": "Found non-literal argument to RegExp Constructor",
+        "line": 11,
+        "column": 19,
+        "nodeType": "NewExpression",
+        "endLine": 11,
+        "endColumn": 35
+      },
+      {
+        "ruleId": "security/detect-eval-with-expression",
+        "severity": 1,
+        "message": "eval with argument of type Identifier",
+        "line": 12,
+        "column": 3,
+        "nodeType": "CallExpression",
+        "endLine": 12,
+        "endColumn": 13
+      },
+      {
+        "ruleId": "no-unsanitized/property",
+        "severity": 2,
+        "message": "Unsafe assignment to innerHTML",
+        "line": 13,
+        "column": 3,
+        "nodeType": "AssignmentExpression",
+        "endLine": 13,
+        "endColumn": 72
+      }
+    ],
+    "suppressedMessages": [],
+    "errorCount": 1,
+    "fatalErrorCount": 0,
+    "warningCount": 3,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  }
+]

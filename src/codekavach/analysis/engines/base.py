@@ -122,6 +122,9 @@ class EngineInvocation:
     output_file: str | None = None
     stdout_is_output: bool = False
     expect_exit_codes: frozenset[int] = frozenset({0})
+    # Host directories that ``argv`` names (rule sets, tool directories). A container run mounts
+    # each read-only and rewrites the path in ``argv``; a subprocess run uses them as they are.
+    read_only_paths: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         parts: tuple[object, ...] = self.argv

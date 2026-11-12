@@ -337,3 +337,21 @@ def test_a_working_directory_never_escapes_the_view(segments: list[str]) -> None
             assert not target.resolve().is_relative_to(out.resolve())
         else:
             assert resolved.is_relative_to(root.resolve()) or resolved.is_relative_to(out.resolve())
+
+
+def test_a_container_mounts_rule_directories_read_only_and_rewrites_the_argument_vector(
+    tmp_path: Path,
+) -> None:
+    rules, other = tmp_path / "rules", tmp_path / "rules-extra"
+    request = replace(
+        make_request(tmp_path, "scan", f"--config={rules}", "--config", str(other), image=IMAGE),
+        read_only_paths=(str(rules), str(other)),
+    )
+    command = container().build_command(request, "n")
+    mounts = [part for part in command if part.startswith("type=bind")]
+    assert f"type=bind,source={rules},target=/rules/0,readonly" in mounts
+    assert f"type=bind,source={other},target=/rules/1,readonly" in mounts
+    arguments = command[command.index(IMAGE) + 1 :]
+    assert "--config=/rules/0" in arguments
+    assert "/rules/1" in arguments
+    assert str(rules) not in " ".join(arguments)
