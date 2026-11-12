@@ -9,7 +9,8 @@ model itself (I1): the request runs the real pipeline again over the scan's sour
 privacy-prepare (slice, redaction, pseudonymisation), the egress guard, the ledger, the transport
 and the local restore, with the combined ``review`` task (one request). The run uses the scan's
 own state directory, so its ledger entries join the scan's hash chain under a new pipeline scan
-id, and the response cache answers a repeated request without egress.
+id (recorded in the scan's ``reviews.json``, so the scan's ledger lists them), and the response
+cache answers a repeated request without egress.
 
 The finding keeps its id, status, assignee and history; its model review, confidence, impact and
 remediation are replaced by the new run's, an ``llm_review`` entry is added to its history, and
@@ -87,6 +88,8 @@ def _run_review(state: ServerState, paths: ScanPaths, overrides: Any, provider: 
         persist=False,
         no_send=False,
     )
+    # The review's ledger entries belong to this scan's egress: list them with the scan's own.
+    paths.add_review_scan_id(str(outcome.scan.id))
     if outcome.result.status.value == "failed":
         failed = ", ".join(outcome.result.failed_stages()) or "unknown"
         raise ApiError(502, "review_failed", f"the review run failed in stage {failed}")

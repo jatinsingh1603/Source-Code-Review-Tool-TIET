@@ -72,6 +72,28 @@ class ScanPaths:
         """The configuration overrides the scan ran with."""
         return self.workspace / "settings.json"
 
+    @property
+    def reviews_json(self) -> Path:
+        """Pipeline scan ids of the on-demand reviews run over this scan (``POST .../review``)."""
+        return self.workspace / "reviews.json"
+
+    def review_scan_ids(self) -> list[str]:
+        """The pipeline scan ids of this scan's on-demand reviews, oldest first."""
+        try:
+            data = json.loads(self.reviews_json.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return []
+        if not isinstance(data, list):
+            return []
+        return [str(item) for item in data if isinstance(item, str)]
+
+    def add_review_scan_id(self, core_scan_id: str) -> None:
+        """Remember an on-demand review's pipeline scan id, so its ledger entries are listed."""
+        ids = self.review_scan_ids()
+        if core_scan_id not in ids:
+            ids.append(core_scan_id)
+            self.reviews_json.write_text(json.dumps(ids), encoding="utf-8")
+
 
 @dataclass
 class PrivacySummary:
@@ -458,25 +480,34 @@ class ScanResults:
                 self._sizes[payload_hash] = (len(body.encode("utf-8")), _line_count(body))
         return self._sizes[payload_hash]
 
+    @property
+    def scan_ids(self) -> list[str]:
+        """The scan's pipeline id, then those of its on-demand reviews (same state directory)."""
+        return [self.scan_id, *(i for i in self.paths.review_scan_ids() if i != self.scan_id)]
+
     def records(self) -> list[Any]:
-        """The ledger records of the scan, in order."""
-        try:
-            return list(self.reader.records(self.scan_id))
-        except Exception as error:  # noqa: BLE001 - a scan that sent nothing has no ledger
-            _log.info("server_ledger_unreadable", error_type=type(error).__name__)
-            return []
+        """The ledger records of the scan and of its on-demand reviews, in order."""
+        out: list[Any] = []
+        for scan_id in self.scan_ids:
+            try:
+                out.extend(self.reader.records(scan_id))
+            except Exception as error:  # noqa: BLE001 - a scan that sent nothing has no ledger
+                _log.info("server_ledger_unreadable", error_type=type(error).__name__)
+        return sorted(out, key=lambda record: record.seq)
 
     def entries(self) -> list[Any]:
-        """The payload entries (payload, candidate, slice, outcome) of the scan."""
+        """The payload entries (payload, candidate, slice, outcome) of the scan and its reviews."""
         from codekavach.cli.privacy import collect  # noqa: PLC0415
         from codekavach.privacy.inspect_source import open_payload_source  # noqa: PLC0415
 
-        try:
-            source = open_payload_source(self.layout, self.scan_id, settings=self.settings)
-            return collect(source, self.scan_id, [], None)
-        except Exception as error:  # noqa: BLE001 - no payloads were prepared
-            _log.info("server_payloads_unreadable", error_type=type(error).__name__)
-            return []
+        out: list[Any] = []
+        for scan_id in self.scan_ids:
+            try:
+                source = open_payload_source(self.layout, scan_id, settings=self.settings)
+                out.extend(collect(source, scan_id, [], None))
+            except Exception as error:  # noqa: BLE001 - no payloads were prepared
+                _log.info("server_payloads_unreadable", error_type=type(error).__name__)
+        return out
 
     def chain(self) -> tuple[bool, int, str | None]:
         """``(ok, entries, reason)`` of the ledger chain walk."""

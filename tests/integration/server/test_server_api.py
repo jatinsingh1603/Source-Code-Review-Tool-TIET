@@ -450,5 +450,10 @@ def test_a_quick_review_then_an_on_demand_review_of_one_finding(
     assert detail["history"][-1]["action"] == "llm_review"
     again = client.get(f"/api/v1/scans/{quick['id']}/findings", headers=admin).json()
     assert sum(1 for item in again if item["llm_reviewed"]) == 2
+    # The review's payload is listed with the scan's ledger, so "What the LLM saw" can open it.
+    seq = next(r["ledger_seq"] for r in detail["provenance"]["llm_reviews"] if r.get("ledger_seq"))
+    entry = client.get(f"/api/v1/scans/{quick['id']}/ledger/{seq}", headers=admin)
+    assert entry.status_code == 200, entry.text
+    assert entry.json()["entry"]["seq"] == seq
     missing = client.post("/api/v1/findings/nope/review", headers=users["auditor"])
     assert missing.status_code == 404
