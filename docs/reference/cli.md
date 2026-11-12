@@ -9,6 +9,10 @@ Every command accepts `--help` / `-h`. The global options below are accepted bef
 - [Global options](#global-options)
 - [Exit codes](#exit-codes)
 - [codekavach](#codekavach)
+- [codekavach baseline](#codekavach-baseline)
+- [codekavach baseline clear](#codekavach-baseline-clear)
+- [codekavach baseline create](#codekavach-baseline-create)
+- [codekavach baseline show](#codekavach-baseline-show)
 - [codekavach completion](#codekavach-completion)
 - [codekavach config](#codekavach-config)
 - [codekavach config init](#codekavach-config-init)
@@ -28,10 +32,12 @@ Every command accepts `--help` / `-h`. The global options below are accepted bef
 - [codekavach config untrust](#codekavach-config-untrust)
 - [codekavach config validate](#codekavach-config-validate)
 - [codekavach demo](#codekavach-demo)
+- [codekavach diff](#codekavach-diff)
 - [codekavach doctor](#codekavach-doctor)
 - [codekavach eval](#codekavach-eval)
 - [codekavach eval detection](#codekavach-eval-detection)
 - [codekavach eval leakage](#codekavach-eval-leakage)
+- [codekavach findings](#codekavach-findings)
 - [codekavach init](#codekavach-init)
 - [codekavach plugins](#codekavach-plugins)
 - [codekavach plugins check](#codekavach-plugins-check)
@@ -41,11 +47,13 @@ Every command accepts `--help` / `-h`. The global options below are accepted bef
 - [codekavach privacy consent grant](#codekavach-privacy-consent-grant)
 - [codekavach privacy consent revoke](#codekavach-privacy-consent-revoke)
 - [codekavach privacy consent status](#codekavach-privacy-consent-status)
+- [codekavach privacy explain](#codekavach-privacy-explain)
 - [codekavach privacy inspect](#codekavach-privacy-inspect)
 - [codekavach privacy ledger](#codekavach-privacy-ledger)
 - [codekavach privacy ledger show](#codekavach-privacy-ledger-show)
 - [codekavach privacy ledger verify](#codekavach-privacy-ledger-verify)
 - [codekavach privacy notice](#codekavach-privacy-notice)
+- [codekavach privacy score](#codekavach-privacy-score)
 - [codekavach privacy terms](#codekavach-privacy-terms)
 - [codekavach privacy terms suggest](#codekavach-privacy-terms-suggest)
 - [codekavach providers](#codekavach-providers)
@@ -58,7 +66,16 @@ Every command accepts `--help` / `-h`. The global options below are accepted bef
 - [codekavach rules show](#codekavach-rules-show)
 - [codekavach rules test](#codekavach-rules-test)
 - [codekavach rules validate](#codekavach-rules-validate)
+- [codekavach sbom](#codekavach-sbom)
+- [codekavach sca](#codekavach-sca)
+- [codekavach sca list](#codekavach-sca-list)
+- [codekavach sca update](#codekavach-sca-update)
 - [codekavach scan](#codekavach-scan)
+- [codekavach secrets](#codekavach-secrets)
+- [codekavach secrets scan](#codekavach-secrets-scan)
+- [codekavach serve](#codekavach-serve)
+- [codekavach suppress](#codekavach-suppress)
+- [codekavach suppress list](#codekavach-suppress-list)
 - [codekavach sync](#codekavach-sync)
 - [codekavach sync github](#codekavach-sync-github)
 - [codekavach vault](#codekavach-vault)
@@ -117,6 +134,73 @@ Usage: codekavach [OPTIONS] COMMAND [ARGS]...
 | `--version`, `-V` | flag | off | Show the version and exit. |
 
 Run a sub-command with `--help` for its options.
+
+Global options apply.
+
+## codekavach baseline
+
+Record, show and clear the baseline of accepted findings.
+
+```text
+Usage: codekavach baseline [OPTIONS] COMMAND [ARGS]...
+```
+
+Run a sub-command with `--help` for its options.
+
+Global options apply.
+
+## codekavach baseline clear
+
+Delete the baseline; every finding counts as new again.
+
+```text
+Usage: codekavach baseline clear [OPTIONS] [target]
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `TARGET` | PATH | . | Project directory. |
+
+Global options apply.
+
+## codekavach baseline create
+
+Record the findings of a stored scan as the baseline.
+
+```text
+Usage: codekavach baseline create [OPTIONS] [target]
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `TARGET` | PATH | . | Project directory. |
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--scan` | TEXT | latest | Scan id or latest. |
+| `--force` | flag | off | Replace an existing baseline. |
+
+Global options apply.
+
+## codekavach baseline show
+
+List the entries of the baseline.
+
+```text
+Usage: codekavach baseline show [OPTIONS] [target]
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `TARGET` | PATH | . | Project directory. |
 
 Global options apply.
 
@@ -505,6 +589,29 @@ Usage: codekavach demo [OPTIONS]
 
 Global options apply.
 
+## codekavach diff
+
+Show the findings that are new, fixed and unchanged between two stored scans.
+
+```text
+Usage: codekavach diff [OPTIONS] {scan_a} {scan_b}
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `SCAN_A` | TEXT | required | The earlier scan id, or latest. |
+| `SCAN_B` | TEXT | required | The later scan id, or latest. |
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--target`, `-t` | PATH | . | Project directory the scans belong to. |
+
+Global options apply.
+
 ## codekavach doctor
 
 Check that this machine is ready to scan.
@@ -580,6 +687,30 @@ Usage: codekavach eval leakage [OPTIONS]
 | `--level` | Lx (repeatable) |  | Privacy level to evaluate; repeat for several (L0 to L4). |
 | `--attacker` | NAME (repeatable) |  | Attack to run; repeat for several. |
 | `--out` | PATH |  | Where to write the results. |
+
+Global options apply.
+
+## codekavach findings
+
+Print the findings of a stored scan (metadata and masked evidence only).
+
+```text
+Usage: codekavach findings [OPTIONS] [target]
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `TARGET` | TEXT | . | Project directory. |
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--scan` | TEXT | latest | Scan id or latest. |
+| `--min-severity` | TEXT | info | Lowest severity to include. |
+| `--format` | TEXT | json | json (use with --json) or sarif. |
 
 Global options apply.
 
@@ -718,6 +849,29 @@ Usage: codekavach privacy consent status [OPTIONS]
 
 Global options apply.
 
+## codekavach privacy explain
+
+Explain the effective privacy level of a file or candidate, axis by axis.
+
+```text
+Usage: codekavach privacy explain [OPTIONS] {subject}
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `SUBJECT` | TEXT | required | A project file path or a candidate id. |
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--project` | PATH | . | Project directory. |
+| `--scan` | TEXT | latest | Scan id, or latest. |
+
+Global options apply.
+
 ## codekavach privacy inspect
 
 Show original code next to the exact payload prepared for the LLM.
@@ -816,6 +970,28 @@ Show the privacy notice for the effective settings; it is not marked as shown.
 ```text
 Usage: codekavach privacy notice [OPTIONS]
 ```
+
+Global options apply.
+
+## codekavach privacy score
+
+Show the privacy score of a stored scan with every component and its kind.
+
+```text
+Usage: codekavach privacy score [OPTIONS] [target]
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `TARGET` | PATH | . | Project directory. |
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--scan` | TEXT | latest | Scan id, or latest. |
 
 Global options apply.
 
@@ -936,6 +1112,10 @@ Usage: codekavach report [OPTIONS] [target]
 | `--name` | TEXT | report | File name without extension. |
 | `--overwrite / --no-overwrite` | flag | on | Replace existing files. |
 | `--fail-fast` | flag | off | Stop at the first format that fails. |
+| `--baseline` | TEXT |  | Earlier scan id: also write a retest delta report. |
+| `--org` | TEXT |  | Organisation that prepared the report. |
+| `--client` | TEXT |  | Organisation the report is prepared for. |
+| `--manifest / --no-manifest` | flag | on | Write a SHA-256 integrity manifest. |
 
 Global options apply.
 
@@ -1028,6 +1208,75 @@ Usage: codekavach rules validate [OPTIONS] [path]
 
 Global options apply.
 
+## codekavach sbom
+
+Generate a CycloneDX 1.5 or SPDX 2.3 bill of materials from the manifests of a project.
+
+```text
+Usage: codekavach sbom [OPTIONS] [target]
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `TARGET` | PATH | . | Project directory. |
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--format`, `-f` | TEXT | cyclonedx | cyclonedx (default) or spdx. |
+| `--output`, `-o` | PATH |  | Write to this file instead of stdout. |
+
+Global options apply.
+
+## codekavach sca
+
+Refresh the advisory mirror and list vulnerable dependencies.
+
+```text
+Usage: codekavach sca [OPTIONS] COMMAND [ARGS]...
+```
+
+Run a sub-command with `--help` for its options.
+
+Global options apply.
+
+## codekavach sca list
+
+List the vulnerable dependencies of a project against the local mirror.
+
+```text
+Usage: codekavach sca list [OPTIONS] [target]
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `TARGET` | PATH | . | Project directory. |
+
+Global options apply.
+
+## codekavach sca update
+
+Download OSV snapshots, KEV and EPSS into the local data directory (the one network action).
+
+```text
+Usage: codekavach sca update [OPTIONS]
+```
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--ecosystem`, `-e` | TEXT (repeatable) |  | Ecosystem to mirror (repeatable). |
+| `--kev / --no-kev` | flag | on | Fetch the CISA KEV catalogue. |
+| `--epss / --no-epss` | flag | on | Fetch the FIRST EPSS scores. |
+
+Global options apply.
+
 ## codekavach scan
 
 Scan a code base and print a severity summary.
@@ -1074,6 +1323,89 @@ Usage: codekavach scan [OPTIONS] [target]
 
 Global options apply.
 
+## codekavach secrets
+
+Find hard-coded credentials; values are always masked.
+
+```text
+Usage: codekavach secrets [OPTIONS] COMMAND [ARGS]...
+```
+
+Run a sub-command with `--help` for its options.
+
+Global options apply.
+
+## codekavach secrets scan
+
+Scan a directory for hard-coded credentials and print masked results.
+
+```text
+Usage: codekavach secrets scan [OPTIONS] [target]
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `TARGET` | PATH | . | Directory to scan. |
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--history` | flag | off | Also scan lines added by past commits that are gone from the tree. |
+
+Global options apply.
+
+## codekavach serve
+
+Run the REST API server and the web dashboard.
+
+```text
+Usage: codekavach serve [OPTIONS]
+```
+
+**Options**
+
+| Option | Type or choices | Default | Description |
+|---|---|---|---|
+| `--host` | TEXT | 127.0.0.1 | Address to listen on. |
+| `--port` | INTEGER 1..65535 | 8080 | Port. |
+| `--data-dir` | PATH |  | Server data directory (database, scans, uploads). |
+| `--ui-dir` | PATH |  | Built dashboard to serve at / (default: ui/dist). |
+| `--workers` | INTEGER 1..32 | 2 | Scans that may run at once. |
+| `--print-openapi` | flag | off | Print the OpenAPI document and exit. |
+
+Global options apply.
+
+## codekavach suppress
+
+List the suppressions of a project.
+
+```text
+Usage: codekavach suppress [OPTIONS] COMMAND [ARGS]...
+```
+
+Run a sub-command with `--help` for its options.
+
+Global options apply.
+
+## codekavach suppress list
+
+List suppression-file entries and inline markers; exit 1 if any is inactive.
+
+```text
+Usage: codekavach suppress list [OPTIONS] [target]
+```
+
+**Arguments**
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `TARGET` | PATH | . | Project directory. |
+
+Global options apply.
+
 ## codekavach sync
 
 Send findings to a client system.
@@ -1090,7 +1422,7 @@ Global options apply.
 
 Create or update GitHub issues for a scan's findings and place them on a board.
 
-Creates or updates one issue per finding in the client's repository and places the items on the client's Projects v2 board. It does not modify code, open pull requests or push commits. The token comes from the secret reference integrations.github.token, never from an option. It needs the network and refuses --offline. Delivered by epic E34.
+Creates or updates one issue per finding in the client's repository and places the items on the client's Projects v2 board. It does not modify code, open pull requests or push commits. The token comes from the secret reference integrations.github.token, never from an option. A real run needs the network and refuses --offline; with --dry-run it reads the existing issues when a token is set (GET only) and prints what would be created, updated or closed.
 
 ```text
 Usage: codekavach sync github [OPTIONS] [target]

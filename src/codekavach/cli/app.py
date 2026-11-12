@@ -214,6 +214,14 @@ LAZY_COMMANDS: tuple[LazyEntry, ...] = (
               "Refresh the advisory mirror and list vulnerable dependencies."),
     LazyEntry("sbom", "codekavach.cli.sca:sbom_command", "command",
               "Generate a CycloneDX 1.5 or SPDX 2.3 bill of materials from the manifests of a project."),
+    LazyEntry("baseline", "codekavach.cli.baseline:baseline_app", "group",
+              "Record, show and clear the baseline of accepted findings."),
+    LazyEntry("suppress", "codekavach.cli.suppress:suppress_app", "group",
+              "List the suppressions of a project."),
+    LazyEntry("secrets", "codekavach.cli.secrets:secrets_app", "group",
+              "Find hard-coded credentials; values are always masked."),
+    LazyEntry("diff", "codekavach.cli.diff:diff_command", "command",
+              "Show the findings that are new, fixed and unchanged between two stored scans."),
 )  # fmt: skip
 
 

@@ -217,6 +217,26 @@ $ codekavach report --scan latest --format html --format sarif --output-dir code
 
 A report holds code snippets as evidence. Keep the report directory out of version control and give it the access of the code itself; `codekavach init --update-gitignore` adds it to `.gitignore`.
 
+### Baselines, suppressions, secrets and diffs
+
+These commands work on stored scans and local files; none of them opens a connection.
+
+```console
+$ codekavach baseline create .            # record the latest scan's findings as accepted
+$ codekavach baseline show .
+$ codekavach baseline clear .
+$ codekavach suppress list .
+$ codekavach secrets scan . --history
+$ codekavach diff scan_01H... latest --target .
+```
+
+- `baseline create PATH` writes the fingerprints, rule ids and locations of a stored scan (`--scan ID`, default the latest) to `aggregate.baseline_file`, by default `.codekavach/baseline.json`. Later scans treat those findings as known. An existing baseline is replaced only with `--force`. The file holds no code and no secret values, so it can be committed. `baseline show` lists the entries and `baseline clear` deletes the file.
+- `suppress list PATH` lists the entries of `aggregate.suppressions_file` (default `.codekavach/suppressions.yaml`) and every inline `codekavach:ignore` marker, with the justification. An entry without a justification or past its `expires` date, and a marker without a reason, is shown as `invalid` or `expired` because it silences nothing. The command exits 1 when any such entry exists.
+- `secrets scan PATH` runs the secret detectors over the files of a directory and prints one row per hit with the type, the confidence and a mask: at most the first two characters and the length. The value is not printed, logged or put in the JSON result. `--history` (or `secrets.history = true`) also reads the lines added by the last `secrets.history_max_commits` commits and reports credentials that are no longer in the working tree, with the short commit hash. The exit code is 1 when anything is found. A credential found in history is still valid until it is rotated; deleting the line does not revoke it.
+- `diff SCAN_A SCAN_B` compares two stored scans of the project in `--target` (default the current directory) by finding fingerprint and lists what is new in B, what is fixed (only in A) and how many are unchanged. `latest` is accepted for either argument. The exit code is 1 when there are new findings, so a pipeline can gate on regressions.
+
+The `--json` results of these commands use the envelope of section 8; they carry titles, severities and locations of findings and never evidence.
+
 ## 7 CI pipelines
 
 The `ci` profile is meant for a pipeline run. It fails the scan on findings of high severity, writes SARIF, JSON and HTML reports, limits the model requests to 200 and does not ask questions. A session is non-interactive when `CI` is set, when `--json` or `--no-input` is given, or when stdin or stderr is not a terminal. A question that cannot be asked is answered no, so a missing approval fails with an error that names the flag to pass.

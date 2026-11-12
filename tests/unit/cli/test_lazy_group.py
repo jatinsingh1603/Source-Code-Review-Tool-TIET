@@ -14,7 +14,7 @@ from tests.support.cli import run_cli
 
 ORDER = ["version", "scan", "report", "doctor", "completion", "init", "privacy", "providers",
          "plugins", "sync", "findings", "eval", "demo", "vault", "config", "rules", "serve", "sca",
-         "sbom"]  # fmt: skip
+         "sbom", "baseline", "suppress", "secrets", "diff"]  # fmt: skip
 
 
 def root() -> LazyGroup:

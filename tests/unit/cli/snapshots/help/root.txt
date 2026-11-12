@@ -61,6 +61,10 @@
 │ sca         Refresh the advisory mirror and list vulnerable dependencies.                        │
 │ sbom        Generate a CycloneDX 1.5 or SPDX 2.3 bill of materials from the manifests of a       │
 │             project.                                                                             │
+│ baseline    Record, show and clear the baseline of accepted findings.                            │
+│ suppress    List the suppressions of a project.                                                  │
+│ secrets     Find hard-coded credentials; values are always masked.                               │
+│ diff        Show the findings that are new, fixed and unchanged between two stored scans.        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
  Exit codes:
