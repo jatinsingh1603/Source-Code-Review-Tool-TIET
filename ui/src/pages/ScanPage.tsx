@@ -77,7 +77,7 @@ const SHORT: [RegExp, string][] = [
 ];
 const shortStage = (s: string) => SHORT.find(([r]) => r.test(s))?.[1] ?? s;
 
-type StageState = "done" | "run" | "wait" | "skip" | "fail";
+type StageState = "done" | "run" | "wait" | "skip" | "fail" | "stop";
 
 function deriveStages(events: Ev[], scan: Scan | undefined) {
   const state = new Map<string, "running" | "done" | "skipped" | "failed">();
@@ -91,7 +91,7 @@ function deriveStages(events: Ev[], scan: Scan | undefined) {
   return STAGES.map((g) => {
     const members = [...state.entries()].filter(([k]) => g.members(k));
     let s: StageState = "wait";
-    if (members.some(([, v]) => v === "running")) s = final ? (final === "completed" ? "done" : "fail") : "run";
+    if (members.some(([, v]) => v === "running")) s = final ? (final === "completed" ? "done" : final === "cancelled" ? "stop" : "fail") : "run";
     else if (members.some(([, v]) => v === "failed")) s = "fail";
     else if (members.length && members.every(([, v]) => v === "skipped")) s = "skip";
     else if (members.length) s = "done";
@@ -116,6 +116,7 @@ function stageCount(n: string, state: StageState, scan: Scan | undefined, events
   if (state === "wait") return "waiting";
   if (state === "skip") return n === "09" ? "off" : "skipped";
   if (state === "fail") return "failed";
+  if (state === "stop") return "stopped";
   const c = groupCount(n, events);
   const findings = events.filter((e) => e.type === "finding" && !e.phase).length;
   const fallback = state === "run" ? "running" : "done";
@@ -180,9 +181,10 @@ export default function ScanPage() {
       void qc.invalidateQueries({ queryKey: qk.scansAll });
       void qc.invalidateQueries({ queryKey: qk.stats });
       if (doneEv.status === "completed") toast.success("Scan completed", "Findings and the egress ledger are ready.");
-      else toast.error(`Scan ${doneEv.status}`);
+      // A cancel the viewer asked for is confirmed by the cancel button's own toast.
+      else if (doneEv.status === "failed") toast.error("Scan failed", scan?.error ?? undefined);
     }
-  }, [doneEv, running, id, qc, toast]);
+  }, [doneEv, running, id, qc, toast, scan?.error]);
 
   const stages = useMemo(() => deriveStages(events, scan), [events, scan]);
   const egress = useMemo(() => [...events].reverse().find((e) => e.type === "egress") as EgressEv | undefined, [events]);
