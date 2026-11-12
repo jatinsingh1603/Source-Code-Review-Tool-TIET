@@ -8,6 +8,7 @@ settings) and check the role of every new route.
 """
 
 import json
+import shutil
 import sys
 import time
 from collections.abc import Iterator
@@ -524,6 +525,8 @@ def test_evaluation_reads_the_latest_results(
     server: tuple[TestClient, Any], users: dict[str, dict[str, str]]
 ) -> None:
     client, state = server
+    # The server is shared by the module and pytest-randomly may run the evaluation job test first.
+    shutil.rmtree(state.config.data_dir / "evaluation", ignore_errors=True)
     empty = client.get(f"{API}/evaluation", headers=users["viewer"]).json()
     assert empty["available"] is False and empty["benchmarks"] == []
     root = state.config.data_dir / "evaluation" / "manual"
