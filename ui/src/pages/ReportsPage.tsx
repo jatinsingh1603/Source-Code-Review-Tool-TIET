@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useCurrentProject } from "@/app/project-context";
+import { useFollowScanProject } from "@/app/useSelectedScan";
 import { useFindings, usePrivacy, useReports, useScans, useSettings } from "@/api/queries";
 import { fetchReport, saveBlob } from "@/api/endpoints";
 import type { Finding, Severity } from "@/api/types";
@@ -26,6 +27,7 @@ const FORMAT_NAME: Record<string, string> = {
 export default function ReportsPage() {
   const [params, setParams] = useSearchParams();
   const { current } = useCurrentProject();
+  useFollowScanProject(params.get("scan"));
   const scansQ = useScans(current?.id);
   const scans = useMemo(() => sortScans(scansQ.data ?? []).filter((s) => s.status === "completed"), [scansQ.data]);
   const scanId = params.get("scan") ?? scans[0]?.id;
