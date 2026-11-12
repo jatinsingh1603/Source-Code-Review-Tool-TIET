@@ -87,6 +87,16 @@
   --ck-sev-info: 100 116 139;
   --ck-sev-info-soft: 236 240 245;
 
+  /* Chart marks for severity (validated for CVD separation; see ui/README.md).
+     Marks only: text stays in text tokens. */
+  --ck-chart-critical: 134 25 143;
+  --ck-chart-high: 220 38 38;
+  --ck-chart-medium: 232 163 23;
+  --ck-chart-low: 37 99 235;
+  --ck-chart-info: 148 163 184;
+  --ck-chart-grid: 228 231 240;
+  --ck-chart-axis: 110 120 140;
+
   /* Privacy levels L0 (nothing leaves) .. L4 (most context leaves) */
   --ck-lvl-0: 21 128 61;
   --ck-lvl-1: 13 148 136;
@@ -161,6 +171,14 @@
   --ck-sev-low-soft: 23 40 74;
   --ck-sev-info: 148 163 184;
   --ck-sev-info-soft: 36 42 58;
+
+  --ck-chart-critical: 196 58 214;
+  --ck-chart-high: 217 54 79;
+  --ck-chart-medium: 191 138 18;
+  --ck-chart-low: 61 132 240;
+  --ck-chart-info: 100 116 139;
+  --ck-chart-grid: 38 43 68;
+  --ck-chart-axis: 128 136 165;
 
   --ck-lvl-0: 74 222 128;
   --ck-lvl-1: 45 212 191;
