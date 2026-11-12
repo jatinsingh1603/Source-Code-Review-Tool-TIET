@@ -66,6 +66,8 @@ COPY pyproject.toml uv.lock README.md LICENSE ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-install-project --extra server --extra reports
 COPY src ./src
+# The wheel force-includes data/ as codekavach/data (pyproject.toml), so the build needs it here.
+COPY data ./data
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --extra server --extra reports
 # Bandit (Apache-2.0) is listed as a client-installed engine; the image ships the pinned version so
