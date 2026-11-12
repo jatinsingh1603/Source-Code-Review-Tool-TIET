@@ -127,11 +127,11 @@ jobs:
         # entries, which every edit above one of them causes. CI fails on a new finding only.
         run: |
           set +e
-          uv run pre-commit run detect-secrets --all-files > detect-secrets.txt 2>&1
+          uv run pre-commit run detect-secrets --all-files > secret-scan.log 2>&1
           status=$?
-          cat detect-secrets.txt
-          if grep -q "Potential secrets about to be committed" detect-secrets.txt; then exit 1; fi
-          if [ "$status" -ne 0 ] && ! grep -q "The baseline file was updated" detect-secrets.txt; then
+          cat secret-scan.log
+          if grep -q "Potential secrets about to be committed" secret-scan.log; then exit 1; fi
+          if [ "$status" -ne 0 ] && ! grep -q "The baseline file was updated" secret-scan.log; then
             exit "$status"
           fi
           exit 0
