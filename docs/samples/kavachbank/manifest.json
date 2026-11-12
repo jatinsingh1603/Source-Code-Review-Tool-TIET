@@ -1,0 +1,58 @@
+{
+  "schema": "codekavach.report-manifest/v1",
+  "report_id": "CK-RPT-2026-13RKHE0V",
+  "scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V",
+  "project": "KavachBank",
+  "classification": "Confidential",
+  "codekavach_version": "0.1.0.dev0",
+  "config_hash": "5f925e96e668b31760fca6d0a34d1f7958f413bcc58dcc002f346f80dc8b6f66",
+  "ledger_head_hash": "fc5127cbb93a05fb615e7562d0dfd992cacc7fa1f6f3efb9a1be5eb28e6673c1",
+  "generated_at": "2026-11-12T19:27:28.062713+00:00",
+  "files": [
+    {
+      "file": "report.compliance.html",
+      "size_bytes": 66881,
+      "sha256": "60b32c18d298bff3758f93c1955b981f2d74666247b2c48fbb0ba09ed9093e9e"
+    },
+    {
+      "file": "report.csv",
+      "size_bytes": 69499,
+      "sha256": "ced8596d534b80bb07ff3ee0ded30e4975b4255e13f8f906e2a358c2819da0cf"
+    },
+    {
+      "file": "report.docx",
+      "size_bytes": 106937,
+      "sha256": "002fd6d6ceb3197fbdcfbff88e87e8bca190f3fabcee257dea0be8224ebdeabf"
+    },
+    {
+      "file": "report.html",
+      "size_bytes": 590548,
+      "sha256": "cbacb511059d6b5e62ed78ac14a2c294566aafc55dfed1579326f8600b1c8e67"
+    },
+    {
+      "file": "report.json",
+      "size_bytes": 629354,
+      "sha256": "c5b1bd0bf51693d40ac45eb77ea68bc36ca8dd5f2e829ed6740528ce8f1da3e7"
+    },
+    {
+      "file": "report.md",
+      "size_bytes": 54892,
+      "sha256": "8e3346c6c692b3132bb26931ae4c1782e644d27efe61cbb635b29145c4388445"
+    },
+    {
+      "file": "report.pdf",
+      "size_bytes": 1580560,
+      "sha256": "653f6caaa62fe96da71a32027655de0c5031a8f976ae7b445813b6b52e61083b"
+    },
+    {
+      "file": "report.sarif",
+      "size_bytes": 250212,
+      "sha256": "acd04d6272972f621f424f85276adcb22bc64f318c722480a863d5bd745528d3"
+    },
+    {
+      "file": "report.xlsx",
+      "size_bytes": 34462,
+      "sha256": "b66d44ac5286963886ba9b591dcd528708378c751b3d4cbcd7141367ba5f1d08"
+    }
+  ]
+}

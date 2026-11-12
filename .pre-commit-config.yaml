@@ -9,13 +9,13 @@ repos:
     rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
-        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/)
+        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/|docs/samples/)
       - id: trailing-whitespace
         # Issue templates keep "- [ ] " and "Blocked by: " as fill-in prompts.
-        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/|\.github/ISSUE_TEMPLATE/)
+        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/|docs/samples/|\.github/ISSUE_TEMPLATE/)
       - id: mixed-line-ending
         args: [--fix=lf]
-        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/)
+        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/|docs/samples/)
       - id: check-yaml
       - id: check-toml
       - id: check-json
@@ -23,11 +23,13 @@ repos:
       - id: check-case-conflict
       - id: check-added-large-files
         args: [--maxkb=512]
+        # Generated sample reports (E31): the PDF and HTML of the KavachBank run exceed the limit.
+        exclude: ^docs/samples/
       - id: check-executables-have-shebangs
       - id: detect-private-key
-        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/)
+        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/|docs/samples/)
       - id: debug-statements
-        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/)
+        exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/|docs/samples/)
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.9
@@ -69,7 +71,9 @@ repos:
         # tests/support/synthetic.py by tests/integration/test_kavachbank_fixture.py. The Bandit
         # conformance case (E15-01) is Bandit's own JSON report, whose hard-coded password message
         # quotes a synthetic placeholder; JSON cannot carry a pragma and the file is replayed as is.
-        exclude: ^(fixtures/kavachbank/.*|uv\.lock|docs/schemas/index\.json|docs/schemas/examples/.*|tests/golden/config/(show_effective(_origin)?|starter_full|starter_profile_demo)\.toml|tests/golden/config/snapshot_demo\.json|tests/fixtures/detect/secrets/(positive/gcp_service_account_json|negative/lock_sri)\.txt|tests/fixtures/engines/bandit/basic/output\.json)$
+        # docs/samples/ holds generated reports of the KavachBank fixture: digests, fingerprints and
+        # the fixture's own (masked) code, checked by tests/unit/report/test_samples.py.
+        exclude: ^(fixtures/kavachbank/.*|docs/samples/.*|uv\.lock|docs/schemas/index\.json|docs/schemas/examples/.*|tests/golden/config/(show_effective(_origin)?|starter_full|starter_profile_demo)\.toml|tests/golden/config/snapshot_demo\.json|tests/fixtures/detect/secrets/(positive/gcp_service_account_json|negative/lock_sri)\.txt|tests/fixtures/engines/bandit/basic/output\.json)$
 
   - repo: local
     hooks:
