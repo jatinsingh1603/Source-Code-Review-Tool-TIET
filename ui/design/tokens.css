@@ -1,0 +1,181 @@
+/*
+ * CodeKavach design tokens.
+ *
+ * Source of truth: ui/design/codekavach-dashboard.html (the `.ck` block at the
+ * top of its <style>). Names are kept identical to the prototype so that
+ * `var(--accent)` in the prototype and in the React app mean the same thing.
+ *
+ * Theme: light only. The prototype defines no dark theme (every screen renders
+ * with theme 'light' and there is no dark token set), so none is derived here.
+ * If a dark theme is designed later, add it as `:root[data-theme="dark"]`.
+ *
+ * Usage: import once, before components.css.
+ *   import "../design/tokens.css";
+ *   import "../design/components.css";
+ *
+ * The tokens are declared on both `:root` and `.ck`, so they work whether the
+ * app mounts inside a `.ck` wrapper (as the prototype does) or not.
+ *
+ * Fonts (load in index.html, exactly as the prototype does):
+ *   <link rel="preconnect" href="https://fonts.googleapis.com">
+ *   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=Noto+Sans+Devanagari:wght@500;600&display=swap" rel="stylesheet">
+ */
+
+:root,
+.ck {
+  /* ---- Surfaces and lines (greyscale) ---- */
+  --bg: #F6F7F9;            /* Canvas: page background */
+  --surface: #FFFFFF;       /* Surface: cards, side nav, top bar, tables */
+  --surface-2: #FAFBFC;     /* Table head, flat card, search field, stage guard */
+  --surface-3: #F0F2F5;     /* Subtle: hover, active nav, hash chip, skeleton */
+  --border: #E4E7EC;        /* 1 px hairlines */
+  --border-strong: #D0D5DD; /* Line: inputs, buttons, outline controls */
+
+  /* ---- Text ---- */
+  --text: #101828;          /* Ink: body text and primary buttons */
+  --muted: #475467;         /* Secondary text, nav items */
+  --faint: #667085;         /* Captions, table heads, overlines */
+
+  /* ---- Accent (one accent only: links, selection, data) ---- */
+  --accent: #1D4ED8;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #EEF3FF;
+  --accent-line: #B9CCF7;
+
+  /* ---- Severity: marker colours ---- */
+  --crit: #D92D20;
+  --high: #F97316;
+  --med: #EAB308;
+  --low: #60A5FA;
+  --info: #98A2B3;
+  /* Severity: text on light backgrounds */
+  --crit-t: #B42318;
+  --high-t: #C4320A;
+  --med-t: #854A0E;
+  --low-t: #175CD3;
+  --info-t: #475467;
+  /* Severity: tinted backgrounds */
+  --crit-bg: #FEF3F2;
+  --high-bg: #FFF4ED;
+  --med-bg: #FEFBE8;
+  --low-bg: #EFF6FF;
+  --info-bg: #F2F4F7;
+
+  /* ---- Privacy (neutral, never a severity colour) ---- */
+  --priv: #344054;
+  --priv-bg: #F2F4F7;
+
+  /* ---- Status ---- */
+  --ok: #12B76A;
+  --ok-t: #067647;
+  --ok-bg: #ECFDF3;
+  --warn: #DC6803;
+  --warn-bg: #FFFAEB;
+  --bad: #D92D20;
+  --bad-bg: #FEF3F2;
+
+  /* ---- Privacy diff markup ---- */
+  --redact: #B42318;        /* <SECRET:...> placeholders */
+  --redact-bg: #FEE4E2;
+  --rename: #175CD3;        /* pseudonyms fn_a83c, v_19e2 */
+  --rename-bg: #E8F0FE;
+
+  /* ---- Code and syntax ---- */
+  --code-bg: #FBFBFC;
+  --syn-k: #1F2937;         /* keyword (.tk, also bold) */
+  --syn-s: #116329;         /* string (.ts) */
+  --syn-c: #6E7781;         /* comment (.tc, italic) */
+  --syn-f: #953800;         /* function (.tf) */
+  --syn-n: #0A3069;         /* number / constant (.tn) */
+
+  /* ---- Elevation: the design is flat ---- */
+  --shadow: none;
+
+  /*
+   * ---- Additions (not named in the prototype's token block) ----
+   * Literal values the prototype uses inline in component CSS, named here
+   * so the app does not need magic numbers. Values are unchanged.
+   */
+  --ln-num: #98A2B3;        /* code line numbers, console timestamps */
+  --code-hl: #F5F8FF;       /* highlighted code line (.ln.hl) */
+  --ok-line: #ABEFC6;       /* success banner / fixed chip border */
+  --warn-line: #FEDF89;     /* warning banner border */
+  --bad-line: #FDA29B;      /* danger button, bad banner, sink node border */
+  --pri-hover: #000000;     /* primary (ink) button hover */
+  --toast-sub: #D0D5DD;     /* secondary text in the dark toast */
+  --logo-accent-on-dark: #6E95F5; /* the blue logo segment on an ink background */
+
+  /* Heatmap ramp (.h0 to .h4) */
+  --hm-0: var(--surface-3);
+  --hm-1: #E4ECFD;
+  --hm-2: #BFD1F9;
+  --hm-3: #7D9FEF;
+  --hm-3-ink: #06163F;
+  --hm-4: #1D4ED8;
+
+  /* Risk matrix ramp (.r1 to .r5) */
+  --rm-1: #F2F4F7;
+  --rm-2: #E8F0FE;
+  --rm-3: #FEF7C3;
+  --rm-4: #FFE6D5;
+  --rm-5: #FEE4E2;
+
+  /* Printed report page (.page) */
+  --page-ink: #111827;
+  --page-title: #0B1B33;
+  --page-meta: #4B5563;
+  --page-line: #D7DCE4;
+  --page-th: #F4F6F8;
+
+  /* ---- Typography ---- */
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: "IBM Plex Serif", Georgia, serif;
+  --font-deva: "Noto Sans Devanagari", "IBM Plex Sans", sans-serif;
+
+  --fs-base: 14px;          /* body */
+  --lh-base: 1.5;
+  --fs-xs: 11.5px;          /* .xs */
+  --fs-sm: 12.5px;          /* .sm, .sub, labels */
+  --fs-overline: 11px;      /* .sec-h, .nav-h: uppercase, .08em tracking */
+  --fs-nav: 13.5px;
+  --fs-control: 13px;       /* buttons, inputs, tabs, table body */
+  --fs-section: 14px;       /* card titles, 600 */
+  --fs-h2: 16px;            /* in-page section headings, 600 */
+  --fs-page: 22px;          /* .ph h1, 600, -.01em */
+  --fs-kpi: 28px;           /* .kpi .k-v, 500, -.02em */
+  --fs-hero: 36px;          /* login headline, 650, -.025em */
+  --tracking-overline: .08em;
+  --tracking-page: -.01em;
+  --tracking-kpi: -.02em;
+
+  /* ---- Radii ---- */
+  --r-xs: 3px;              /* .rd/.rn marks, .cvss b */
+  --r-sm: 4px;              /* .tag, .chip, .lvl, .hash, .kbd */
+  --r-md: 6px;              /* .btn, .inp, .pill, .nav a, .seg */
+  --r-lg: 8px;              /* .card, .tbl-wrap, .code, .banner */
+  --r-xl: 10px;             /* sitemap boxes */
+  --r-full: 999px;          /* switch */
+
+  /* ---- Control heights ---- */
+  --h-btn: 36px;
+  --h-btn-sm: 30px;
+  --h-btn-xl: 48px;
+  --h-input: 36px;
+  --h-pill: 32px;
+  --h-chip: 24px;
+  --h-tag: 22px;
+  --h-nav: 34px;
+  --h-tab: 40px;
+
+  /* ---- Layout ---- */
+  --side-w: 236px;          /* side nav max width (flex-basis 228px) */
+  --content-max: 1440px;
+  --content-pad-y: 24px;
+  --content-pad-x: 28px;
+  --gap: 16px;              /* grid gap (.g) */
+  --gap-page: 20px;         /* between page sections (.content) */
+  --card-pad: 18px;
+  --rail-w: 360px;          /* right rail in .g-side */
+  --rail-l-w: 280px;        /* left rail in .g-side-l */
+}
