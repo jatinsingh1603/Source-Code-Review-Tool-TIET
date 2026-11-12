@@ -1,0 +1,10 @@
+# Override: run the published image instead of building it.
+#   docker compose -f docker-compose.yml -f deploy/docker/compose.ghcr.yml up -d --no-build
+# Used by scripts/demo-docker.sh. Pin CODEKAVACH_IMAGE to a sha-<short> tag for a repeatable demo.
+services:
+  codekavach:
+    image: ${CODEKAVACH_IMAGE:-ghcr.io/jatinsingh1603/codekavach:main}
+    pull_policy: always
+  codekavach-airgapped:
+    image: ${CODEKAVACH_IMAGE:-ghcr.io/jatinsingh1603/codekavach:main}
+    pull_policy: always
