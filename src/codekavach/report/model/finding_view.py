@@ -525,7 +525,11 @@ def _references(finding: Finding, entry: CweEntry) -> tuple[tuple[str, str | Non
                 f"OWASP Top 10 {ref.id} {ref.title or ''}".strip(),
                 f"https://owasp.org/Top10/{slug}_2021-{title}/",
             )
-    return tuple(refs.items())
+    unique: dict[str, tuple[str, str | None]] = {}
+    for title, url in refs.items():
+        key = (url or title).rstrip("/").lower()
+        unique.setdefault(key, (title, url))
+    return tuple(unique.values())
 
 
 def _verdict(finding: Finding) -> VerdictView | None:

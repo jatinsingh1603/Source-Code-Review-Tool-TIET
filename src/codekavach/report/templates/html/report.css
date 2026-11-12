@@ -134,5 +134,3 @@ footer.end { margin-top: 64px; padding-top: 14px; border-top: 1px solid var(--ru
 
 .code .ln.focus { outline: 2px solid var(--brand); outline-offset: -2px; }
 .nowrap { white-space: nowrap; }
-.ck-chart .ink { fill: var(--ink); }
-.ck-chart .mut { fill: var(--muted); }

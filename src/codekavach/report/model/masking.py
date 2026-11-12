@@ -35,6 +35,8 @@ _NAME_HINTS = (
     r"private[_-]?key|client[_-]?secret|auth[_-]?key|credential|signing[_-]?key|session[_-]?key|"
     r"encryption[_-]?key|enc[_-]?key|aes[_-]?key|hmac[_-]?key|jwt[_-]?secret|db[_-]?pass)"
 )
+# A value the pipeline already replaced by a typed placeholder is shown as the placeholder.
+_PLACEHOLDER = re.compile(r"<(?:SECRET|PII|TERM)(?::[^<>\s]{1,64})+>|<MASKED>")
 # Each pattern captures the secret value in the group named ``v``.
 _PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
     re.compile(r"(?P<v>\b(?:AKIA|ASIA|AGPA|AIDA|AROA)[A-Z0-9]{16}\b)"),
@@ -141,6 +143,9 @@ def mask_lines(
 ) -> tuple[tuple[str, ...], int]:
     """``lines`` with every detected secret masked, and the number of values masked.
 
+    Placeholder tokens such as ``<SECRET:aws_access_key>`` that an earlier stage put in place of a
+    secret are kept as they are and counted as masked values.
+
     The detectors run on the joined snippet, so an assignment that spans lines is still seen;
     the local patterns run line by line.
     """
@@ -161,7 +166,13 @@ def mask_lines(
     masked_total = 0
     out: list[str] = []
     for index, line in enumerate(lines):
-        spans = _merge([*per_line[index], *_pattern_spans(line)])
+        tokens = [m.span() for m in _PLACEHOLDER.finditer(line)]
+        masked_total += len(tokens)
+        spans = [
+            (start, end)
+            for start, end in _merge([*per_line[index], *_pattern_spans(line)])
+            if not any(start < t_end and t_start < end for t_start, t_end in tokens)
+        ]
         if not spans:
             out.append(line)
             continue

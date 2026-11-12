@@ -222,7 +222,7 @@
   <p>{{ v.description }}</p>
   {% for e in v.evidence %}
   <h4>Evidence{% if v.evidence|length > 1 %} ({{ e.role }}){% endif %}</h4>
-  <div class="code"><div class="cap">{{ e.path }} · lines {{ e.start_line }}{% if e.end_line != e.start_line %}-{{ e.end_line }}{% endif %}{% if e.caption %} · {{ e.caption }}{% endif %}{% if e.masked_values or e.masked_at_source %} · secrets masked{% endif %}</div>
+  <div class="code"><div class="cap">{{ e.path }} · lines {{ e.start_line }}{% if e.end_line != e.start_line %}-{{ e.end_line }}{% endif %}{% if e.caption %} · {{ e.caption }}{% endif %}{% if e.masked_values %} · {{ e.masked_values }} secret value{{ "" if e.masked_values == 1 else "s" }} masked{% endif %}</div>
   <pre aria-label="Evidence from {{ e.path }}">{% for row in snippet_rows(e) %}<span class="ln{{ ' hit' if row.marked else '' }}"><span class="no">{{ row.number }}</span>{{ row.html }}</span>{% endfor %}</pre></div>
   {% endfor %}
   {% if v.flow %}

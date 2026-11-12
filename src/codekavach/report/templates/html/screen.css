@@ -32,3 +32,5 @@ details.finding > summary::-webkit-details-marker { display: none; }
   .topbar, .toolbar, .noprint, .banner { display: none !important; }
   details.finding > .fbody { display: block; }
 }
+.ck-chart .ink { fill: var(--ink); }
+.ck-chart .mut { fill: var(--muted); }

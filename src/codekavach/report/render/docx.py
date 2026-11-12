@@ -216,7 +216,7 @@ def _finding(b: _Builder, v: FindingView) -> None:
     for evidence in v.evidence:
         b.para(
             f"Evidence: {evidence.path}, line {evidence.start_line}"
-            + (" (secrets masked)" if evidence.masked_values or evidence.masked_at_source else ""),
+            + (" (secrets masked)" if evidence.masked_values else ""),
             bold=True,
             colour=b.theme.brand,
         )
