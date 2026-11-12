@@ -61,6 +61,8 @@ def provider_settings(draw: st.DrawFn) -> dict[str, Any]:
         )
     if kind is ProviderKind.BEDROCK:
         data["region"] = "eu-west-1"
+    if kind is ProviderKind.VERTEX:
+        data["options"] = {"project": "demo-project", "location": "europe-west4"}
     if kind is ProviderKind.REPLAY:
         data["cassette_dir"] = "tests/cassettes"
     if kind is ProviderKind.CLI_BRIDGE:

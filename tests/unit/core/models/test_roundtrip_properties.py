@@ -38,7 +38,7 @@ from codekavach.core.models.egress import EgressRecord
 from codekavach.core.models.enums import Language, PrivacyLevel, ScanStatus, SegmentRole
 from codekavach.core.models.evidence import Evidence
 from codekavach.core.models.export import EXPORTED_MODELS
-from codekavach.core.models.finding import Finding
+from codekavach.core.models.finding import Finding, RiskRating
 from codekavach.core.models.location import CodeRegion, Location
 from codekavach.core.models.payload import SanitisedPayload
 from codekavach.core.models.scan import Project, Scan
@@ -120,6 +120,22 @@ MODEL_STRATEGIES: dict[type[KavachModel], SearchStrategy[Any]] = {
     Reference: s.findings()
     .filter(lambda finding: finding.references)
     .map(lambda finding: finding.references[0]),
+    RiskRating: st.builds(
+        RiskRating,
+        method_version=st.just("risk-1"),
+        cvss4_macrovector=st.none() | st.from_regex(r"[0-2]{6}", fullmatch=True),
+        owasp_likelihood=st.floats(0.0, 9.0, allow_nan=False),
+        owasp_impact=st.floats(0.0, 9.0, allow_nan=False),
+        owasp_likelihood_band=st.sampled_from(["low", "medium", "high"]),
+        owasp_impact_band=st.sampled_from(["low", "medium", "high"]),
+        owasp_overall=st.sampled_from(["note", "low", "medium", "high", "critical"]),
+        owasp_factors=st.lists(
+            st.tuples(st.sampled_from(["skill", "motive", "loss"]), st.integers(0, 9)), max_size=3
+        ).map(tuple),
+        matrix_label=st.sampled_from(["Low", "Medium", "High"]),
+        severity_source=st.sampled_from(["cvss4", "engine"]),
+        top25_rank=st.none() | st.integers(1, 25),
+    ),
 }
 EXEMPT: dict[type[KavachModel], str] = {
     KavachModel: "abstract base class; covered through every concrete model",

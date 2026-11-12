@@ -37,7 +37,11 @@ def test_external_packages_included() -> None:
 
 
 def test_only_the_adr_granted_modules_are_ignore_sources() -> None:
-    """The egress transport, and the key-management client granted by its ADR-0003 exception."""
+    """The egress transport, and the non-LLM clients granted by ADR-0003 exceptions.
+
+    The key-management client (ADR-0003-exception-kms.md) and the GitHub transport of E34 (the
+    exception table of ADR-0003 and docs/reference/cli-network-behaviour.md).
+    """
     config = _config()
     sources = set()
     for section in config.sections():
@@ -47,6 +51,7 @@ def test_only_the_adr_granted_modules_are_ignore_sources() -> None:
     assert sources == {
         "codekavach.privacy.egress.transport",
         "codekavach.privacy.vault.kms",
+        "codekavach.integrations.github.transport",
     }
 
 

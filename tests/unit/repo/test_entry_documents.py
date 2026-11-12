@@ -96,7 +96,7 @@ def test_readme_and_agents_give_the_same_four_commands() -> None:
 def test_readme_status_badge_and_stale_wording() -> None:
     text = read("README.md")
     assert "actions/workflows/ci.yml/badge.svg" in text
-    assert "foundations in place" in text.lower()
+    assert "> status: a working product" in text.lower()
     assert "coming with milestone M0" not in text
     assert "later scaffolding issue" not in text
     assert "follows in E01-34" not in text
