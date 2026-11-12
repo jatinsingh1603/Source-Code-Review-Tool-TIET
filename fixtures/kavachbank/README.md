@@ -57,6 +57,15 @@ hash, a random IV, an authorised and ownership-checked handler, and an escaped r
 | KB-SEC-007 | Razorpay key id (synthetic) | `services/web/config.js` |
 | KB-SEC-008 | Razorpay key secret (synthetic) | `services/web/config.js` |
 
+## Planted configuration weaknesses
+
+`deploy/Dockerfile`, `deploy/docker-compose.yml`, `deploy/k8s/api.yaml`, `infra/main.tf`,
+`.github/workflows/ci.yml` and `services/api/settings.yaml` carry the weaknesses the native IaC
+review (`analysis/iac`) must report: root user, floating tags, remote `ADD`, privileged containers,
+host mounts, public S3 and open security groups, unencrypted databases, `pull_request_target`
+checkout, script injection, unpinned actions, debug mode, wildcard CORS and weak TLS. Each is
+listed as `KB-IAC-nnn` in `ground-truth/manifest.yaml` with the rule id and line.
+
 ## Planted personal data
 
 `fixtures/seed/customers.json` holds two synthetic customers: an email, an international phone

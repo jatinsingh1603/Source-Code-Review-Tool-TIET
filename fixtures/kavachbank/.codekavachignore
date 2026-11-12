@@ -1,0 +1,2 @@
+# Replay cassettes are test data, not application code.
+cassettes/

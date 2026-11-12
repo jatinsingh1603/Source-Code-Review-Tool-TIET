@@ -47,6 +47,34 @@ planted_pii:
   - {id: KB-PII-009, subtype: upi_id, file: fixtures/seed/customers.json, line: 20, value_ref: "pii:upi_id"}
   - {id: KB-PII-010, subtype: credit_card, file: fixtures/seed/customers.json, line: 21, value_ref: "pii:credit_card:1"}
 
+planted_misconfigurations:
+  - {id: KB-IAC-001, rule: iac.docker.unpinned-base-image, file: deploy/Dockerfile, line: 1}
+  - {id: KB-IAC-002, rule: iac.docker.add-remote-url, file: deploy/Dockerfile, line: 3}
+  - {id: KB-IAC-003, rule: iac.docker.pipe-to-shell, file: deploy/Dockerfile, line: 4}
+  - {id: KB-IAC-004, rule: iac.docker.secret-in-env, file: deploy/Dockerfile, line: 5}
+  - {id: KB-IAC-005, rule: iac.docker.root-user, file: deploy/Dockerfile, line: 1}
+  - {id: KB-IAC-006, rule: iac.compose.privileged, file: deploy/docker-compose.yml, line: 4}
+  - {id: KB-IAC-007, rule: iac.compose.host-network, file: deploy/docker-compose.yml, line: 5}
+  - {id: KB-IAC-008, rule: iac.compose.docker-socket, file: deploy/docker-compose.yml, line: 6}
+  - {id: KB-IAC-009, rule: iac.compose.secret-in-environment, file: deploy/docker-compose.yml, line: 8}
+  - {id: KB-IAC-010, rule: iac.k8s.host-network, file: deploy/k8s/api.yaml, line: 15}
+  - {id: KB-IAC-011, rule: iac.k8s.host-path, file: deploy/k8s/api.yaml, line: 18}
+  - {id: KB-IAC-012, rule: iac.k8s.privileged, file: deploy/k8s/api.yaml, line: 24}
+  - {id: KB-IAC-013, rule: iac.k8s.run-as-root, file: deploy/k8s/api.yaml, line: 25}
+  - {id: KB-IAC-014, rule: iac.k8s.no-limits, file: deploy/k8s/api.yaml, line: 21}
+  - {id: KB-IAC-015, rule: iac.terraform.s3-public-acl, file: infra/main.tf, line: 3}
+  - {id: KB-IAC-016, rule: iac.terraform.open-security-group, file: infra/main.tf, line: 11}
+  - {id: KB-IAC-017, rule: iac.terraform.unencrypted-storage, file: infra/main.tf, line: 18}
+  - {id: KB-IAC-018, rule: iac.terraform.public-database, file: infra/main.tf, line: 19}
+  - {id: KB-IAC-019, rule: iac.actions.write-all-permissions, file: .github/workflows/ci.yml, line: 5}
+  - {id: KB-IAC-020, rule: iac.actions.pull-request-target-checkout, file: .github/workflows/ci.yml, line: 12}
+  - {id: KB-IAC-021, rule: iac.actions.script-injection, file: .github/workflows/ci.yml, line: 14}
+  - {id: KB-IAC-022, rule: iac.actions.unpinned-action, file: .github/workflows/ci.yml, line: 15}
+  - {id: KB-IAC-023, rule: iac.appconfig.debug-enabled, file: services/api/settings.yaml, line: 2}
+  - {id: KB-IAC-024, rule: iac.appconfig.cors-wildcard, file: services/api/settings.yaml, line: 3}
+  - {id: KB-IAC-025, rule: iac.appconfig.tls-verification-disabled, file: services/api/settings.yaml, line: 4}
+  - {id: KB-IAC-026, rule: iac.appconfig.weak-tls-version, file: services/api/settings.yaml, line: 5}
+
 business_domain_dictionary:
   - festival bonus
   - festival rate

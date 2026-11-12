@@ -77,6 +77,15 @@ class PlantedPii(_Strict):
     value_ref: str = Field(min_length=1)
 
 
+class PlantedMisconfiguration(_Strict):
+    """One planted configuration weakness; ``rule`` is the native IaC rule that must report it."""
+
+    id: str = Field(pattern=r"^KB-IAC-\d{3}$")
+    rule: str = Field(min_length=1)
+    file: str = Field(min_length=1)
+    line: StrictInt = Field(ge=1)
+
+
 class NegativeControl(_Strict):
     """The safe counterpart of a planted weakness: nothing may be reported at ``line``."""
 
@@ -94,6 +103,7 @@ class Manifest(_Strict):
     planted_vulnerabilities: tuple[PlantedVulnerability, ...]
     planted_secrets: tuple[PlantedSecret, ...]
     planted_pii: tuple[PlantedPii, ...]
+    planted_misconfigurations: tuple[PlantedMisconfiguration, ...] = ()
     business_domain_dictionary: tuple[str, ...]
 
     def demo_1_vulnerabilities(self) -> tuple[PlantedVulnerability, ...]:

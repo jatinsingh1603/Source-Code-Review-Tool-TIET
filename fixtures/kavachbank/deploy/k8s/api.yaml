@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kavachbank-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kavachbank-api
+  template:
+    metadata:
+      labels:
+        app: kavachbank-api
+    spec:
+      hostNetwork: true
+      volumes:
+        - name: host-logs
+          hostPath:
+            path: /var/log
+      containers:
+        - name: api
+          image: kavachbank/api:latest
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          ports:
+            - containerPort: 8000

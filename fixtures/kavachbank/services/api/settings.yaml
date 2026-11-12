@@ -1,0 +1,5 @@
+# KavachBank API runtime settings (deliberately insecure sample).
+debug: true
+cors_allowed_origins: "*"
+verify_ssl: false
+min_tls_version: TLSv1.0

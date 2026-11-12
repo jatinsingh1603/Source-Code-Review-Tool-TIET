@@ -1,0 +1,13 @@
+services:
+  api:
+    build: .
+    privileged: true
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      KB_ADMIN_PASSWORD: admin-pass-1
+  db:
+    image: postgres:16
+    ports:
+      - "5432:5432"
