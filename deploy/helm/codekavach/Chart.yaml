@@ -1,0 +1,14 @@
+apiVersion: v2
+name: codekavach
+description: Privacy-preserving, LLM-assisted secure source code review (API server and web dashboard)
+type: application
+version: 0.1.0
+appVersion: "0.1.0.dev0"
+kubeVersion: ">=1.27.0-0"
+home: https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET
+sources:
+  - https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET
+keywords: [security, sast, code-review, privacy, llm]
+annotations:
+  # Templates were rendered and linted with this Helm version (E39-02 technical notes).
+  codekavach.dev/tested-helm-version: "3.17"

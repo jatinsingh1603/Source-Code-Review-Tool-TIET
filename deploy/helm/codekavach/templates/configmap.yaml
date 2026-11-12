@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "codekavach.fullname" . }}
+  labels:
+    {{- include "codekavach.labels" . | nindent 4 }}
+data:
+  # Plain values only; secrets come from secrets.existingSecret.
+  {{- range $key, $value := .Values.env }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

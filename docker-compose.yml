@@ -1,0 +1,98 @@
+# CodeKavach local stack (E39-02).
+#
+#   cp .env.example .env          # then fill in the values you need; never commit .env
+#   docker compose up -d --build  # dashboard on http://127.0.0.1:8080
+#
+# Profiles
+#   (default)    codekavach: API server, web dashboard and CLI in one container; SQLite state in
+#                the named volume codekavach-data.
+#   local-llm    adds an Ollama container so the model runs on this machine:
+#                  docker compose --profile local-llm up -d
+#                  docker compose exec ollama ollama pull qwen2.5-coder:7b
+#   airgapped    runs codekavach-airgapped on an internal network with no route out; only the
+#                mock, replay and local Ollama providers work there:
+#                  docker compose --profile airgapped up -d codekavach-airgapped
+#
+# The port is bound to 127.0.0.1 only. To expose the dashboard on a LAN, set CODEKAVACH_BIND.
+
+name: codekavach
+
+x-codekavach-env: &codekavach-env
+  # Plain value: password of the built-in "admin" account created on first start.
+  CODEKAVACH_ADMIN_PASSWORD: ${CODEKAVACH_ADMIN_PASSWORD:-kavach-admin}
+  # Secret value read at run time: AgentRouter API key (provider "agentrouter"). Empty = offline.
+  CODEKAVACH_AGENTROUTER_API_KEY: ${CODEKAVACH_AGENTROUTER_API_KEY:-}
+  # Secret value read at run time: passphrase that derives the pseudonym vault key.
+  CODEKAVACH_VAULT_PASSPHRASE: ${CODEKAVACH_VAULT_PASSPHRASE:-change-me-vault-passphrase}
+  # The default provider, model and privacy level are chosen in the dashboard (Settings) and per
+  # scan; nothing here selects a remote provider by itself.
+
+services:
+  codekavach:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile
+      args:
+        VERSION: ${CODEKAVACH_VERSION:-0.1.0.dev0}
+        REVISION: ${CODEKAVACH_REVISION:-local}
+    image: ${CODEKAVACH_IMAGE:-codekavach:local}
+    restart: unless-stopped
+    ports:
+      - "${CODEKAVACH_BIND:-127.0.0.1}:${CODEKAVACH_PORT:-8080}:8080"
+    environment:
+      <<: *codekavach-env
+      # Used when the local-llm profile is running (provider "ollama").
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - codekavach-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  ollama:
+    profiles: ["local-llm"]
+    image: ollama/ollama:0.12.6
+    restart: unless-stopped
+    environment:
+      # Model tags ending in -cloud or :cloud run on the vendor's servers even though the client
+      # still talks to localhost (docs/research/INSIGHTS.md section 7). Refuse them.
+      OLLAMA_NO_CLOUD: "1"
+    volumes:
+      - ollama-models:/root/.ollama
+    # No published port: only the codekavach container reaches it, on the compose network.
+
+  codekavach-airgapped:
+    profiles: ["airgapped"]
+    image: ${CODEKAVACH_IMAGE:-codekavach:local}
+    restart: unless-stopped
+    networks: [airgap]
+    environment:
+      <<: *codekavach-env
+      CODEKAVACH_AGENTROUTER_API_KEY: ""
+      CODEKAVACH_PROVIDER: mock
+      CODEKAVACH_PROFILE: airgapped
+    volumes:
+      - codekavach-airgapped-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # An internal network has no default route, so a port cannot be published. Reach the
+    # dashboard with:  docker compose --profile airgapped exec codekavach-airgapped ...
+    # or attach a reverse proxy to the "airgap" network.
+
+volumes:
+  codekavach-data:
+  codekavach-airgapped-data:
+  ollama-models:
+
+networks:
+  airgap:
+    internal: true

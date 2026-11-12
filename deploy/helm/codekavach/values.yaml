@@ -1,0 +1,110 @@
+# Default values for the CodeKavach chart (E39-02).
+#
+# The chart never contains a secret value. Provider keys, the admin password and the vault
+# passphrase are read from an existing Kubernetes Secret named in `secrets.existingSecret`:
+#
+#   kubectl create secret generic codekavach-secrets \
+#     --from-literal=CODEKAVACH_ADMIN_PASSWORD='...' \
+#     --from-literal=CODEKAVACH_VAULT_PASSPHRASE='...' \
+#     --from-literal=CODEKAVACH_AGENTROUTER_API_KEY='...'
+#   helm install codekavach deploy/helm/codekavach --set secrets.existingSecret=codekavach-secrets
+
+image:
+  repository: codekavach
+  tag: local
+  # Prefer a digest in production: digest: sha256:...
+  digest: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# One replica: the server keeps its SQLite state on the persistent volume.
+replicaCount: 1
+
+secrets:
+  # Name of an existing Secret holding the keys listed in `secrets.keys`. Required.
+  existingSecret: codekavach-secrets
+  # Keys read from that Secret into the environment. A missing optional key is ignored.
+  keys:
+    - name: CODEKAVACH_ADMIN_PASSWORD
+      optional: false
+    - name: CODEKAVACH_VAULT_PASSPHRASE
+      optional: false
+    - name: CODEKAVACH_AGENTROUTER_API_KEY
+      optional: true
+
+# Plain (non-secret) environment.
+env:
+  CODEKAVACH_LOG_FORMAT: json
+  # Set to "airgapped" to disable every remote provider and integration.
+  # CODEKAVACH_PROFILE: airgapped
+
+serviceAccount:
+  create: true
+  name: ""
+  automountServiceAccountToken: false
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: codekavach.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  existingClaim: ""
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 4Gi
+
+networkPolicy:
+  enabled: true
+  # Default-deny egress with one allow-list entry per configured provider host: the deployment
+  # level expression of invariant I1 and of privacy.egress.provider_host_allowlist.
+  # NetworkPolicy matches IP blocks, not host names; list the CIDRs that serve each host, or use
+  # a CNI with FQDN policies (Cilium toNFQDNs) and translate these entries.
+  providerEgress:
+    - host: agentrouter.org
+      cidrs: []          # e.g. ["203.0.113.0/24"]; empty = no egress for this host
+      ports: [443]
+  # Namespaces whose pods may reach the dashboard (empty = any pod in the cluster).
+  ingressFromNamespaces: []
+  # Allow DNS lookups (kube-dns) so provider hosts resolve.
+  allowDns: true
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

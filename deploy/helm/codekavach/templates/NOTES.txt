@@ -1,0 +1,17 @@
+CodeKavach is starting.
+
+1. Reach the dashboard:
+{{- if .Values.ingress.enabled }}
+{{- range .Values.ingress.hosts }}
+   http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}/
+{{- end }}
+{{- else }}
+   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "codekavach.fullname" . }} 8080:{{ .Values.service.port }}
+   then open http://127.0.0.1:8080/
+{{- end }}
+
+2. Log in as "admin" with the CODEKAVACH_ADMIN_PASSWORD stored in the secret
+   "{{ .Values.secrets.existingSecret }}".
+
+3. Egress is default-deny{{ if .Values.networkPolicy.enabled }} (NetworkPolicy enabled){{ else }} only if your cluster enforces it (networkPolicy.enabled=false){{ end }}.
+   Remote providers work only for hosts listed in networkPolicy.providerEgress with CIDRs.

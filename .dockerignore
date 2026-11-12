@@ -1,0 +1,63 @@
+# Build context filter for deploy/docker/Dockerfile (E39-02).
+# This file is a privacy control, not tidiness: anything not excluded here can end up in an
+# image layer. tests/unit/deploy/test_dockerignore.py asserts each exclusion below.
+
+# Version control and local environments
+.git
+.github
+.venv
+venv
+**/__pycache__
+**/*.py[cod]
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+**/*.pem
+**/*.key
+codekavach.local.toml
+
+# CodeKavach state: vaults and ledgers contain client code and mappings
+.codekavach
+**/.codekavach
+**/*.vault
+**/*.ledger.jsonl
+scan-output
+reports-out
+demo-out
+
+# Tool caches and build output
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.hypothesis
+.import_linter_cache
+.backlog-state
+.coverage
+.coverage.*
+htmlcov
+coverage.xml
+prof.out
+dist
+build
+*.egg-info
+
+# Dashboard dependencies and output (rebuilt inside the image)
+ui/node_modules
+ui/dist
+**/node_modules
+
+# Not needed at run time: tests, evaluation datasets, documentation (schemas excepted)
+tests
+eval-data
+datasets
+extensions
+action
+tools
+docs
+!docs/schemas
+fixtures/*
+!fixtures/kavachbank
+deploy/bundle/out
+deploy/helm

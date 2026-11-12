@@ -1,0 +1,56 @@
+{{- if .Values.networkPolicy.enabled }}
+# Default-deny egress; one allow-list entry per configured provider host (invariant I1).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "codekavach.fullname" . }}
+  labels:
+    {{- include "codekavach.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "codekavach.selectorLabels" . | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - ports:
+        - port: 8080
+          protocol: TCP
+      {{- with .Values.networkPolicy.ingressFromNamespaces }}
+      from:
+        {{- range . }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+      {{- end }}
+  egress:
+    {{- if .Values.networkPolicy.allowDns }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    {{- end }}
+    {{- range .Values.networkPolicy.providerEgress }}
+    {{- if .cidrs }}
+    # provider host: {{ .host }}
+    - to:
+        {{- range .cidrs }}
+        - ipBlock:
+            cidr: {{ . }}
+        {{- end }}
+      ports:
+        {{- range .ports }}
+        - port: {{ . }}
+          protocol: TCP
+        {{- end }}
+    {{- end }}
+    {{- end }}
+{{- end }}
