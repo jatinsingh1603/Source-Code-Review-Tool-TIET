@@ -29,6 +29,7 @@ from typing import Final, cast
 
 from pydantic import BaseModel
 
+from codekavach.config import Settings
 from codekavach.config.models.llm import ProviderSettings
 from codekavach.core.log import get_logger
 from codekavach.core.models.payload import SanitisedPayload
@@ -55,9 +56,29 @@ from codekavach.privacy.egress.session import EgressSession
 
 _log = get_logger("codekavach.llm.stages")
 SESSION_FACTORY = ("codekavach.privacy.stages", "open_egress_session")
+MAX_TIMEOUT_SECONDS: Final = 3600
 
 
-def _open_session(ctx: RunContext) -> AbstractContextManager[EgressSession]:
+def request_timeout(settings: Settings, provider: ProviderSettings) -> Settings:
+    """``settings`` with the provider's ``options.timeout_seconds`` as ``llm.timeout_seconds``.
+
+    For a serial gateway that keeps working on a request the client gave up on, abandoning a
+    long answer only queues the retry behind it; such a provider asks for a longer timeout. The
+    option can only raise the configured timeout (capped at one hour), never lower it.
+    """
+    raw = provider.options.get("timeout_seconds")
+    if not isinstance(raw, int) or isinstance(raw, bool):
+        return settings
+    wanted = min(max(raw, settings.llm.timeout_seconds), MAX_TIMEOUT_SECONDS)
+    if wanted == settings.llm.timeout_seconds:
+        return settings
+    llm = settings.llm.model_copy(update={"timeout_seconds": wanted})
+    return settings.model_copy(update={"llm": llm})
+
+
+def _open_session(
+    ctx: RunContext, settings: Settings | None = None
+) -> AbstractContextManager[EgressSession]:
     """The egress session of this scan, built by the privacy package that owns the vault.
 
     Named and imported at run time, not at import time: the LLM layer may not import the vault,
@@ -70,7 +91,7 @@ def _open_session(ctx: RunContext) -> AbstractContextManager[EgressSession]:
     if ctx.state_dir is None:
         raise RuntimeError("llm-review needs the state directory of the ledger")
     return factory(
-        settings=ctx.config,
+        settings=settings or ctx.config,
         state_dir=ctx.state_dir,
         scan_id=ctx.scan_id,
         consent=ctx.consent,
@@ -199,7 +220,7 @@ class LlmReviewStage:
                 summary=estimate.describe(),
             )
         verdicts: list[CandidateVerdict] = []
-        with _open_session(ctx) as egress:
+        with _open_session(ctx, request_timeout(ctx.config, provider_settings)) as egress:
             # E22-03: the response cache, the scan budget and retries wrap the egress session
             llm = ctx.config.llm
             managed = ManagedSession.for_settings(

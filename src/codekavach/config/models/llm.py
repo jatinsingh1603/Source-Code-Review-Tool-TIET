@@ -144,6 +144,11 @@ PRESETS: Mapping[str, ProviderPreset] = MappingProxyType(
                     # llm.review_limit says otherwise.
                     "serial": True,
                     "review_limit": 8,
+                    # The gateway reasons at maximum effort whatever is asked, so an answer can
+                    # take minutes and thousands of tokens: room for both, rather than a cut-off
+                    # answer or an abandoned request the gateway keeps working on.
+                    "max_output_tokens": 16384,
+                    "timeout_seconds": 300,
                 }
             ),
             description="AgentRouter gateway (OpenAI Responses API)",

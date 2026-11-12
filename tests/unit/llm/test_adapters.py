@@ -537,3 +537,17 @@ def test_the_combined_review_is_cached_and_keyed_apart_from_triage(tmp_path: Any
     assert (fake.calls, hit.body, second.budget.cache_hits) == (1, OK_BODY, 1)
     ask(managed(fake, [], cache=cache), "triage")  # another task is another question
     assert fake.calls == 2
+
+
+def test_a_serial_provider_only_raises_the_request_timeout() -> None:
+    from codekavach.config import Settings  # noqa: PLC0415
+    from codekavach.llm.stages import request_timeout  # noqa: PLC0415
+
+    router = ProviderSettings.model_validate({"preset": "agentrouter"})
+    base = Settings.model_validate({})
+    assert request_timeout(base, router).llm.timeout_seconds == 300
+    assert base.llm.timeout_seconds == 120  # the original is left as it was
+    longer = Settings.model_validate({"llm": {"timeout_seconds": 900}})
+    assert request_timeout(longer, router).llm.timeout_seconds == 900
+    plain = ProviderSettings.model_validate({"kind": "mock"})
+    assert request_timeout(base, plain) is base
