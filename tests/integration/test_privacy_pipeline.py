@@ -93,7 +93,8 @@ def scan(
     loaded = load_settings(
         target=root,
         env={"CODEKAVACH_HOME": str(root.parent / home), **ENV, **(env or {})},
-        cli_overrides=overrides,
+        # Triage only: one request per payload (explain and remediate are tested in tests/unit/llm).
+        cli_overrides={"llm": {"tasks": ["triage"]}, **(overrides or {})},
     )
     return run_scan(
         loaded,

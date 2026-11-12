@@ -38,6 +38,7 @@ from codekavach.core.pipeline.items import (
 )
 from codekavach.core.pipeline.stage import StageCategory
 from codekavach.core.store.base import ArtefactTypeError
+from codekavach.llm.budget import estimate_scan
 from codekavach.llm.cache import CACHE_DIR, ResponseCache
 from codekavach.llm.lifecycle import ManagedSession
 from codekavach.llm.providers.base import OfflineProvider
@@ -133,6 +134,21 @@ class LlmReviewStage:
             raise RuntimeError("llm-review needs the state directory of the ledger")
         provider_id, provider_settings = ctx.config.llm.selected_provider()
         provider = build_provider(provider_id, provider_settings, model=ctx.config.llm.model)
+        if not isinstance(provider, OfflineProvider):
+            # E22-03: a pre-flight estimate from the payload sizes; contacts nothing.
+            estimate = estimate_scan(
+                [len(str(payload.text).encode("utf-8")) for payload in payloads],
+                provider_settings,
+            )
+            _log.info(
+                "llm_preflight_estimate",
+                provider=provider_id,
+                triage_requests=estimate.requests,
+                input_tokens=estimate.input_tokens,
+                output_tokens=estimate.output_tokens,
+                cost_usd=estimate.cost_usd,
+                summary=estimate.describe(),
+            )
         verdicts: list[CandidateVerdict] = []
         with _open_session(ctx) as egress:
             # E22-03: the response cache, the scan budget and retries wrap the egress session
