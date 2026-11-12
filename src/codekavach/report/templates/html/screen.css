@@ -3,14 +3,14 @@
   color-scheme: dark;
   --ink: #e6eaf2; --muted: #9aa5b8; --rule: #2d3646; --surface: #10151e; --panel: #171e2a;
   --code-bg: #131a25; --hit: #3a3416; --brand: #5b8def; --accent: #26a69a;
-  --critical-bg: #2c1838; --high-bg: #361a1d; --medium-bg: #36251a; --low-bg: #332d16; --info-bg: #172741;
+  --critical: #ab47bc; --high: #e53935; --critical-bg: #2c1838; --high-bg: #361a1d; --medium-bg: #36251a; --low-bg: #332d16; --info-bg: #172741;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
     --ink: #e6eaf2; --muted: #9aa5b8; --rule: #2d3646; --surface: #10151e; --panel: #171e2a;
     --code-bg: #131a25; --hit: #3a3416; --brand: #5b8def; --accent: #26a69a;
-    --critical-bg: #2c1838; --high-bg: #361a1d; --medium-bg: #36251a; --low-bg: #332d16; --info-bg: #172741;
+    --critical: #ab47bc; --high: #e53935; --critical-bg: #2c1838; --high-bg: #361a1d; --medium-bg: #36251a; --low-bg: #332d16; --info-bg: #172741;
   }
 }
 /* Topbar (interactive HTML only) */

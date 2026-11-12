@@ -35,7 +35,7 @@ def bar_chart(
         return (
             f'<svg xmlns="http://www.w3.org/2000/svg" role="img" width="{width}" height="40" '
             f'viewBox="0 0 {width} 40"><title>{_e(title)}</title><text x="0" y="24" {_FONT} '
-            f'font-size="12" fill="{theme.muted}">No data</text></svg>'
+            f'font-size="12" class="mut" fill="{theme.muted}">No data</text></svg>'
         )
     peak = max(value for _, value, _ in rows) or 1
     plot = width - label_width - 40
@@ -52,7 +52,7 @@ def bar_chart(
         shown = label if len(label) <= 30 else label[:29] + "…"
         parts.append(
             f'<text x="{label_width - 8}" y="{y + bar_h - 5}" text-anchor="end" {_FONT} '
-            f'font-size="11" fill="{theme.ink}">{_e(shown)}</text>'
+            f'font-size="11" class="ink" fill="{theme.ink}">{_e(shown)}</text>'
         )
         if length:
             parts.append(
@@ -61,7 +61,7 @@ def bar_chart(
             )
         parts.append(
             f'<text x="{label_width + length + 6}" y="{y + bar_h - 5}" {_FONT} font-size="11" '
-            f'font-weight="600" fill="{theme.ink}">{value}</text>'
+            f'font-weight="600" class="ink" fill="{theme.ink}">{value}</text>'
         )
     parts.append("</svg>")
     return "".join(parts)
@@ -106,9 +106,9 @@ def donut(
         offset += length
     parts.append(
         f'<text x="{cx}" y="{cy + 2}" text-anchor="middle" {_FONT} font-size="28" '
-        f'font-weight="700" fill="{theme.ink}">{total}</text>'
+        f'font-weight="700" class="ink" fill="{theme.ink}">{total}</text>'
         f'<text x="{cx}" y="{cy + 20}" text-anchor="middle" {_FONT} font-size="10" '
-        f'fill="{theme.muted}">FINDINGS</text></svg>'
+        f'class="mut" fill="{theme.muted}">FINDINGS</text></svg>'
     )
     return "".join(parts)
 
@@ -141,7 +141,7 @@ def risk_matrix(
         y = top + row * cell
         parts.append(
             f'<text x="{left - 8}" y="{y + cell / 2 + 4}" text-anchor="end" {_FONT} '
-            f'font-size="11" fill="{theme.muted}">{likelihood}</text>'
+            f'font-size="11" class="mut" fill="{theme.muted}">{likelihood}</text>'
         )
         for col in range(5):
             impact = col + 1
@@ -163,14 +163,15 @@ def risk_matrix(
     base = top + 5 * cell
     parts.extend(
         f'<text x="{left + col * cell + cell / 2}" y="{base + 16}" text-anchor="middle" '
-        f'{_FONT} font-size="11" fill="{theme.muted}">{col + 1}</text>'
+        f'{_FONT} font-size="11" class="mut" fill="{theme.muted}">{col + 1}</text>'
         for col in range(5)
     )
     parts.append(
         f'<text x="{left + 5 * cell / 2}" y="{base + 36}" text-anchor="middle" {_FONT} '
-        f'font-size="11" font-weight="600" fill="{theme.ink}">Impact</text>'
+        f'font-size="11" font-weight="600" class="ink" fill="{theme.ink}">Impact</text>'
         f'<text x="14" y="{top + 5 * cell / 2}" text-anchor="middle" {_FONT} font-size="11" '
-        f'font-weight="600" fill="{theme.ink}" transform="rotate(-90 14 {top + 5 * cell / 2})">'
+        f'font-weight="600" class="ink" fill="{theme.ink}" '
+        f'transform="rotate(-90 14 {top + 5 * cell / 2})">'
         "Likelihood</text></svg>"
     )
     return "".join(parts)
