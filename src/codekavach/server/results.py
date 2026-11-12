@@ -615,6 +615,13 @@ class ScanResults:
                             source_line = segment.region.start_line
                         if role == "primary" and sink_line is None:
                             sink_line = segment.region.start_line
+                    # The candidate's own location is the sink; a primary segment that covers a
+                    # whole function or file starts above it.
+                    located = entry.candidate.locations if entry.candidate is not None else ()
+                    if located and str(located[0].path) == path:
+                        line = int(located[0].start_line)
+                        if line in slice_lines:
+                            sink_line = line
                     break
         marks = markup(payload_text, "payload")
         kinds = Counter(str(item["kind"]) for item in marks)
