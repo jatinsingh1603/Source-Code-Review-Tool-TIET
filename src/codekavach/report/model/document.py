@@ -18,6 +18,11 @@ from codekavach.core.models.base import DataClassification, KavachModel
 from codekavach.core.models.finding import Finding
 from codekavach.core.models.scan import Scan
 from codekavach.core.models.summary import ScanSummary
+from codekavach.report.model.control import DocumentControl
+from codekavach.report.model.finding_view import FindingView
+from codekavach.report.model.method import Methodology, RatingMethod
+from codekavach.report.model.scope import Coverage, EngagementScope, Limitation
+from codekavach.report.narrative.base import AggregatedFacts, NarrativeBlock, RoadmapItem
 
 NOT_COVERED: Final = (
     "What this attestation does not cover. The zero-leak check is verbatim: it looks for the "
@@ -74,6 +79,28 @@ class PrivacyAttestation(KavachModel):
     zero_leak: ZeroLeak = ZeroLeak()
     retention: str = "not set"
     not_covered: str = NOT_COVERED
+    chain_ok: bool | None = None
+    chain_detail: str | None = None
+    requests_sent: int = Field(default=0, ge=0)
+    requests_blocked: int = Field(default=0, ge=0)
+    tokens_prompt: int = Field(default=0, ge=0)
+    tokens_completion: int = Field(default=0, ge=0)
+    placeholders_by_type: tuple[tuple[str, int], ...] = ()
+    placeholders_counted: bool = False
+
+    @property
+    def placeholders_total(self) -> int:
+        """The number of placeholders across every payload."""
+        return sum(count for _, count in self.placeholders_by_type)
+
+    @property
+    def chain_text(self) -> str:
+        """One line on the ledger hash-chain verification."""
+        if self.chain_ok is None:
+            return "not verified in this run"
+        if self.chain_ok:
+            return "verified: every entry links to its predecessor and its hash recomputes"
+        return f"FAILED: {self.chain_detail or 'the chain does not verify'}"
 
     def figure(self, name: str, default: str = "n/a") -> str:
         """One disclosure figure by name."""
@@ -81,7 +108,11 @@ class PrivacyAttestation(KavachModel):
 
 
 class ReportDocument(KavachModel):
-    """The minimal report of Demo 1: title, scan, summary, findings and privacy attestation."""
+    """The audit report: control, narrative, scope, method, findings, attestation, appendices.
+
+    The Demo 1 fields (title to tools) are kept; the audit fields that E30 adds all have
+    defaults, so a renderer can rely on them and an older caller still validates.
+    """
 
     DATA_CLASSIFICATION: ClassVar[DataClassification] = DataClassification.RAW
 
@@ -95,6 +126,28 @@ class ReportDocument(KavachModel):
     not_reviewed: tuple[tuple[str, int], ...] = ()
     privacy_attestation: PrivacyAttestation | None = None
     tools: tuple[tuple[str, str], ...] = ()
+    report_id: str = "CK-RPT"
+    version: str = "1.0"
+    project_name: str = "Project"
+    organisation: str = "CodeKavach"
+    prepared_for: str = "Client"
+    control: DocumentControl | None = None
+    scope: EngagementScope | None = None
+    coverage: Coverage = Coverage()
+    methodology: Methodology = Methodology()
+    rating_method: RatingMethod = RatingMethod()
+    views: tuple[FindingView, ...] = ()
+    facts: AggregatedFacts | None = None
+    executive: tuple[NarrativeBlock, ...] = ()
+    roadmap: tuple[RoadmapItem, ...] = ()
+    limitations: tuple[Limitation, ...] = ()
+
+    def view(self, finding_id: str) -> FindingView | None:
+        """The view of the finding ``finding_id``."""
+        for item in self.views:
+            if item.finding_id == finding_id:
+                return item
+        return None
 
 
 class ReportOutput(KavachModel):
