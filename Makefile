@@ -144,3 +144,11 @@ bundle: ## Build the air-gapped bundle in deploy/bundle/out
 helm-lint: ## Lint and render the Helm chart
 	helm lint deploy/helm/codekavach
 	helm template codekavach deploy/helm/codekavach > /dev/null
+
+# --- Demo: published image via scripts/demo-docker.sh (docs/demo/docker.md) ---
+.PHONY: demo-docker demo-docker-down
+demo-docker: ## Run the published image and seed a sample scan (docs/demo/docker.md)
+	scripts/demo-docker.sh --seed
+
+demo-docker-down: ## Stop the demo stack, keep its data
+	scripts/demo-docker.sh --down
