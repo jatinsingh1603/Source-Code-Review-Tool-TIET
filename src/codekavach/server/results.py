@@ -156,13 +156,55 @@ def finding_columns(finding: "Finding") -> dict[str, Any]:
     }
 
 
+LEVEL_WORDS: Final = {1: "Very low", 2: "Low", 3: "Medium", 4: "High", 5: "Very high"}
+
+
+def _kb_entry(cwes: list[int]) -> Any:
+    """The knowledge-base entry of the first known CWE (``None`` without the catalogue)."""
+    try:
+        from codekavach.risk.taxonomy.loader import load_knowledge_base  # noqa: PLC0415
+
+        base = load_knowledge_base()
+    except Exception:  # noqa: BLE001 - the catalogue is optional enrichment
+        return None
+    if base is None:
+        return None
+    for cwe in cwes:
+        entry = base.entry(cwe)
+        if entry is not None:
+            return entry
+    return None
+
+
+def _cwe_numbers(data: dict[str, Any]) -> list[int]:
+    numbers = []
+    for item in data.get("cwe") or []:
+        try:
+            numbers.append(int(str(item).upper().removeprefix("CWE-")))
+        except ValueError:
+            continue
+    return numbers
+
+
+def _refs(data: dict[str, Any], key: str) -> list[dict[str, Any]]:
+    return [item for item in data.get(key) or [] if isinstance(item, dict)]
+
+
 def _taxonomy(data: dict[str, Any], scheme_prefix: str) -> list[str]:
     return [
         str(item.get("id"))
         for key in ("taxonomy", "owasp", "compliance")
-        for item in data.get(key) or []
-        if isinstance(item, dict) and str(item.get("scheme", "")).startswith(scheme_prefix)
+        for item in _refs(data, key)
+        if str(item.get("scheme", "")).startswith(scheme_prefix)
     ]
+
+
+def _owasp_text(data: dict[str, Any]) -> str | None:
+    refs = _refs(data, "owasp")
+    if not refs:
+        return None
+    first = refs[0]
+    return f"{first.get('id')} {first.get('title') or ''}".strip()
 
 
 def _verdict(data: dict[str, Any]) -> dict[str, Any] | None:
@@ -190,19 +232,28 @@ def _score(data: dict[str, Any], name: str) -> Any:
     return data.get(name, risk.get(name) if risk else None)
 
 
+def _level_word(value: Any) -> str | None:
+    level = value.get("level") if isinstance(value, dict) else value
+    return LEVEL_WORDS.get(level) if isinstance(level, int) else None
+
+
 def finding_summary(row: Any) -> dict[str, Any]:
     """The list-view JSON of a finding row (``FindingRow``)."""
     data: dict[str, Any] = row.data or {}
+    cwes = [item for item in row.cwe.split(",") if item]
+    location = (data.get("locations") or [{}])[0]
     return {
         "id": row.id,
         "scan_id": row.scan_id,
         "title": row.title,
         "severity": row.severity,
         "confidence": row.confidence,
-        "cwe": [item for item in row.cwe.split(",") if item],
-        "owasp": [item.get("id") for item in data.get("owasp") or [] if isinstance(item, dict)],
+        "cwe": cwes[0] if cwes else None,
+        "cwes": cwes,
+        "owasp": _owasp_text(data),
         "path": row.path,
         "line": row.line,
+        "locations": [location] if location else [],
         "rule_id": row.rule_id,
         "engine": row.engine,
         "status": row.status,
@@ -210,91 +261,124 @@ def finding_summary(row: Any) -> dict[str, Any]:
         "fingerprint": row.fingerprint,
         "cvss4_score": _score(data, "cvss4_score"),
         "cvss31_score": _score(data, "cvss31_score"),
+        "likelihood": _level_word(data.get("likelihood")),
+        "impact": _level_word(data.get("impact")),
         "llm_reviewed": bool((data.get("provenance") or {}).get("llm_reviews")),
+        "created_at": data.get("created_at"),
         "updated_at": as_utc(row.updated_at),
     }
 
 
-def _snippet(data: dict[str, Any]) -> dict[str, Any] | None:
-    for evidence in data.get("evidence") or []:
-        if not isinstance(evidence, dict):
-            continue
+def _code(data: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None]:
+    for evidence in _refs(data, "evidence"):
         lines = evidence.get("lines") or []
         if not lines:
             continue
         location = evidence.get("location") or {}
-        return {
+        highlights = [
+            {"start": item.get("line"), "end": item.get("line")}
+            for item in evidence.get("highlights") or []
+            if isinstance(item, dict)
+        ]
+        if not highlights and location.get("start_line"):
+            highlights = [{"start": location["start_line"],
+                           "end": location.get("end_line") or location["start_line"]}]  # fmt: skip
+        code = {
             "path": location.get("path"),
             "language": evidence.get("language"),
             "start_line": lines[0].get("number"),
             "lines": [
                 {"number": line.get("number"), "text": line.get("text", "")} for line in lines
             ],
-            "highlight": [item.get("line") for item in evidence.get("highlights") or []],
+            "highlight": highlights,
             "masked": bool(evidence.get("masked")),
         }
-    return None
+        text = "\n".join(str(line.get("text", "")) for line in lines)
+        return code, text
+    return None, None
 
 
-def _taint_steps(data: dict[str, Any]) -> list[dict[str, Any]]:
+def _line_text(source_root: Path | None, path: str | None, number: int | None) -> str | None:
+    if source_root is None or not path or not number:
+        return None
+    try:
+        target = (source_root / path).resolve()
+        if source_root.resolve() not in target.parents:
+            return None
+        lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+    return lines[number - 1].strip() if 0 < number <= len(lines) else None
+
+
+def _taint_steps(data: dict[str, Any], source_root: Path | None) -> list[dict[str, Any]]:
     path = data.get("taint_path") or {}
     steps = []
     for index, step in enumerate(path.get("steps") or [], start=1):
         if not isinstance(step, dict):
             continue
         location = step.get("location") or {}
+        role = str(step.get("role") or "propagation")
         steps.append(
             {
                 "index": index,
-                "kind": step.get("kind") or step.get("role"),
-                "label": step.get("label") or step.get("description") or step.get("symbol"),
+                "kind": {"sanitizer": "sanitiser"}.get(role, role),
+                "label": step.get("note") or location.get("symbol") or role,
                 "path": location.get("path"),
                 "line": location.get("start_line"),
-                "code": step.get("code") or step.get("text"),
+                "code": _line_text(source_root, location.get("path"), location.get("start_line")),
             }
         )
     return steps
 
 
-def finding_detail(row: Any) -> dict[str, Any]:
+def finding_detail(row: Any, source_root: Path | None = None) -> dict[str, Any]:
     """The detail JSON of a finding row: everything the dashboard's finding page shows."""
     data: dict[str, Any] = dict(row.data or {})
     detail = finding_summary(row)
-    impact = data.get("impact") or {}
-    likelihood = data.get("likelihood") or {}
+    cwes = _cwe_numbers(data)
+    entry = _kb_entry(cwes)
+    asvs = _taxonomy(data, "asvs") or list(getattr(entry, "asvs", ()) or ())
+    capec = _taxonomy(data, "capec") or [
+        f"CAPEC-{item}" for item in getattr(entry, "capec", ()) or ()
+    ]
     references = [
-        item if isinstance(item, dict) else {"url": str(item)}
-        for item in data.get("references") or []
+        {"title": item.get("title") or item.get("url"), "url": item.get("url")}
+        for item in _refs(data, "references")
     ]
+    if entry is not None and not references:
+        references = [{"title": f"CWE-{entry.id}: {entry.name}", "url": entry.url}]
     compliance = [
-        {
-            "framework": item.get("scheme"),
-            "clause": item.get("id"),
-            "title": item.get("title"),
-        }
-        for item in (data.get("compliance") or []) + (data.get("taxonomy") or [])
-        if isinstance(item, dict)
+        {"framework": item.get("scheme"), "clause": item.get("id"), "title": item.get("title")}
+        for item in _refs(data, "compliance") + _refs(data, "taxonomy")
     ]
+    code, snippet = _code(data)
+    verdict = _verdict(data)
     detail.update(
         {
             "description": data.get("description", ""),
             "kind": data.get("kind"),
             "language": data.get("language"),
-            "owasp": data.get("owasp") or [],
-            "asvs": data.get("asvs") or _taxonomy(data, "asvs"),
-            "capec": data.get("capec") or _taxonomy(data, "capec"),
+            "cwe_name": getattr(entry, "name", None),
+            "owasp_refs": _refs(data, "owasp"),
+            "asvs": ", ".join(asvs) or None,
+            "asvs_refs": asvs,
+            "capec": ", ".join(capec) or None,
+            "capec_refs": capec,
             "cvss4_vector": _score(data, "cvss4_vector"),
             "cvss31_vector": _score(data, "cvss31_vector"),
-            "likelihood": likelihood,
-            "impact": impact,
+            "likelihood_detail": data.get("likelihood") or {},
+            "impact_detail": data.get("impact") or {},
             "compliance": compliance,
             "locations": data.get("locations") or [],
             "evidence": {
-                "snippet": _snippet(data),
-                "taint_path": _taint_steps(data),
+                "snippet": snippet,
+                "code": code,
+                "taint_path": _taint_steps(data, source_root),
             },
-            "llm_verdict": _verdict(data),
-            "remediation": data.get("remediation", ""),
+            "llm": verdict,
+            "llm_verdict": verdict,
+            "remediation": data.get("remediation") or getattr(entry, "remediation", None) or "",
             "references": references,
             "provenance": data.get("provenance") or {},
             "risk": data.get("risk"),
@@ -474,7 +558,7 @@ class ScanResults:
             "payload_text": payload_text,
             "original_text": original_text,
             "original_start_line": original_start,
-            "markup": markup(payload_text, "sent"),
+            "markup": markup(payload_text, "payload"),
         }
 
 

@@ -214,9 +214,12 @@ def test_findings_list_filter_detail_and_triage(
     ).json()
     assert critical
     assert all(item["severity"] == "critical" for item in critical)
-    first = findings[0]
+    first = next(item for item in findings if item["llm_reviewed"])
     detail = client.get(f"/api/v1/findings/{first['id']}", headers=viewer).json()
-    assert detail["evidence"]["snippet"]["lines"]
+    assert detail["evidence"]["code"]["lines"]
+    assert detail["evidence"]["snippet"]
+    assert detail["cwe"].startswith("CWE-")
+    assert detail["llm"]["provider"] == "mock"
     assert detail["llm_verdict"]["provider"] == "mock"
     denied = client.patch(f"/api/v1/findings/{first['id']}", json={"status": "confirmed"},
                           headers=viewer)  # fmt: skip

@@ -7,6 +7,7 @@ assignee and an append-only history of changes and comments are stored beside it
 the scan's reports stale so the next download re-renders them with the new statuses.
 """
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
@@ -46,8 +47,9 @@ def get_finding(finding_id: str, session: SessionDep) -> dict[str, Any]:
     row = session.get(FindingRow, finding_id)
     if row is None:
         raise not_found("finding")
-    detail = finding_detail(row)
     scan = session.get(ScanRow, row.scan_id)
+    source = Path(scan.workspace) / "src" if scan is not None and scan.workspace else None
+    detail = finding_detail(row, source)
     if scan is not None:
         project = session.get(Project, scan.project_id)
         detail["scan"] = {

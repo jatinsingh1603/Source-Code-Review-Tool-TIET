@@ -96,6 +96,7 @@ class UserCreate(_Body):
     password: str = Field(min_length=8, max_length=256)
     role: RoleName = "viewer"
     full_name: str = Field(default="", max_length=128)
+    display_name: str | None = Field(default=None, max_length=128)
     email: str = Field(default="", max_length=256)
 
 
@@ -105,6 +106,7 @@ class UserUpdate(_Body):
     password: str | None = Field(default=None, min_length=8, max_length=256)
     role: RoleName | None = None
     full_name: str | None = Field(default=None, max_length=128)
+    display_name: str | None = Field(default=None, max_length=128)
     email: str | None = Field(default=None, max_length=256)
     active: bool | None = None
 

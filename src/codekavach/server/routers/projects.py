@@ -66,6 +66,9 @@ def project_json(session: Session, project: Project) -> dict[str, Any]:
         "created_at": as_utc(project.created_at),
         "updated_at": as_utc(project.updated_at),
         "scans": scans or 0,
+        "scan_count": scans or 0,
+        "languages": (last.languages or []) if last is not None else [],
+        "files": last.files if last is not None else 0,
         "last_scan": scan_json(last) if last is not None else None,
     }
 

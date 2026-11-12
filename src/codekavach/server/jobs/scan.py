@@ -114,7 +114,7 @@ class _Progress:
             stages = data.get("stages")
             self.total = len(stages) if isinstance(stages, list) else self.total
         elif kind == "stage.started":
-            self.log.append("stage", {"name": stage, "status": "running", "label": label})
+            self.log.append("stage", {"name": stage, "status": "started", "label": label})
             self._update(stage=stage)
         elif kind == "stage.progress":
             current, total = data.get("current"), data.get("total")
@@ -250,7 +250,7 @@ def execute_scan(job: ScanJob) -> None:
     progress = _Progress(job, log)
     try:
         log.append(
-            "stage", {"name": "intake", "status": "running", "label": STAGE_LABELS["intake"]}
+            "stage", {"name": "intake", "status": "started", "label": STAGE_LABELS["intake"]}
         )
         log.append("log", {"level": "info", "message": f"Source type: {project.source_type}"})
         _materialise(project, paths, job)
@@ -391,7 +391,7 @@ def _store(  # noqa: PLR0917 - the parts of one result
             },
         )
     log.append(
-        "stage", {"name": "privacy-check", "status": "running",
+        "stage", {"name": "privacy-check", "status": "started",
                   "label": STAGE_LABELS["privacy-check"]},
     )  # fmt: skip
     results = ScanResults(paths, core_id, settings)
@@ -421,7 +421,7 @@ def _store(  # noqa: PLR0917 - the parts of one result
          f"{privacy.payloads} payloads, {privacy.blocked} blocked; zero-leak "
          f"{'passed' if privacy.zero_leak.get('passed') else 'not passed'}"},
     )  # fmt: skip
-    log.append("stage", {"name": "report", "status": "running", "label": STAGE_LABELS["report"]})
+    log.append("stage", {"name": "report", "status": "started", "label": STAGE_LABELS["report"]})
     formats = [fmt for fmt in EAGER_FORMATS if fmt in available_formats(settings)]
     for fmt in formats:
         try:

@@ -43,6 +43,7 @@ def user_json(user: User) -> dict[str, Any]:
         "id": user.id,
         "username": user.username,
         "full_name": user.full_name,
+        "display_name": user.full_name or user.username,
         "email": user.email,
         "role": user.role,
         "active": user.active,
@@ -130,7 +131,7 @@ def create_user(
     user = User(
         id=new_id("usr"),
         username=body.username,
-        full_name=body.full_name,
+        full_name=body.full_name or body.display_name or "",
         email=body.email,
         role=body.role,
         password_hash=hash_password(body.password),
@@ -155,6 +156,8 @@ def update_user(
     if user is None:
         raise not_found("user")
     changes = body.model_dump(exclude_none=True)
+    if "display_name" in changes:
+        changes["full_name"] = changes.pop("display_name")
     if user.id == principal.user_id and (
         changes.get("role", "admin") != "admin" or changes.get("active") is False
     ):

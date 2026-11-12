@@ -369,6 +369,15 @@ def verify_ledger(
         "chain_ok": chain_ok,
         "entries": entries,
         "reason": reason,
+        "first_bad_seq": next(
+            (
+                step.data.get("first_bad_seq")
+                for step in steps
+                if step.name == "chain" and not step.ok and isinstance(step.data, dict)
+            ),
+            None,
+        ),
+        "message": "; ".join(str(step.summary or step.message) for step in steps),
         "steps": [
             {"name": step.name, "ok": step.ok, "summary": step.summary or step.message}
             for step in steps
@@ -395,6 +404,8 @@ def list_reports(scan_id: str, state: StateDep, session: SessionDep) -> dict[str
                 "format": fmt,
                 "label": LABELS.get(fmt, fmt.upper()),
                 "media_type": MEDIA_TYPES.get(fmt, "application/octet-stream"),
+                "available": True,
+                "reason": None,
                 "rendered": fmt in rendered,
                 "size": rendered.get(fmt),
                 "url": f"/api/v1/scans/{scan_id}/reports/{fmt}",
