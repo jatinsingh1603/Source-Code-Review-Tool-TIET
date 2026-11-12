@@ -106,6 +106,16 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Whether the signed-in user holds a permission, or true outside a session
+ * (unit tests that render a page without one). Used to skip requests the
+ * server would answer with 403, which would otherwise show as console errors.
+ */
+export function useCan(permission: Permission): boolean {
+  const v = useContext(Ctx);
+  return v ? v.can(permission) : true;
+}
+
 /** Presentation-only guard; the server still enforces every request. */
 export function RequirePermission({ permission, children }: { permission: Permission; children: ReactNode }) {
   const { can } = useSession();
@@ -119,7 +129,7 @@ export function AccessDenied({ permission }: { permission: Permission }) {
     <Content>
       <div className="card">
         <Empty title="Access denied" action="Back to Overview" to="/">
-          {`This area needs the ${roleLabel(role)} role or higher. Ask an administrator if you need access.`}
+          {`This area needs the ${roleLabel(role)} role${role === "admin" ? "" : " or higher"}. Ask an administrator if you need access.`}
         </Empty>
       </div>
     </Content>

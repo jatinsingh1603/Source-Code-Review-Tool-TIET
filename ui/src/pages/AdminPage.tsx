@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useSession } from "@/app/session";
 import { useShell } from "@/app/shell-context";
 import { Link } from "react-router-dom";
@@ -44,23 +44,29 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const settings = useSettings().data;
   const [invite, setInvite] = useState(false);
+  // An auditor reads the audit log here; everything else on this page is the admin's.
+  const isAdmin = useSession().can("users:admin");
   useShell({
     projectPill: settings?.org_name ?? "Organisation",
     levelPill: settings ? `Default ${settings.default_privacy_level} · ${LEVEL_NAME[settings.default_privacy_level]}` : undefined,
     hideProvider: true,
   });
+  if (!isAdmin && tab !== "audit") return <Navigate to="/admin/audit" replace />;
   return (
     <Content>
       <PageHeader
         crumbs={[{ label: "Organisation" }, { label: "Admin" }]}
-        title="Admin"
+        title={isAdmin ? "Admin" : "Audit log"}
+        sub={isAdmin ? undefined : "Read-only for auditors. Users, keys and retention are managed by an admin."}
         actions={
-          <Button variant="primary" onClick={() => setInvite(true)}>
-            Invite user
-          </Button>
+          isAdmin ? (
+            <Button variant="primary" onClick={() => setInvite(true)}>
+              Invite user
+            </Button>
+          ) : undefined
         }
       />
-      <Tabs label="Admin sections" value={tab} onChange={(t) => navigate(t === "users" ? "/admin" : `/admin/${t}`)} tabs={TABS} />
+      {isAdmin && <Tabs label="Admin sections" value={tab} onChange={(t) => navigate(t === "users" ? "/admin" : `/admin/${t}`)} tabs={TABS} />}
       {tab === "users" ? (
         <section className="g g-side">
           <div className="stack s16">
@@ -145,8 +151,8 @@ function UsersTable() {
                       aria-label={`Role of ${name}`}
                       style={{ width: 120 }}
                       value={u.role}
-                      disabled={u.id === me?.id || setRole.isPending}
-                      title={u.id === me?.id ? "You cannot change your own role." : undefined}
+                      disabled={u.id === me?.id || u.active === false || setRole.isPending}
+                      title={u.id === me?.id ? "You cannot change your own role." : u.active === false ? "Access revoked; the account is disabled." : undefined}
                       onChange={(e) =>
                         setRole.mutate(
                           { id: u.id, role: e.target.value as Role },
@@ -164,11 +170,11 @@ function UsersTable() {
                       ))}
                     </select>
                   </td>
-                  <td className="sm">{u.active === false ? <StatusDot tone="neutral">Disabled</StatusDot> : <StatusDot tone="ok">Active</StatusDot>}</td>
+                  <td className="sm">{u.active === false ? <StatusDot tone="neutral">Revoked</StatusDot> : <StatusDot tone="ok">Active</StatusDot>}</td>
                   <td className="sm">Local</td>
                   <td className="sm muted">{u.last_login ? fmtShort(u.last_login) : "Never"}</td>
                   <td>
-                    {u.id !== me?.id && (
+                    {u.id !== me?.id && u.active !== false && (
                       <button className="btn sm ghost" type="button" onClick={() => setRevoke(u)}>
                         Revoke
                       </button>
@@ -409,7 +415,7 @@ function RetentionCard() {
         </dl>
       )}
       <p className="xs faint">
-        {ret?.how_to_purge ? `To purge: ${ret.how_to_purge}. ` : ""}Purging a vault means old verdicts can no longer be mapped back to real names.
+        {ret?.how_to_purge ? `Purging is an API action, kept out of the dashboard on purpose: ${ret.how_to_purge}. ` : ""}Purging a vault means old verdicts can no longer be mapped back to real names.
         Reports already generated are unaffected.
       </p>
     </div>

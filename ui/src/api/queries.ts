@@ -9,6 +9,7 @@ import {
   useQueryClient,
   type UseQueryOptions,
 } from "@tanstack/react-query";
+import { useCan } from "@/app/session";
 import { endpoints } from "./endpoints";
 import type {
   Finding,
@@ -86,13 +87,16 @@ export const useFindingHistory = (id: string | undefined) =>
     enabled: !!id,
   });
 
-export const usePrivacy = (scanId: string | undefined) =>
-  useQuery({
+export const usePrivacy = (scanId: string | undefined) => {
+  // A viewer may not read the privacy summary; skip the request instead of drawing a 403.
+  const allowed = useCan("privacy:read");
+  return useQuery({
     queryKey: qk.privacy(scanId ?? ""),
     queryFn: () => endpoints.privacy(scanId!),
-    enabled: !!scanId,
+    enabled: !!scanId && allowed,
     retry: false,
   });
+};
 
 export const useLedger = (scanId: string | undefined) =>
   useQuery({
@@ -121,7 +125,11 @@ export const useReports = (scanId: string | undefined) =>
 export const useProviders = () => useQuery({ queryKey: qk.providers, queryFn: endpoints.providers });
 export const useSettings = () => useQuery({ queryKey: qk.settings, queryFn: endpoints.settings });
 export const usePolicy = () => useQuery({ queryKey: qk.policy, queryFn: endpoints.policy, retry: false });
-export const useUsers = () => useQuery({ queryKey: qk.users, queryFn: endpoints.users, retry: false });
+/** The user list is admin-only on the server; other roles get no list (no assignee names). */
+export const useUsers = () => {
+  const allowed = useCan("users:admin");
+  return useQuery({ queryKey: qk.users, queryFn: endpoints.users, retry: false, enabled: allowed });
+};
 
 // ---- mutations -----------------------------------------------------------
 

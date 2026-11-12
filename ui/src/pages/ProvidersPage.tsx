@@ -66,7 +66,7 @@ export default function ProvidersPage() {
 
   const month = new Date().toISOString().slice(0, 7);
   const month0 = month;
-  const usageQ = useOptional(`usage-${month0}`, () => endpoints.providerUsage(month0));
+  const usageQ = useOptional(`usage-${month0}`, () => endpoints.providerUsage(month0), can("privacy:read"));
   const usage = useMemo(() => {
     const m = new Map<string, number>();
     for (const s of scans ?? []) {
@@ -87,7 +87,12 @@ export default function ProvidersPage() {
         sub="Bring your own keys. Keys are stored as references, never as plaintext."
         actions={
           <>
-            <Button onClick={() => void runAll()} loading={test.isPending}>
+            <Button
+              onClick={() => void runAll()}
+              loading={test.isPending}
+              disabled={!can("providers:test")}
+              title={can("providers:test") ? "Sends a short test request to each configured provider" : "Testing providers needs the Developer role or higher."}
+            >
               Run health checks
             </Button>
             <Button variant="primary" disabled title={can("settings:write") ? "Providers are added in the server configuration (codekavach.toml)." : "Admins add providers."}>

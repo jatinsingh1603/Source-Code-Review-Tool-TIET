@@ -43,7 +43,7 @@ const NAV: NavEntry[] = [
   { to: "/providers", label: "Providers", icon: "chip", match: (p) => p.startsWith("/providers") },
   { heading: "Organisation" },
   { to: "/evaluation", label: "Evaluation", icon: "bars", match: (p) => p.startsWith("/evaluation") },
-  { to: "/admin", label: "Admin", icon: "users", permission: "users:admin", match: (p) => p.startsWith("/admin") },
+  { to: "/admin", label: "Admin", icon: "users", permission: "audit:read", match: (p) => p.startsWith("/admin") },
   { to: "/settings", label: "Settings", icon: "cog", match: (p) => p.startsWith("/settings") },
 ];
 

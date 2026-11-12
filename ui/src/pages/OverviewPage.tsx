@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useCurrentProject } from "@/app/project-context";
+import { useCan } from "@/app/session";
 import { useFindings, useOptional, usePrivacy, useProviders, useScans, useStats } from "@/api/queries";
 import { endpoints } from "@/api/endpoints";
 import type { Finding, InvariantReport, PrivacySummary, Project, ProviderInfo, Scan, TrendPoint } from "@/api/types";
@@ -38,6 +39,7 @@ import {
 
 export default function OverviewPage() {
   const { current, loading: projLoading } = useCurrentProject();
+  const canRun = useCan("scans:run");
   const scansQ = useScans(current?.id);
   const scans = useMemo(() => sortScans(scansQ.data ?? []), [scansQ.data]);
   const completed = scans.filter((s) => s.status === "completed");
@@ -88,7 +90,7 @@ export default function OverviewPage() {
                 Last scan <span className="mono">{scanLabel(last.id)}</span> · {fmtLong(last.started_at ?? last.created_at)}
               </span>
             )}
-            {current && (
+            {current && canRun && (
               <ButtonLink variant="primary" to={`/projects/${current.id}/scan`}>
                 New scan
               </ButtonLink>

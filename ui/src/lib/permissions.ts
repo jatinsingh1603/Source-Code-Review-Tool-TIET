@@ -13,7 +13,9 @@ export type Permission =
   | "reports:read"
   | "settings:write"
   | "users:admin"
-  | "github:sync";
+  | "github:sync"
+  | "providers:test"
+  | "audit:read";
 
 const DEVELOPER: Permission[] = [
   "projects:write",
@@ -22,12 +24,13 @@ const DEVELOPER: Permission[] = [
   "privacy:read",
   "reports:read",
   "github:sync",
+  "providers:test",
 ];
 
 /** Mirrors codekavach.server.rbac; used when the session carries no permission list. */
 const MAP: Record<Role, Permission[]> = {
-  admin: [...DEVELOPER, "privacy:read_original", "settings:write", "users:admin"],
-  auditor: [...DEVELOPER, "privacy:read_original"],
+  admin: [...DEVELOPER, "privacy:read_original", "audit:read", "settings:write", "users:admin"],
+  auditor: [...DEVELOPER, "privacy:read_original", "audit:read"],
   developer: DEVELOPER,
   viewer: ["reports:read"],
 };
@@ -43,6 +46,8 @@ const FROM_SERVER: Record<string, Permission> = {
   "settings:write": "settings:write",
   "users:admin": "users:admin",
   "sync:github": "github:sync",
+  "provider:test": "providers:test",
+  "audit:read": "audit:read",
 };
 
 export function permissionsFor(role: Role | undefined, serverPermissions?: string[] | null): Set<Permission> {
