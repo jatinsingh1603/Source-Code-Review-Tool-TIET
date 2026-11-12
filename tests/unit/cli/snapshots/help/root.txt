@@ -56,6 +56,8 @@
 │ vault       Manage the local mapping vault. Its contents never appear in any output.             │
 │ config      Inspect and manage configuration.                                                    │
 │ rules       List, show, validate, test and bundle native rule packs.                             │
+│ sca         Refresh the advisory mirror and list vulnerable dependencies.                        │
+│ sbom        Generate a CycloneDX or SPDX bill of materials.                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
  Exit codes:

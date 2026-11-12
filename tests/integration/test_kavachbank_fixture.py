@@ -128,7 +128,9 @@ def test_every_planted_pii_value_is_in_the_seed_file() -> None:
 def test_the_fixture_is_not_installable() -> None:
     names = {path.name for path in FIXTURE_ROOT.rglob("*") if path.is_file()}
     assert not names & {
-        "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", "package.json",
+        # requirements.txt and package.json are inventory-only fixtures for the SCA scan: no
+        # lock file, no installable project, never installed.
+        "pyproject.toml", "setup.py", "setup.cfg",
         "package-lock.json", "yarn.lock", "Pipfile", "poetry.lock", "__init__.py",
     }  # fmt: skip
     directories = {path.name for path in FIXTURE_ROOT.rglob("*") if path.is_dir()}
