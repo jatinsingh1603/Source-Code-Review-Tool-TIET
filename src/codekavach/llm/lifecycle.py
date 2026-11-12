@@ -144,6 +144,23 @@ class ManagedSession:
             return result.error_kind in TRANSIENT_ERRORS
         return result.kind == "answered" and (result.status or 0) in TRANSIENT_STATUSES
 
+    def _reserve(self) -> bool:
+        """Reserve one request of the budget; ``False`` (logged once per scan) when spent.
+
+        The check and the reservation happen under one lock, so concurrent candidates cannot
+        overshoot ``llm.budget.max_requests``.
+        """
+        with self._lock:
+            limit = self._budget.exhausted()
+            if limit is None:
+                self._budget.in_flight += 1
+                return True
+            self.budget_refusals += 1
+            first = self.budget_refusals == 1
+        if first:  # every later candidate is refused for the same reason
+            _log.warning("llm_budget_exhausted", limit=limit)
+        return False
+
     def dispatch(
         self,
         request: Any,
@@ -167,23 +184,23 @@ class ManagedSession:
                 return Dispatch("answered", status=hit.status, body=hit.body)
         attempt = 0
         while True:
-            if not offline and (limit := self._budget.exhausted()) is not None:
-                with self._lock:
-                    self.budget_refusals += 1
-                    first = self.budget_refusals == 1
-                if first:  # once per scan: every later candidate is refused for the same reason
-                    _log.warning("llm_budget_exhausted", limit=limit)
+            if not offline and not self._reserve():
                 return Dispatch("failed", error_kind=BUDGET_EXHAUSTED)
-            result = self._session.dispatch(
-                request,
-                provider=provider,
-                model=model,
-                task=task,
-                payload=payload,
-                respond=respond,
-                static_text=static_text,
-                wait_seconds=wait_seconds,
-            )
+            try:
+                result = self._session.dispatch(
+                    request,
+                    provider=provider,
+                    model=model,
+                    task=task,
+                    payload=payload,
+                    respond=respond,
+                    static_text=static_text,
+                    wait_seconds=wait_seconds,
+                )
+            finally:
+                if not offline:
+                    with self._lock:
+                        self._budget.in_flight -= 1
             if result.kind in {"answered", "failed"} and not offline:
                 with self._lock:
                     self._budget.record(usage_of(result.body), request_bytes=len(request.body))

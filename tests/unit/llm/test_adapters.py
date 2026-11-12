@@ -461,3 +461,43 @@ def test_the_catalogue_lists_builtins_without_key_material(
     assert rows["agentrouter"]["min_privacy_level"] == "L3"
     assert rows["mock"]["default"] is True
     assert "PLANTED" not in json.dumps(rows)
+
+
+def test_concurrent_candidates_never_overshoot_max_requests() -> None:
+    import threading  # noqa: PLC0415
+
+    gate = threading.Barrier(6, timeout=1)
+    sent: list[int] = []
+
+    class SlowSession(FakeSession):
+        def dispatch(self, request: Any, **_: Any) -> Dispatch:
+            sent.append(1)
+            return Dispatch("answered", status=200, body=OK_BODY)
+
+    session = managed(SlowSession(), [], max_requests=2)
+    results: list[Dispatch] = []
+
+    def worker() -> None:
+        gate.wait()
+        results.append(send(session))
+
+    threads = [threading.Thread(target=worker) for _ in range(6)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert len(sent) == 2
+    assert sum(result.error_kind == BUDGET_EXHAUSTED for result in results) == 4
+
+
+def test_the_agentrouter_key_may_come_from_a_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    key_file = tmp_path / "agentrouter.key"
+    key_file.write_text("sk-test-FILEKEY0000\n", encoding="utf-8")  # pragma: allowlist secret
+    monkeypatch.delenv("CODEKAVACH_AGENTROUTER_API_KEY", raising=False)
+    monkeypatch.setenv("CODEKAVACH_AGENTROUTER_API_KEY_FILE", str(key_file))
+    llm = LLMSettings()
+    assert llm.providers["agentrouter"].api_key == f"file:{key_file}"
+    assert key_available(llm.providers["agentrouter"])
+    assert llm.selected_provider()[0] == "mock"  # a key on disk is not a decision to send code

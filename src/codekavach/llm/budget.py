@@ -73,6 +73,7 @@ class ScanBudget:
     input_tokens: int = 0
     output_tokens: int = 0
     cache_hits: int = 0
+    in_flight: int = 0  # requests reserved by ``ManagedSession`` and not answered yet
 
     @property
     def cost_usd(self) -> float | None:
@@ -82,7 +83,8 @@ class ScanBudget:
     def exhausted(self) -> str | None:
         """The name of the first limit reached, or ``None`` while another request may go."""
         limits = self.limits
-        if limits.max_requests is not None and self.requests >= limits.max_requests:
+        used = self.requests + self.in_flight  # concurrent requests cannot overshoot the cap
+        if limits.max_requests is not None and used >= limits.max_requests:
             return "max_requests"
         if (
             limits.max_total_input_tokens is not None
