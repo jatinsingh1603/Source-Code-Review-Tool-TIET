@@ -311,3 +311,10 @@ body {
 .ck dl.dl {
   margin: 0;
 }
+
+/* The checkbox rule `.chk{width:15px;height:15px}` also hits the guard rows'
+ * "Pass" label (`.guard .chk`), which then spilled past the card edge. */
+.ck .guard .chk {
+  width: auto;
+  height: auto;
+}
