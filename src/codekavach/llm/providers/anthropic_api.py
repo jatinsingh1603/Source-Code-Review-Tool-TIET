@@ -13,7 +13,6 @@ from typing import Any, ClassVar, Final
 from codekavach.config.models.llm import ProviderKind
 from codekavach.llm.providers.base import ProviderCapabilities, StructuredMode
 from codekavach.llm.providers.http import (
-    SYSTEM_PROMPT,
     TOOL_DESCRIPTION,
     TOOL_NAME,
     HttpProvider,
@@ -40,12 +39,12 @@ class AnthropicProvider(HttpProvider):
         base = self._base[: -len("/v1")] if self._base.endswith("/v1") else self._base
         return f"{base}/v1/messages"
 
-    def body(self, task: ReviewTask, prompt: str) -> dict[str, Any]:
+    def body(self, task: ReviewTask, system: str, prompt: str) -> dict[str, Any]:
         """System text, one user message and the forced ``record_verdict`` tool; not streamed."""
         return {
             "model": self._model,
             "max_tokens": self._max_tokens,
-            "system": SYSTEM_PROMPT,
+            "system": system,
             "messages": [{"role": "user", "content": prompt}],
             "tools": [
                 {

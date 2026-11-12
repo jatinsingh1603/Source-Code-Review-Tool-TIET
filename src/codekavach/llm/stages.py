@@ -17,6 +17,7 @@ other candidates go on. ``llm.enabled = false`` publishes an empty list and open
 import importlib
 from collections.abc import Callable
 from contextlib import AbstractContextManager
+from typing import cast
 
 from pydantic import BaseModel
 
@@ -33,6 +34,8 @@ from codekavach.core.pipeline.items import (
 )
 from codekavach.core.pipeline.stage import StageCategory
 from codekavach.core.store.base import ArtefactTypeError
+from codekavach.llm.cache import CACHE_DIR, ResponseCache
+from codekavach.llm.lifecycle import ManagedSession
 from codekavach.llm.providers.factory import build_provider
 from codekavach.llm.review import Reviewer
 from codekavach.llm.tasks import build_task
@@ -95,9 +98,21 @@ class LlmReviewStage:
         if ctx.state_dir is None:
             raise RuntimeError("llm-review needs the state directory of the ledger")
         provider_id, provider_settings = ctx.config.llm.selected_provider()
-        provider = build_provider(provider_id, provider_settings)
+        provider = build_provider(provider_id, provider_settings, model=ctx.config.llm.model)
         verdicts: list[CandidateVerdict] = []
-        with _open_session(ctx) as session:
+        with _open_session(ctx) as egress:
+            # E22-03: the response cache, the scan budget and retries wrap the egress session
+            llm = ctx.config.llm
+            managed = ManagedSession.for_settings(
+                egress,
+                provider_settings,
+                limits=llm.budget,
+                cache=ResponseCache(ctx.state_dir / CACHE_DIR)
+                if llm.cache and not ctx.no_send
+                else None,
+                max_retries=llm.max_retries,
+            )
+            session = cast("EgressSession", managed)
             reviewer = Reviewer(
                 provider,
                 session,
@@ -133,5 +148,7 @@ class LlmReviewStage:
                 name: f"{ver}:{digest[:12]}" for name, (ver, digest) in reviewer.prompts.items()
             },
             **reviewer.counts.as_dict(),
+            usage=managed.budget.summary(),
+            retries=managed.retries,
         )
         ctx.artefacts.put(keys.VERDICTS_RAW, verdicts)

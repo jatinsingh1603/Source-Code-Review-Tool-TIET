@@ -53,6 +53,21 @@ def canonical_json(document: Mapping[str, Any]) -> bytes:
     return json.dumps(document, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def render(task: ReviewTask, payload: SanitisedPayload) -> tuple[str, str]:
+    """``(system, user)``: the task's instructions and its delimited material.
+
+    A task with ``render_parts`` (the templated review tasks) keeps its public rubric in the
+    system or instructions slot, apart from the client material, which is the separation its
+    injection defence relies on. A task with only ``render`` gets ``SYSTEM_PROMPT``.
+    """
+    facts = CandidateFacts.from_payload(payload)
+    parts = getattr(task, "render_parts", None)
+    if callable(parts):
+        system, user = parts(payload, facts)
+        return str(system), str(user)
+    return SYSTEM_PROMPT, task.render(payload, facts)
+
+
 def schema_name(task: ReviewTask) -> str:
     """The name of the structured-output schema of ``task`` (``triage_verdict``)."""
     return f"{task.name}_verdict"
@@ -116,7 +131,7 @@ class HttpProvider:
         """The endpoint URL of one request."""
         raise NotImplementedError
 
-    def body(self, task: ReviewTask, prompt: str) -> dict[str, Any]:
+    def body(self, task: ReviewTask, system: str, prompt: str) -> dict[str, Any]:
         """The vendor body around ``prompt``."""
         raise NotImplementedError
 
@@ -130,9 +145,8 @@ class HttpProvider:
 
     def prepare(self, task: ReviewTask, payload: SanitisedPayload) -> PreparedRequest:
         """The request for ``payload``; does not send."""
-        facts = CandidateFacts.from_payload(payload)
-        prompt = task.render(payload, facts)
-        body = canonical_json(self.body(task, prompt))
+        system, prompt = render(task, payload)
+        body = canonical_json(self.body(task, system, prompt))
         url = self.url()
         headers = {
             "content-type": "application/json",

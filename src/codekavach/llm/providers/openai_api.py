@@ -21,7 +21,7 @@ from typing import Any, ClassVar, Final
 
 from codekavach.config.models.llm import ProviderKind
 from codekavach.llm.providers.base import ProviderCapabilities, ProviderError, StructuredMode
-from codekavach.llm.providers.http import SYSTEM_PROMPT, HttpProvider, schema_name
+from codekavach.llm.providers.http import HttpProvider, schema_name
 from codekavach.llm.tasks.base import ReviewTask
 
 AZURE_DEFAULT_API_VERSION: Final = "2024-10-21"
@@ -48,11 +48,11 @@ class OpenAIResponsesProvider(HttpProvider):
         """``<base>/responses``."""
         return f"{self._base}/responses"
 
-    def body(self, task: ReviewTask, prompt: str) -> dict[str, Any]:
+    def body(self, task: ReviewTask, system: str, prompt: str) -> dict[str, Any]:
         """Instructions, one user message and a strict schema; not streamed, not stored."""
         document: dict[str, Any] = {
             "model": self._model,
-            "instructions": SYSTEM_PROMPT,
+            "instructions": system,
             "input": [{"role": "user", "content": prompt}],
             "text": {
                 "format": {
@@ -106,12 +106,12 @@ class OpenAIChatProvider(HttpProvider):
             },
         }
 
-    def body(self, task: ReviewTask, prompt: str) -> dict[str, Any]:
+    def body(self, task: ReviewTask, system: str, prompt: str) -> dict[str, Any]:
         """A system and a user message with a strict ``response_format``; not streamed."""
         return {
             "model": self._model,
             "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system},
                 {"role": "user", "content": prompt},
             ],
             "response_format": self._response_format(task),

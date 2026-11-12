@@ -19,7 +19,7 @@ from typing import Any, ClassVar
 
 from codekavach.config.models.llm import ProviderKind
 from codekavach.llm.providers.base import ProviderCapabilities, ProviderError, StructuredMode
-from codekavach.llm.providers.http import SYSTEM_PROMPT, HttpProvider
+from codekavach.llm.providers.http import HttpProvider
 from codekavach.llm.tasks.base import ReviewTask
 
 
@@ -39,10 +39,10 @@ class GeminiProvider(HttpProvider):
         """``<base>/models/<model>:generateContent``."""
         return f"{self._base}/models/{self._model}:generateContent"
 
-    def body(self, task: ReviewTask, prompt: str) -> dict[str, Any]:
+    def body(self, task: ReviewTask, system: str, prompt: str) -> dict[str, Any]:
         """System instruction, one user turn and a JSON-schema generation config."""
         return {
-            "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+            "systemInstruction": {"parts": [{"text": system}]},
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {
                 "responseMimeType": "application/json",

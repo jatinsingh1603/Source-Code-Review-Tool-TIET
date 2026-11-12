@@ -31,7 +31,6 @@ from pydantic import SecretStr
 from codekavach.config.models.llm import ProviderKind, ProviderSettings
 from codekavach.llm.providers.base import ProviderCapabilities, ProviderError, StructuredMode
 from codekavach.llm.providers.http import (
-    SYSTEM_PROMPT,
     TOOL_DESCRIPTION,
     TOOL_NAME,
     HttpProvider,
@@ -164,10 +163,10 @@ class BedrockProvider(HttpProvider):
         """``<base>/model/<model-id>/converse``; the model id is percent-encoded."""
         return f"{self._base}/model/{quote(self._model, safe='')}/converse"
 
-    def body(self, task: ReviewTask, prompt: str) -> dict[str, Any]:
+    def body(self, task: ReviewTask, system: str, prompt: str) -> dict[str, Any]:
         """One user message, the system text and a forced tool; ``converse`` does not stream."""
         return {
-            "system": [{"text": SYSTEM_PROMPT}],
+            "system": [{"text": system}],
             "messages": [{"role": "user", "content": [{"text": prompt}]}],
             "inferenceConfig": {
                 "maxTokens": self._max_tokens,
