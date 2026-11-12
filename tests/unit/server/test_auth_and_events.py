@@ -1,5 +1,6 @@
 """Passwords, tokens, the permission matrix, the audit chain and the event log."""
 
+from collections.abc import Iterator
 from datetime import timedelta
 from pathlib import Path
 
@@ -17,6 +18,14 @@ from codekavach.server.state import RateLimiter
 pytest.importorskip("fastapi")
 
 
+@pytest.fixture
+def db(tmp_path: Path) -> Iterator[Database]:
+    """A server database whose pooled connections are closed after the test."""
+    database = Database(tmp_path / "s.db")
+    yield database
+    database.dispose()
+
+
 def test_password_round_trip() -> None:
     stored = hash_password("correct horse")
     assert stored.startswith("scrypt$")
@@ -28,8 +37,7 @@ def test_password_round_trip() -> None:
     assert needs_rehash("scrypt$1024$8$1$00$00")
 
 
-def test_tokens_store_only_a_hash_and_stop_after_revocation(tmp_path: Path) -> None:
-    db = Database(tmp_path / "s.db")
+def test_tokens_store_only_a_hash_and_stop_after_revocation(db: Database) -> None:
     with db.transaction() as session:
         user = User(id="usr_1", username="a", role="viewer", password_hash="x")
         session.add(user)
@@ -45,8 +53,7 @@ def test_tokens_store_only_a_hash_and_stop_after_revocation(tmp_path: Path) -> N
         assert authenticate_token(session, raw) is None
 
 
-def test_expired_tokens_fail(tmp_path: Path) -> None:
-    db = Database(tmp_path / "s.db")
+def test_expired_tokens_fail(db: Database) -> None:
     with db.transaction() as session:
         user = User(id="usr_1", username="a", role="viewer", password_hash="x")
         session.add(user)
@@ -76,8 +83,7 @@ def test_permission_matrix(role: Role, permission: Permission, allowed: bool) ->
     assert permitted("nobody", permission) is False
 
 
-def test_audit_chain_detects_an_edit(tmp_path: Path) -> None:
-    db = Database(tmp_path / "s.db")
+def test_audit_chain_detects_an_edit(db: Database) -> None:
     for index in range(3):
         audit.record(db, actor="a", action=f"act{index}")
     audit.flush(db)
