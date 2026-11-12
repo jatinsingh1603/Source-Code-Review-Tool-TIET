@@ -1,0 +1,17 @@
+{
+  "body": {
+    "content": {
+      "affected_assets": [
+        "application data",
+        "user accounts"
+      ],
+      "analysis": "Mock analysis 8238fdaa1835: attacker-influenced data reaches the sink.",
+      "attack_scenario": "Mock scenario: the attacker sends crafted input.",
+      "exploit_preconditions": "Mock: the entry point is reachable by an untrusted caller.",
+      "impact": "Mock impact: an attacker could read or modify data handled by this code.",
+      "severity": "high"
+    }
+  },
+  "payload_hash": "8238fdaa1835b0d5e1b681fd84fc5b70f25cfefd57a9b3b5497a1703fc79589d",
+  "status": 200
+}

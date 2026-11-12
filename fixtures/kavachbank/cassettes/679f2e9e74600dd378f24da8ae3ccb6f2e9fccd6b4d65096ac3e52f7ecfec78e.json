@@ -4,15 +4,15 @@
       "cited_lines": [],
       "confidence": "medium",
       "cwe": [
-        918
+        79
       ],
       "impact": "Mock impact statement.",
       "is_vulnerable": true,
       "needs_context": [],
-      "reasoning": "Mock analysis of payload 2d3083b3c8e6: the data flow was not executed.",
+      "reasoning": "Mock analysis of payload 679f2e9e7460: the data flow was not executed.",
       "remediation": "Mock remediation: validate the input before it reaches the sink."
     }
   },
-  "payload_hash": "2d3083b3c8e63c7c99bdea60231034f9a974284911aabc4f9dfb2e8ecb60894c",
+  "payload_hash": "679f2e9e74600dd378f24da8ae3ccb6f2e9fccd6b4d65096ac3e52f7ecfec78e",
   "status": 200
 }

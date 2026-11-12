@@ -62,7 +62,7 @@ def test_the_mock_request_is_a_real_body_with_the_payload_in_it() -> None:
     body = json.loads(request.body)
     assert "SELECT * FROM tbl_7" in body["messages"][0]["content"]
     assert body["response_format"]["json_schema"] == TASK.output_schema()
-    assert (request.method, request.task, request.prompt_version) == ("POST", "triage", "v1")
+    assert (request.method, request.task, request.prompt_version) == ("POST", "triage", "v2")
     assert request.payload_hash == payload().payload_hash
     assert request.prompt_hash == TASK.prompt_hash
 

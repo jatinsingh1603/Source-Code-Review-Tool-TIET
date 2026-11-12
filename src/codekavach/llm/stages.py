@@ -33,9 +33,9 @@ from codekavach.core.pipeline.items import (
 )
 from codekavach.core.pipeline.stage import StageCategory
 from codekavach.core.store.base import ArtefactTypeError
-from codekavach.llm.providers.base import OfflineProvider, ProviderParseError, RawResponse
 from codekavach.llm.providers.factory import build_provider
-from codekavach.llm.tasks.triage import TriageTask
+from codekavach.llm.review import Reviewer
+from codekavach.llm.tasks import build_task
 from codekavach.privacy.egress.session import EgressSession
 
 _log = get_logger("codekavach.llm.stages")
@@ -96,48 +96,42 @@ class LlmReviewStage:
             raise RuntimeError("llm-review needs the state directory of the ledger")
         provider_id, provider_settings = ctx.config.llm.selected_provider()
         provider = build_provider(provider_id, provider_settings)
-        task = TriageTask()
         verdicts: list[CandidateVerdict] = []
-        counts = {"answered": 0, "blocked": 0, "dry_run": 0, "failed": 0}
         with _open_session(ctx) as session:
+            reviewer = Reviewer(
+                provider,
+                session,
+                tasks=frozenset(task.value for task in ctx.config.llm.tasks) | {"triage"},
+                consensus=ctx.config.llm.consensus,
+                wait_seconds=float(ctx.config.llm.timeout_seconds),
+                build_task=build_task,
+            )
             for done, payload in enumerate(payloads, start=1):
                 ctx.check_cancelled()
                 with guard_item(ctx, str(payload.candidate_id), ITEM_EXCEPTION):
-                    request = provider.prepare(task, payload)
-                    respond = (
-                        (lambda r=request: provider.respond(r))
-                        if isinstance(provider, OfflineProvider)
-                        else None
-                    )
-                    result = session.dispatch(
-                        request,
-                        provider=provider.id,
-                        model=request.model,
-                        task=task.name,
-                        payload=payload,
-                        respond=respond,
-                        static_text=task.static_text(payload),
-                        wait_seconds=float(ctx.config.llm.timeout_seconds),
-                    )
-                    counts[result.kind] += 1
                     item = str(payload.candidate_id)
-                    if result.kind == "blocked":
+                    outcome = reviewer.review(payload)
+                    if outcome.verdict is not None:
+                        verdicts.append(
+                            CandidateVerdict(
+                                candidate_id=payload.candidate_id, verdict=outcome.verdict
+                            )
+                        )
+                    elif outcome.failure == "blocked":
                         ctx.fail_item(item, EGRESS_BLOCKED)
-                    elif result.kind == "failed":
+                    elif outcome.failure == "failed":
                         ctx.fail_item(item, LLM_REQUEST_FAILED)
-                    elif result.kind == "answered":
-                        try:
-                            verdict = provider.parse(
-                                RawResponse(result.status or 0, result.body, result.headers)
-                            )
-                        except ProviderParseError:
-                            ctx.fail_item(item, LLM_OUTPUT_INVALID)
-                        else:
-                            verdicts.append(
-                                CandidateVerdict(candidate_id=payload.candidate_id, verdict=verdict)
-                            )
+                    elif outcome.failure == "invalid":
+                        ctx.fail_item(item, LLM_OUTPUT_INVALID)
                 if done % 25 == 0:
                     ctx.emit_progress(done, len(payloads), "candidates")
         ctx.emit_progress(len(payloads), len(payloads), "candidates")
-        _log.info("llm_review_done", provider=provider.id, **counts)
+        _log.info(
+            "llm_review_done",
+            provider=provider.id,
+            prompts={
+                name: f"{ver}:{digest[:12]}" for name, (ver, digest) in reviewer.prompts.items()
+            },
+            **reviewer.counts.as_dict(),
+        )
         ctx.artefacts.put(keys.VERDICTS_RAW, verdicts)

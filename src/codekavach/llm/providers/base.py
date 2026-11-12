@@ -126,6 +126,19 @@ class OfflineProvider(LLMProvider, Protocol):
         ...
 
 
+def _responses_text(output: list[object]) -> str | None:
+    """The answer text of an OpenAI Responses ``output`` array (``message`` items only)."""
+    texts: list[str] = []
+    for item in output:
+        if isinstance(item, dict) and item.get("type") == "message":
+            texts.extend(
+                part["text"]
+                for part in item.get("content") or []
+                if isinstance(part, dict) and isinstance(part.get("text"), str)
+            )
+    return "".join(texts) or None
+
+
 def extract_content(body: bytes) -> str:
     """The model's text from the usual response envelopes.
 
@@ -146,8 +159,11 @@ def extract_content(body: bytes) -> str:
     if isinstance(document, dict):
         message = document.get("message")
         choices = document.get("choices")
+        output = document.get("output")
         if "content" in document:
             content = document["content"]
+        elif isinstance(output, list):
+            content = _responses_text(output)
         elif isinstance(message, dict):
             content = message.get("content")
         elif isinstance(choices, list) and choices and isinstance(choices[0], dict):

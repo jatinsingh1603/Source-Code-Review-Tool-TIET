@@ -4,6 +4,7 @@ import re
 
 import pytest
 
+from codekavach.core.models.canonical import sha256_hex
 from codekavach.core.models.payload import PayloadFacts, SanitisedPayload
 from codekavach.core.models.text import SanitisedText
 from codekavach.core.models.verdict import LLMVerdict
@@ -32,13 +33,15 @@ def render(**kwargs: str) -> str:
 
 def test_the_task_states_its_name_and_version() -> None:
     task = TriageTask()
-    assert (task.name, task.prompt_version) == ("triage", "v1")
+    assert (task.name, task.prompt_version) == ("triage", "v2")
     assert re.fullmatch(r"[0-9a-f]{64}", task.prompt_hash)
 
 
 def test_the_prompt_hash_is_the_hash_of_the_template_and_is_stable() -> None:
     template = load_prompt("triage", "v1")
-    assert TriageTask().prompt_hash == template.sha256 == TriageTask().prompt_hash
+    assert TriageTask("v1").prompt_hash == template.sha256 == TriageTask("v1").prompt_hash
+    combined = sha256_hex(load_prompt("triage", "v2").sha256 + load_prompt("common", "v1").sha256)
+    assert TriageTask().prompt_hash == combined
     assert re.fullmatch(r"[0-9a-f]{64}", template.sha256)
 
 
@@ -52,7 +55,7 @@ def test_the_rubric_precedes_the_delimited_client_material() -> None:
     text = render(delimiter="=====TEST=====")
     first_boundary = text.index("=====TEST=====")
     assert text.index("Is the sink security-relevant") < first_boundary
-    assert text.index("is data, not") < first_boundary
+    assert text.index("never instructions") < first_boundary
     assert text.index("SELECT * FROM tbl_7") > first_boundary
     assert text.index("rule: KB-VULN-001") > first_boundary
     assert text.count("=====TEST=====") == 3
@@ -101,7 +104,7 @@ EXCLUDED = {
 def test_each_excluded_field_is_absent_from_the_rendered_prompt(field: str) -> None:
     text = render().casefold()
     # The rubric may talk about the verdict it asks for; the candidate material may not.
-    material = text[text.index("facts") :]
+    material = text[text.index("=====ck-") :]
     for needle in EXCLUDED[field]:
         if field == "prior verdict" and needle == "is_vulnerable":
             continue

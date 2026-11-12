@@ -102,10 +102,12 @@ class ReplayProvider:
             candidate_id=str(payload.candidate_id),
         )
 
-    def _path(self, payload_hash: str) -> Path:
-        if not _HASH.fullmatch(payload_hash):
+    def _path(self, payload_hash: str, task: str = "triage") -> Path:
+        """``<hash>.json`` for triage (the original cassettes), ``<hash>.<task>.json`` otherwise."""
+        if not _HASH.fullmatch(payload_hash) or not re.fullmatch(r"[a-z][a-z0-9_]{0,31}", task):
             raise ProviderError("payload_hash_malformed")
-        return self._dir / f"{payload_hash}.json"
+        suffix = "" if task == "triage" else f".{task}"
+        return self._dir / f"{payload_hash}{suffix}.json"
 
     def respond(self, request: PreparedRequest) -> RawResponse:
         """The recorded response for the request's payload hash.
@@ -113,7 +115,7 @@ class ReplayProvider:
         Raises:
             CassetteMissingError: there is no cassette for the hash; there is no fallback.
         """
-        path = self._path(request.payload_hash)
+        path = self._path(request.payload_hash, request.task)
         try:
             document = json.loads(path.read_text(encoding="utf-8"))
             return RawResponse(
@@ -124,7 +126,7 @@ class ReplayProvider:
         except (KeyError, TypeError, ValueError):
             raise ProviderError("cassette_malformed") from None
 
-    def record(self, payload_hash: str, raw: RawResponse) -> Path:
+    def record(self, payload_hash: str, raw: RawResponse, task: str = "triage") -> Path:
         """Write ``raw`` as the cassette for ``payload_hash``.
 
         Raises:
@@ -134,7 +136,7 @@ class ReplayProvider:
             raise RecordRefusedError("record_refused_in_ci")
         if not _enabled(RECORD_VARIABLE):
             raise RecordRefusedError("record_mode_not_enabled")
-        path = self._path(payload_hash)
+        path = self._path(payload_hash, task)
         path.parent.mkdir(parents=True, exist_ok=True)
         document = {
             "payload_hash": payload_hash,

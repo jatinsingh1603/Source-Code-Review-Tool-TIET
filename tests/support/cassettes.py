@@ -1,6 +1,7 @@
 """Record and check the replay cassettes of the KavachBank fixture (E13-03).
 
-A cassette is the mock provider's answer to one payload, keyed by the payload hash. The demo scans
+A cassette is the mock provider's answer to one payload and task, keyed by the payload hash
+(``<hash>.json`` for triage, ``<hash>.<task>.json`` for explain and remediate). The demo scans
 under a fixed salt (``demo_runner.DEMO_SALT_HEX``), so the payloads, and their hashes, are the same
 on every run; the recorder captures the payloads of one demo scan and writes the mock's answer for
 each. ``stale`` compares what a fresh recording would write with what is committed, which is the
@@ -21,8 +22,10 @@ from codekavach.core.models.payload import SanitisedPayload
 from codekavach.core.pipeline import keys
 from codekavach.llm.providers.mock import MockProvider
 from codekavach.llm.providers.replay import RECORD_VARIABLE, ReplayProvider
-from codekavach.llm.tasks.triage import TriageTask
+from codekavach.llm.tasks import build_task
 from codekavach.privacy.stages import PrivacyPrepareStage
+
+RECORDED_TASKS = ("triage", "explain", "remediate")
 
 
 def _payloads(fixture: Path) -> list[SanitisedPayload]:
@@ -44,13 +47,17 @@ def _payloads(fixture: Path) -> list[SanitisedPayload]:
 
 def record_cassettes(fixture: Path, into: Path) -> list[Path]:
     """Write one cassette per payload of the demo scan into ``into``; the files written."""
-    mock, replay, task = MockProvider(), ReplayProvider(cassette_dir=into), TriageTask()
+    mock, replay = MockProvider(), ReplayProvider(cassette_dir=into)
+    tasks = [build_task(name) for name in RECORDED_TASKS]
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv(RECORD_VARIABLE, "1")
         patch.delenv("CI", raising=False)
         return [
-            replay.record(payload.payload_hash, mock.respond(mock.prepare(task, payload)))
+            replay.record(
+                payload.payload_hash, mock.respond(mock.prepare(task, payload)), task.name
+            )
             for payload in _payloads(fixture)
+            for task in tasks
         ]
 
 

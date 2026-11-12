@@ -34,6 +34,7 @@ from codekavach.llm.providers.base import (
     parse_response,
 )
 from codekavach.llm.tasks.base import CandidateFacts, ReviewTask
+from codekavach.llm.tasks.mock_answers import mock_answer
 
 URL: Final = "mock://local/v1/chat"
 _CONFIDENCE: Final = (Confidence.LOW, Confidence.MEDIUM, Confidence.HIGH)
@@ -73,7 +74,7 @@ class MockProvider:
             schema=task.output_schema(),
             temperature=0.0,
             max_tokens=1024,
-            extra={"metadata": {"cwe": list(facts.cwe)}},
+            extra={"metadata": {"cwe": list(facts.cwe), "task": task.name}},
         )
         return PreparedRequest(
             provider=self.id,
@@ -93,10 +94,16 @@ class MockProvider:
         """The mock's answer to ``request``, computed from the metadata it carries."""
         try:
             metadata = json.loads(request.body)["metadata"]
-            verdict = verdict_for(request.payload_hash, tuple(int(c) for c in metadata["cwe"]))
+            cwe = tuple(int(c) for c in metadata["cwe"])
+            if metadata.get("task", "triage") == "triage":
+                content: dict[str, object] = verdict_for(request.payload_hash, cwe).model_dump(
+                    mode="json", exclude={"schema_version"}
+                )
+            else:
+                content = mock_answer(metadata["task"], request.payload_hash, cwe)
         except (KeyError, TypeError, ValueError):
             raise ProviderError("mock_request_malformed") from None
-        body = json.dumps({"content": verdict.model_dump(mode="json", exclude={"schema_version"})})
+        body = json.dumps({"content": content})
         return RawResponse(status=200, body=body.encode("utf-8"))
 
     def parse(self, raw: RawResponse) -> LLMVerdict:
