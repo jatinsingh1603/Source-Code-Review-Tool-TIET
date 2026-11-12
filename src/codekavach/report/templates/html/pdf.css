@@ -75,3 +75,6 @@ td.status { white-space: nowrap; }
 #roadmap-table td, #annex-table td { padding-left: 4px; padding-right: 4px; }
 #roadmap h2 { page-break-after: avoid; }
 #roadmap > p { page-break-after: avoid; }
+#summary .split.bars > div { display: block; width: 100%; margin: 0; }
+#summary .split.bars .ck-chart { width: 82%; }
+#summary .chart-card .ck-chart.matrix, #summary .split:not(.bars) .ck-chart { max-height: 70mm; }

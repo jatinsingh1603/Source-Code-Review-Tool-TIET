@@ -152,12 +152,13 @@ def chart_set(document: ReportDocument, theme: Theme) -> dict[str, Markup]:
     )
     cwe_rows = [(name, count, theme.brand) for name, count in (facts.top_cwes if facts else ())]
     owasp_rows = [(name, count, theme.accent) for name, count in (facts.top_owasp if facts else ())]
+    wide: dict[str, Any] = {"width": 640, "label_width": 300, "theme": theme}
     return {
         "donut": Markup(donut(counts, theme=theme)),  # noqa: S704 - generated, text escaped
         "severity": Markup(severity_chart(counts, theme=theme)),  # noqa: S704
         "matrix": Markup(risk_matrix(dict(cells), theme=theme)),  # noqa: S704
-        "cwe": Markup(bar_chart(cwe_rows, title="Top CWE", theme=theme)),  # noqa: S704
-        "owasp": Markup(bar_chart(owasp_rows, title="OWASP Top 10", theme=theme)),  # noqa: S704
+        "cwe": Markup(bar_chart(cwe_rows, title="Top CWE", **wide)),  # noqa: S704
+        "owasp": Markup(bar_chart(owasp_rows, title="OWASP Top 10", **wide)),  # noqa: S704
     }
 
 

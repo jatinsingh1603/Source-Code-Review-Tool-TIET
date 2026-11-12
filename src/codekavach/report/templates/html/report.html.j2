@@ -176,10 +176,12 @@
 <section class="chapter" id="summary">
 <h2><span class="num">5</span>Summary of findings</h2>
 <div class="split">
-  <div><div class="chart-card"><h4>Findings by severity</h4>{{ charts.severity }}</div>
-       <div class="chart-card"><h4>Top weakness classes (CWE)</h4>{{ charts.cwe }}</div></div>
-  <div><div class="chart-card"><h4>Risk matrix (likelihood by impact)</h4>{{ charts.matrix }}</div>
-       <div class="chart-card"><h4>OWASP Top 10 (2021) categories</h4>{{ charts.owasp }}</div></div>
+  <div><div class="chart-card"><h4>Findings by severity</h4>{{ charts.severity }}</div></div>
+  <div><div class="chart-card"><h4>Risk matrix (likelihood by impact)</h4>{{ charts.matrix }}</div></div>
+</div>
+<div class="split bars">
+  <div><div class="chart-card"><h4>Top weakness classes (CWE)</h4>{{ charts.cwe }}</div></div>
+  <div><div class="chart-card"><h4>OWASP Top 10 (2021) categories</h4>{{ charts.owasp }}</div></div>
 </div>
 <table id="summary-table"><thead><tr><th>ID</th><th>Severity</th><th>Title</th><th>CWE</th><th>Location</th><th>Risk</th><th>Status</th></tr></thead><tbody>
 {% for v in views %}<tr><td class="mono nowrap"><a href="#{{ v.report_id }}">{{ v.report_id }}</a></td><td><span class="sev sev-{{ v.severity }}">{{ v.severity }}</span></td><td>{{ v.title }}</td><td class="cwe">{{ v.cwe_label }}</td><td class="mono small">{{ v.location_label }}</td><td class="nowrap">{{ v.risk_score }} · {{ v.risk_band }}</td><td class="status">{{ v.status|replace('_', ' ') }}</td></tr>

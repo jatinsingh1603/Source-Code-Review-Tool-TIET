@@ -49,7 +49,8 @@ def bar_chart(
     for index, (label, value, colour) in enumerate(rows):
         y = top + index * (bar_h + gap)
         length = max(int(plot * value / peak), 3 if value else 0)
-        shown = label if len(label) <= 30 else label[:29] + "…"
+        limit = max(12, label_width // 6)
+        shown = label if len(label) <= limit else label[: limit - 1] + "…"
         parts.append(
             f'<text x="{label_width - 8}" y="{y + bar_h - 5}" text-anchor="end" {_FONT} '
             f'font-size="11" class="ink" fill="{theme.ink}">{_e(shown)}</text>'
