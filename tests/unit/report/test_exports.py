@@ -11,6 +11,8 @@ import pytest
 from codekavach.config import Settings
 from codekavach.core.models.enums import Language, Severity
 from codekavach.core.models.evidence import Evidence
+from codekavach.core.models.finding import Finding
+from codekavach.core.models.ids import new_finding_id
 from codekavach.core.models.text import RawCode
 from codekavach.report.model import build_report_document
 from codekavach.report.model.document import ReportDocument
@@ -25,8 +27,6 @@ from codekavach.report.render.bundle import (
 )
 from codekavach.report.render.exports import build_markdown, build_sarif, safe_cell
 from codekavach.report.render.html import render_html
-from codekavach.core.models.finding import Finding
-from codekavach.core.models.ids import new_finding_id
 from tests.support.factories import make_finding as _make_finding
 from tests.support.factories import make_location, make_scan
 
