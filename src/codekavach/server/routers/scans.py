@@ -65,6 +65,8 @@ _log = get_logger("codekavach.server.scans")
 ReportDep = Depends(require(Permission.report_read))
 SyncDep = Depends(require(Permission.sync))
 LEVELS: Final = ("L0", "L1", "L2", "L3", "L4")
+# Providers that run on this machine: a scan with one of them has a meaningful time estimate.
+LOCAL_PROVIDERS: Final = frozenset({"mock", "replay", "none", ""})
 _settings_cache: dict[str, Any] = {}
 _cache_lock = threading.Lock()
 
@@ -111,6 +113,10 @@ def eta_seconds(row: ScanRow) -> int | None:
     """Seconds left, from the elapsed time and the progress of a running scan."""
     started = as_utc(row.started_at)
     if row.status != "running" or started is None or row.progress < 5:
+        return None
+    if row.send and row.provider not in LOCAL_PROVIDERS:
+        # A remote model answers in seconds to minutes per request: a figure extrapolated from
+        # the local stages would be wrong by an order of magnitude, so none is given.
         return None
     elapsed = (utcnow() - started).total_seconds()
     return max(0, int(elapsed * (100 - row.progress) / row.progress))
