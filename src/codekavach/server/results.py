@@ -113,7 +113,11 @@ def scan_env(home: Path, passphrase_env: str) -> dict[str, str]:
         if key.startswith("CODEKAVACH_") and not key.startswith(SERVER_ONLY_VARIABLES)
     }
     env["CODEKAVACH_HOME"] = str(home)
-    if "CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE" not in env:
+    reference = env.get("CODEKAVACH_PRIVACY__VAULT__PASSPHRASE", "")
+    unset = reference.startswith("env:") and not os.environ.get(reference[4:])
+    if "CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE" not in env or (
+        env["CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE"] == "passphrase" and unset
+    ):
         env["CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE"] = "passphrase"
         env["CODEKAVACH_PRIVACY__VAULT__PASSPHRASE"] = f"env:{passphrase_env}"
     return env
