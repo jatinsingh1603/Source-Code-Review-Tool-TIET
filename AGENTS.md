@@ -10,7 +10,7 @@ This file is the operating manual for anyone, human or AI coding agent, who pick
 4. `docs/research/INSIGHTS.md`: what the literature and tool survey tells us to do and to avoid.
 5. `REFERENCE.md` and `RESOURCE.md`: frameworks, papers and tools; cite from these, do not invent sources.
 6. [`docs/process/sprint-cadence.md`](docs/process/sprint-cadence.md): the weekly rhythm, and what a card needs to move between board columns.
-7. For any work in `ui/`: the approved dashboard design, [`ui/design/codekavach-dashboard.html`](ui/design/codekavach-dashboard.html). The dashboard matches it; where they disagree, the design wins.
+7. For any work in `ui/`: the approved dashboard design, [`ui/design/codekavach-dashboard.html`](ui/design/codekavach-dashboard.html), and its code-ready kit in [`ui/design/`](ui/design/README.md) (`tokens.css`, `components.css`, `tailwind.preset.cjs`, `COMPONENTS.md`, `SCREENS.md`). The dashboard matches it; where they disagree, the design wins.
 8. [`CONTRIBUTING.md`](CONTRIBUTING.md): the short guide for newcomers and outside contributors; it links back here for the rules.
 
 ## 2. Choosing an issue
