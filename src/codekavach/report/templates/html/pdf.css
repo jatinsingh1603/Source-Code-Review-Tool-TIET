@@ -9,7 +9,7 @@
 @page cover { margin: 0; @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
 body { font-size: 9.5pt; background: #ffffff; }
 main { max-width: none; padding: 0; }
-.doctitle { string-set: doctitle content(); display: none; }
+.doctitle { string-set: doctitle content(); display: block; height: 0; overflow: hidden; visibility: hidden; margin: 0; }
 .cover { page: cover; margin: 0; height: 297mm; min-height: 0; padding: 40mm 22mm 22mm; page-break-after: always; }
 .cover .shield { right: 22mm; top: 36mm; }
 section.chapter { page-break-before: always; }
@@ -39,8 +39,17 @@ nav.toc a::after { content: leader(".") " " target-counter(attr(href), page); co
 .chart-card.donut .ck-chart { width: 60%; }
 #scope, #methodology, #rating, #roadmap { page-break-before: auto; margin-top: 12mm; }
 .split > div { flex: 1 1 45%; }
-td.status, td.cwe { white-space: nowrap; }
-#summary-table td.mono.small { font-size: 7pt; }
+td.status { white-space: nowrap; }
+#summary-table { table-layout: fixed; width: 100%; }
+#summary-table th:nth-child(1) { width: 14%; } #summary-table th:nth-child(2) { width: 12%; }
+#summary-table th:nth-child(3) { width: 29%; } #summary-table th:nth-child(4) { width: 11%; }
+#summary-table th:nth-child(5) { width: 15%; } #summary-table th:nth-child(6) { width: 9%; }
+#summary-table th:nth-child(7) { width: 10%; }
+#summary-table th, #summary-table td { padding-left: 4px; padding-right: 4px; overflow-wrap: break-word; }
+#summary-table td.mono.small { font-size: 6.5pt; word-break: break-all; }
+#summary-table td.nowrap { white-space: normal; }
+#summary-table td.cwe { font-size: 7.5pt; }
+#summary-table th { letter-spacing: 0; }
 /* WeasyPrint lays out flex boxes slowly; the paged layout uses inline blocks instead. */
 .facts, .kpis, .split, .two { display: block; margin-left: 0; margin-right: 0; }
 .fact { display: inline-block; width: 31.5%; margin: 0 0.6% 4px 0; vertical-align: top; }
@@ -55,3 +64,14 @@ td.status, td.cwe { white-space: nowrap; }
 .fact .v { font-size: 8.5pt; }
 .callout { padding: 5px 9px; margin: 5px 0; }
 .finding .fbody ul.small { margin: 2px 0; }
+#roadmap-table, #annex-table { table-layout: fixed; width: 100%; }
+#roadmap-table th:nth-child(1) { width: 10%; } #roadmap-table th:nth-child(2) { width: 11%; }
+#roadmap-table th:nth-child(3) { width: 16%; } #roadmap-table th:nth-child(4) { width: 29%; }
+#roadmap-table th:nth-child(5) { width: 9%; } #roadmap-table th:nth-child(6) { width: 25%; }
+#annex-table th:nth-child(1) { width: 17%; } #annex-table th:nth-child(2) { width: 13%; }
+#annex-table th:nth-child(3) { width: 25%; } #annex-table th:nth-child(4) { width: 45%; }
+#roadmap-table td.mono.small, #annex-table td.mono.small { font-size: 6pt; line-height: 1.5; }
+#roadmap-table th, #annex-table th { letter-spacing: 0; padding-left: 4px; padding-right: 4px; }
+#roadmap-table td, #annex-table td { padding-left: 4px; padding-right: 4px; }
+#roadmap h2 { page-break-after: avoid; }
+#roadmap > p { page-break-after: avoid; }

@@ -383,6 +383,7 @@ def build_report_document(
     ]
     if not languages and files:
         languages = sorted({lang for _, lang, _ in files})
+    languages = [lang for lang in languages if lang and lang.lower() not in {"unknown", "other"}]
     files_analysed = summary.files_scanned or len(files)
     lines_analysed = summary.lines_scanned or sum(lines for _, _, lines in files)
     facts = AggregatedFacts.from_views(

@@ -99,16 +99,21 @@
   {% for name, count in facts.by_severity %}<div class="kpi {{ name }}"><div class="v">{{ count }}</div><div class="l">{{ name }}</div></div>{% endfor %}
 </div>
 {% endif %}
+{% set first = doc.executive[0] if doc.executive else none %}
 <div class="split">
 <div style="flex: 3 1 420px">
-{% for block in doc.executive %}
-  {% if not loop.first %}<h3>{{ block.heading }}</h3>{% endif %}
-  {% for paragraph in block.paragraphs %}<p>{{ paragraph }}</p>{% endfor %}
-  {% if block.bullets %}<ul>{% for item in block.bullets %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
-{% endfor %}
+{% if first %}
+  {% for paragraph in first.paragraphs %}<p>{{ paragraph }}</p>{% endfor %}
+  {% if first.bullets %}<ul>{% for item in first.bullets %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+{% endif %}
 </div>
 <div style="flex: 1 1 180px"><div class="chart-card donut"><h4>Severity distribution</h4>{{ charts.donut }}</div></div>
 </div>
+{% for block in doc.executive[1:] %}
+  <h3>{{ block.heading }}</h3>
+  {% for paragraph in block.paragraphs %}<p>{{ paragraph }}</p>{% endfor %}
+  {% if block.bullets %}<ul>{% for item in block.bullets %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+{% endfor %}
 </section>
 
 <section class="chapter" id="scope">
@@ -255,7 +260,7 @@
 <section class="chapter" id="roadmap">
 <h2><span class="num">7</span>Remediation roadmap</h2>
 <p>Actions are grouped by weakness class so that one change closes every instance, ordered by priority, then by the number of findings closed and the estimated effort.</p>
-<table><thead><tr><th>Priority</th><th>Timeline</th><th>Weakness</th><th>Action</th><th>Effort</th><th>Findings</th></tr></thead><tbody>
+<table id="roadmap-table"><thead><tr><th>Priority</th><th>Timeline</th><th>Weakness</th><th>Action</th><th>Effort</th><th>Findings</th></tr></thead><tbody>
 {% for r in doc.roadmap %}<tr><td><span class="prio">{{ r.priority }}</span></td><td class="lane">{{ r.lane }}<div class="small muted">{{ r.window }}</div></td><td>{{ r.theme }}</td><td>{{ r.action }}</td><td>{{ r.effort|title }}</td><td class="mono small">{{ r.report_ids|join(', ') }}</td></tr>
 {% else %}<tr><td colspan="6">No open findings require remediation.</td></tr>{% endfor %}
 </tbody></table>
@@ -312,7 +317,7 @@
 {% endif %}
 <h3 id="appendix-compliance">{{ 'D' if doc.coverage.files_reviewed else 'C' }}. Compliance annex</h3>
 <p class="small">Each row lists the findings that are evidence against a control. This is not an opinion of compliance; controls without findings were not necessarily tested.</p>
-<table><thead><tr><th>Framework</th><th>Control</th><th>Title</th><th>Findings</th></tr></thead><tbody>
+<table id="annex-table"><thead><tr><th>Framework</th><th>Control</th><th>Title</th><th>Findings</th></tr></thead><tbody>
 {% for row in compliance %}<tr><td>{{ row.framework }}</td><td class="mono">{{ row.clause }}</td><td>{{ row.title or '' }}</td><td class="mono small">{{ row.ids|join(', ') }}</td></tr>
 {% else %}<tr><td colspan="4">No mappings.</td></tr>{% endfor %}
 </tbody></table>
