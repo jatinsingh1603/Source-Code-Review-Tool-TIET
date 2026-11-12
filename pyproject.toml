@@ -167,7 +167,7 @@ packages = ["src/codekavach"]
 "data" = "codekavach/data"
 
 [tool.hatch.build.targets.sdist]
-include = ["/src", "/tests", "/README.md", "/LICENSE", "/pyproject.toml"]
+include = ["/src", "/data", "/tests", "/README.md", "/LICENSE", "/pyproject.toml"]
 
 # Ignore policy: `# type: ignore[code]  # reason` only; ignore-without-code enforces the
 # code. There is no global ignore_missing_imports. For an untyped third-party package,
