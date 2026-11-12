@@ -1,0 +1,1 @@
+Demo day: `scripts/seed_demo.py` fills a running server with three projects and eight real scans at different privacy levels through the REST API, two small synthetic sample projects (`fixtures/demo-ledgerly`, `fixtures/demo-shopfront`) with ground truth, the demo-day hub `docs/demo/README.md` and the hand-over checklist `docs/demo/handover.md`.

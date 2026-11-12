@@ -14,9 +14,10 @@ Audience: security people. They will probe the privacy claim harder than anythin
 | Command line | [`cli.md`](cli.md) | cli |
 | CI and GitHub Action | [`ci.md`](ci.md), [`github-actions.md`](github-actions.md) | integrations |
 | VS Code | [`vscode.md`](vscode.md) | integrations |
-| Hand-over | [`handover.md`](handover.md) | this page's author |
+| Hand-over | [`handover.md`](handover.md) | hub |
+| Seed data for the dashboard | [Seeding the dashboard](#seeding-the-dashboard) | hub |
 
-If a link above is dead, that runbook has not landed on `main` yet; use the fallback ladder below and say nothing about the surface.
+Install guides: [`docs/guide/install.md`](../guide/install.md) and [`docs/guide/deploy.md`](../guide/deploy.md).
 
 ## Agenda (about 30 minutes)
 
@@ -24,11 +25,11 @@ If a link above is dead, that runbook has not landed on `main` yet; use the fall
 |-----|------|--------------|-----|
 | 0-3 | The problem | One slide or the README intro | Reviewing code with an LLM is useful, and sending the code to a provider is exactly what a bank, a defence contractor or a university lab cannot do. We build the review so the provider never sees what it does not need to. |
 | 3-7 | The privacy approach | Levels table (below), then `codekavach privacy inspect` page | Five levels, L0 to L4. L3 is the default. Show what leaves the machine, not a promise about it. |
-| 7-15 | Live dashboard scan, real model | Dashboard: start a scan of the KavachBank project at L3 with the `agentrouter` provider | The findings carry the real file, line and name, although the model only saw pseudonyms; the mapping is restored locally from the vault. |
-| 15-20 | Privacy Centre | Side by side (original vs payload), the egress ledger, the zero-leak check | The ledger is hash-chained: every payload that was sent, or blocked, is recorded. The check shows listed terms do not occur verbatim in any payload. Then state what it does not show (see questions). |
-| 20-23 | Report | Open the PDF from the dashboard or `codekavach report` | Audit-style: executive summary, risk matrix, evidence, remediation, privacy attestation. Also SARIF, JSON, CSV, XLSX, Markdown, DOCX. |
-| 23-26 | CI and VS Code | A finished GitHub Actions run with its Security-tab alerts; the extension showing the same findings in the editor | Same core everywhere. GitHub-hosted runs use the mock provider: no key, nothing leaves the runner. |
-| 26-28 | Docker hand-over | `docker compose up -d`, dashboard on port 8080 | This is what you receive. See [`handover.md`](handover.md). |
+| 7-15 | Live dashboard scan, real model ([`DEMO2.md`](DEMO2.md) sections 3 to 5) | Dashboard: start a scan of the KavachBank project at L3 with the `agentrouter` provider | The findings carry the real file, line and name, although the model only saw pseudonyms; the mapping is restored locally from the vault. |
+| 15-20 | Privacy Centre ([`DEMO2.md`](DEMO2.md) section 6) | Side by side (original vs payload), the egress ledger, the zero-leak check | The ledger is hash-chained: every payload that was sent, or blocked, is recorded. The check shows listed terms do not occur verbatim in any payload. Then state what it does not show (see questions). |
+| 20-23 | Report ([`DEMO2.md`](DEMO2.md) section 7) | Open the PDF from the dashboard or `codekavach report` | Audit-style: executive summary, risk matrix, evidence, remediation, privacy attestation. Also SARIF, JSON, CSV, XLSX, Markdown, DOCX. |
+| 23-26 | CI and VS Code ([`github-actions.md`](github-actions.md), [`vscode.md`](vscode.md)) | A finished GitHub Actions run with its Security-tab alerts; the extension showing the same findings in the editor | Same core everywhere. GitHub-hosted runs use the mock provider: no key, nothing leaves the runner. |
+| 26-28 | Docker hand-over ([`docker.md`](docker.md)) | `docker compose up -d`, dashboard on port 8080 | This is what you receive. See [`handover.md`](handover.md). |
 | 28-30 | Q&A | The questions below | Answer plainly; "not measured yet" is an acceptable answer. |
 
 ### Levels in one table
@@ -51,7 +52,7 @@ Do this the day before and again 30 minutes before. Tick each item; if one fails
 - [ ] `uv run codekavach demo --out demo-out` exits 0 and prints `zero_leak_passed  True` (works offline).
 - [ ] Dashboard up: `docker compose up -d` (or `uv run codekavach serve`), then open `http://127.0.0.1:8080`, log in as `admin`.
 - [ ] Dashboard seeded: `uv run python scripts/seed_demo.py` has been run once; the Overview shows several scans and a Privacy Centre that is not empty (see "Seeding the dashboard").
-- [ ] Real model reachable: a one-file scan with `--provider agentrouter` returns findings. The key comes from the environment (`CODEKAVACH_AGENTROUTER_API_KEY`), never from a file in the repository; do not show it on screen.
+- [ ] Real model reachable: Settings, Providers, **Test** next to `agentrouter` answers `ok`. The key lives in `.env` (`CODEKAVACH_AGENTROUTER_API_KEY`), never in a file that is committed; do not show it on screen.
 - [ ] `report.pdf` opens (needs the Pango libraries; see `DEMO1.md`).
 - [ ] The latest GitHub Actions run of the demo workflow is green; the Security tab has alerts. Check in the browser; do not rely on memory.
 - [ ] VS Code with the extension installed and the KavachBank folder open.
@@ -61,7 +62,32 @@ Do this the day before and again 30 minutes before. Tick each item; if one fails
 
 ## Seeding the dashboard
 
-The dashboard is more convincing with history. `scripts/seed_demo.py` creates the sample projects (KavachBank, `fixtures/demo-ledgerly`, `fixtures/demo-shopfront`) and runs real scans with the mock provider at different privacy levels, so the Overview has a trend, several scans and a populated Privacy Centre. Nothing in it is typed in by hand; every number is the output of a scan. Run it before the session, not during it. Details and the exact command are in the script's `--help`.
+A dashboard with history is more convincing than an empty one. With the server running (`docker compose up -d` or `uv run codekavach serve`), from a checkout:
+
+```console
+$ export CODEKAVACH_ADMIN_PASSWORD=...          # the admin password from .env; omit for the default
+$ uv run python scripts/seed_demo.py            # about two minutes; add --url http://host:8080 for another address
+KavachBank (sample)
+  KavachBank at L1: completed, 59 findings (...), 16 payloads, 0 blocked
+  ...
+done: 3 projects, 8 scans, 69 findings, 65 still open
+```
+
+It uses only the REST API (so it works against a container), the offline `mock` provider (no key, nothing leaves the machine) and real scans. It creates:
+
+| Project | Scans | What it shows |
+|---------|-------|---------------|
+| KavachBank (sample) | L1, L2, L3 | The same code at three levels: detection does not change with the level, what the provider would receive does (compare the Privacy Centre of each scan). 4 findings confirmed, 2 accepted risk. |
+| Ledgerly (demo), Python, `fixtures/demo-ledgerly` | L2, then L3 after three flaws are fixed in the uploaded code | A falling trend: the re-scan no longer reports the SQL injection, the unsafe YAML load and the debug flag; those findings are marked **fixed**. |
+| Shopfront (demo), Node, `fixtures/demo-shopfront` | L3, L0, then L3 after fixes | An L0 scan with **zero payloads** (nothing leaves the machine) between two L3 scans; findings on the safe code (the ground-truth negative control) are marked **false positive**. |
+
+Nothing is typed into the database. Findings, counts, payloads, the ledger and the zero-leak result are the output of the scans; only the triage statuses are the script's choice, applied through the same API a reviewer uses. Run it twice and it skips projects that already have scans (`--again` repeats). Run it the day before, not in front of the audience, and check the Overview, a Privacy Centre page and one report afterwards.
+
+Honest notes for the presenter, as observed with the engines of the day:
+
+- The sample projects are small and synthetic, with ground truth in `fixtures/*/ground-truth/manifest.yaml`. The scanner finds most planted flaws, but not all, and it flags the safe code in Shopfront. That is a true statement about detection quality on small samples, and a good moment to show triage. Do not present it as a benchmark; `codekavach eval` is the benchmark.
+- L4 is not seeded: it is not delivered in every build and fails closed.
+- Scans with the mock provider say so in the summary: the ledger shows what **would** have been sent.
 
 ## Fallback ladder
 
