@@ -1,2 +1,2 @@
-const { accountId: var_3, createdAt: var_1 } = var_4();
+const { var_3, var_1 } = var_4();
 const [var_2, var_6] = var_5();

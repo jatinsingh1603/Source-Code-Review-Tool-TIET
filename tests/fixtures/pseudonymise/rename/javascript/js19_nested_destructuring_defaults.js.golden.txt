@@ -1,4 +1,4 @@
-function fn_1({ field_1: { holder: param_1, limit: param_3 = 10 }, ...param_2 }) {
-  const { retries: var_1 = 3 } = param_2;
+function fn_1({ field_1: { param_1, param_3 = 10 }, ...param_2 }) {
+  const { var_1 = 3 } = param_2;
   return param_1 + param_3 + var_1;
 }

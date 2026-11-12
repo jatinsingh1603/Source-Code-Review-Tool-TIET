@@ -73,16 +73,14 @@ def test_python_every_internal_name_is_replaced_and_public_names_are_not(names: 
 
 @settings(max_examples=60, deadline=None)
 @given(names=internal_names(JAVASCRIPT_ALLOWLIST, 9))
-def test_javascript_every_internal_name_is_replaced_or_kept_only_as_a_shorthand_key(
+def test_javascript_every_internal_name_is_replaced_shorthand_keys_included(
     names: list[str],
 ) -> None:
     source = javascript_program(names)
     renamed = rename_text(Language.JAVASCRIPT, source, extra=())
-    keys = set(names[3:5])  # the two names written as shorthand
-    for name in names:
-        for found in re.finditer(rf"\b{name}\b", renamed.text):
-            assert name in keys, name
-            assert re.match(r": (?:var|param)_\d+", renamed.text[found.end() :]), name
+    words = set(re.findall(r"[\w$]+", renamed.text))
+    assert not set(names) & words  # names[3:5] are written as shorthand, and renamed too
+    assert renamed.report.shorthand_expanded == 0
     assert "console.log" in renamed.text
     again = parse("o.js", Language.JAVASCRIPT, renamed.text)
     assert again.error_count == 0

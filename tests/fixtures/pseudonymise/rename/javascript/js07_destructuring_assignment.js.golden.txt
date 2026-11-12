@@ -1,4 +1,4 @@
 let var_2;
 let var_1;
-({ accountId: var_2, createdAt: var_1 } = var_3());
+({ var_2, var_1 } = var_3());
 [var_2, var_1] = [var_1, var_2];

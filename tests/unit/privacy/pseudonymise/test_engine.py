@@ -6,6 +6,7 @@ KavachBank-shaped inputs.
 """
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -131,12 +132,12 @@ def test_no_original_name_of_the_client_is_in_the_payload() -> None:
         assert kept in text, kept
 
 
-def test_a_javascript_payload_keeps_the_shorthand_keys_only_beside_their_token() -> None:
+def test_a_javascript_payload_renames_the_shorthand_keys_too() -> None:
+    """An internal shorthand key is an original name (I6): it takes the binding's token."""
     text = run(JS).payload.text.expose()
-    assert "accountId: " in text
-    assert text.count("accountId") == text.count("accountId: ")
-    assert "customerTier" in text  # same rule: written as ``customerTier: var_N``
-    assert "premium" not in text and "fraud" not in text
+    for name in ("accountId", "customerTier", "runQuery", "premium", "fraud"):
+        assert name not in text, name
+    assert re.search(r"const \{ var_\d+, var_\d+ \} = param_\d+\.params;", text)
 
 
 def test_the_payload_text_is_never_the_original_text() -> None:
@@ -332,9 +333,11 @@ def test_the_self_check_fires_when_an_original_name_is_planted() -> None:
         _check_survival(text + "\naccrue_interest(row)\n", assignments, frozenset())
 
 
-def test_the_self_check_allows_a_public_name_and_a_key_beside_its_own_token() -> None:
+def test_the_self_check_allows_a_public_name_and_no_internal_key() -> None:
     assignments = ((PseudonymKind.VAR, "accountId", "var_2"),)
-    _check_survival("f({ accountId: var_2 })", assignments, frozenset())
+    with pytest.raises(PseudonymError):  # an internal key is an original too (I6)
+        _check_survival("f({ accountId: var_2 })", assignments, frozenset())
+    _check_survival("f({ accountId: var_2 })", assignments, frozenset({"accountId"}))
     with pytest.raises(PseudonymError):
         _check_survival("f({ accountId: var_3 })", assignments, frozenset())
     with pytest.raises(PseudonymError):

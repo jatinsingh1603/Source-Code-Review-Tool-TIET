@@ -51,6 +51,16 @@ class LevelPlan:
         return self.sends_code and not self.pseudonymise
 
     @property
+    def names_retained(self) -> bool:
+        """True only at L1: code is sent with the client's identifiers in clear, by definition.
+
+        The egress guard's vault scanner (E12-02) does not apply to such a payload: the vault
+        holds the identifiers that a pseudonymising level renamed, and L1 renames none. Its
+        secret, personal-data and domain-term scanners still run (ADR-0010).
+        """
+        return self.sends_code and not self.pseudonymise
+
+    @property
     def strategy_ceiling(self) -> SliceStrategy | None:
         """The richest slicing strategy allowed: whole files for L1 and L2."""
         if self.unit == "file":

@@ -154,27 +154,26 @@ PY_EXAMPLE = (
 )
 
 
-def test_worked_example_javascript_expands_the_shorthand_in_both_directions() -> None:
-    """``{ accountId }`` becomes ``{ accountId: var_N }`` in the pattern and in the literal.
+def test_worked_example_javascript_renames_the_shorthand_in_both_directions() -> None:
+    """``{ accountId }`` becomes ``{ var_N }`` in the pattern and in the literal.
 
-    The issue shows ``var_1``, ``var_2``, ``fn_1`` and a kept ``tier`` key; the numbers depend on
-    the scan salt (I5), ``computeFee`` has no definition so it is a ``var``, and ``tier`` is an
-    internal key, which the classifier renames. The shape is the documented one.
+    The key of an internal shorthand is an original name like any other property name, so it
+    takes the binding's token (invariant I6; the egress guard blocks a key left in clear). The
+    numbers depend on the scan salt (I5), ``computeFee`` has no definition so it is a ``var``,
+    and ``tier`` is an internal key, which the classifier renames.
     """
     renamed = rename_text(Language.JAVASCRIPT, JS_EXAMPLE, extra=("req",))
     first, second = renamed.text.split("\n")[:2]
     token = r"var_\d+"
-    assert re.fullmatch(
-        rf"const \{{ accountId: ({token}), createdAt: ({token}) \}} = req\.body; +", first
-    )
-    binding = re.match(rf"const \{{ accountId: ({token}),", first)
+    binding = re.fullmatch(rf"const \{{ ({token}), ({token}) \}} = req\.body; +", first)
     assert binding is not None
     assert re.fullmatch(
-        rf"const {token} = {token}\(\{{ accountId: {re.escape(binding.group(1))}, "
+        rf"const {token} = {token}\(\{{ {re.escape(binding.group(1))}, "
         r'field_\d+: "x{7}" \}\);',
         second,
     )
-    assert renamed.report.shorthand_expanded == 3
+    assert "accountId" not in renamed.text and "createdAt" not in renamed.text
+    assert renamed.report.shorthand_expanded == 0
 
 
 def test_worked_example_python_keeps_public_names_and_blanks_the_docstring() -> None:
@@ -196,7 +195,7 @@ def test_worked_example_python_keeps_public_names_and_blanks_the_docstring() -> 
 # --- shorthand --------------------------------------------------------------------------------
 
 
-def test_a_shorthand_property_and_pattern_expand_and_a_public_one_stays() -> None:
+def test_an_internal_shorthand_is_renamed_in_place_and_a_public_one_stays() -> None:
     source = (
         "// extra: req\n"
         "const { accountId } = req.body;\n"
@@ -204,20 +203,37 @@ def test_a_shorthand_property_and_pattern_expand_and_a_public_one_stays() -> Non
         "function f({ accountId, req }) { return accountId + req; }\n"
     )
     renamed = rename_text(Language.JAVASCRIPT, source)
-    token = re.search(r"\{ accountId: ((?:var|param)_\d+) \}", renamed.text)
+    token = re.search(r"const \{ ((?:var|param)_\d+) \} = req\.body;", renamed.text)
     assert token is not None
-    assert f"{{ accountId: {token.group(1)}, req }}" in renamed.text  # literal: req is public
-    assert re.search(r"function fn_\d+\(\{ accountId: (?:var|param)_\d+, req \}\)", renamed.text)
-    assert renamed.report.shorthand_expanded == 3
+    assert f"{{ {token.group(1)}, req }}" in renamed.text  # literal: req is public
+    assert re.search(r"function fn_\d+\(\{ (?:var|param)_\d+, req \}\)", renamed.text)
+    assert "accountId" not in renamed.text
+    assert renamed.report.shorthand_expanded == 0
+    assert parse("o.js", Language.JAVASCRIPT, renamed.text).error_count == 0
+
+
+def test_a_shorthand_whose_name_is_public_in_the_file_keeps_a_public_key() -> None:
+    """``status`` is an Express member here: the key stays, the local binding is renamed."""
+    source = (
+        'const express = require("express");\n'
+        "function handle(req) {\n"
+        "  const status = compute(req);\n"
+        "  req.status(status);\n"
+        "  return { status };\n"
+        "}\n"
+    )
+    renamed = rename_text(Language.JAVASCRIPT, source)
+    assert re.search(r"return \{ status: var_\d+ \};", renamed.text)
+    assert re.search(r"param_\d+\.status\(var_\d+\)", renamed.text)
+    assert renamed.report.shorthand_expanded == 1
 
 
 def test_a_shorthand_pattern_with_a_default_keeps_its_default() -> None:
     renamed = rename_text(
         Language.JAVASCRIPT, "function f({ retryLimit = 3 }) { return retryLimit; }\n"
     )
-    assert re.search(r"\{ retryLimit: var_\d+ = 3 \}", renamed.text) or re.search(
-        r"\{ retryLimit: param_\d+ = 3 \}", renamed.text
-    )
+    assert re.search(r"\{ (?:var|param)_\d+ = 3 \}", renamed.text)
+    assert "retryLimit" not in renamed.text
     assert parse("o.js", Language.JAVASCRIPT, renamed.text).error_count == 0
 
 

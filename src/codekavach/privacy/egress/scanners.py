@@ -35,7 +35,14 @@ normalisation, not a semantic one.
 **Cost.** A vault original that is an ordinary word (``value``, ``result``) blocks a body that
 contains that word anywhere, including in the instruction text around the payload. That is the
 price of a substring check that does not trust where in the body a name sits; a stage that builds
-the instruction text should avoid vocabulary that its own scan renamed.
+the instruction text should avoid vocabulary that its own scan renamed. One narrowing: inside a
+run that is exactly a word the tool writes into every payload (``_TOOL_WORDS``: the stub labels,
+the effect-summary grammar, the header), only an original equal to the whole word is a hit, so
+the client variable ``resolved`` does not match the stub label ``unresolved``.
+
+**Levels.** The vault holds the names that L2 and L3 renamed, in this scan or an earlier scan of
+the same project. An L1 payload keeps names in clear by definition (ADR-0010), so it is not
+compared with the vault; the other five scanners run at every level.
 
 **Rebuilds.** The automaton is built by ``warm`` before the first request. When the vault holds a
 different number of originals at a later request (a context round added mappings), it is rebuilt,
@@ -50,7 +57,7 @@ from typing import Final
 
 from codekavach.config import Settings
 from codekavach.core.log import get_logger
-from codekavach.core.models import Language, PlaceholderKind, RawCode
+from codekavach.core.models import Language, PlaceholderKind, PrivacyLevel, RawCode
 from codekavach.privacy.detect.pii.builtin import pii_detectors
 from codekavach.privacy.detect.registry import DetectorRegistry
 from codekavach.privacy.detect.runner import detect_with_report
@@ -65,9 +72,13 @@ from codekavach.privacy.egress.guard import (
 )
 from codekavach.privacy.egress.models import EgressMeta, LeakHit
 from codekavach.privacy.egress.textview import forget, normalise, view_of
+from codekavach.privacy.levels import LEVEL_PLANS
 from codekavach.privacy.pseudonymise.allowlist import NoAllowlistError, PublicAllowlist
 from codekavach.privacy.pseudonymise.generator import PseudonymKind
+from codekavach.privacy.pseudonymise.linemap import header_text
+from codekavach.privacy.slicing.elide import elision_marker
 from codekavach.privacy.slicing.metrics import ScanDisclosure
+from codekavach.privacy.slicing.stubs import PAYLOAD_VOCABULARY
 
 _log = get_logger("codekavach.privacy.egress")
 MIN_ORIGINAL_LENGTH: Final = 4  # invariant I6's own threshold
@@ -83,6 +94,12 @@ _PATH: Final = "request-body"
 _WORD: Final = re.compile(r"[\w$]+")
 _TOKEN: Final = re.compile(
     "(?:" + "|".join(kind.value for kind in PseudonymKind) + r")_[0-9]+(?:_[a-z]+)?"
+)
+# The words the tool writes into every payload around the client's code (see OriginalMatcher).
+_TOOL_WORDS: Final = PAYLOAD_VOCABULARY | frozenset(
+    word
+    for text in (header_text(Language.PYTHON, PrivacyLevel.L3), elision_marker(Language.PYTHON))
+    for word in re.findall(r"[a-z_]{3,}", text)
 )
 _PLACEHOLDER_WORDS: Final = frozenset(
     {kind.value.casefold() for kind in PlaceholderKind}
@@ -188,15 +205,25 @@ class OriginalMatcher:
     ``jsonify``). The pseudonymiser leaves such a name in clear on purpose, so it is not searched:
     an original such as ``conn`` would otherwise match inside ``connect`` and block every request
     that calls it. Only a run that is exactly a public name is skipped; ``my_connect`` is not.
+
+    ``tool_words`` are words the tool itself writes into a payload (a stub's ``unresolved`` label,
+    the effect-summary grammar, the header). In a run that is exactly one of them only a pattern
+    covering the whole run counts: the original ``resolved`` inside the label ``unresolved`` is the
+    tool's own text, while an original that *is* ``unresolved`` is still a hit.
     """
 
-    __slots__ = ("_other", "_public_run", "_words")
+    __slots__ = ("_other", "_public_run", "_tool_words", "_words")
     __ck_never_persist__ = True
 
     def __init__(
-        self, patterns: Iterable[str], *, public_run: Callable[[str], bool] | None = None
+        self,
+        patterns: Iterable[str],
+        *,
+        public_run: Callable[[str], bool] | None = None,
+        tool_words: Collection[str] = (),
     ) -> None:
         self._public_run = public_run
+        self._tool_words = frozenset(normalise(word) for word in tool_words)
         words: list[str] = []
         other: list[str] = []
         for pattern in dict.fromkeys(patterns):
@@ -224,7 +251,10 @@ class OriginalMatcher:
             for run, (times, position) in runs.items():
                 if self._public_run is not None and self._public_run(run):
                     continue
-                for start, _end, _index in self._words.finditer(run):
+                whole_only = run in self._tool_words
+                for start, end, _index in self._words.finditer(run):
+                    if whole_only and (start, end) != (0, len(run)):
+                        continue  # a part of the tool's own word, not a name of the client
                     count += times
                     if first < 0 or position + start < first:
                         first = position + start
@@ -313,7 +343,7 @@ class VaultOriginalScanner:
             def public_run(run: str) -> bool:
                 return run in folded_members or any(item.is_public(run) for item in lists)
 
-            self._matcher = OriginalMatcher(patterns, public_run=public_run)
+            self._matcher = OriginalMatcher(patterns, public_run=public_run, tool_words=_TOOL_WORDS)
             self._signature = signature
             patterns.clear()
             _log.info(
@@ -323,10 +353,18 @@ class VaultOriginalScanner:
             )
 
     def scan(self, body: bytes, meta: EgressMeta) -> Sequence[LeakHit]:
-        """Hits as a count and the first offset in the view that matched; never the text."""
+        """Hits as a count and the first offset in the view that matched; never the text.
+
+        A payload at a level that keeps names in clear by definition (L1, ADR-0010) is not
+        compared with the vault: the vault holds the names that *other* scans of the project
+        renamed at L2 or L3, so the result would depend on the project's history, not on the
+        payload. The guard admits an L1 request only where policy permits L1 for the provider.
+        """
         matcher = self._matcher
         if matcher is None:
             raise RuntimeError("the vault automaton has not been built")
+        if LEVEL_PLANS[meta.level].names_retained:
+            return ()
         count, first = _best(matcher.scan(text) for text in view_of(body).matching_texts())
         return _hit(self.id, "vault_identifier", count, first) if count else ()
 

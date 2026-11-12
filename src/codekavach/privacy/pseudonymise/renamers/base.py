@@ -28,7 +28,7 @@ plan raises ``PseudonymError``; no text is produced.
 
 import re
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, ClassVar, Final, Protocol
 
 from tree_sitter import Node
@@ -135,6 +135,8 @@ class SourceFacts:
     tag_fields: tuple[tuple[int, str], ...] = ()
     # C and C++ macro bodies: the start of each ``preproc_arg`` token.
     macro_starts: frozenset[int] = field(default=frozenset())
+    # Names that stay in clear somewhere in this file (a PUBLIC decision); set by ``plan``.
+    public_names: frozenset[str] = field(default=frozenset())
 
 
 class ByteOffsets:
@@ -293,7 +295,14 @@ class BaseRenamer:
         data = text.encode("utf-8")
         offsets = ByteOffsets(text)
         tokens = name_tokens(classification, generator, self.canonical_name)
-        facts = self.facts(parsed)
+        facts = replace(
+            self.facts(parsed),
+            public_names=frozenset(
+                d.name
+                for d in classification.decisions
+                if d.classification is IdentifierClass.PUBLIC
+            ),
+        )
         string_names = {
             d.name
             for d in classification.decisions

@@ -159,6 +159,22 @@ _CLAUSE: Final = re.compile(
     r"|calls sink family: [a-z]+|raises|derived: (?:syntactic|taint))$"
 )
 
+# Every word this module writes into a payload on its own account: the reason labels, the static
+# marker and the fixed grammar of the effect summary. The egress guard's vault scanner reads it
+# so that an original found only *inside* one of these words (``resolved`` in ``unresolved``) is
+# not taken for a leak; an original equal to one of them is still a hit (E12-02).
+PAYLOAD_VOCABULARY: Final[frozenset[str]] = frozenset(
+    word
+    for text in (
+        *REASON_LABELS.values(),
+        "static",
+        _CLAUSE.pattern,
+        *(family for calls in _SINK_CALLS.values() for family in calls.values()),
+        *(family for heads in _SINK_HEADS.values() for family in heads.values()),
+    )
+    for word in re.findall(r"[a-z_]{3,}", text)
+)
+
 
 class _Priority(IntEnum):
     """The documented order in which stubs are kept when the budget runs out."""

@@ -3,21 +3,26 @@
 For generated programs with known internal names, the whole path (layout, classification, rename,
 validation, line map, self-check) runs, and the payload text is searched for every name. The
 names are lower-case words of four to nine letters that no allowlist rule keeps. A name may stay
-only as a JavaScript shorthand key written beside its own token, which the renamer counts; the
-public names of the program must stay.
+nowhere, not even as a JavaScript shorthand key; the public names of the program must stay. The
+egress guard's vault scanner, built from the payload's own mapping batch, passes every payload.
 
 The same programs also give the other properties of the payload: the line map inverts, the hash
 is a function of the input and the salt, and a payload never equals its input.
 """
 
+import json
 import re
+from collections.abc import Iterator
 
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from codekavach.config import Settings
 from codekavach.core.models import Language, PrivacyLevel
 from codekavach.core.pipeline.salt import ScanSalt
+from codekavach.privacy.egress.models import EgressMeta
+from codekavach.privacy.egress.scanners import VaultOriginalScanner
 from codekavach.privacy.pseudonymise.engine import Pseudonymiser
 from tests.support.factories import SCAN_ID
 from tests.support.payload import SALT, segment, slice_of, unredacted
@@ -78,17 +83,51 @@ def test_python_no_internal_name_survives_in_the_payload(names: list[str], word:
 
 @settings(max_examples=40, deadline=None)
 @given(names=_internal_names(JAVASCRIPT_ALLOWLIST, 9))
-def test_javascript_a_name_survives_only_as_a_key_beside_its_token(names: list[str]) -> None:
+def test_javascript_no_internal_name_survives_not_even_as_a_shorthand_key(
+    names: list[str],
+) -> None:
     program = javascript_program(names)
     slice_, result = payload_of(program, Language.JAVASCRIPT)
     text = result.payload.text.expose()
-    keys = set(names[3:5])  # the two names written as shorthand
-    for name in names:
-        for found in re.finditer(rf"(?<![\w$]){name}(?![\w$])", text):
-            assert name in keys, name
-            assert re.match(r"\s*:\s*(?:var|param)_\d+", text[found.end() :]), name
+    assert not set(names) & set(WORD.findall(text))  # names[3:5] are written as shorthand
     assert "console.log" in text
     check_line_map(slice_, result.payload)
+
+
+@settings(max_examples=40, deadline=None)
+@given(
+    names=_internal_names(JAVASCRIPT_ALLOWLIST, 9),
+    level=st.sampled_from([PrivacyLevel.L2, PrivacyLevel.L3]),
+)
+def test_the_egress_vault_scanner_passes_every_payload_the_pseudonymiser_makes(
+    names: list[str], level: PrivacyLevel
+) -> None:
+    """The pseudonymiser and the guard agree (E12-02): the payload holds no original of its batch.
+
+    Before shorthand keys were renamed, ``{ a, b }`` left ``a`` and ``b`` in clear while the
+    vault recorded them, and the guard blocked every whole-file L2 request on such code.
+    """
+    program = javascript_program(names)
+    slice_ = slice_of(
+        segment("program.js", 1, program.rstrip("\n").split("\n")), language=Language.JAVASCRIPT
+    )
+    result = ENGINE.process(
+        slice_, unredacted(slice_, level), salt=SALT, level=level, scan_id=SCAN_ID
+    )
+    scanner = VaultOriginalScanner()
+    scanner.bind(_Vault([entry.original for entry in result.batch.entries]), Settings())
+    body = json.dumps({"messages": [{"content": result.payload.text.expose()}]}).encode()
+    meta = EgressMeta(provider="mock", model="mock-1", level=level, payload_hash="0" * 64)
+    assert result.batch.entries
+    assert scanner.scan(body, meta) == ()
+
+
+class _Vault:
+    def __init__(self, originals: list[str]) -> None:
+        self._originals = originals
+
+    def iter_originals(self, *, min_len: int = 4) -> Iterator[str]:
+        return (original for original in self._originals if len(original) >= min_len)
 
 
 @settings(max_examples=25, deadline=None)

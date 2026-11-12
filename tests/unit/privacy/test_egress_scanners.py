@@ -6,12 +6,16 @@ from collections.abc import Iterator
 from typing import Any
 
 import pytest
+from hypothesis import assume, given
+from hypothesis import settings as settings_
+from hypothesis import strategies as st
 
 from codekavach.config import Settings
 from codekavach.config.merge import deep_merge
 from codekavach.core.models import PrivacyLevel
 from codekavach.privacy.egress.guard import LeakScanner, ScannerRegistry
 from codekavach.privacy.egress.models import EgressMeta
+from codekavach.privacy.egress.scanners import _TOOL_WORDS as TOOL_WORDS
 from codekavach.privacy.egress.scanners import (
     SCANNER_IDS,
     AggregationScanner,
@@ -178,6 +182,65 @@ def test_warm_builds_before_the_first_request_and_release_drops_it() -> None:
 def test_binding_without_a_vault_fails() -> None:
     with pytest.raises(RuntimeError, match="needs the vault"):
         VaultOriginalScanner().bind(None, settings())
+
+
+@settings_(max_examples=80, deadline=None)
+@given(data=st.data())
+def test_an_original_inside_a_word_the_tool_writes_is_not_a_hit_but_the_word_itself_is(
+    data: st.DataObject,
+) -> None:
+    """``resolved`` (a client variable) inside the stub label ``unresolved`` is the tool's text.
+
+    Before the tool's own words were known, every L3 slice with an unresolved-callee stub was
+    blocked once any scan of the project had renamed a variable called ``resolved``.
+    """
+    word = data.draw(st.sampled_from(sorted(w for w in TOOL_WORDS if len(w) >= 5)))
+    start = data.draw(st.integers(0, len(word) - 4))
+    end = data.draw(st.integers(start + 4, len(word)))
+    part = word[start:end]
+    scanner = vault_scanner(part)
+    # a public or placeholder word (``return``, ``value``) is never a pattern; nothing to test
+    assume(len(scanner.scan(body_of(f"{part} = 1"), META)) == 1)
+    assume(len(vault_scanner(word).scan(body_of(f"{word} = 1"), META)) == 1)
+    tool_line = body_of(f"# {word}\ndef fn_4(*args): ...\n# effects unknown; derived: syntactic")
+    if part != word:
+        assert scanner.scan(tool_line, META) == ()
+    else:
+        assert len(scanner.scan(tool_line, META)) == 1
+    # the same original inside a client's own word, or in clear, is still a hit
+    assert len(scanner.scan(body_of(f"x = my_{word}_2"), META)) == 1
+    assert len(vault_scanner(word).scan(tool_line, META)) == 1  # a client name equal to it
+
+
+def test_the_stub_label_unresolved_does_not_match_the_original_resolved() -> None:
+    assert "unresolved" in TOOL_WORDS
+    body = body_of("# unresolved\ndef fn_4(*args, **param_8): ...\n")
+    assert vault_scanner("resolved").scan(body, META) == ()
+    assert len(vault_scanner("resolved").scan(body_of("if (!resolved.ok) {}"), META)) == 1
+
+
+@pytest.mark.parametrize("level", [PrivacyLevel.L2, PrivacyLevel.L3, PrivacyLevel.L4])
+def test_a_pseudonymising_level_is_compared_with_the_vault(level: PrivacyLevel) -> None:
+    meta = META.model_copy(update={"level": level})
+    assert len(vault_scanner(ORIGINAL).scan(body_of(f"{ORIGINAL}()"), meta)) == 1
+
+
+def test_an_l1_payload_keeps_names_by_definition_and_is_not_compared_with_the_vault() -> None:
+    """ADR-0010: L1 renames nothing, so the vault (names other scans renamed) does not apply.
+
+    Without this, the first L1 scan of a project passed and every L1 scan after an L2 or L3 scan
+    of the same project was blocked: the outcome depended on history, not on the payload.
+    """
+    meta = META.model_copy(update={"level": PrivacyLevel.L1})
+    assert vault_scanner(ORIGINAL).scan(body_of(f"{ORIGINAL}()"), meta) == ()
+
+
+def test_an_l1_payload_is_still_checked_for_secrets_and_domain_terms() -> None:
+    meta = META.model_copy(update={"level": PrivacyLevel.L1})
+    secret = bound(ResidualSecretScanner()).scan(body_of(f'key = "{AWS_EXAMPLE}"'), meta)
+    assert [hit.block_code for hit in secret] == ["residual_secret"]
+    terms = bound(DomainTermScanner(), config=settings(domain_terms=["Phoenix Ledger"]))
+    assert len(terms.scan(body_of("the Phoenix Ledger"), meta)) == 1
 
 
 def test_the_matcher_counts_word_patterns_by_run_and_phrases_by_text() -> None:

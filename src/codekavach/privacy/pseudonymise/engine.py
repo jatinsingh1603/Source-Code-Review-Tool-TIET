@@ -324,21 +324,16 @@ def _check_survival(
     """Raise if an original name of four characters or more is still in ``text``.
 
     This repeats a part of the egress guard on purpose (E12-02, the authoritative control): a
-    renamer bug then fails here, close to its cause, and does not rely on a later stage. A name
-    that stays in clear by design is allowed: a public name, and a shorthand key that the renamer
-    wrote as ``key: token`` with its own token.
+    renamer bug then fails here, close to its cause, and does not rely on a later stage. Only a
+    name that stays in clear by design is allowed: a public name of the file (which is also the
+    only kind of shorthand key the renamer writes as ``key: token``).
     """
     words = set(_WORD.findall(text))
-    for _, original, token in assignments:
+    for _, original, _token in assignments:
         if len(original) < _MIN_SURVIVOR_LENGTH or original in kept:
             continue
         if _IDENTIFIER.fullmatch(original):
-            name = original.removeprefix("#")
-            if name not in words:
-                continue
-            follow = re.compile(rf"\s*:\s*{re.escape(token)}(?![\w$])")
-            for found in re.finditer(rf"(?<![\w$]){re.escape(name)}(?![\w$])", text):
-                if not follow.match(text, found.end()):
-                    raise PseudonymError("an original name survives in the payload")
+            if original.removeprefix("#") in words:
+                raise PseudonymError("an original name survives in the payload")
         elif original in text:
             raise PseudonymError("an original name survives in the payload")
