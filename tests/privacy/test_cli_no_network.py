@@ -24,7 +24,6 @@ from typer.core import TyperGroup
 from codekavach.cli.app import build_cli
 from codekavach.cli.onboarding import build_notice
 from tests.support.cli import CliResult
-from tests.support.fakes import fake_backend
 from tests.support.no_network import (
     NetworkAttempts,
     executable_name,
@@ -119,23 +118,6 @@ def missing_part(case: Case) -> str | None:
     return None
 
 
-@dataclass
-class FakeRenderer:
-    extension: str = "html"
-
-    def render(self, document: object, destination: Path) -> None:
-        destination.write_text(repr(document), encoding="utf-8")
-
-
-@dataclass
-class FakeRegistry:
-    def names(self) -> Sequence[str]:
-        return ["html"]
-
-    def get(self, name: str) -> FakeRenderer:
-        return FakeRenderer()
-
-
 @pytest.fixture
 def project(project_dir: Path) -> Path:
     (project_dir / ".git").mkdir()
@@ -165,19 +147,13 @@ def test_command_makes_no_network_attempt(
     cli: Cli,
     project: Path,
     memory_keyring: object,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     missing = missing_part(case)
     if missing is not None:
         pytest.skip(f"not registered yet: {missing}")
     if case.name == "report":
         assert cli(["scan", str(project), "--no-llm"], cwd=project).exit_code == OK
-        fake_backend(
-            monkeypatch,
-            "codekavach.report.model.build_report_document",
-            lambda scan, findings, *_rest: (scan.id, len(findings)),
-        )
-        fake_backend(monkeypatch, "codekavach.report.render.renderer_registry", FakeRegistry)
+        # The real report model and HTML renderer: both must stay offline too.
     args = [str(project) if argument == PROJECT else argument for argument in case.args]
     with observed() as (network, started):
         result = cli(args, cwd=project)
