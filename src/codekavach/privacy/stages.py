@@ -60,6 +60,7 @@ from codekavach.privacy.detect.registry import DetectorRegistry
 from codekavach.privacy.detect.runner import detect_all
 from codekavach.privacy.detect.secrets.builtin import register_secret_detectors
 from codekavach.privacy.detect.terms import register_term_detector
+from codekavach.privacy.egress.aggregation import AggregationBudget, ExposureAccount
 from codekavach.privacy.egress.session import EgressSession
 from codekavach.privacy.errors import PseudonymError, RedactionError
 from codekavach.privacy.levels import level_available, plan_for
@@ -84,6 +85,7 @@ from codekavach.privacy.vault.store import Vault
 _log = get_logger("codekavach.privacy.stages")
 
 SLICE_FAILED: Final = "privacy_slice_failed"
+BUDGET_EXCEEDED: Final = "privacy_aggregation_budget"
 VAULT_FAILED: Final = "privacy_vault_failed"
 _RULE_UNSAFE: Final = frozenset(
     chr(code) for code in range(128) if not (chr(code).isalnum() or chr(code) in "_.:/-")
@@ -258,6 +260,14 @@ class PrivacyPrepareStage:
             never_send=policy.is_never_send,
         )
         disclosure = ScanDisclosure.for_index(index)
+        ceiling = ctx.config.privacy.egress.aggregation_budget_pct
+        budget_limit = AggregationBudget(scan_pct=ceiling, engagement_pct=ceiling)
+        provider_id, _ = ctx.config.llm.selected_provider()
+        account = (
+            ExposureAccount(index.total_lines, path=ctx.state_dir / "exposure.json")
+            if ctx.state_dir is not None
+            else ExposureAccount(index.total_lines)
+        )
         registry = detector_registry(ctx.config)
         numbering = PlaceholderNumbering(ctx.scan_salt)
         generator = PseudonymGenerator(ctx.scan_salt)
@@ -308,12 +318,17 @@ class PrivacyPrepareStage:
                     except _FailedError as failure:
                         ctx.fail_item(str(candidate.id), failure.code)
                         continue
+                    if account.would_exceed(budget_limit, ctx.scan_id, provider_id, outcome.slice_):
+                        ctx.fail_item(str(candidate.id), BUDGET_EXCEEDED)
+                        continue
+                    account.record(ctx.scan_id, provider_id, outcome.slice_)
                     disclosure.record(outcome.slice_, index)
                     payloads.append(outcome.payload)
                     slices.append(outcome.slice_)
                 if done % 25 == 0:
                     ctx.emit_progress(done, len(candidates), "candidates")
         ctx.emit_progress(len(candidates), len(candidates), "candidates")
+        account.save()
         _log.info(
             "payloads_prepared",
             prepared=len(payloads),
