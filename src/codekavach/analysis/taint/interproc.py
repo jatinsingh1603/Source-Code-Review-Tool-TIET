@@ -4,12 +4,16 @@ Owning epic: E17. ``ProjectIndex`` resolves a call to a function of the project 
 imports and same-file names, JavaScript relative ``require`` and import specifiers). The call graph
 is condensed into strongly connected components (iterative Tarjan) and summaries are computed in
 reverse topological order, callees first. A component with a cycle is iterated to a fixed point,
-at most ``RECURSION_ITERATIONS`` times; when it does not settle its summaries are widened (any
+at most ``taint.recursion_iterations`` times; when it does not settle its summaries are widened (any
 tainted parameter taints the return value) and marked ``degraded`` with the reason, so recursion
 always terminates and the auditor can see where the answer is a guess.
 
-Method calls on instances are not resolved (the symbol table gives no receiver types): such a call
-is an unknown callee and follows ``taint.unknown_callee``.
+Method calls on instances are resolved from what the code itself shows, since the symbol table
+gives no receiver types: ``self.m()`` and ``this.m()`` to a method of the enclosing class,
+``obj.m()`` where ``obj`` was assigned from a constructor call of a project class in the same
+function, and ``self.attr.m()`` where some method of the class assigns ``self.attr`` from such a
+constructor call. Inheritance, annotations and values passed in as parameters are not followed;
+such a call is an unknown callee and follows ``taint.unknown_callee``.
 """
 
 import posixpath
@@ -24,7 +28,6 @@ from codekavach.analysis.taint.summary import FunctionSummary, compute_summary
 from codekavach.config.models.taint import TaintSettings
 from codekavach.core.log import get_logger
 
-RECURSION_ITERATIONS: Final = 4
 _JS_SUFFIXES: Final = (".js", ".mjs", ".cjs", ".ts", ".tsx", "/index.js", "/index.ts")
 _LOG = get_logger("codekavach.analysis.taint.interproc")
 FunctionKey = tuple[str, str]
@@ -42,6 +45,8 @@ class ProjectIndex:
     modules: dict[str, IRModule] = field(default_factory=dict)
     functions: dict[FunctionKey, IRFunction] = field(default_factory=dict)
     _dotted: dict[str, list[str]] = field(default_factory=dict)
+    _sites: dict[str, dict[tuple[int, int, str], FunctionKey]] = field(default_factory=dict)
+    _attr_types: dict[tuple[str, str], dict[str, FunctionKey]] = field(default_factory=dict)
 
     def add(self, module: IRModule) -> None:
         """Register ``module`` and its functions."""
@@ -49,6 +54,104 @@ class ProjectIndex:
         for function in module.functions:
             self.functions.setdefault((module.path, function.qualname), function)
         self._dotted.setdefault(_dotted(module.path).rsplit(".", 1)[-1], []).append(module.path)
+
+    def _is_class(self, path: str, name: str) -> bool:
+        prefix = name + "."
+        return any(p == path and q.startswith(prefix) for p, q in self.functions)
+
+    def _class_of(self, call: Call, caller_path: str, language: str) -> FunctionKey | None:  # noqa: PLR0911 - one return per resolution rule
+        """The project class a constructor call instantiates, as (path, class name)."""
+        text = call.callee.text.removeprefix("new ")
+        if "." not in text and self._is_class(caller_path, text):
+            return caller_path, text
+        symbol = call.callee.symbol
+        if symbol is None:
+            return None
+        if language == "python":
+            parts = symbol.split(".")
+            for split in range(len(parts) - 1, 0, -1):
+                module, qual = ".".join(parts[:split]), ".".join(parts[split:])
+                for path in self._python_module(module, ""):
+                    if self._is_class(path, qual):
+                        return path, qual
+            return None
+        resolved = self._resolve_js(symbol, caller_path)
+        if resolved is not None:
+            return None  # a plain function, not a class
+        head, _, tail = symbol.rpartition("/")
+        module_part, dot, name = tail.rpartition(".") if "." in tail.lstrip(".") else (tail, "", "")
+        if symbol.startswith(".") and dot and name:
+            base = posixpath.normpath(
+                posixpath.join(posixpath.dirname(caller_path), head, module_part)
+            )
+            for suffix in ("", *_JS_SUFFIXES):
+                if base + suffix in self.modules and self._is_class(base + suffix, name):
+                    return base + suffix, name
+        return None
+
+    def _class_attrs(self, path: str, cls: str) -> dict[str, FunctionKey]:
+        """``self.x`` places of class ``cls`` that a method assigns from a constructor."""
+        key = (path, cls)
+        if key in self._attr_types:
+            return self._attr_types[key]
+        found: dict[str, FunctionKey] = {}
+        self._attr_types[key] = found
+        language = self.modules[path].language
+        for (fpath, qual), function in self.functions.items():
+            if fpath != path or not qual.startswith(cls + "."):
+                continue
+            for name, klass in self._local_types(function, path, language).items():
+                if "." in name:
+                    found.setdefault(name, klass)
+        return found
+
+    def _local_types(
+        self, function: IRFunction, path: str, language: str
+    ) -> dict[str, FunctionKey]:
+        """Places of ``function`` assigned from a project class constructor."""
+        types: dict[str, FunctionKey] = {}
+        for call in _calls(function):
+            if call.result is None:
+                continue
+            klass = self._class_of(call, path, language)
+            if klass is not None:
+                types[call.result.text] = klass
+        return types
+
+    def resolve_method(self, call: Call, path: str, function: IRFunction) -> FunctionKey | None:
+        """The project method a call on an instance invokes, or ``None`` when it cannot be told."""
+        receiver = call.receiver
+        if receiver is None:
+            return None
+        method = call.callee.text.removeprefix("new ").rsplit(".", 1)[-1]
+        language = self.modules[path].language
+        enclosing = function.qualname.rsplit(".", 1)[0] if "." in function.qualname else None
+        klass: FunctionKey | None = None
+        if receiver.text in {"self", "cls", "this"} and enclosing:
+            klass = (path, enclosing)
+        else:
+            klass = self._local_types(function, path, language).get(receiver.text)
+            if klass is None and enclosing and receiver.text.startswith(("self.", "this.")):
+                klass = self._class_attrs(path, enclosing).get(receiver.text)
+        if klass is None:
+            return None
+        found = (klass[0], f"{klass[1]}.{method}")
+        return found if found in self.functions else None
+
+    def method_sites(self, path: str) -> dict[tuple[int, int, str], FunctionKey]:
+        """Resolved instance-method calls of the file, by call-site position and callee text."""
+        cached = self._sites.get(path)
+        if cached is not None:
+            return cached
+        sites: dict[tuple[int, int, str], FunctionKey] = {}
+        self._sites[path] = sites
+        for function in self.modules[path].functions:
+            for call in _calls(function):
+                found = self.resolve_method(call, path, function)
+                if found is not None:
+                    loc = call.location
+                    sites[(loc.start_line, loc.start_col or 0, call.callee.text)] = found
+        return sites
 
     def _python_module(self, name: str, caller: str) -> list[str]:
         tail = name.rsplit(".", 1)[-1]
@@ -106,7 +209,9 @@ def call_graph(index: ProjectIndex) -> dict[FunctionKey, set[FunctionKey]]:
         module = index.modules[path]
         targets = graph.setdefault((path, qual), set())
         for call in _calls(function):
-            resolved = index.resolve(call, path, module.language)
+            resolved = index.resolve(call, path, module.language) or index.resolve_method(
+                call, path, function
+            )
             if resolved is not None and resolved in index.functions:
                 targets.add(resolved)
     return graph
@@ -166,7 +271,10 @@ def make_lookup(
     language = index.modules[path].language
 
     def lookup(call: Call) -> FunctionSummary | None:
-        resolved = index.resolve(call, path, language)
+        loc = call.location
+        resolved = index.method_sites(path).get(
+            (loc.start_line, loc.start_col or 0, call.callee.text)
+        ) or index.resolve(call, path, language)
         return None if resolved is None else summaries.get(resolved)
 
     return lookup
@@ -185,7 +293,7 @@ def compute_summaries(
     for component in sccs(graph):
         recursive = len(component) > 1 or component[0] in graph[component[0]]
         settled = False
-        for _ in range(RECURSION_ITERATIONS if recursive else 1):
+        for _ in range(settings.recursion_iterations if recursive else 1):
             changed = False
             for key in component:
                 path, qual = key

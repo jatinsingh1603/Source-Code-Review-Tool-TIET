@@ -1977,6 +1977,14 @@
           "title": "Max Blocks",
           "type": "integer"
         },
+        "max_depth": {
+          "default": 5,
+          "description": "Longest chain of calls a taint path may cross between source and sink.",
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Max Depth",
+          "type": "integer"
+        },
         "max_function_nodes": {
           "default": 20000,
           "description": "Most intermediate nodes in one function; larger functions are skipped.",
@@ -2001,6 +2009,14 @@
           "title": "Max Paths Per Sink",
           "type": "integer"
         },
+        "recursion_iterations": {
+          "default": 3,
+          "description": "Passes over a recursive group of functions before its summaries are widened and marked degraded.",
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Recursion Iterations",
+          "type": "integer"
+        },
         "timeout_seconds": {
           "default": 10.0,
           "description": "Time limit for lowering one file, in seconds.",
@@ -2009,6 +2025,16 @@
           "title": "Timeout Seconds",
           "type": "number",
           "x-ck-volatile": true
+        },
+        "unknown_callee": {
+          "default": "propagate",
+          "description": "What a call to an unresolved function does with tainted arguments: 'propagate' (the result is tainted, the path is marked uncertain) or 'block' (it is clean).",
+          "enum": [
+            "propagate",
+            "block"
+          ],
+          "title": "Unknown Callee",
+          "type": "string"
         }
       },
       "title": "TaintSettings",

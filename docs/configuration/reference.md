@@ -115,6 +115,9 @@ Limits of the taint engine's lowering.
 | `taint.max_path_steps` | int | `64` | `CODEKAVACH_TAINT__MAX_PATH_STEPS` |  | Most steps in one reported taint path; longer paths are trimmed. |
 | `taint.max_paths_per_sink` | int | `10` | `CODEKAVACH_TAINT__MAX_PATHS_PER_SINK` |  | Most paths reported for one sink; the shortest are kept. |
 | `taint.loop_iterations` | int | `3` | `CODEKAVACH_TAINT__LOOP_ITERATIONS` |  | Extra passes over a function with a loop before taint propagation stops. |
+| `taint.max_depth` | int | `5` | `CODEKAVACH_TAINT__MAX_DEPTH` |  | Longest chain of calls a taint path may cross between source and sink. |
+| `taint.recursion_iterations` | int | `3` | `CODEKAVACH_TAINT__RECURSION_ITERATIONS` |  | Passes over a recursive group of functions before its summaries are widened and marked degraded. |
+| `taint.unknown_callee` | propagate \| block | `"propagate"` | `CODEKAVACH_TAINT__UNKNOWN_CALLEE` |  | What a call to an unresolved function does with tainted arguments: 'propagate' (the result is tainted, the path is marked uncertain) or 'block' (it is clean). |
 | `taint.explain` | bool | `false` | `CODEKAVACH_TAINT__EXPLAIN` |  | Record why each taint step was taken, for debugging a missed finding. |
 
 ## `[privacy]`

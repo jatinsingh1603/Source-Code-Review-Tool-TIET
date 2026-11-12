@@ -7,9 +7,8 @@ inside it or below it (``param_to_sink``), which source kinds it returns on its 
 answer is a widened guess (``degraded``). ``compute_summary`` seeds every parameter with its own
 origin (``param:<index>``) and runs the ordinary propagation of ``propagate.py`` once, so a
 summary is exactly as precise as the intraprocedural engine and inherits its sanitiser and
-narrowing model. ``param_to_param`` (a callee storing one argument into another) is part of the
-record but is not computed yet: it stays empty, which is unsound only for callees that mutate
-their arguments.
+narrowing model. ``param_to_param`` (a callee storing one argument into another, by writing
+below the parameter or through a container mutator) is read from the exit state of the same run.
 """
 
 from dataclasses import dataclass, replace
@@ -76,6 +75,7 @@ class FunctionSummary:
             self.param_to_return,
             tuple(sorted((r.param, r.key) for r in self.param_to_sink)),
             self.source_to_return,
+            self.param_to_param,
             self.sanitises,
             self.degraded,
         )
@@ -107,7 +107,7 @@ def _reach_of(flow: FlowWitness, function: IRFunction) -> SinkReach | None:
     )
 
 
-def compute_summary(
+def compute_summary(  # noqa: PLR0912
     function: IRFunction,
     binding: Binding,
     *,
@@ -165,11 +165,22 @@ def compute_summary(
         else:
             sources.update(label for label in fact.labels if label != "param")
     reaches = tuple(sorted(best.values(), key=lambda r: (r.param, r.key)))[:MAX_REACHES]
+    stores: set[tuple[int, int]] = set()
+    for stored, facts in analysis.exit_state.entries.values():
+        target = function.params.index(stored.base) if stored.base in function.params else -1
+        if target < 0 or not stored.steps or stored.base in SKIPPED_PARAMS:
+            continue  # only a write below a parameter is visible to the caller
+        for origin in facts:
+            if origin.startswith(PARAM_PREFIX):
+                source = int(origin[len(PARAM_PREFIX) : origin.index("@")])
+                if source != target:
+                    stores.add((source, target))
     return FunctionSummary(
         symbol=symbol,
         params=function.params,
         param_to_return=frozenset(to_return),
         param_to_sink=reaches,
         source_to_return=frozenset(sources),
+        param_to_param=frozenset(stores),
         sanitises=tuple(sorted(sanitises)),
     )

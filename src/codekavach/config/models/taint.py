@@ -7,7 +7,7 @@ that grows without end, a generated function with hundreds of thousands of state
 flow graph too large for the dataflow pass, and a lowering that does not return.
 """
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field
 
@@ -67,6 +67,26 @@ class TaintSettings(SectionModel):
         default=3,
         description="Extra passes over a function with a loop before taint propagation stops.",
         json_schema_extra=bounds(1, 20),
+    )
+    max_depth: Annotated[int, in_range(1, 16, "taint.max_depth")] = Field(
+        default=5,
+        description="Longest chain of calls a taint path may cross between source and sink.",
+        json_schema_extra=bounds(1, 16),
+    )
+    recursion_iterations: Annotated[int, in_range(1, 20, "taint.recursion_iterations")] = Field(
+        default=3,
+        description=(
+            "Passes over a recursive group of functions before its summaries are widened "
+            "and marked degraded."
+        ),
+        json_schema_extra=bounds(1, 20),
+    )
+    unknown_callee: Literal["propagate", "block"] = Field(
+        default="propagate",
+        description=(
+            "What a call to an unresolved function does with tainted arguments: 'propagate' "
+            "(the result is tainted, the path is marked uncertain) or 'block' (it is clean)."
+        ),
     )
     explain: bool = Field(
         default=False,

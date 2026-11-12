@@ -9,10 +9,14 @@ starts where the data really enters.
 Modelled (Python): Flask and Quart ``route`` path converters, FastAPI and Starlette verb
 decorators (every parameter except the framework's own), Django ``path()`` views are covered by
 the request-object sources, Click commands (``cli``), Celery and Dramatiq tasks (``message``).
-Modelled (JavaScript and TypeScript): Express, Koa and Fastify handlers read ``req.*`` through the
-catalogue sources, so no parameter of a JavaScript handler is seeded; what interprocedural taint
-adds there is the flow of those values into functions of other files through ``require`` and
-``import``. Message consumers and scheduled tasks beyond the decorators above are not modelled.
+Modelled (JavaScript and TypeScript): an Express or Fastify route handler is a function whose first
+parameter is ``req``/``request`` and whose second is ``res``/``response``/``reply``/``next``
+(anonymous callbacks passed to ``app.get(path, ...)`` have no decorator to read, so the signature
+is the evidence). Its request parameter is seeded as one tainted value, so ``helper(req)`` carries
+taint into the functions the handler calls. A read of a request value the catalogue names
+(``req.query.id``) replaces that seed with the catalogue source, so a direct flow is reported once,
+with the catalogue's source id. Message consumers and scheduled tasks beyond the decorators above
+are not modelled.
 """
 
 import re
@@ -42,13 +46,26 @@ FRAMEWORK_PARAMS: Final = frozenset(
         "background_tasks",
     }
 )
+_REQUEST_NAMES: Final = frozenset({"req", "request"})
+_RESPONSE_NAMES: Final = frozenset({"res", "response", "reply", "next"})
 HTTP_HANDLER: Final = "http_handler"
 CLI_ENTRY: Final = "cli_entry"
 MESSAGE_CONSUMER: Final = "message_consumer"
 
 
+def is_request_handler(function: IRFunction) -> bool:
+    """Whether the parameters read like an Express or Fastify handler ``(req, res|reply|next)``."""
+    return (
+        len(function.params) >= 2
+        and function.params[0] in _REQUEST_NAMES
+        and function.params[1] in _RESPONSE_NAMES
+    )
+
+
 def entry_kind(function: IRFunction) -> str | None:
     """The kind of entry point ``function`` is, from its decorators, or ``None``."""
+    if is_request_handler(function):
+        return HTTP_HANDLER
     for decorator in function.decorators:
         if _VERB.search(decorator):
             return HTTP_HANDLER
@@ -59,9 +76,15 @@ def entry_kind(function: IRFunction) -> str | None:
     return None
 
 
-def entry_seeds(function: IRFunction) -> dict[str, Seed]:
+def entry_seeds(function: IRFunction) -> dict[str, Seed]:  # noqa: PLR0912 - one branch per framework
     """Parameters of ``function`` that the framework fills with outside data, as seeds."""
     seeds: dict[str, Seed] = {}
+    if is_request_handler(function):
+        seeds[function.params[0]] = (
+            "framework.request",
+            "http_param",
+            f"request parameter {function.params[0]}",
+        )
     for decorator in function.decorators:
         flask = _FLASK.search(decorator)
         verb = _VERB.search(decorator)

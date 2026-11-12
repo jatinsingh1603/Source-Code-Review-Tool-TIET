@@ -32,6 +32,7 @@ from codekavach.analysis.taint.catalogue import UNKNOWN_SOURCE, Binding, SinkMat
 from codekavach.analysis.taint.cfg import build_cfg
 from codekavach.analysis.taint.defuse import places_in
 from codekavach.analysis.taint.ir import (
+    ANY_INDEX,
     Assign,
     Branch,
     Call,
@@ -69,10 +70,15 @@ if TYPE_CHECKING:
     from codekavach.analysis.taint.summary import FunctionSummary
 
 CLOCK_EVERY: Final = 64
-MAX_DEPTH: Final = 5
+MAX_DEPTH: Final = 5  # the default of taint.max_depth
 ANY_CONTEXT: Final = "*"
 VALIDATORS: Final = frozenset({"includes", "has", "contains", "__contains__"})
 PARAM_PREFIX: Final = "param:"
+REQUEST_SEED: Final = "framework.request@"
+MUTATORS: Final = frozenset(
+    {"append", "add", "extend", "update", "insert", "push", "unshift", "setdefault", "appendleft",
+     "put", "set"}
+)  # fmt: skip
 SummaryLookup = Callable[[Call], "FunctionSummary | None"]
 # A seeded parameter: (origin key, label, note). The origin key is completed with the location.
 Seed = tuple[str, str, str]
@@ -187,12 +193,13 @@ def propagate_bound(
     ).flows
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class Analysis:
     """The flows of one function and the facts of the values it returns."""
 
     flows: list[FlowWitness]
     returns: Facts
+    exit_state: TaintState = field(default_factory=TaintState)
 
 
 def analyse(
@@ -208,8 +215,9 @@ def analyse(
 ) -> Analysis:
     """Propagate through ``function``; the building block of summaries and of the stage."""
     if not function.blocks:
-        return Analysis([], {})
+        return Analysis([], {}, TaintState())
     run = _Run(function, binding, settings or TaintSettings(), budget)
+    run.max_depth = run.settings.max_depth
     run.seeds = seeds or {}
     run.lookup = lookup
     run.block_unknown = block_unknown
@@ -217,7 +225,10 @@ def analyse(
     if observe is not None:
         observe(states)
     flows = sorted(run.flows, key=lambda flow: (flow.sink_location.start_line, flow.sort_key))
-    return Analysis(flows, run.returns)
+    exit_state = TaintState()
+    for settled in states.values():
+        exit_state = exit_state.join(settled)
+    return Analysis(flows, run.returns, exit_state)
 
 
 def _initial_state(run: _Run) -> TaintState:
@@ -391,6 +402,8 @@ def _read(run: _Run, place: Place, location: Location, state: TaintState) -> Fac
     facts = state.read(place)
     entry = run.binding.source_for_place(place)
     if entry is not None:
+        # the catalogue names this exact request value: it replaces the whole-request seed
+        facts = {o: f for o, f in facts.items() if not o.startswith(REQUEST_SEED)}
         facts = merge(facts, _source_fact(entry, location, place.text))
     return facts
 
@@ -422,12 +435,31 @@ def _call(run: _Run, call: Call, state: TaintState, *, record: bool) -> None:
     if source is not None:
         result = _source_fact(source, call.location, name)
     elif summary is not None:
-        result = _apply_summary(run, call, summary, args, kwargs, record=record)
+        result = _apply_summary(run, call, summary, args, kwargs, state, record=record)
     else:
+        _mutate_receiver(run, call, method, args, kwargs, state)
         inputs = merge(receiver, *args, *(facts for _, facts in kwargs))
         result = _result(run, call, method, inputs)
     if call.result is not None:
         state.write(call.result, result)
+
+
+def _mutate_receiver(  # noqa: PLR0917
+    run: _Run,
+    call: Call,
+    method: str,
+    args: list[Facts],
+    kwargs: list[tuple[str, Facts]],
+    state: TaintState,
+) -> None:
+    """A container mutator (``append``, ``add``...) stores its arguments in the receiver."""
+    if method not in MUTATORS or call.receiver is None:
+        return
+    stored = merge(*args, *(facts for _, facts in kwargs))
+    if not stored:
+        return
+    stepped = with_step(stored, Step(TaintRole.PROPAGATOR, call.location, f"store {method}"))
+    state.write(call.receiver.extend(ANY_INDEX, run.settings.max_access_path), stepped)
 
 
 def _result(run: _Run, call: Call, method: str, inputs: Facts) -> Facts:
@@ -459,18 +491,26 @@ def _result(run: _Run, call: Call, method: str, inputs: Facts) -> Facts:
     )
 
 
-def _apply_summary(
+def _apply_summary(  # noqa: PLR0917
     run: _Run,
     call: Call,
     summary: "FunctionSummary",
     args: list[Facts],
     kwargs: list[tuple[str, Facts]],
+    state: TaintState,
     *,
     record: bool,
 ) -> Facts:
     """The result facts of a call to a function with a summary, and the flows it reaches."""
     method = last_segment(call.callee.text.removeprefix("new "))
-    by_index: dict[int, Facts] = dict(enumerate(args))
+    # a bound method call does not pass the receiver as an argument: its parameter 0 is the receiver
+    bound = (
+        bool(summary.params)
+        and summary.params[0] in {"self", "cls", "this"}
+        and "." in (call.callee.text)
+    )
+    offset = 1 if bound else 0
+    by_index: dict[int, Facts] = {i + offset: facts for i, facts in enumerate(args)}
     for key, facts in kwargs:
         if key in summary.params:
             by_index[summary.params.index(key)] = facts
@@ -530,7 +570,33 @@ def _apply_summary(
         step = Step(TaintRole.SOURCE, call.location, f"source via {method}"[:120])
         result = merge(result, {origin: Fact(Tainted(frozenset({label})), (step,))})
     del caller
+    _apply_param_to_param(run, call, summary, by_index, offset, state, note)
     return result
+
+
+def _apply_param_to_param(  # noqa: PLR0917 - the pieces of one call site
+    run: _Run,
+    call: Call,
+    summary: "FunctionSummary",
+    by_index: dict[int, Facts],
+    offset: int,
+    state: TaintState,
+    note: str,
+) -> None:
+    """A callee that stores one argument into another taints the argument expression's place."""
+    for source_index, target_index in sorted(summary.param_to_param):
+        facts = by_index.get(source_index, {})
+        position = target_index - offset
+        if not facts or not 0 <= position < len(call.args):
+            continue
+        target = call.args[position]
+        if isinstance(target, Place):
+            stepped = with_step(
+                facts,
+                Step(TaintRole.PROPAGATOR, call.location, f"{note} stores arg {source_index}"),
+                uncertain=summary.degraded,
+            )
+            state.write(target.extend(ANY_INDEX, run.settings.max_access_path), stepped)
 
 
 def _record(run: _Run, call: Call, args: list[Facts], kwargs: list[tuple[str, Facts]]) -> None:
