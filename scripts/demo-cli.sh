@@ -152,7 +152,7 @@ step "Privacy: explain a decision" "Why was a value redacted or renamed?" \
 
 # Ask the build which formats exist, so a format that has not landed is skipped, not a failure.
 WANT="html pdf sarif xlsx docx"; FORMATS=""
-AVAIL="$(cd "$PROJ" && "${CK[@]}" report . --format __probe__ 2>&1 | sed -n 's/.*available formats: *//p' | tr -d ',')"
+AVAIL="$(cd "$PROJ" && "${CK[@]}" report . --format __probe__ 2>&1 | tr '\n' ' ' | sed -n 's/.*available formats: *//p' | tr -d ',')"
 if [ -n "$AVAIL" ]; then for f in $WANT; do case " $AVAIL " in *" $f "*) FORMATS="${FORMATS:+$FORMATS,}$f" ;; esac; done
 else FORMATS="${WANT// /,}"; fi
 step "Reports in every format" "One scan, rendered for different readers." \
