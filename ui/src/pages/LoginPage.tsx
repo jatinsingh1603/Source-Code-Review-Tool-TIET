@@ -55,6 +55,7 @@ export default function LoginPage() {
       void login("admin", "kavach-admin").then(() => navigate("/demo", { replace: true }));
       return;
     }
+    setError(null);
     setDemoHint(true);
     emailRef.current?.focus();
   };
