@@ -179,6 +179,21 @@ BUILTIN_PROVIDERS: Final[Mapping[str, str]] = MappingProxyType(
 )
 
 
+def _preset_key_ref(ref: str) -> str:
+    """A preset's ``env:NAME`` key reference, or ``file:PATH`` when only ``NAME_FILE`` is set.
+
+    ``NAME_FILE`` names a file holding the key (the container secret-file convention), so a key
+    never has to be exported into the environment.
+    """
+    if not ref.startswith("env:"):
+        return ref
+    variable = ref.removeprefix("env:")
+    key_file = os.environ.get(f"{variable}_FILE", "").strip()
+    if key_file and not os.environ.get(variable, "").strip():
+        return f"file:{key_file}"
+    return ref
+
+
 def _address(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
     try:
         address = ipaddress.ip_address(host.strip("[]"))
@@ -306,7 +321,7 @@ class ProviderSettings(SectionModel):
         if preset.model is not None:
             merged["model"] = preset.model
         if preset.api_key is not None:
-            merged["api_key"] = preset.api_key
+            merged["api_key"] = _preset_key_ref(preset.api_key)
         merged.update({key: item for key, item in value.items() if item is not None})
         options = dict(preset.options)
         options.update(value.get("options") or {})
@@ -473,13 +488,8 @@ class LLMSettings(SectionModel):
             if builtin in added:
                 continue
             named = value.get("default_provider") == builtin
-            key_file = os.environ.get(f"{variable}_FILE", "").strip()
-            if os.environ.get(variable, "").strip():
-                added[builtin] = {"preset": builtin}
-            elif key_file:
-                # ``<VARIABLE>_FILE`` names a file holding the key (a ``file:`` reference).
-                added[builtin] = {"preset": builtin, "api_key": f"file:{key_file}"}
-            elif named:
+            keyed = os.environ.get(variable, "").strip() or os.environ.get(f"{variable}_FILE", "")
+            if named or keyed.strip():
                 added[builtin] = {"preset": builtin}
         if len(added) == len(providers):
             return value

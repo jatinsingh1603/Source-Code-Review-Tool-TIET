@@ -78,8 +78,20 @@ def render() -> str:
         "",
     ]
     for provider_id, variable in sorted(BUILTIN_PROVIDERS.items()):
-        lines.append(f"- `{provider_id}`: key in `{variable}`")
-    lines.append("")
+        lines.append(
+            f"- `{provider_id}`: key in `{variable}`, or in the file named by `{variable}_FILE`"
+        )
+    lines += [
+        "",
+        "## Conformance",
+        "",
+        "`pytest tests/conformance -m conformance` checks every adapter kind offline and replays "
+        "the responses recorded under `tests/conformance/cassettes/` by "
+        "`tools/record_conformance.py` (bundled synthetic payload only). "
+        "`CODEKAVACH_CONFORMANCE_LIVE=1` adds a live probe of the providers named in "
+        "`CODEKAVACH_CONFORMANCE_PROVIDERS` (default `agentrouter`); it is skipped without a key.",
+        "",
+    ]
     return "\n".join(lines)
 
 

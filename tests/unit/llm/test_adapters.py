@@ -501,3 +501,17 @@ def test_the_agentrouter_key_may_come_from_a_file(
     assert llm.providers["agentrouter"].api_key == f"file:{key_file}"
     assert key_available(llm.providers["agentrouter"])
     assert llm.selected_provider()[0] == "mock"  # a key on disk is not a decision to send code
+
+
+def test_an_explicit_preset_entry_also_takes_the_key_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    key_file = tmp_path / "agentrouter.key"
+    key_file.write_text("sk-test-FILEKEY0000\n", encoding="utf-8")  # pragma: allowlist secret
+    monkeypatch.delenv("CODEKAVACH_AGENTROUTER_API_KEY", raising=False)
+    monkeypatch.setenv("CODEKAVACH_AGENTROUTER_API_KEY_FILE", str(key_file))
+    entry = ProviderSettings.model_validate({"preset": "agentrouter"})
+    assert entry.api_key == f"file:{key_file}"
+    monkeypatch.setenv("CODEKAVACH_AGENTROUTER_API_KEY", "sk-test-ENVKEY0000")
+    explicit = ProviderSettings.model_validate({"preset": "agentrouter"})
+    assert explicit.api_key == "env:CODEKAVACH_AGENTROUTER_API_KEY"

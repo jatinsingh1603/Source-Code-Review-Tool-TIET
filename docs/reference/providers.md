@@ -56,4 +56,8 @@ A provider entry with `preset = "<name>"` takes the preset's endpoint, model, ke
 
 These are present without configuration when named with `--provider <id>` (or as `llm.default_provider`) or when their key variable is set. `auto` never selects them.
 
-- `agentrouter`: key in `CODEKAVACH_AGENTROUTER_API_KEY`
+- `agentrouter`: key in `CODEKAVACH_AGENTROUTER_API_KEY`, or in the file named by `CODEKAVACH_AGENTROUTER_API_KEY_FILE`
+
+## Conformance
+
+`pytest tests/conformance -m conformance` checks every adapter kind offline and replays the responses recorded under `tests/conformance/cassettes/` by `tools/record_conformance.py` (bundled synthetic payload only). `CODEKAVACH_CONFORMANCE_LIVE=1` adds a live probe of the providers named in `CODEKAVACH_CONFORMANCE_PROVIDERS` (default `agentrouter`); it is skipped without a key.
