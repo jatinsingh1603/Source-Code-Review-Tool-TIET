@@ -258,6 +258,9 @@ def patch_finding(
     if body.assignee is not None and body.assignee != (row.assignee or ""):
         row.assignee = body.assignee or None
         action = "status" if action == "status" else "assign"
+    if action == "comment" and not (body.comment or "").strip():
+        # Nothing changed and nothing was said: no history entry, no stale reports.
+        return finding_json(session, state, finding_id, principal)
     row.updated_at = utcnow()
     session.add(
         FindingEvent(
@@ -271,7 +274,8 @@ def patch_finding(
         )
     )
     scan = session.get(ScanRow, row.scan_id)
-    if scan is not None:
+    if scan is not None and row.status != previous:
+        # Reports show the status only, so only a status change makes them stale.
         scan.triage_updated_at = utcnow()
     audit.record(state.db, actor=principal.username, action=f"finding.{action}",
                  resource=finding_id, client=client_of(request),

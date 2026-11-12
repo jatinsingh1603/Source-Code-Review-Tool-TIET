@@ -235,6 +235,12 @@ def test_findings_list_filter_detail_and_triage(
     history = client.get(f"/api/v1/findings/{first['id']}/history", headers=viewer).json()
     assert history[-1]["to_status"] == "false_positive"
     assert history[-1]["comment"] == "input is validated upstream"
+    # Choosing the status it already has records nothing.
+    same = client.patch(f"/api/v1/findings/{first['id']}", json={"status": "false_positive"},
+                        headers=developer)  # fmt: skip
+    assert same.status_code == 200
+    again = client.get(f"/api/v1/findings/{first['id']}/history", headers=viewer).json()
+    assert len(again) == len(history)
 
 
 def test_privacy_summary(
