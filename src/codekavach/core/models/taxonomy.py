@@ -5,7 +5,7 @@ form (``CWE-89``), which the before-validator accepts.
 """
 
 import re
-from typing import Annotated, ClassVar
+from typing import Annotated, ClassVar, Literal
 
 from pydantic import BeforeValidator, Field, field_validator
 
@@ -59,6 +59,14 @@ class TaxonomyRef(KavachModel):
     id: str = Field(min_length=1, max_length=64)
     title: str | None = Field(default=None, max_length=300)
     version: str | None = Field(default=None, max_length=32)
+    basis: Literal["official", "derived"] | None = Field(
+        default=None,
+        description=(
+            "official: the source document itself maps the weakness here; derived: "
+            "CodeKavach's interpretation (E29). None when not recorded."
+        ),
+    )
+    url: str | None = Field(default=None, max_length=2000)
 
     @field_validator("scheme")
     @classmethod

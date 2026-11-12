@@ -34,8 +34,40 @@ from codekavach.core.models.taint import TaintPath
 from codekavach.core.models.taxonomy import CweId, Reference, TaxonomyRef
 from codekavach.core.models.timeutil import UtcDatetime
 
-CVSS4_VECTOR_PATTERN = r"^CVSS:4\.0(/[A-Za-z]{1,3}:[A-Za-z])+$"
+CVSS4_VECTOR_PATTERN = r"^CVSS:4\.0(/[A-Za-z]{1,3}:[A-Za-z]+)+$"
 _CVSS4 = re.compile(CVSS4_VECTOR_PATTERN)
+CVSS31_VECTOR_PATTERN = r"^CVSS:3\.1(/[A-Za-z]{1,3}:[A-Za-z])+$"
+_CVSS31 = re.compile(CVSS31_VECTOR_PATTERN)
+
+
+class RiskRating(KavachModel):
+    """How the rating fields of a finding were derived (E29); shown in reports and the UI.
+
+    ``owasp_*`` follow the OWASP Risk Rating Methodology (factors 0 to 9, bands low, medium and
+    high, overall note to critical). ``matrix_*`` is the cell on the five-by-five matrix whose
+    levels are also stored in ``Finding.likelihood`` and ``Finding.impact``.
+    """
+
+    DATA_CLASSIFICATION: ClassVar[DataClassification] = DataClassification.METADATA
+
+    method_version: str = Field(min_length=1, max_length=32)
+    cvss4_nomenclature: str | None = Field(default=None, max_length=16)
+    cvss4_macrovector: str | None = Field(default=None, pattern=r"^[0-2]{6}$")
+    metric_rationale: tuple[tuple[str, str], ...] = ()
+    adjustments: tuple[str, ...] = ()
+    owasp_likelihood: float = Field(ge=0.0, le=9.0)
+    owasp_impact: float = Field(ge=0.0, le=9.0)
+    owasp_likelihood_band: str = Field(pattern=r"^(low|medium|high)$")
+    owasp_impact_band: str = Field(pattern=r"^(low|medium|high)$")
+    owasp_overall: str = Field(pattern=r"^(note|low|medium|high|critical)$")
+    owasp_factors: tuple[tuple[str, int], ...] = ()
+    matrix_label: str = Field(min_length=1, max_length=32)
+    severity_source: str = Field(min_length=1, max_length=32)
+    engine_severity: Severity | None = None
+    family: str | None = Field(default=None, max_length=64)
+    cwe_name: str | None = Field(default=None, max_length=300)
+    top25_rank: int | None = Field(default=None, ge=1, le=25)
+    knowledge_base_version: str | None = Field(default=None, max_length=32)
 
 
 class Impact(KavachModel):
@@ -144,6 +176,16 @@ class Finding(VersionedModel):
     status_history: tuple[StatusChange, ...] = ()
     created_at: UtcDatetime
     first_seen_scan_id: ScanIdField | None = None
+    cvss31_vector: str | None = None
+    cvss31_score: float | None = Field(default=None, ge=0.0, le=10.0)
+    risk: RiskRating | None = None
+
+    @field_validator("cvss31_vector")
+    @classmethod
+    def _check_vector31(cls, value: str | None) -> str | None:
+        if value is not None and not _CVSS31.match(value):
+            raise ValueError("cvss31_vector must be a CVSS:3.1 vector string")
+        return value
 
     @field_validator("title")
     @classmethod
@@ -170,6 +212,8 @@ class Finding(VersionedModel):
     def _check_consistency(self) -> Self:
         if (self.cvss4_vector is None) != (self.cvss4_score is None):
             raise ValueError("cvss4_vector and cvss4_score must both be set or both be None")
+        if (self.cvss31_vector is None) != (self.cvss31_score is None):
+            raise ValueError("cvss31_vector and cvss31_score must both be set or both be None")
         if self.status_history:
             if self.status_history[-1].to_status is not self.status:
                 raise ValueError("the last status change must end in the current status")

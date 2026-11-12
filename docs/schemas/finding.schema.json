@@ -504,6 +504,203 @@
       "title": "Reference",
       "type": "object"
     },
+    "RiskRating": {
+      "additionalProperties": false,
+      "description": "How the rating fields of a finding were derived (E29); shown in reports and the UI.\n\n``owasp_*`` follow the OWASP Risk Rating Methodology (factors 0 to 9, bands low, medium and\nhigh, overall note to critical). ``matrix_*`` is the cell on the five-by-five matrix whose\nlevels are also stored in ``Finding.likelihood`` and ``Finding.impact``.",
+      "properties": {
+        "adjustments": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Adjustments",
+          "type": "array"
+        },
+        "cvss4_macrovector": {
+          "anyOf": [
+            {
+              "pattern": "^[0-2]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cvss4 Macrovector"
+        },
+        "cvss4_nomenclature": {
+          "anyOf": [
+            {
+              "maxLength": 16,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cvss4 Nomenclature"
+        },
+        "cwe_name": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cwe Name"
+        },
+        "engine_severity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "family": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Family"
+        },
+        "knowledge_base_version": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Knowledge Base Version"
+        },
+        "matrix_label": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Matrix Label",
+          "type": "string"
+        },
+        "method_version": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Method Version",
+          "type": "string"
+        },
+        "metric_rationale": {
+          "default": [],
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Metric Rationale",
+          "type": "array"
+        },
+        "owasp_factors": {
+          "default": [],
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Owasp Factors",
+          "type": "array"
+        },
+        "owasp_impact": {
+          "maximum": 9.0,
+          "minimum": 0.0,
+          "title": "Owasp Impact",
+          "type": "number"
+        },
+        "owasp_impact_band": {
+          "pattern": "^(low|medium|high)$",
+          "title": "Owasp Impact Band",
+          "type": "string"
+        },
+        "owasp_likelihood": {
+          "maximum": 9.0,
+          "minimum": 0.0,
+          "title": "Owasp Likelihood",
+          "type": "number"
+        },
+        "owasp_likelihood_band": {
+          "pattern": "^(low|medium|high)$",
+          "title": "Owasp Likelihood Band",
+          "type": "string"
+        },
+        "owasp_overall": {
+          "pattern": "^(note|low|medium|high|critical)$",
+          "title": "Owasp Overall",
+          "type": "string"
+        },
+        "severity_source": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Severity Source",
+          "type": "string"
+        },
+        "top25_rank": {
+          "anyOf": [
+            {
+              "maximum": 25,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top25 Rank"
+        }
+      },
+      "required": [
+        "method_version",
+        "owasp_likelihood",
+        "owasp_impact",
+        "owasp_likelihood_band",
+        "owasp_impact_band",
+        "owasp_overall",
+        "matrix_label",
+        "severity_source"
+      ],
+      "title": "RiskRating",
+      "type": "object"
+    },
     "Severity": {
       "description": "Severity of a candidate or finding, in ascending order.",
       "enum": [
@@ -659,6 +856,23 @@
       "additionalProperties": false,
       "description": "A reference into a taxonomy or compliance framework, for example OWASP Top 10 A03.",
       "properties": {
+        "basis": {
+          "anyOf": [
+            {
+              "enum": [
+                "official",
+                "derived"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "official: the source document itself maps the weakness here; derived: CodeKavach's interpretation (E29). None when not recorded.",
+          "title": "Basis"
+        },
         "id": {
           "maxLength": 64,
           "minLength": 1,
@@ -682,6 +896,19 @@
           ],
           "default": null,
           "title": "Title"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
         },
         "version": {
           "anyOf": [
@@ -737,6 +964,32 @@
     "created_at": {
       "title": "Created At",
       "type": "string"
+    },
+    "cvss31_score": {
+      "anyOf": [
+        {
+          "maximum": 10.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cvss31 Score"
+    },
+    "cvss31_vector": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cvss31 Vector"
     },
     "cvss4_score": {
       "anyOf": [
@@ -858,6 +1111,17 @@
       "maxLength": 8000,
       "title": "Remediation",
       "type": "string"
+    },
+    "risk": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RiskRating"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "schema_version": {
       "default": 1,

@@ -34,7 +34,7 @@
       "file": "finding.schema.json",
       "name": "Finding",
       "schema_version": 1,
-      "sha256": "1017ec8fdb83aebd11e302b189958ad591f3e509567d6b71e836a81a6b1af16f"
+      "sha256": "0ccedc5eeba168059a692e51937a100c640488e109d0424a21511b18151d9597"
     },
     {
       "file": "llm_verdict.schema.json",

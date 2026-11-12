@@ -12,7 +12,9 @@
       "scheme": "owasp-top10",
       "id": "A03",
       "title": "Injection",
-      "version": "2021"
+      "version": "2021",
+      "basis": null,
+      "url": null
     }
   ],
   "compliance": [
@@ -20,7 +22,9 @@
       "scheme": "pci-dss",
       "id": "6.2.4",
       "title": null,
-      "version": "4.0"
+      "version": "4.0",
+      "basis": null,
+      "url": null
     }
   ],
   "locations": [
@@ -161,5 +165,8 @@
   "language": "python",
   "status_history": [],
   "created_at": "2026-10-05T04:30:00.000000Z",
-  "first_seen_scan_id": null
+  "first_seen_scan_id": null,
+  "cvss31_vector": null,
+  "cvss31_score": null,
+  "risk": null
 }

@@ -65,6 +65,7 @@ from codekavach.core.models.finding import (
     Likelihood,
     LLMReviewRef,
     Provenance,
+    RiskRating,
 )
 from codekavach.core.models.fingerprint import (
     FingerprintParts,
@@ -217,6 +218,7 @@ __all__ = [
     "RawCode",
     "Reference",
     "RepoPath",
+    "RiskRating",
     "SanitisedPayload",
     "SanitisedText",
     "Scan",
