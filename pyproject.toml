@@ -162,6 +162,10 @@ required-version = ">=0.5"
 [tool.hatch.build.targets.wheel]
 packages = ["src/codekavach"]
 
+# E29: the risk knowledge base under data/ ships inside the wheel as codekavach/data.
+[tool.hatch.build.targets.wheel.force-include]
+"data" = "codekavach/data"
+
 [tool.hatch.build.targets.sdist]
 include = ["/src", "/tests", "/README.md", "/LICENSE", "/pyproject.toml"]
 
