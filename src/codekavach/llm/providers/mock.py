@@ -30,6 +30,7 @@ from codekavach.llm.providers.base import (
     ProviderCapabilities,
     ProviderError,
     RawResponse,
+    StructuredMode,
     chat_body,
     parse_response,
 )
@@ -57,7 +58,10 @@ class MockProvider:
     """A provider that never leaves the process."""
 
     capabilities = ProviderCapabilities(
-        structured_output=True, context_window=1_000_000, local=True
+        structured_output=True,
+        context_window=1_000_000,
+        local=True,
+        structured_modes=(StructuredMode.JSON_SCHEMA,),
     )
 
     def __init__(self, provider_id: str = "mock", settings: ProviderSettings | None = None) -> None:

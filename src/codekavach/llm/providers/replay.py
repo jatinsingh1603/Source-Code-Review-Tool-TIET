@@ -31,6 +31,7 @@ from codekavach.llm.providers.base import (
     ProviderCapabilities,
     ProviderError,
     RawResponse,
+    StructuredMode,
     chat_body,
     parse_response,
 )
@@ -63,7 +64,10 @@ class ReplayProvider:
     """A provider that answers from recorded cassettes only."""
 
     capabilities = ProviderCapabilities(
-        structured_output=True, context_window=1_000_000, local=True
+        structured_output=True,
+        context_window=1_000_000,
+        local=True,
+        structured_modes=(StructuredMode.JSON_SCHEMA,),
     )
 
     def __init__(

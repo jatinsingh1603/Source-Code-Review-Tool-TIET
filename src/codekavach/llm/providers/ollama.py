@@ -26,6 +26,7 @@ from codekavach.llm.providers.base import (
     ProviderCapabilities,
     ProviderError,
     RawResponse,
+    StructuredMode,
     parse_response,
 )
 from codekavach.llm.tasks.base import CandidateFacts, ReviewTask
@@ -56,7 +57,11 @@ class OllamaProvider:
     """Builds requests for a local inference server."""
 
     capabilities = ProviderCapabilities(
-        structured_output=True, context_window=32_768, tool_calling=False, local=True
+        structured_output=True,
+        context_window=32_768,
+        tool_calling=False,
+        local=True,
+        structured_modes=(StructuredMode.JSON_SCHEMA, StructuredMode.PROMPT),
     )
 
     def __init__(self, provider_id: str, settings: ProviderSettings) -> None:
