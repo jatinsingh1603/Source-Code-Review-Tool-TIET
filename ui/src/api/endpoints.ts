@@ -82,8 +82,8 @@ export const endpoints = {
   policyTemplates: () => optional(api.get<PolicyTemplate[]>("/policy/templates")),
   policyValidate: (toml: string, projectId?: string) =>
     optional(api.post<PolicyValidation>("/policy/validate", { toml, project_id: projectId })),
-  policyExplain: (path: string, projectId?: string) =>
-    optional(api.get<PolicyExplain>("/policy/explain", { path, project_id: projectId })),
+  policyExplain: (path: string, projectId?: string, provider?: string) =>
+    optional(api.get<PolicyExplain>("/policy/explain", { path, project_id: projectId, provider })),
   ledgerPreview: (scanId: string, seq: number, level: string) =>
     optional(api.get<LedgerDetail>(`/scans/${enc(scanId)}/ledger/${seq}/preview`, { level })),
   tokens: () => optional(api.get<unknown>("/tokens")),

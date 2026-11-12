@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useSelectedScan } from "@/app/useSelectedScan";
 import { useFindings, useOptional, usePolicy, usePrivacy, useProviders } from "@/api/queries";
@@ -41,6 +42,15 @@ function humanise(name: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+const AXIS_LABEL: Record<string, string> = {
+  provider_tier: "Provider minimum",
+  path: "Path rule",
+  language: "Language rule",
+  rule: "Detection rule",
+  classification: "Classification",
+  never_send: "Never-send list",
+};
+
 export const INVARIANTS_LONG: [string, string][] = [
   ["I1", "One transport module opens LLM connections"],
   ["I2", "LLM layer accepts sanitised payloads only"],
@@ -76,14 +86,31 @@ export default function PrivacyPage() {
   const doc = policyDoc(policy);
   const chosen = file || files[0] || "";
   const provider = providers?.find((x) => x.id === scan?.provider);
-  const matching = doc.path.filter((r) => matches(r.pattern, chosen));
-  const effective = scan
-    ? strictest([
-        scan.privacy_level,
-        ...(provider?.min_level ? [provider.min_level] : []),
-        ...matching.map((r) => (r.never_send ? "never-send" : r.level)).filter((x): x is PrivacyLevel | "never-send" => !!x),
-      ])
-    : null;
+  // The server's policy engine explains every axis (path, language, rule, classification,
+  // provider tier); the scan's own level replaces the server default as the base. Without the
+  // endpoint, path rules are matched here.
+  const explainQ = useQuery({
+    queryKey: ["policy-explain", chosen, project?.id, scan?.provider],
+    queryFn: () => endpoints.policyExplain(chosen, project?.id, scan?.provider),
+    enabled: !!chosen && !!scan,
+    retry: false,
+    staleTime: 60_000,
+  });
+  const explained = explainQ.data;
+  const contributions: { label: string; level: PrivacyLevel | "never-send" }[] = explained
+    ? explained.contributions
+        .filter((c) => c.axis !== "base")
+        .map((c) => ({
+          label: `${AXIS_LABEL[c.axis] ?? c.axis}${c.key ? ` · ${c.key}${c.axis === "provider_tier" ? " tier" : ""}` : ""}`,
+          level: (c.level === "never_send" || c.level === null ? "never-send" : c.level) as PrivacyLevel | "never-send",
+        }))
+    : [
+        ...(provider?.min_level ? [{ label: `Provider minimum · ${provider.name}`, level: provider.min_level as PrivacyLevel }] : []),
+        ...doc.path
+          .filter((r) => matches(r.pattern, chosen))
+          .map((r) => ({ label: `Rule · ${r.pattern}`, level: (r.never_send ? "never-send" : r.level ?? scan?.privacy_level ?? "L3") as PrivacyLevel | "never-send" })),
+      ];
+  const effective = scan ? strictest([scan.privacy_level, ...contributions.map((c) => c.level)]) : null;
 
   const delta = p?.privacy_score !== null && p?.privacy_score !== undefined && prevPrivacy?.privacy_score !== null && prevPrivacy?.privacy_score !== undefined ? p.privacy_score - prevPrivacy.privacy_score : null;
 
@@ -255,16 +282,10 @@ export default function PrivacyPage() {
                       <span className="muted">Scan default</span>
                       {scan && <LevelBadge level={scan.privacy_level} />}
                     </div>
-                    {provider?.min_level && (
-                      <div className="row between">
-                        <span className="muted">Provider floor · {provider.name}</span>
-                        <LevelBadge level={provider.min_level} />
-                      </div>
-                    )}
-                    {matching.map((r, i) => (
+                    {contributions.map((c, i) => (
                       <div key={i} className="row between">
-                        <span className="muted">Rule · {r.pattern}</span>
-                        {r.never_send ? <StatusDot tone="bad">never-send</StatusDot> : r.level ? <LevelBadge level={r.level} /> : null}
+                        <span className="muted">{c.label}</span>
+                        {c.level === "never-send" ? <StatusDot tone="bad">never-send</StatusDot> : <LevelBadge level={c.level} />}
                       </div>
                     ))}
                     <div className="hr" style={{ margin: "4px 0" }} />

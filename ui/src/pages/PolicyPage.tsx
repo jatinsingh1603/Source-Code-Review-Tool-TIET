@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { endpoints } from "@/api/endpoints";
 import { useSelectedScan } from "@/app/useSelectedScan";
 import { useSession } from "@/app/session";
 import { useFindings, usePolicy, useSavePolicy } from "@/api/queries";
@@ -15,14 +17,16 @@ const ACTIONS: Action[] = ["never-send", "L4", "L3", "L2", "L1"];
 const TEMPLATES: { name: string; desc: string; rules: PathRule[] }[] = [
   {
     name: "Bank strict",
-    desc: "config, keys and fixtures never-send · payments and interest logic L4",
+    desc: "config, settings, keys and fixtures never-send · payments, interest and fee logic L4",
     rules: [
-      { pattern: "config/**", never_send: true },
+      { pattern: "**/config.*", never_send: true },
+      { pattern: "**/settings.*", never_send: true },
       { pattern: "**/*.pem", never_send: true },
-      { pattern: "tests/fixtures/**", never_send: true },
+      { pattern: "**/fixtures/**", never_send: true },
       { pattern: "**/secrets/**", never_send: true },
-      { pattern: "**/payments/**", level: "L4" },
-      { pattern: "**/interest/**", level: "L4" },
+      { pattern: "**/payments*", level: "L4" },
+      { pattern: "**/interest*", level: "L4" },
+      { pattern: "**/fee*", level: "L4" },
     ],
   },
   {
@@ -61,9 +65,35 @@ export default function PolicyPage() {
   const advanced = (doc.language?.length ?? 0) > 0;
   const editable = can("settings:write") && !advanced;
   const toml = advanced ? q.data?.toml ?? "" : rulesToToml(doc, rules.filter((r) => r.pattern.trim()));
-  const files = useMemo(() => [...new Set((findings ?? []).map((f) => locationOf(f)?.path).filter((x): x is string => !!x))], [findings]);
+  const findingFiles = useMemo(() => [...new Set((findings ?? []).map((f) => locationOf(f)?.path).filter((x): x is string => !!x))], [findings]);
 
-  const errors: string[] = [];
+  // The server validates the draft and resolves every file of the project's last scan under it
+  // (POST /policy/validate, a dry run: nothing is saved or sent). Debounced while typing.
+  const [draft, setDraft] = useState(toml);
+  useEffect(() => {
+    const t = setTimeout(() => setDraft(toml), 400);
+    return () => clearTimeout(t);
+  }, [toml]);
+  const validation = useQuery({
+    queryKey: ["policy-validate", draft, project?.id],
+    queryFn: () => endpoints.policyValidate(draft, project?.id),
+    enabled: !!q.data,
+    retry: false,
+    placeholderData: (prev) => prev,
+  }).data;
+  const preview = validation?.valid ? (validation.preview ?? []).map((x) => x.path) : null;
+  // Files to count matches over: the whole inventory when the server resolved it, else the files
+  // with findings in the selected scan.
+  const files = preview && preview.length ? preview : findingFiles;
+  const fromServer = !!(preview && preview.length);
+  const ruleMatches = (i: number) =>
+    fromServer && validation?.matches?.[`path[${i}]`] !== undefined && rules.filter((r) => r.pattern.trim()).length === rules.length
+      ? validation.matches[`path[${i}]`]!
+      : files.filter((f) => matches(rules[i]!.pattern, f)).length;
+  const counted = fromServer || !!findings;
+
+  // Server findings first (schema, levels, the organisation floor), then what the editor checks itself.
+  const errors: string[] = (validation && !validation.valid ? validation.errors : []).map((e) => e.message.replace(/^\[[A-Z0-9-]+\]\s*/, ""));
   rules.forEach((r, i) => {
     if (!r.pattern.trim()) errors.push(`Rule ${i + 1} has no path glob`);
     try {
@@ -195,7 +225,7 @@ export default function PolicyPage() {
                             ))}
                           </select>
                         </td>
-                        <td className="num mono">{findings ? files.filter((f) => matches(r.pattern, f)).length : "—"}</td>
+                        <td className="num mono">{counted ? ruleMatches(i) : "—"}</td>
                         <td>
                           {editable && (
                             <button className="btn sm ghost" type="button" onClick={() => setRules((rs) => rs.filter((_, k) => k !== i))}>
@@ -213,7 +243,7 @@ export default function PolicyPage() {
                       <td className="sm">any</td>
                       <td className="mono xs">default</td>
                       <td className="sm muted">scan level</td>
-                      <td className="num mono">{findings ? files.filter((f) => !rules.some((r) => matches(r.pattern, f))).length : "—"}</td>
+                      <td className="num mono">{counted ? files.filter((f) => !rules.some((r) => matches(r.pattern, f))).length : "—"}</td>
                       <td />
                     </tr>
                   </tbody>
@@ -275,7 +305,7 @@ export default function PolicyPage() {
             <div className="code-h">
               <span className="mono">kavach-policy.toml</span>
               <StatusDot tone={errors.length ? "bad" : "ok"} className="xs">
-                {errors.length ? "Invalid" : `Valid · version ${doc.policy_version ?? 1}`}
+                {errors.length ? "Invalid" : `Valid · ${validation?.schema ?? `version ${doc.policy_version ?? 1}`}`}
               </StatusDot>
             </div>
             <div className="code" style={{ fontSize: 12, lineHeight: "20px" }}>
@@ -313,7 +343,19 @@ export default function PolicyPage() {
                 {o}
               </Guard>
             ))}
-            {findings ? (
+            {fromServer && validation ? (
+              <Guard result="pass">
+                Dry run on {project?.name ?? "the project"} · {validation.files_resolved ?? files.length} files resolved
+                {validation.levels && Object.keys(validation.levels).length > 0 && (
+                  <span className="faint">
+                    {" "}
+                    ({Object.entries(validation.levels)
+                      .map(([l, n]) => `${l === "never_send" ? "never-send" : l} ${n}`)
+                      .join(", ")})
+                  </span>
+                )}
+              </Guard>
+            ) : findings ? (
               <Guard result="pass">
                 Dry run on {project?.name ?? "the project"} · {files.length} files with findings resolved
               </Guard>
@@ -322,7 +364,9 @@ export default function PolicyPage() {
             ) : (
               <Empty title="No scan to dry-run against">Run a scan to see how many files each rule matches.</Empty>
             )}
-            <p className="xs faint">The server validates the policy again when you save.</p>
+            <p className="xs faint">
+              {validation ? "Checked by the server's policy engine as you edit; nothing is saved until you press Save." : "The server validates the policy again when you save."}
+            </p>
           </div>
         </div>
       </section>
