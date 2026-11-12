@@ -8,6 +8,9 @@ dashboard's home page from the server database. ``/policy`` stores the privacy p
 engine before it is saved. Provider keys are never accepted or returned here, only references.
 """
 
+import contextlib
+import json
+import re
 import time
 from collections import Counter
 from pathlib import Path
@@ -320,6 +323,82 @@ def providers(state: StateDep) -> list[dict[str, Any]]:
                        f"{type(error).__name__}") from None  # fmt: skip
     default = state.get_settings().get("default_provider")
     return list_providers(settings, str(default) if default else None)
+
+
+USAGE_FILE: Final = "usage.json"
+
+
+def _scan_usage(state: ServerState, row: ScanRow) -> list[dict[str, Any]]:
+    """Per (provider, model, month) requests and tokens of one completed scan (cached)."""
+    from codekavach.server.routers.scans import scan_results  # noqa: PLC0415
+
+    if not row.workspace:
+        return []
+    cache = Path(row.workspace) / USAGE_FILE
+    if cache.is_file():
+        try:
+            loaded = json.loads(cache.read_text(encoding="utf-8"))
+            return list(loaded) if isinstance(loaded, list) else []
+        except (OSError, ValueError):
+            pass
+    try:
+        records = scan_results(state, row).records()
+    except ApiError:
+        return []
+    totals: dict[tuple[str, str, str], Counter[str]] = {}
+    for record in records:
+        outcome = str(record.outcome.value)
+        key = (record.provider, record.model, record.timestamp.strftime("%Y-%m"))
+        counter = totals.setdefault(key, Counter())
+        if outcome == "sent":
+            counter["requests"] += 1
+            counter["input_tokens"] += int(record.token_counts.prompt)
+        elif outcome == "completed":
+            counter["output_tokens"] += int(record.token_counts.completion or 0)
+        elif outcome == "blocked":
+            counter["blocked"] += 1
+        elif outcome == "not_sent_dry_run":
+            counter["recorded"] += 1
+    rows = [
+        {"provider": provider, "model": model, "month": month, **dict(counter)}
+        for (provider, model, month), counter in sorted(totals.items())
+    ]
+    with contextlib.suppress(OSError):
+        cache.write_text(json.dumps(rows), encoding="utf-8")
+    return rows
+
+
+@router.get("/providers/usage", dependencies=[Depends(require(Permission.ledger_read))])
+def provider_usage(
+    state: StateDep, session: SessionDep, month: str | None = None
+) -> dict[str, Any]:
+    """Requests and tokens per provider and month, summed from every scan's egress ledger."""
+    if month is not None and not re.fullmatch(r"\d{4}-\d{2}", month):
+        raise ApiError(400, "invalid_month", "give the month as YYYY-MM")
+    totals: dict[tuple[str, str], Counter[str]] = {}
+    models: dict[tuple[str, str], set[str]] = {}
+    scans = session.scalars(select(ScanRow).where(ScanRow.status == "completed"))
+    for row in scans:
+        for item in _scan_usage(state, row):
+            if month is not None and item["month"] != month:
+                continue
+            key = (str(item["provider"]), str(item["month"]))
+            counter = totals.setdefault(key, Counter())
+            for name in ("requests", "input_tokens", "output_tokens", "blocked", "recorded"):
+                counter[name] += int(item.get(name, 0))
+            counter["scans"] += 1
+            models.setdefault(key, set()).add(str(item["model"]))
+    return {
+        "month": month,
+        "source": "egress ledgers of the completed scans; tokens are estimates when the "
+        "provider reported none",
+        "usage": [
+            {"provider": provider, "month": item_month, "models": sorted(models[(provider,
+             item_month)]), **{name: counter.get(name, 0) for name in (
+                "requests", "input_tokens", "output_tokens", "blocked", "recorded", "scans")}}
+            for (provider, item_month), counter in sorted(totals.items())
+        ],
+    }  # fmt: skip
 
 
 @router.post("/providers/{provider_id}/test")

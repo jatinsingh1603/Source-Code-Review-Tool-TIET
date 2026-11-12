@@ -425,3 +425,92 @@ def test_invariants_report_recorded_results(
     assert rows["I3"]["status"] == "failed"
     assert rows["I5"]["status"] == "not_recorded"
     report.unlink()
+
+
+# --- policy, budgets, providers -------------------------------------------------------------
+
+DRAFT = 'policy_version = 1\n[[path]]\npattern = "services/**"\nlevel = "L4"\n'
+
+
+def test_policy_explain(
+    server: tuple[TestClient, Any],
+    admin: dict[str, str],
+    users: dict[str, dict[str, str]],
+    scan: dict[str, Any],
+) -> None:
+    client = server[0]
+    url = f"{API}/policy/explain"
+    body = client.get(url, params={"path": "services/api/accounts.py"}, headers=admin).json()
+    assert body["in_inventory"] is True
+    assert body["language"] == "python"
+    assert body["level"] in {"L1", "L2", "L3", "L4"}
+    assert sum(1 for item in body["contributions"] if item["winner"]) == 1
+    assert body["explanation"].startswith("services/api/accounts.py")
+    secret = client.get(url, params={"path": "config/secrets/key.yaml"}, headers=admin).json()
+    assert secret["never_send"] is True and secret["decided_by"] == "never_send"
+    assert client.get(url, params={"path": "../etc/passwd"}, headers=admin).status_code == 400
+    assert client.get(url, params={"path": "a.py"}, headers=users["viewer"]).status_code == 403
+
+
+def test_policy_validate_and_templates(
+    server: tuple[TestClient, Any], users: dict[str, dict[str, str]], scan: dict[str, Any]
+) -> None:
+    client = server[0]
+    viewer = users["viewer"]
+    good = client.post(f"{API}/policy/validate", json={"toml": DRAFT}, headers=viewer).json()
+    assert good["valid"] is True
+    assert good["files_resolved"] == scan["files"]
+    assert 0 < good["matches"]["path[0]"] <= good["files_resolved"]
+    assert good["levels"].get("L4") == good["matches"]["path[0]"]
+    bad_text = DRAFT.replace('"L4"', '"L9"')
+    bad = client.post(f"{API}/policy/validate", json={"toml": bad_text}, headers=viewer).json()
+    assert bad["valid"] is False
+    assert bad["errors"][0]["code"].startswith("CK-POL-")
+    assert bad["errors"][0]["line"] == 4
+    found = client.get(f"{API}/policy/templates", headers=viewer).json()
+    assert found[0]["id"] == "server-default" and found[0]["editor"] is True
+    assert any(item["source"].startswith("docs/examples/") for item in found)
+    assert all({"kind", "toml", "editor"} <= set(item) for item in found)
+
+
+def test_privacy_budgets(
+    server: tuple[TestClient, Any],
+    admin: dict[str, str],
+    users: dict[str, dict[str, str]],
+    scan: dict[str, Any],
+) -> None:
+    client = server[0]
+    body = client.get(f"{API}/privacy/budgets", params={"scan_id": scan["id"]},
+                      headers=admin).json()  # fmt: skip
+    rows = {row["id"]: row for row in body["budgets"]}
+    assert rows["scan_disclosure"]["limit"] > 0
+    assert rows["scan_disclosure"]["used"] is not None
+    assert rows["input_tokens"]["used"] > 0
+    assert client.get(f"{API}/privacy/budgets", headers=users["viewer"]).status_code == 403
+
+
+def test_providers_wire_keys_and_usage(
+    server: tuple[TestClient, Any],
+    admin: dict[str, str],
+    users: dict[str, dict[str, str]],
+    scan: dict[str, Any],
+) -> None:
+    client = server[0]
+    rows = {row["id"]: row for row in client.get(f"{API}/providers", headers=admin).json()}
+    assert rows["mock"]["wire"] == "in process (no network)"
+    router = rows["agentrouter"]
+    assert router["wire"] == "OpenAI Responses API"
+    assert router["key_ref_status"][0]["ref"].startswith("env:")
+    assert router["key_ref_status"][0]["state"] in {"set", "not-set"}
+    assert router["endpoint"].startswith("https://")
+    usage = client.get(f"{API}/providers/usage", headers=admin).json()["usage"]
+    mock = next(row for row in usage if row["provider"] == "mock")
+    assert mock["requests"] > 0 and mock["input_tokens"] > 0
+    month = mock["month"]
+    assert client.get(f"{API}/providers/usage", params={"month": "1999-01"},
+                      headers=admin).json()["usage"] == []  # fmt: skip
+    assert client.get(f"{API}/providers/usage", params={"month": month},
+                      headers=admin).json()["usage"]  # fmt: skip
+    assert client.get(f"{API}/providers/usage", params={"month": "May"},
+                      headers=admin).status_code == 400  # fmt: skip
+    assert client.get(f"{API}/providers/usage", headers=users["viewer"]).status_code == 403

@@ -47,13 +47,14 @@ def _api_router() -> APIRouter:
         auth,
         findings,
         platform,
+        privacy,
         projects,
         scans,
         system,
     )
 
     router = APIRouter(prefix=API_PREFIX)
-    for module in (system, platform, auth, projects, scans, findings):
+    for module in (system, platform, privacy, auth, projects, scans, findings):
         router.include_router(module.router)
     return router
 

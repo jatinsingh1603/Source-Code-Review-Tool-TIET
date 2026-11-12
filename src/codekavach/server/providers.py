@@ -32,13 +32,45 @@ NAMES: Final = {
 }
 
 
-def _secret_state(ref: str, settings: "Settings") -> bool:
+WIRE: Final = {
+    "anthropic": "Anthropic Messages API",
+    "openai": "OpenAI Chat Completions",
+    "azure-openai": "Azure OpenAI Chat Completions",
+    "openai-compatible": "OpenAI-compatible Chat Completions",
+    "litellm": "OpenAI-compatible Chat Completions (LiteLLM)",
+    "gemini": "Google Gemini generateContent",
+    "vertex": "Vertex AI generateContent",
+    "xai": "xAI Chat Completions",
+    "bedrock": "Amazon Bedrock Converse",
+    "ollama": "Ollama /api/chat",
+    "mock": "in process (no network)",
+    "replay": "recorded answers (no network)",
+    "cli-bridge": "local CLI bridge",
+}
+
+
+def key_state(ref: str) -> str:
+    """``set``, ``not-set``, ``backend-unavailable`` or ``error`` (never the value)."""
     try:
         from codekavach.config import keys  # noqa: PLC0415
 
-        return keys.secret_status(ref, project_root=None).state == "set"
-    except Exception:  # noqa: BLE001 - an unknown state is reported as not configured
-        return False
+        return str(keys.secret_status(ref, project_root=None).state)
+    except Exception:  # noqa: BLE001 - an unknown state is reported as an error
+        return "error"
+
+
+def _secret_state(ref: str, settings: "Settings") -> bool:
+    return key_state(ref) == "set"
+
+
+def wire_format(kind: str, options: Any) -> str:
+    """The request protocol an adapter of ``kind`` speaks (``wire_api`` option first)."""
+    wire_api = options.get("wire_api") if isinstance(options, dict) else None
+    if wire_api == "responses":
+        return "OpenAI Responses API"
+    if wire_api == "chat":
+        return "OpenAI-compatible Chat Completions"
+    return WIRE.get(kind, kind)
 
 
 def _adapters(settings: "Settings") -> dict[str, Any]:
@@ -69,11 +101,15 @@ def list_providers(settings: "Settings", default: str | None) -> list[dict[str, 
     for provider_id, provider in settings.llm.providers.items():
         kind = str(getattr(provider.kind, "value", provider.kind))
         refs = list(keys.effective_key_refs(kind, provider.api_key))
-        configured = not refs or any(_secret_state(ref, settings) for ref in refs)
+        states: list[dict[str, Any]] = []
+        for ref in refs:
+            found = key_state(ref)
+            states.append({"ref": ref, "state": found, "present": found == "set"})
+        configured = not refs or any(item["present"] for item in states)
         model = provider.model or settings.llm.model
-        options = getattr(provider, "options", {}) or {}
+        options = dict(getattr(provider, "options", {}) or {})
         models = [model] if model else []
-        for extra in options.get("models", []) if isinstance(options, dict) else []:
+        for extra in options.get("models", []):
             if isinstance(extra, str) and extra not in models:
                 models.append(extra)
         adapter = adapters.get(kind)
@@ -89,6 +125,10 @@ def list_providers(settings: "Settings", default: str | None) -> list[dict[str, 
                 "enabled": provider.enabled,
                 "host": provider.host,
                 "key_refs": refs,
+                "key_ref_status": states,
+                "wire": wire_format(kind, options),
+                "endpoint": str(provider.base_url) if provider.base_url else None,
+                "preset": provider.preset,
                 "adapter": adapter is not None or kind in {"mock", "replay"},
                 "default": provider_id == default,
                 "trust_tier": str(provider.effective_trust_tier.value),
