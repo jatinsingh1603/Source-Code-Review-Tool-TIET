@@ -34,22 +34,16 @@ FROM ${UV_IMAGE} AS uv
 FROM ${NODE_IMAGE} AS ui
 WORKDIR /ui
 ENV npm_config_fund=false npm_config_audit=false npm_config_update_notifier=false \
+    npm_config_fetch_retries=5 npm_config_fetch_retry_mintimeout=20000 \
+    npm_config_fetch_retry_maxtimeout=120000 npm_config_maxsockets=8 \
     DO_NOT_TRACK=1
+# The dashboard contract: ui/package.json has a "build" script that writes ui/dist.
+# Dependencies first, in their own cached layer, so a source change does not re-download them.
+COPY ui/package.json ui/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline --no-audit --no-fund
 COPY ui/ ./
-# The dashboard contract: ui/package.json has a "build" script that writes ui/dist. A checkout
-# without the dashboard still builds an image (API and CLI work); the page says so.
-RUN set -eu; \
-    if [ -f package.json ]; then \
-        if [ -f package-lock.json ]; then npm ci; else npm install; fi; \
-        npm run build; \
-        test -f dist/index.html; \
-    else \
-        mkdir -p dist; \
-        printf '%s\n' '<!doctype html><meta charset="utf-8"><title>CodeKavach</title>' \
-          '<body style="font-family:sans-serif;max-width:40rem;margin:4rem auto">' \
-          '<h1>CodeKavach API is running</h1><p>This image was built without the web dashboard ' \
-          '(ui/package.json was absent). The REST API is at <code>/api/v1</code>.</p>' > dist/index.html; \
-    fi
+RUN npm run build && test -f dist/index.html
 
 # --------------------------------------------------------------------------------------------
 # Stage: the Python environment
@@ -138,11 +132,13 @@ COPY data ./data
 COPY docs/schemas ./docs/schemas
 COPY fixtures/kavachbank ./fixtures/kavachbank
 COPY --from=ui /ui/dist ./ui/dist
+COPY --chmod=0755 deploy/docker/codekavach.sh /usr/local/bin/codekavach
 
 # CODEKAVACH_HOME holds the user configuration and consent state. The vault key comes from a
-# passphrase (there is no OS keyring in a container); the passphrase itself is only a reference
-# here and its value is passed at run time as CODEKAVACH_VAULT_PASSPHRASE.
-ENV PATH=/app/.venv/bin:$PATH \
+# passphrase (there is no OS keyring in a container); the setting holds only a reference. Its
+# value is CODEKAVACH_SERVER_VAULT_PASSPHRASE, set at run time or read by the wrapper
+# /usr/local/bin/codekavach from /data/vault.passphrase (generated on first start).
+ENV PATH=/usr/local/bin:/app/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     DO_NOT_TRACK=1 \
@@ -150,7 +146,8 @@ ENV PATH=/app/.venv/bin:$PATH \
     HOME=/data \
     CODEKAVACH_HOME=/data/home \
     CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE=passphrase \
-    CODEKAVACH_PRIVACY__VAULT__PASSPHRASE=env:CODEKAVACH_VAULT_PASSPHRASE \
+    CODEKAVACH_PRIVACY__VAULT__PASSPHRASE=env:CODEKAVACH_SERVER_VAULT_PASSPHRASE \
+    CODEKAVACH_SERVER_DATA_DIR=/data \
     XDG_CACHE_HOME=/data/cache
 
 USER 10001:10001
@@ -160,5 +157,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=5 \
     CMD ["python", "-c", "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/api/v1/health', timeout=4).status == 200 else 1)"]
 
-ENTRYPOINT ["/usr/bin/tini", "--", "codekavach"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/codekavach"]
 CMD ["serve", "--host", "0.0.0.0", "--port", "8080", "--data-dir", "/data"]

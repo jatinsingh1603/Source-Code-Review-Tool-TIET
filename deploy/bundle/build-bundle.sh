@@ -54,7 +54,7 @@ echo "==> bundle ${NAME} in ${STAGE}"
 if [ "${WITH_IMAGE}" = 1 ]; then
     if ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
         echo "==> building ${IMAGE}"
-        docker build -f deploy/docker/Dockerfile -t "${IMAGE}" .
+        docker build --network host -f deploy/docker/Dockerfile -t "${IMAGE}" .
     fi
     echo "==> saving ${IMAGE}"
     docker save "${IMAGE}" | gzip -6 > "${STAGE}/image/codekavach-image.tar.gz"

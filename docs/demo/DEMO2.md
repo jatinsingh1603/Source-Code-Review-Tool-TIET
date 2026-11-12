@@ -17,7 +17,7 @@ Edit `.env`:
 
 - `CODEKAVACH_ADMIN_PASSWORD`: the dashboard password for `admin`.
 - `CODEKAVACH_AGENTROUTER_API_KEY`: the AgentRouter key, pasted from the password manager. Do this with the screen not shared. Leave it empty for an offline demo.
-- `CODEKAVACH_VAULT_PASSPHRASE`: any long random string.
+- `CODEKAVACH_VAULT_PASSPHRASE`: leave empty; the server generates one in its data volume.
 
 ```console
 $ docker compose up -d --build       # first build: a few minutes

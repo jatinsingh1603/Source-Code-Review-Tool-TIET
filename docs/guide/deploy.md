@@ -26,7 +26,7 @@ The build context is filtered by [`.dockerignore`](../../.dockerignore). It excl
 ## Run with Docker Compose
 
 ```console
-$ cp .env.example .env     # set CODEKAVACH_ADMIN_PASSWORD, CODEKAVACH_VAULT_PASSPHRASE, optionally the AgentRouter key
+$ cp .env.example .env     # set CODEKAVACH_ADMIN_PASSWORD and, optionally, the AgentRouter key
 $ docker compose up -d --build
 $ docker compose ps        # STATUS shows (healthy) once /api/v1/health answers
 ```
@@ -35,7 +35,7 @@ $ docker compose ps        # STATUS shows (healthy) once /api/v1/health answers
 |-------------------|---------|
 | `CODEKAVACH_ADMIN_PASSWORD` | Password of the `admin` account created on first start |
 | `CODEKAVACH_AGENTROUTER_API_KEY` | Key for the `agentrouter` provider; empty keeps the stack offline |
-| `CODEKAVACH_VAULT_PASSPHRASE` | Derives the pseudonym vault key; keep it, or old vaults become unreadable |
+| `CODEKAVACH_VAULT_PASSPHRASE` | Derives the pseudonym vault key. Empty: the server generates one in the data volume (`/data/vault.passphrase`). Keep it, or old vaults become unreadable |
 | `CODEKAVACH_BIND`, `CODEKAVACH_PORT` | Host address and port; the default `127.0.0.1:8080` is reachable from this machine only |
 
 The service runs with `read_only: true`, `no-new-privileges` and all capabilities dropped; `/data` (named volume) and `/tmp` (tmpfs) are the only writable paths.
@@ -75,7 +75,7 @@ The chart [`deploy/helm/codekavach`](../../deploy/helm/codekavach) was linted an
 $ kubectl create namespace codekavach
 $ kubectl -n codekavach create secret generic codekavach-secrets \
     --from-literal=CODEKAVACH_ADMIN_PASSWORD='choose-one' \
-    --from-literal=CODEKAVACH_VAULT_PASSPHRASE='choose-another' \
+    --from-literal=CODEKAVACH_SERVER_VAULT_PASSPHRASE='choose-another' \
     --from-literal=CODEKAVACH_AGENTROUTER_API_KEY='...'
 $ helm install codekavach deploy/helm/codekavach -n codekavach \
     --set image.repository=registry.example/codekavach --set image.tag=0.1.0

@@ -123,9 +123,11 @@ clean: ## Remove build artefacts and tool caches
 # These recipes drive docker and helm, which are not Python tools, so they do not go through uv.
 .PHONY: images up down logs bundle helm-lint
 IMAGE ?= codekavach:local
+# Host network for the build steps: the default bridge stalls npm on WSL 2 and some VPNs.
+DOCKER_BUILD_FLAGS ?= --network host
 
 images: ## Build the server image (dashboard, API, CLI): make images IMAGE=codekavach:local
-	docker build -f deploy/docker/Dockerfile -t $(IMAGE) \
+	docker build $(DOCKER_BUILD_FLAGS) -f deploy/docker/Dockerfile -t $(IMAGE) \
 		--build-arg REVISION=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown) .
 
 up: ## Start the local stack with docker compose and print the dashboard URL

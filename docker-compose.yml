@@ -22,8 +22,9 @@ x-codekavach-env: &codekavach-env
   CODEKAVACH_ADMIN_PASSWORD: ${CODEKAVACH_ADMIN_PASSWORD:-kavach-admin}
   # Secret value read at run time: AgentRouter API key (provider "agentrouter"). Empty = offline.
   CODEKAVACH_AGENTROUTER_API_KEY: ${CODEKAVACH_AGENTROUTER_API_KEY:-}
-  # Secret value read at run time: passphrase that derives the pseudonym vault key.
-  CODEKAVACH_VAULT_PASSPHRASE: ${CODEKAVACH_VAULT_PASSPHRASE:-change-me-vault-passphrase}
+  # Secret value read at run time: passphrase that derives the pseudonym vault key. Empty: the
+  # server generates one in the data volume (/data/vault.passphrase, mode 0600) and keeps it.
+  CODEKAVACH_SERVER_VAULT_PASSPHRASE: ${CODEKAVACH_VAULT_PASSPHRASE:-}
   # The default provider, model and privacy level are chosen in the dashboard (Settings) and per
   # scan; nothing here selects a remote provider by itself.
 
@@ -32,6 +33,9 @@ services:
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile
+      # Build steps use the host network: on WSL 2 (mirrored networking) and behind some VPNs the
+      # default bridge drops large TLS responses, which stalls `npm ci`. Only the build uses it.
+      network: host
       args:
         VERSION: ${CODEKAVACH_VERSION:-0.1.0.dev0}
         REVISION: ${CODEKAVACH_REVISION:-local}

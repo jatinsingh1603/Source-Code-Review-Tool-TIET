@@ -26,7 +26,7 @@ Deployment: Docker, Compose, Helm and the air-gapped bundle. Owning epic: E39 (i
 
 - CodeKavach with the `server` and `reports` extras, from `uv.lock` (hash-checked by uv).
 - The rule packs in `rules/`, the mapping data in `data/`, the JSON schemas in `docs/schemas/` and the sample project `fixtures/kavachbank` (with its replay cassettes).
-- The dashboard, built from `ui/` (`npm ci && npm run build`). A checkout without `ui/package.json` still builds; `/` then shows a short page saying the dashboard was not built.
+- The dashboard, built from `ui/` (`npm ci && npm run build`, dependencies in their own cached layer), served by `codekavach serve` at `/`.
 - Engines, both run as separate processes:
   - **Opengrep 1.33.1** (LGPL-2.1, unmodified release binary, sha256 checked at build time). Leave it out with `--build-arg OPENGREP_VERSION=`.
   - **Bandit 1.9.4** (Apache-2.0, from PyPI). Leave it out with `--build-arg BANDIT_VERSION=`.
@@ -42,7 +42,7 @@ Neither the image, the compose file nor the chart holds a secret value.
 |----------|------|----------|
 | `CODEKAVACH_ADMIN_PASSWORD` | plain value you choose | the built-in `admin` dashboard account (default `kavach-admin`, printed at server start) |
 | `CODEKAVACH_AGENTROUTER_API_KEY` | secret value | the `agentrouter` provider; empty means offline |
-| `CODEKAVACH_VAULT_PASSPHRASE` | secret value | the key of the pseudonym vault; a container has no OS keyring, so the image sets `privacy.vault.key_source = passphrase` and points `privacy.vault.passphrase` at this variable (`env:CODEKAVACH_VAULT_PASSPHRASE`) |
+| `CODEKAVACH_VAULT_PASSPHRASE` (compose) / `CODEKAVACH_SERVER_VAULT_PASSPHRASE` (in the container) | secret value, optional | the key of the pseudonym vault. A container has no OS keyring, so the image sets `privacy.vault.key_source = passphrase` and `privacy.vault.passphrase = env:CODEKAVACH_SERVER_VAULT_PASSPHRASE`. When it is empty, the wrapper `/usr/local/bin/codekavach` ([`docker/codekavach.sh`](docker/codekavach.sh)) generates `/data/vault.passphrase` (mode 0600) on first start and gives it to the server and to every CLI run in the container |
 
 ## Measured
 

@@ -5,7 +5,7 @@
 #
 #   kubectl create secret generic codekavach-secrets \
 #     --from-literal=CODEKAVACH_ADMIN_PASSWORD='...' \
-#     --from-literal=CODEKAVACH_VAULT_PASSPHRASE='...' \
+#     --from-literal=CODEKAVACH_SERVER_VAULT_PASSPHRASE='...' \
 #     --from-literal=CODEKAVACH_AGENTROUTER_API_KEY='...'
 #   helm install codekavach deploy/helm/codekavach --set secrets.existingSecret=codekavach-secrets
 
@@ -30,8 +30,9 @@ secrets:
   keys:
     - name: CODEKAVACH_ADMIN_PASSWORD
       optional: false
-    - name: CODEKAVACH_VAULT_PASSPHRASE
-      optional: false
+    # Optional: without it the server generates a passphrase in the data volume.
+    - name: CODEKAVACH_SERVER_VAULT_PASSPHRASE
+      optional: true
     - name: CODEKAVACH_AGENTROUTER_API_KEY
       optional: true
 
