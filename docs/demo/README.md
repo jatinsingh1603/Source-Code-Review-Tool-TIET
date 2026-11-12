@@ -1,5 +1,101 @@
-# `docs/demo/`
+# Demo day hub
 
-Demo runbooks. Owning epic: E13.
+Everything for the demo to the Head of Department of Cyber Security (Thapar) and the guest from Australia, and for the hand-over on the same call. One page to run the session from; one page per surface behind it.
 
-- [`DEMO1.md`](DEMO1.md): the Demo 1 script: one command, the manual path, talking points per exit criterion, a rehearsal checklist and what to do when a step fails.
+Audience: security people. They will probe the privacy claim harder than anything else, so the session is built around it. Never claim more than [Known limits](../../README.md#known-limits) allows.
+
+## Runbooks
+
+| Surface | Runbook | Owner |
+|---------|---------|-------|
+| Offline first demo (one command, mock provider) | [`DEMO1.md`](DEMO1.md) | core |
+| Install every way | [`install.md`](install.md) | infra |
+| Docker, compose, Helm; the dashboard in a container | [`docker.md`](docker.md), [`DEMO2.md`](DEMO2.md) | deploy |
+| Command line | [`cli.md`](cli.md) | cli |
+| CI and GitHub Action | [`ci.md`](ci.md), [`github-actions.md`](github-actions.md) | integrations |
+| VS Code | [`vscode.md`](vscode.md) | integrations |
+| Hand-over | [`handover.md`](handover.md) | this page's author |
+
+If a link above is dead, that runbook has not landed on `main` yet; use the fallback ladder below and say nothing about the surface.
+
+## Agenda (about 30 minutes)
+
+| Min | Part | What to show | Say |
+|-----|------|--------------|-----|
+| 0-3 | The problem | One slide or the README intro | Reviewing code with an LLM is useful, and sending the code to a provider is exactly what a bank, a defence contractor or a university lab cannot do. We build the review so the provider never sees what it does not need to. |
+| 3-7 | The privacy approach | Levels table (below), then `codekavach privacy inspect` page | Five levels, L0 to L4. L3 is the default. Show what leaves the machine, not a promise about it. |
+| 7-15 | Live dashboard scan, real model | Dashboard: start a scan of the KavachBank project at L3 with the `agentrouter` provider | The findings carry the real file, line and name, although the model only saw pseudonyms; the mapping is restored locally from the vault. |
+| 15-20 | Privacy Centre | Side by side (original vs payload), the egress ledger, the zero-leak check | The ledger is hash-chained: every payload that was sent, or blocked, is recorded. The check shows listed terms do not occur verbatim in any payload. Then state what it does not show (see questions). |
+| 20-23 | Report | Open the PDF from the dashboard or `codekavach report` | Audit-style: executive summary, risk matrix, evidence, remediation, privacy attestation. Also SARIF, JSON, CSV, XLSX, Markdown, DOCX. |
+| 23-26 | CI and VS Code | A finished GitHub Actions run with its Security-tab alerts; the extension showing the same findings in the editor | Same core everywhere. GitHub-hosted runs use the mock provider: no key, nothing leaves the runner. |
+| 26-28 | Docker hand-over | `docker compose up -d`, dashboard on port 8080 | This is what you receive. See [`handover.md`](handover.md). |
+| 28-30 | Q&A | The questions below | Answer plainly; "not measured yet" is an acceptable answer. |
+
+### Levels in one table
+
+| Level | What the provider receives | Default |
+|-------|----------------------------|---------|
+| L0 | Nothing. Deterministic engines and a local model only | |
+| L1 | Code with secrets and personal data replaced by typed placeholders | |
+| L2 | L1 plus consistent pseudonyms for identifiers | |
+| L3 | L2, cut down to the minimal slice around the finding | yes |
+| L4 | Abstract data-flow facts only, no code (not delivered in every build; it fails closed) | |
+
+What "leaves the machine" at L2 and L3: the control flow of the slice, the shape of string literals and the names of public library APIs. State it before anyone asks.
+
+## Pre-flight checklist
+
+Do this the day before and again 30 minutes before. Tick each item; if one fails, go to the ladder.
+
+- [ ] `git pull` on the demo machine; `uv sync --all-extras`; `uv run codekavach --version` works.
+- [ ] `uv run codekavach demo --out demo-out` exits 0 and prints `zero_leak_passed  True` (works offline).
+- [ ] Dashboard up: `docker compose up -d` (or `uv run codekavach serve`), then open `http://127.0.0.1:8080`, log in as `admin`.
+- [ ] Dashboard seeded: `uv run python scripts/seed_demo.py` has been run once; the Overview shows several scans and a Privacy Centre that is not empty (see "Seeding the dashboard").
+- [ ] Real model reachable: a one-file scan with `--provider agentrouter` returns findings. The key comes from the environment (`CODEKAVACH_AGENTROUTER_API_KEY`), never from a file in the repository; do not show it on screen.
+- [ ] `report.pdf` opens (needs the Pango libraries; see `DEMO1.md`).
+- [ ] The latest GitHub Actions run of the demo workflow is green; the Security tab has alerts. Check in the browser; do not rely on memory.
+- [ ] VS Code with the extension installed and the KavachBank folder open.
+- [ ] Network: wired or hotspot as backup; the offline demo is the safety net.
+- [ ] Terminal font large; notifications off; browser zoom 125 percent; secrets (`.env`, key files) not visible in any open tab or file tree.
+- [ ] Two terminals ready: one in the repository, one for Docker.
+
+## Seeding the dashboard
+
+The dashboard is more convincing with history. `scripts/seed_demo.py` creates the sample projects (KavachBank, `fixtures/demo-ledgerly`, `fixtures/demo-shopfront`) and runs real scans with the mock provider at different privacy levels, so the Overview has a trend, several scans and a populated Privacy Centre. Nothing in it is typed in by hand; every number is the output of a scan. Run it before the session, not during it. Details and the exact command are in the script's `--help`.
+
+## Fallback ladder
+
+Go down one rung at a time, and say what you did ("the network is slow, so I will replay a recorded model run"). Do not hide a rung from the audience.
+
+1. **Real model** (`agentrouter`, model `gpt-5.6-sol`). Needs network and the key in the environment.
+2. **Replay provider.** Answers from recorded responses keyed by payload hash (`fixtures/kavachbank/cassettes/`). Same findings as a live run of the mock, no network. Say it is a recording.
+3. **Mock provider.** Deterministic, local, no key. The ledger then shows what would have been sent. This is the default for `codekavach demo`.
+4. **Recorded artefacts.** The sample report from the latest release (`codekavach-sample-report.zip`), the last green Actions run and the screenshots you took during rehearsal. Open them and narrate.
+
+## Likely questions from a security HOD
+
+**Can the provider reconstruct my business logic from what it receives?** Partly, and we measure it rather than deny it. At L3 the provider sees a slice with pseudonymised names and no comments or string contents, but the control flow and the shape of literals remain, and so do public API names, which can hint at the stack and the domain. The leak check is verbatim only. How much an adversary can reconstruct (identifier recovery, summarising the logic, re-assembling slices, identifying the project) is what `codekavach eval leakage` measures; until those numbers are published, treat the protection as a hypothesis under test. For paths that must never be disclosed, use L4, L0 or `never-send`. See "Known limits" in the README.
+
+**What exactly leaves the machine?** Only what the egress ledger records, and you can read it: `codekavach privacy ledger`. Each entry has the payload hash, the level and the provider. A payload the guard blocks is recorded as blocked. With the mock and replay providers nothing is transmitted at all.
+
+**What if the model is malicious or compromised?** It never receives secrets (typed placeholders), real identifiers (pseudonyms) or whole files at L3. A model can still return a wrong or manipulated answer; findings are candidates that carry evidence and pass schema validation and prompt-injection defences, and the deterministic engines do not depend on the model. Treat model output as untrusted input.
+
+**Where is the mapping from pseudonyms to real names kept?** In the local vault, encrypted, in the scan state directory; it is never sent. Losing the passphrase makes old vaults unreadable.
+
+**Does the tool find real vulnerabilities, or only the planted ones?** Both are the point of the evaluation harness (`codekavach eval`), which compares findings with labelled ground truth at each level. The sample applications are planted on purpose so that the demo has a known answer. We do not claim a detection rate on real code beyond what `eval` has measured; show the numbers it has, not the ones we would like.
+
+**How do you handle false positives?** Findings carry a status the reviewer sets in the dashboard (confirmed, false positive, fixed); the evidence and the data-flow path are shown so the reviewer can decide quickly.
+
+**Is the zero-leak proof a proof?** It proves one narrow thing: no recorded original identifier, literal, secret or listed term of four or more characters occurs verbatim in any stored payload. It does not prove no meaning can be inferred, and it cannot find a term nobody listed.
+
+**Can we run it without any cloud?** Yes. L0 with a local model (Ollama) or the deterministic engines only, in the air-gapped compose profile.
+
+**What does it cost to run?** The software is free to run. Model cost depends on the provider and level; L3 sends slices, not files, so it is the cheapest of the code-sending levels. Do not quote a figure you have not measured.
+
+**What data does the dashboard store?** Scan results, findings, ledger entries and reports in its own database and volume, on your machine. Nothing is sent to us.
+
+**What is not finished?** Say it: check `docs/status/` and the changelog on the day. Anything marked unfinished there is not to be demonstrated as working.
+
+## After the session
+
+Stop the stack (`docker compose down`), delete `demo-out/` if the machine is shared (the inspection page holds the fixture's code), and hand over using [`handover.md`](handover.md).
