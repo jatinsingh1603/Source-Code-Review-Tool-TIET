@@ -22,6 +22,10 @@ GOLDEN = Path(__file__).parent / "golden"
 IDENTIFIER = re.compile(r"\b(scan|cand|find|slc|pay)_[0-9A-HJKMNP-TV-Z]{26}\b")
 TIME = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC")
 HASH = re.compile(r"(Ledger head hash</th>\s*<td>)[0-9a-f]{64}")
+# The audit report also prints the configuration digest and the ledger head in other sections.
+REPORT_HASH = re.compile(r"\b[0-9a-f]{64}\b")
+REPORT_IDS = re.compile(r"\b(CK-RPT-\d{4}|ENG)-[0-9A-Z]{8}\b")
+DATE = re.compile(r"\b\d{2} [A-Z][a-z]{2,8} \d{4}\b")
 UPDATE = bool(os.environ.get("CODEKAVACH_UPDATE_SNAPSHOTS"))
 
 
@@ -36,7 +40,12 @@ def normalise(page: str) -> str:
 
     page = IDENTIFIER.sub(number, page)
     page = TIME.sub("<time>", page)
-    return HASH.sub(r"\1<ledger-head>", page).replace("\r\n", "\n")
+    page = REPORT_IDS.sub(r"\1-<id>", page)
+    page = DATE.sub("<date>", page)
+    page = HASH.sub(r"\1<ledger-head>", page)
+    if "CK-RPT-" in page:
+        page = REPORT_HASH.sub("<hash>", page)
+    return page.replace("\r\n", "\n")
 
 
 @pytest.fixture(scope="module")
