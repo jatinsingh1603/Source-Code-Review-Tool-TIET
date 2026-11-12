@@ -68,6 +68,12 @@ cat <<EOF
 
 Installed ${PREFIX}/bin/codekavach. Next steps:
   export PATH=${PREFIX}/bin:\$PATH
-  codekavach doctor --offline
-  codekavach scan ${HERE}/fixtures/kavachbank --provider mock --profile airgapped
+  codekavach --offline doctor
+  cp -r ${HERE}/fixtures/kavachbank ~/kavachbank
+  codekavach --profile airgapped scan ~/kavachbank --provider mock
+Without an OS keyring, keep the vault key on a passphrase:
+  export CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE=passphrase
+  export CODEKAVACH_PRIVACY__VAULT__PASSPHRASE=env:CODEKAVACH_VAULT_PASSPHRASE
+  export CODEKAVACH_VAULT_PASSPHRASE='a long random string you keep'
+The rule packs are in ${HERE}/rules (pass --rules ${HERE}/rules/mit/packs/default).
 EOF

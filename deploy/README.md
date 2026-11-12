@@ -52,13 +52,17 @@ Recorded on 2026-11-12, linux/amd64, Docker 28.5:
 |------|------|
 | Server image `codekavach:local` (uncompressed, as listed by `docker images`) | 617 MB |
 | Build from a warm cache / from cold | about 1 min / about 4 min |
+| Air-gapped bundle `codekavach-airgapped-0.1.0.dev0.tar.gz` (image + 66 wheels for manylinux x86-64 / CPython 3.12 + rules, data, sample) | 247 MB |
 
-Verified on that build: `docker run --rm --network none --read-only ... codekavach:local scan /data/kb --provider mock` completes all stages offline with the vault on a passphrase key, and `codekavach demo` inside the container writes `report.pdf`.
+Verified on that build: `docker run --rm --network none --read-only ... codekavach:local scan /data/kb --provider mock` completes all stages offline with the vault on a passphrase key, and `codekavach demo` inside the container writes `report.pdf`. The bundle's `install.sh --pip` installs from the bundled wheels inside a `python:3.12-slim` container started with `--network none`, and a mock scan of the sample then completes.
+
+The pip mode installs the wheel, which does not carry `rules/`; the rule packs come from the bundle directory (`--rules <bundle>/rules/mit/packs/default`). The Docker mode keeps the checkout layout and needs no flag.
 
 ## Not done yet (E39-02 follow-ups)
 
-- Separate slim CLI and full images, multi-architecture builds, SBOM, signing and the `images.yml` workflow.
+- Separate slim CLI and full images; cosign signing with the E39-01 helpers.
 - The build-time licence gate that reads the engine manifest and fails the build.
+- Published images: `.github/workflows/container.yml` builds this Dockerfile for amd64 and arm64 and pushes `ghcr.io/jatinsingh1603/codekavach` with SBOM and provenance; a separate slim CLI image and the licence gate are still open.
 - The Python bundle tooling (`tools/bundle/build_bundle.py`, `verify_bundle.py`, a manifest schema), the PowerShell installer, OSV snapshots and the `airgapped` doctor checks.
 - A network-less CI job; size budget tests; the hosted-mode Terraform sketch.
 - Running engines inside the cluster with Docker-in-Docker versus a mounted socket: not needed for the current engines, which run as plain subprocesses in the same container.
