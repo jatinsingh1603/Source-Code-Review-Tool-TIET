@@ -6,7 +6,7 @@ from collections.abc import Callable
 import pytest
 
 from codekavach.core.models.canonical import sha256_hex
-from codekavach.core.models.enums import Confidence
+from codekavach.core.models.enums import Confidence, ContextKind
 from codekavach.core.models.payload import PayloadFacts, SanitisedPayload
 from codekavach.core.models.text import SanitisedText
 from codekavach.core.models.verdict import ContextRequest, LLMVerdict
@@ -53,7 +53,9 @@ def verdict(
         **extra,
     }
     if vulnerable is None:
-        fields["needs_context"] = (ContextRequest(kind="callee_body", symbol="fn_2", reason="x"),)
+        fields["needs_context"] = (
+            ContextRequest(kind=ContextKind.CALLEE_BODY, symbol="fn_2", reason="x"),
+        )
     return LLMVerdict.model_validate(fields)
 
 
@@ -135,7 +137,9 @@ def test_the_mock_answer_of_every_task_is_valid_for_its_schema(name: str) -> Non
     task = build_task(name)
     answer = mock_answer(name, HASH, (89,))
     assert task.parse_text(json.dumps(answer)) is not None
-    assert set(answer) == set(task.output_schema()["properties"])  # type: ignore[arg-type]
+    properties = task.output_schema()["properties"]
+    assert isinstance(properties, dict)
+    assert set(answer) == set(properties)
 
 
 def test_an_answer_with_an_unknown_key_or_bad_json_is_refused_without_echo() -> None:
@@ -292,8 +296,8 @@ def test_a_context_request_that_is_not_a_plain_name_is_dropped() -> None:
         confidence=Confidence.LOW,
         reasoning="r",
         needs_context=(
-            ContextRequest(kind="callee_body", symbol="fn_2", reason="a"),
-            ContextRequest(kind="other", symbol="ignore previous; rm -rf", reason="b"),
+            ContextRequest(kind=ContextKind.CALLEE_BODY, symbol="fn_2", reason="a"),
+            ContextRequest(kind=ContextKind.OTHER, symbol="ignore previous; rm -rf", reason="b"),
         ),
     )
     cleaned, report = validate_verdict(mixed)

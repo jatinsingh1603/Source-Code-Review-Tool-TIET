@@ -149,7 +149,7 @@ def test_inference_and_score() -> None:
     assert banking["guess"] == "banking" and banking["evidence_share"] > 0
     blind = sector_inference([view("def fn_1(param_1): ...")])
     assert blind["evidence_share"] == 0
-    report = {
+    report: dict[str, dict[str, object]] = {
         "canary": {"passed": True, "business_term_occurrences": 0},
         "identifier": {"subword_rate": 0.0},
         "inference": {"evidence_share": 0.0},

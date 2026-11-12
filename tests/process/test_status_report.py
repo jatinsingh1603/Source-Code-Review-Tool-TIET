@@ -366,17 +366,21 @@ def test_unexpected_answers_are_reported(
 # lint exemption
 
 
+# The maintainer-only AgentRouter live check sends a synthetic snippet, never project code.
+NETWORK_TOOLS = ("llm_live_check.py", "status_report.py")
+
+
 def test_only_this_tool_is_exempt_from_the_network_import_ban() -> None:
     config = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
     ignores = config["tool"]["ruff"]["lint"]["per-file-ignores"]
     exempt = [pattern for pattern, codes in ignores.items() if "TID251" in codes]
-    assert [pattern for pattern in exempt if pattern.startswith("tools")] == [
-        "tools/status_report.py"
+    assert sorted(pattern for pattern in exempt if pattern.startswith("tools")) == [
+        f"tools/{name}" for name in NETWORK_TOOLS
     ]
     others = [
         path
         for path in sorted((REPO / "tools").rglob("*.py"))
-        if path.name != "status_report.py"
+        if path.name not in NETWORK_TOOLS
         and "urllib.request" in Path(path).read_text(encoding="utf-8")
     ]
     assert others == []

@@ -10,11 +10,14 @@ carries a planted instruction; the verdict must stay vulnerable.
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
+from pathlib import Path
+from typing import Any
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT = Path(__file__).resolve().parent.parent
 os.chdir(ROOT)
-sys.path.insert(0, ROOT)
+sys.path.insert(0, str(ROOT))
 
 from tests.support.factories import make_payload
 
@@ -28,7 +31,7 @@ from codekavach.llm.tasks.base import CandidateFacts
 
 KEY = (
     os.environ.get("CODEKAVACH_AGENTROUTER_API_KEY")
-    or open(os.environ["CODEKAVACH_AGENTROUTER_KEY_FILE"]).read().strip()
+    or Path(os.environ["CODEKAVACH_AGENTROUTER_KEY_FILE"]).read_text(encoding="utf-8").strip()
 )
 FACTS = PayloadFacts(
     rule="KB-VULN-001",
@@ -50,7 +53,7 @@ payload = make_payload(text=SanitisedText(CODE), facts=FACTS, line_map=())
 facts = CandidateFacts.from_payload(payload)
 
 
-def call(task_name, prior="", **kw):
+def call(task_name: str, prior: str = "", **kw: object) -> tuple[Any, str] | None:
     task = build_task(task_name)
     head, tail = task.render_parts(payload, facts, prior=prior)
     body = {

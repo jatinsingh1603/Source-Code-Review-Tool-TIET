@@ -1,6 +1,7 @@
 """``baseline``, ``suppress``, ``secrets scan`` and ``diff`` (#236, #240)."""
 
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -69,8 +70,6 @@ def test_secrets_scan_clean_project(project: Path) -> None:
 
 
 def test_secrets_history_finds_removed_credential(project: Path) -> None:
-    import subprocess
-
     (project / ".git").rmdir()
     git = ["git", "-C", str(project)]
     subprocess.run([*git, "init", "-q"], check=True)
@@ -106,9 +105,10 @@ def test_baseline_create_show_clear(project: Path, monkeypatch: pytest.MonkeyPat
     cleared = run_cli(["baseline", "clear", str(project), "--json"], home=home)
     assert cleared.json["data"]["removed"] is True
     assert not (project / ".codekavach" / "baseline.json").exists()
-    assert run_cli(["baseline", "show", str(project), "--json"], home=home).json["data"][
-        "entries"
-    ] == []
+    assert (
+        run_cli(["baseline", "show", str(project), "--json"], home=home).json["data"]["entries"]
+        == []
+    )
 
 
 def test_baseline_create_without_scan_is_usage_error(
@@ -128,7 +128,8 @@ def test_suppress_list_states(project: Path) -> None:
         encoding="utf-8",
     )
     (project / "a.py").write_text(
-        "x = 1  # codekavach:ignore[CWE-89] -- parameterised upstream\ny = 2  # codekavach:ignore\n",
+        "x = 1  # codekavach:ignore[CWE-89] -- parameterised upstream\n"
+        "y = 2  # codekavach:ignore\n",
         encoding="utf-8",
     )
     result = run_cli(["suppress", "list", str(project), "--json"], home=project.parent / "home")

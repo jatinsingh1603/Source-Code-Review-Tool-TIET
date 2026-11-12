@@ -62,7 +62,7 @@ It reports:
 
 ### What the attestation does not say
 
-- It does **not** prove that no meaning can be inferred from what was sent. At L2 and L3 the shape of the code (control flow, literal skeletons, public library names) is visible. The whitepaper's [Known limits](whitepaper.md#known-limits) lists the rest.
+- It does **not** prove that no meaning can be inferred from what was sent. At L2 and L3 the shape of the code (control flow, literal skeletons, public library names) is visible. The whitepaper's [Known limits](whitepaper.md#5-known-limits) lists the rest.
 - The zero-leak check is a verbatim search. A paraphrased or encoded term is not found by it.
 - The ledger shows requests made through CodeKavach. It cannot show what a user copied by hand.
 

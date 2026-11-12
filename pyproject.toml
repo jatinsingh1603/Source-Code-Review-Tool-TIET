@@ -297,9 +297,12 @@ ignore = [
 "src/codekavach/analysis/rules/schema.py" = ["E501"]  # long prose in the generated field notes
 "tools/**" = ["T20", "D"]            # project tooling (ARCHITECTURE section 3): stand-alone scripts may print
 # E42-04: reads CodeKavach's own project board from the GitHub API with the standard library.
-# Project tooling is outside the codekavach package that ADR-0003 governs; this is the only
-# tools file with the exemption (tests/process/test_status_report.py).
+# Project tooling is outside the codekavach package that ADR-0003 governs; these are the only
+# tools files with the exemption (tests/process/test_status_report.py).
 "tools/status_report.py" = ["TID251"]
+# Maintainer-only live check of the review tasks against AgentRouter with a synthetic, already
+# pseudonymised snippet; never run by CI or shipped in the wheel. Scans use the egress transport.
+"tools/llm_live_check.py" = ["TID251"]
 # E19-01: the one allow-listed, non-LLM outbound path (public advisory data only), see the module docstring.
 "src/codekavach/analysis/sca/update.py" = ["TID251"]
 "src/codekavach/analysis/sca/**" = ["E501", "PLR0912", "PLR0917", "PLW2901", "PERF401", "SIM105", "SIM108", "D415"]  # parsers and messages: long literals, many format branches

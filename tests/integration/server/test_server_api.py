@@ -73,6 +73,7 @@ def scan(server: tuple[TestClient, Any], admin: dict[str, str]) -> dict[str, Any
     scan_id = created.json()["id"]
     state.runner.wait(scan_id, timeout=300)
     deadline = time.time() + 60
+    body: dict[str, Any] = {}
     while time.time() < deadline:
         body = client.get(f"/api/v1/scans/{scan_id}", headers=admin).json()
         if body["status"] in {"completed", "failed", "cancelled"}:

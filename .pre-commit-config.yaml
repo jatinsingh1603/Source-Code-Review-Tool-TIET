@@ -17,6 +17,8 @@ repos:
         args: [--fix=lf]
         exclude: ^(fixtures/|tests/.*/golden/|tests/fixtures/|docs/samples/)
       - id: check-yaml
+        # Helm chart templates are Go templates that render to YAML; `helm lint` checks them.
+        exclude: ^deploy/helm/.*/templates/
       - id: check-toml
       - id: check-json
       - id: check-merge-conflict

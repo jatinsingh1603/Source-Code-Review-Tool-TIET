@@ -129,4 +129,4 @@ def test_mapping_is_complete() -> None:
         "levels.reconsent",
         "levels.l0_no_remote_review",
     }
-    assert all(callable(c) and callable(b) for c, b in CONTROLS.values())
+    assert all(map(callable, (f for pair in CONTROLS.values() for f in pair)))

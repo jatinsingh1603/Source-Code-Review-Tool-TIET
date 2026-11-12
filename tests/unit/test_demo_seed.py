@@ -2,6 +2,7 @@
 
 import importlib.util
 from pathlib import Path
+from types import ModuleType
 
 import yaml
 
@@ -9,7 +10,7 @@ REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "scripts" / "seed_demo.py"
 
 
-def _load_script():
+def _load_script() -> ModuleType:
     spec = importlib.util.spec_from_file_location("seed_demo", SCRIPT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
