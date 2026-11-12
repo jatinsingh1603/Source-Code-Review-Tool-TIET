@@ -287,12 +287,15 @@ source_modules =
     codekavach.report
     codekavach.risk
     codekavach.server
+    codekavach.privacy.attest
+    codekavach.privacy.attestation
     codekavach.privacy.detect
     codekavach.privacy.egress
     codekavach.privacy.errors
     codekavach.privacy.inspect_source
     codekavach.privacy.suggest
     codekavach.privacy.ir
+    codekavach.privacy.levels
     codekavach.privacy.policy
     codekavach.privacy.pseudonymise
     codekavach.privacy.redact
