@@ -1,0 +1,18 @@
+{
+  "body": {
+    "content": {
+      "cited_lines": [],
+      "confidence": "low",
+      "cwe": [
+        639
+      ],
+      "impact": "Mock impact statement.",
+      "is_vulnerable": true,
+      "needs_context": [],
+      "reasoning": "Mock analysis of payload 1e02e3410ddd: the data flow was not executed.",
+      "remediation": "Mock remediation: validate the input before it reaches the sink."
+    }
+  },
+  "payload_hash": "1e02e3410dddcdba82e4458182ca2e3a1d48f3342ce6a4dae41dc00a6aa01d47",
+  "status": 200
+}
