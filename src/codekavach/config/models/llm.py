@@ -74,6 +74,14 @@ class ProviderKind(StrEnum):
     VERTEX = "vertex"
 
 
+class ReviewMode(StrEnum):
+    """How the per-candidate review is asked: one combined request, or one request per task."""
+
+    COMBINED = "combined"
+    SEPARATE = "separate"
+    AUTO = "auto"
+
+
 class TaskName(StrEnum):
     """The LLM tasks a scan may run."""
 
@@ -130,7 +138,12 @@ PRESETS: Mapping[str, ProviderPreset] = MappingProxyType(
                     "header:user-agent": "codex_cli_rs/0.50.0",
                     "header:originator": "codex_cli_rs",
                     "reasoning_effort": "low",
-                    "concurrency": 3,  # the gateway answers one request at a time per key
+                    "concurrency": 1,  # the gateway answers one request at a time per key
+                    # Serial and slow (about 10 to 15 s a request): one combined review request
+                    # per candidate, and the eight most severe candidates unless the scan or
+                    # llm.review_limit says otherwise.
+                    "serial": True,
+                    "review_limit": 8,
                 }
             ),
             description="AgentRouter gateway (OpenAI Responses API)",
@@ -464,6 +477,28 @@ class LLMSettings(SectionModel):
         description="Models or samples asked per candidate.",
         json_schema_extra=bounds(1, 5),
     )
+    review_mode: ReviewMode = Field(
+        default=ReviewMode.COMBINED,
+        description=(
+            "combined asks triage, impact and fix in one request per candidate; separate asks "
+            "triage, explain and remediate apart; auto is combined for providers marked serial."
+        ),
+    )
+    review_limit: Annotated[int, in_range(0, 100_000, "llm.review_limit")] | None = Field(
+        default=None,
+        description=(
+            "Review only the N most severe candidates; 0 reviews all; unset uses the provider's "
+            "review_limit option (agentrouter: 8)."
+        ),
+        json_schema_extra=bounds(0, 100_000),
+    )
+    review_only: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Finding fingerprints; when set, only those candidates are reviewed (the on-demand "
+            "review of one finding)."
+        ),
+    )
     cache: bool = Field(
         default=True,
         description="Cache responses keyed on the payload hash.",
@@ -521,6 +556,31 @@ class LLMSettings(SectionModel):
             if not chosen.enabled:
                 raise ValueError(f"{UNKNOWN_PROVIDER} llm.default_provider names a disabled one")
         return self
+
+    def combined_review(self, provider: ProviderSettings) -> bool:
+        """Whether a candidate is reviewed with the one-request ``review`` task.
+
+        Only when explain or remediate is enabled (triage alone is already one request), and then
+        for ``review_mode = combined``, or for ``auto`` when the provider's ``options.serial`` says
+        it answers one request at a time.
+        """
+        if not {TaskName.EXPLAIN, TaskName.REMEDIATE} & set(self.tasks):
+            return False
+        if self.review_mode is ReviewMode.AUTO:
+            return bool(provider.options.get("serial", False))
+        return self.review_mode is ReviewMode.COMBINED
+
+    def effective_review_limit(self, provider: ProviderSettings) -> int | None:
+        """How many candidates the model reviews, most severe first; ``None`` for all.
+
+        ``llm.review_limit`` wins (0 means all); otherwise the provider's ``options.review_limit``.
+        """
+        if self.review_limit is not None:
+            return self.review_limit or None
+        raw = provider.options.get("review_limit")
+        if isinstance(raw, int) and not isinstance(raw, bool) and raw > 0:
+            return raw
+        return None
 
     def selected_provider(self) -> tuple[str, ProviderSettings]:
         """The provider this scan uses: the named default, or the first usable one for ``auto``.

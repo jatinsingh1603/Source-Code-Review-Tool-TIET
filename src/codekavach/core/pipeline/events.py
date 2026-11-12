@@ -179,6 +179,40 @@ class ItemFailed(Event):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class ItemQueued(Event):
+    """A candidate was queued for model review at position ``rank`` (1 = reviewed first).
+
+    ``severity`` is the engine's severity token (``critical`` ... ``info``) or absent; consumers
+    use it to show a verdict as soon as it lands, before the findings are rated.
+    """
+
+    kind: ClassVar[str] = "item.queued"
+    stage: str
+    item_id: str
+    rank: int
+    total: int
+    severity: str | None = None
+    cwe: tuple[int, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ItemReviewed(Event):
+    """The model's verdict on one candidate landed (pseudonym space; no text, tokens only).
+
+    ``verdict`` is ``vulnerable``, ``not_vulnerable`` or ``undecided``; ``confidence`` is the
+    calibrated confidence. The restored, rated finding follows when the scan ends.
+    """
+
+    kind: ClassVar[str] = "item.reviewed"
+    stage: str
+    item_id: str
+    verdict: str
+    confidence: str
+    current: int
+    total: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class WarningRaised(Event):
     """A warning, as a machine code."""
 
@@ -217,6 +251,8 @@ EVENT_TYPES: Mapping[str, type[Event]] = MappingProxyType(
             StageFailed,
             StageSkipped,
             ItemFailed,
+            ItemQueued,
+            ItemReviewed,
             WarningRaised,
             ScanCancelled,
             ScanFinished,

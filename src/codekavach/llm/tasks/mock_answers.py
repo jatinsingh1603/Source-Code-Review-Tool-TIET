@@ -9,6 +9,50 @@ a real analysis.
 from typing import Final
 
 _SEVERITIES: Final = ("high", "medium", "critical")
+_CONFIDENCES: Final = ("low", "medium", "high")
+
+
+def mock_triage(payload_hash: str, cwe: tuple[int, ...]) -> dict[str, object]:
+    """The mock's triage verdict fields (the mapping ``providers.mock`` documents)."""
+    digest = int(payload_hash[:8], 16)
+    return {
+        "is_vulnerable": digest % 4 != 0,
+        "confidence": _CONFIDENCES[digest % 3],
+        "cwe": list(cwe),
+        "reasoning": (
+            f"Mock analysis of payload {payload_hash[:12]}: the data flow was not executed."
+        ),
+        "impact": "Mock impact statement.",
+        "remediation": "Mock remediation: validate the input before it reaches the sink.",
+    }
+
+
+def _mock_review(payload_hash: str, cwe: tuple[int, ...]) -> dict[str, object]:
+    """The combined review: the triage verdict, then impact and remediation when vulnerable."""
+    triage = mock_triage(payload_hash, cwe)
+    vulnerable = bool(triage["is_vulnerable"])
+    digest = int(payload_hash[:8], 16)
+
+    def when(text: str) -> str:
+        return text if vulnerable else ""
+
+    return {
+        "reasoning": triage["reasoning"],
+        "is_vulnerable": vulnerable,
+        "confidence": triage["confidence"],
+        "cwe": triage["cwe"],
+        "cited_lines": [],
+        "needs_context": [],
+        "severity": _SEVERITIES[digest % 3] if vulnerable else "info",
+        "impact": when("Mock impact: an attacker could read or modify data handled by this code."),
+        "exploit_scenario": when("Mock scenario: the attacker sends crafted input."),
+        "remediation": when(
+            "1. Validate the input against an allow-list.\n"
+            "2. Use the safe API of the library instead of building the operation by hand."
+        ),
+        "secure_example": when("result = safe_call(validated_input)  # mock example"),
+        "secure_example_language": when("python"),
+    }
 
 
 def mock_answer(task: str, payload_hash: str, cwe: tuple[int, ...]) -> dict[str, object]:
@@ -17,6 +61,8 @@ def mock_answer(task: str, payload_hash: str, cwe: tuple[int, ...]) -> dict[str,
     Raises:
         KeyError: the task has no mock answer.
     """
+    if task == "review":
+        return _mock_review(payload_hash, cwe)
     digest = int(payload_hash[:8], 16)
     primary = cwe[0] if cwe else 20
     tag = payload_hash[:12]

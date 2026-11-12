@@ -208,6 +208,8 @@ Every event has `scan_id`, `at` and `seq`; the bus numbers events 1, 2, 3, ... i
 | `StageFailed` | `stage.failed` | `stage`, `policy`, `error_code`, `error_type`, `duration_ms` |
 | `StageSkipped` | `stage.skipped` | `stage`, `reason_code`, `blocked_by` |
 | `ItemFailed` | `item.failed` | `stage`, `item_id`, `error_code` |
+| `ItemQueued` | `item.queued` | `stage`, `item_id`, `rank`, `total`, `severity`, `cwe` |
+| `ItemReviewed` | `item.reviewed` | `stage`, `item_id`, `verdict`, `confidence`, `current`, `total` |
 | `WarningRaised` | `warning` | `stage`, `code` |
 | `ScanCancelled` | `scan.cancelled` | `stages_completed` |
 | `ScanFinished` | `scan.finished` | `status`, `duration_ms`, `findings_total` |

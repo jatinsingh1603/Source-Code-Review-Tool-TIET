@@ -321,8 +321,10 @@ def test_vertex_needs_project_and_location() -> None:
 def test_concurrency_setting(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CODEKAVACH_LLM_CONCURRENCY", raising=False)
     preset = ProviderSettings.model_validate({"preset": "agentrouter"})
-    assert concurrency(preset, offline=False) == 3
+    assert concurrency(preset, offline=False) == 1  # the gateway serves one request at a time
     assert concurrency(preset, offline=True) == 1
+    monkeypatch.setenv("CODEKAVACH_LLM_CONCURRENCY", "3")
+    assert concurrency(preset, offline=False) == 3
     monkeypatch.setenv("CODEKAVACH_LLM_CONCURRENCY", "99")
     assert concurrency(preset, offline=False) == 16
 
@@ -515,3 +517,23 @@ def test_an_explicit_preset_entry_also_takes_the_key_file(
     monkeypatch.setenv("CODEKAVACH_AGENTROUTER_API_KEY", "sk-test-ENVKEY0000")
     explicit = ProviderSettings.model_validate({"preset": "agentrouter"})
     assert explicit.api_key == "env:CODEKAVACH_AGENTROUTER_API_KEY"
+
+
+def test_the_combined_review_is_cached_and_keyed_apart_from_triage(tmp_path: Any) -> None:
+    from codekavach.llm.tasks import build_task  # noqa: PLC0415
+
+    cache = ResponseCache(tmp_path / "cache")
+    fake = FakeSession(Dispatch("answered", status=200, body=OK_BODY))
+    review = build_task("review")
+    adapter = ADAPTERS["chat"]()
+
+    def ask(session: ManagedSession, task: str) -> Dispatch:
+        request = adapter.prepare(review if task == "review" else TASK, payload())
+        return session.dispatch(request, provider="p", model="m-1", task=task, payload=payload())
+
+    ask(managed(fake, [], cache=cache), "review")
+    second = managed(fake, [], cache=cache)
+    hit = ask(second, "review")
+    assert (fake.calls, hit.body, second.budget.cache_hits) == (1, OK_BODY, 1)
+    ask(managed(fake, [], cache=cache), "triage")  # another task is another question
+    assert fake.calls == 2

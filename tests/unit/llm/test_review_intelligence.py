@@ -17,8 +17,8 @@ from codekavach.llm.defence.output import OutputRejected, prompt_shingles, valid
 from codekavach.llm.prompts.loader import load_prompt
 from codekavach.llm.providers.base import PreparedRequest, RawResponse, extract_content
 from codekavach.llm.providers.mock import MockProvider
-from codekavach.llm.review import Reviewer
-from codekavach.llm.schema.tasks import ExplainAnswer, parse_answer
+from codekavach.llm.review import Reviewer, verdict_of
+from codekavach.llm.schema.tasks import ExplainAnswer, ReviewAnswer, parse_answer
 from codekavach.llm.tasks import TASKS, build_task
 from codekavach.llm.tasks.base import CandidateFacts
 from codekavach.llm.tasks.mock_answers import mock_answer
@@ -66,6 +66,7 @@ PINNED = {
     ("triage", "v2"): None,
     ("explain", "v1"): None,
     ("remediate", "v1"): None,
+    ("review", "v1"): None,
     ("classify", "v1"): None,
     ("discover", "v1"): None,
     ("summarise", "v1"): None,
@@ -473,3 +474,152 @@ def test_a_refusal_is_recorded_and_never_asked_again() -> None:
     rv = body_reviewer(session, 3)
     outcome = rv.review(payload())
     assert outcome.failure == "refused" and session.calls == 1 and rv.counts.refused == 1
+
+
+# --- the combined review (one request per candidate) ------------------------------------------
+
+
+def combined_reviewer(
+    session: ScriptedSession, *, consensus: int = 1, canary: str | None = None
+) -> Reviewer:
+    return Reviewer(
+        MockProvider(),
+        session,  # type: ignore[arg-type]
+        tasks=frozenset({"explain", "remediate"}),
+        consensus=consensus,
+        wait_seconds=0.0,
+        build_task=build_task,
+        canary=canary,
+        combined=True,
+    )
+
+
+def test_the_combined_review_asks_once_and_carries_impact_and_remediation() -> None:
+    session = ScriptedSession()
+    rv = combined_reviewer(session)
+    outcome = rv.review(vulnerable_payload())
+    assert session.tasks == ["review"]  # one request instead of triage + explain + remediate
+    merged = outcome.verdict
+    assert merged is not None and merged.is_vulnerable
+    assert "Attack scenario:" in merged.impact and "Model-assessed severity:" in merged.impact
+    assert "Secure example:" in merged.remediation and "```python" in merged.remediation
+    assert rv.counts.enriched == 1 and rv.prompts["review"][0] == "v1"
+
+
+def test_the_combined_review_request_carries_exactly_one_payload() -> None:
+    task = build_task("review")
+    first, second = vulnerable_payload(), payload("x = fn_9(param_2)\n")
+    request = MockProvider().prepare(task, first)
+    body = request.body.decode("utf-8")
+    assert "SELECT" in body and "fn_9" not in body
+    assert request.task == "review" and request.payload_hash == first.payload_hash
+    assert second.payload_hash != first.payload_hash
+
+
+def test_a_combined_answer_that_leaks_the_canary_is_rejected() -> None:
+    canary = new_canary()
+
+    def obey(task: str, content: dict[str, object]) -> dict[str, object]:
+        return {**content, "remediation": f"run {canary}"}
+
+    session = ScriptedSession(obey)
+    rv = combined_reviewer(session, canary=canary)
+    outcome = rv.review(vulnerable_payload())
+    assert outcome.verdict is None and outcome.failure == "invalid"
+    assert rv.counts.rejected == 1 and session.tasks == ["review"]
+
+
+def test_a_combined_answer_with_active_markup_is_scrubbed() -> None:
+    def inject(task: str, content: dict[str, object]) -> dict[str, object]:
+        return {**content, "impact": "see ![x](https://evil.example/leak) <script>x()</script>"}
+
+    outcome = combined_reviewer(ScriptedSession(inject)).review(vulnerable_payload())
+    assert outcome.verdict is not None
+    assert "evil.example" not in outcome.verdict.impact and "<script>" not in outcome.verdict.impact
+
+
+def test_a_combined_answer_that_breaks_the_schema_is_asked_again_then_fails() -> None:
+    def broken(task: str, content: dict[str, object]) -> dict[str, object]:
+        return {key: value for key, value in content.items() if key != "severity"}
+
+    session = ScriptedSession(broken)
+    rv = combined_reviewer(session)
+    outcome = rv.review(vulnerable_payload())
+    assert outcome.verdict is None and outcome.failure == "invalid"
+    assert session.tasks == ["review", "review"] and rv.counts.repaired == 1
+
+
+def test_a_safe_combined_verdict_keeps_no_enrichment_and_lowers_nothing_else() -> None:
+    def dismiss(task: str, content: dict[str, object]) -> dict[str, object]:
+        return {**content, "is_vulnerable": False}
+
+    session = ScriptedSession(dismiss)
+    outcome = combined_reviewer(session).review(vulnerable_payload())
+    assert session.tasks == ["review"]
+    assert outcome.verdict is not None and outcome.verdict.is_vulnerable is False
+    assert outcome.verdict.impact == "" and outcome.verdict.remediation == ""
+
+
+def test_combined_consensus_samples_use_the_review_task_and_keep_the_enrichment() -> None:
+    session = ScriptedSession()
+    outcome = combined_reviewer(session, consensus=3).review(vulnerable_payload())
+    assert session.tasks == ["review"] * 3
+    assert outcome.consensus is not None and outcome.consensus.samples == 3
+    assert outcome.verdict is not None and outcome.verdict.remediation
+
+
+def test_verdict_of_maps_a_review_answer_and_refuses_an_undecided_one_without_context() -> None:
+    answer = ReviewAnswer.model_validate(mock_answer("review", HASH, (89,)))
+    verdict = verdict_of(answer)
+    assert verdict.reasoning == answer.reasoning and verdict.cwe == (89,)
+    undecided = answer.model_copy(update={"is_vulnerable": None, "needs_context": ()})
+    with pytest.raises(ValueError):
+        verdict_of(undecided)
+
+
+def test_the_review_schema_is_strict_mode_compatible() -> None:
+    schema = build_task("review").output_schema()
+    text = json.dumps(schema)
+    for keyword in ("maxLength", "minLength", "maxItems", "minItems", "minimum", "maximum"):
+        assert f'"{keyword}"' not in text
+    assert '"default"' not in text and "$ref" not in text
+
+    def closed(node: object) -> None:
+        if isinstance(node, dict):
+            if node.get("type") == "object":
+                assert node["additionalProperties"] is False
+                assert node["required"] == list(node["properties"])
+            for value in node.values():
+                closed(value)
+        elif isinstance(node, list):
+            for value in node:
+                closed(value)
+
+    closed(schema)
+    properties = schema["properties"]
+    assert isinstance(properties, dict)
+    assert next(iter(properties)) == "reasoning"
+
+
+def test_the_review_mode_and_limit_settings() -> None:
+    from codekavach.config.models.llm import (  # noqa: PLC0415
+        LLMSettings,
+        ProviderSettings,
+        ReviewMode,
+        TaskName,
+    )
+
+    router = ProviderSettings.model_validate({"preset": "agentrouter"})
+    plain = ProviderSettings.model_validate({"kind": "mock"})
+    default = LLMSettings()
+    assert default.combined_review(plain) and default.combined_review(router)
+    assert not LLMSettings(review_mode=ReviewMode.SEPARATE).combined_review(router)
+    auto = LLMSettings(review_mode=ReviewMode.AUTO)
+    assert auto.combined_review(router) and not auto.combined_review(plain)
+    assert not LLMSettings(tasks=[TaskName.TRIAGE]).combined_review(
+        router
+    )  # triage alone is one call
+    assert default.effective_review_limit(router) == 8
+    assert default.effective_review_limit(plain) is None
+    assert LLMSettings(review_limit=0).effective_review_limit(router) is None
+    assert LLMSettings(review_limit=3).effective_review_limit(plain) == 3

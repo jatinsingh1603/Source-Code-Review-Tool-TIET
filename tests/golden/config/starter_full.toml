@@ -255,6 +255,12 @@ level = "L3"
 # max_repair_attempts = 1
 #~ Models or samples asked per candidate.
 # consensus = 1
+#~ combined asks triage, impact and fix in one request per candidate; separate asks triage, explain and remediate apart; auto is combined for providers marked serial.
+# review_mode = "combined"
+#~ Review only the N most severe candidates; 0 reviews all; unset uses the provider's review_limit option (agentrouter: 8).
+#? review_limit = 0
+#~ Finding fingerprints; when set, only those candidates are reviewed (the on-demand review of one finding).
+# review_only = []
 #~ Cache responses keyed on the payload hash.
 # cache = true
 

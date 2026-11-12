@@ -10,6 +10,7 @@ from codekavach.llm.schema.tasks import (
     DiscoverAnswer,
     ExplainAnswer,
     RemediateAnswer,
+    ReviewAnswer,
     SummariseAnswer,
 )
 from codekavach.llm.tasks.templated import TemplatedTask
@@ -32,6 +33,8 @@ TASKS: Final[dict[str, Callable[[], TemplatedTask]]] = {
     "triage": TriageTask,
     "explain": _simple("explain", ExplainAnswer),
     "remediate": _simple("remediate", RemediateAnswer),
+    # The combined review (triage + explain + remediate in one request per candidate).
+    "review": _simple("review", ReviewAnswer),
     "classify": _simple("classify", ClassifyAnswer),
     "discover": _simple("discover", DiscoverAnswer),
     "summarise": _simple("summarise", SummariseAnswer, facts_only=True),

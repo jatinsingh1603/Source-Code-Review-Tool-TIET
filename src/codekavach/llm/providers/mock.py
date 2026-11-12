@@ -13,6 +13,9 @@ answer is a pure function of the payload hash and the candidate's CWE, so a test
 * ``reasoning`` is one fixed sentence naming the first 12 digits of the payload hash;
 * ``needs_context`` is empty, and ``impact`` and ``remediation`` are fixed sentences.
 
+The other tasks answer from ``tasks.mock_answers``; the combined ``review`` task returns the same
+verdict fields plus fixed enrichment text when the verdict is vulnerable.
+
 The request carries a ``metadata`` object with the CWE list, and ``respond`` reads the payload hash
 from the request itself. The hash is not put into the body: a 64-digit hexadecimal string is what
 the secret scanners look for, and the guard would rightly block a request that carried one.
@@ -22,7 +25,6 @@ import json
 from typing import Final
 
 from codekavach.config.models.llm import ProviderSettings
-from codekavach.core.models.enums import Confidence
 from codekavach.core.models.payload import SanitisedPayload
 from codekavach.core.models.verdict import LLMVerdict
 from codekavach.llm.providers.base import (
@@ -35,23 +37,14 @@ from codekavach.llm.providers.base import (
     parse_response,
 )
 from codekavach.llm.tasks.base import CandidateFacts, ReviewTask
-from codekavach.llm.tasks.mock_answers import mock_answer
+from codekavach.llm.tasks.mock_answers import mock_answer, mock_triage
 
 URL: Final = "mock://local/v1/chat"
-_CONFIDENCE: Final = (Confidence.LOW, Confidence.MEDIUM, Confidence.HIGH)
 
 
 def verdict_for(payload_hash: str, cwe: tuple[int, ...]) -> LLMVerdict:
     """The mock's answer for ``payload_hash`` and ``cwe`` (the documented mapping)."""
-    digest = int(payload_hash[:8], 16)
-    return LLMVerdict(
-        is_vulnerable=digest % 4 != 0,
-        confidence=_CONFIDENCE[digest % 3],
-        cwe=cwe,
-        reasoning=f"Mock analysis of payload {payload_hash[:12]}: the data flow was not executed.",
-        impact="Mock impact statement.",
-        remediation="Mock remediation: validate the input before it reaches the sink.",
-    )
+    return LLMVerdict.model_validate(mock_triage(payload_hash, cwe))
 
 
 class MockProvider:

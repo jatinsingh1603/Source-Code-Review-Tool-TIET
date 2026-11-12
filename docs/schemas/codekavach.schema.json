@@ -850,6 +850,34 @@
           "type": "object",
           "x-ck-restricted": true
         },
+        "review_limit": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Review only the N most severe candidates; 0 reviews all; unset uses the provider's review_limit option (agentrouter: 8).",
+          "maximum": 100000,
+          "minimum": 0,
+          "title": "Review Limit"
+        },
+        "review_mode": {
+          "$ref": "#/$defs/ReviewMode",
+          "default": "combined",
+          "description": "combined asks triage, impact and fix in one request per candidate; separate asks triage, explain and remediate apart; auto is combined for providers marked serial."
+        },
+        "review_only": {
+          "description": "Finding fingerprints; when set, only those candidates are reviewed (the on-demand review of one finding).",
+          "items": {
+            "type": "string"
+          },
+          "title": "Review Only",
+          "type": "array"
+        },
         "tasks": {
           "description": "LLM tasks to run.",
           "items": {
@@ -1733,6 +1761,16 @@
       },
       "title": "ReportingSettings",
       "type": "object"
+    },
+    "ReviewMode": {
+      "description": "How the per-candidate review is asked: one combined request, or one request per task.",
+      "enum": [
+        "combined",
+        "separate",
+        "auto"
+      ],
+      "title": "ReviewMode",
+      "type": "string"
     },
     "ScanSettings": {
       "additionalProperties": false,

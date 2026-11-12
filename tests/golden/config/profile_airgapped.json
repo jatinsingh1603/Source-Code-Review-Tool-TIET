@@ -108,6 +108,9 @@
         "trust_tier": null
       }
     },
+    "review_limit": null,
+    "review_mode": "combined",
+    "review_only": [],
     "tasks": [
       "triage",
       "explain",

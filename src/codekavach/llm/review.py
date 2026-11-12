@@ -11,6 +11,13 @@ never sees anything but the ``SanitisedPayload`` (I1, I2). Every answer is valid
 finding untouched. A failed or rejected explain or remediate answer only leaves the verdict
 without that enrichment.
 
+Combined mode (``combined=True``, ``llm.review_mode``): the first request is the ``review`` task,
+which returns the triage verdict, the impact and the remediation in one answer, so a confirmed
+finding costs one request instead of three. The request still carries one candidate's payload and
+nothing else (no batching across candidates). The answer is folded into an ``LLMVerdict``
+(``verdict_of``) and then goes through the same output defence, consensus and calibration as a
+triage verdict; extra consensus samples and context rounds use the same task.
+
 Context loop: when a verdict has ``needs_context`` and the privacy layer exposes a context
 resolver (``CONTEXT_FACTORY``), up to ``MAX_CONTEXT_ROUNDS`` extra slices are fetched through it,
 already sanitised, and triage is asked again with them inside the same delimited, guard-scanned
@@ -43,10 +50,12 @@ from codekavach.llm.providers.base import (
     ProviderError,
     ProviderParseError,
     ProviderRefused,
+    ProviderUnavailable,
     RawResponse,
     extract_content,
+    unwrap_json,
 )
-from codekavach.llm.schema.tasks import ExplainAnswer, RemediateAnswer
+from codekavach.llm.schema.tasks import ExplainAnswer, RemediateAnswer, ReviewAnswer
 from codekavach.llm.tasks.base import CandidateFacts
 from codekavach.llm.tasks.templated import PERSPECTIVES, TemplatedTask
 from codekavach.privacy.egress.session import Dispatch, EgressSession
@@ -56,6 +65,8 @@ CONTEXT_FACTORY: Final = ("codekavach.privacy.stages", "resolve_context")
 MAX_CONTEXT_ROUNDS: Final = 2
 MAX_IMPACT: Final = 2000
 MAX_REMEDIATION: Final = 4000
+TRIAGE_TASK: Final = "triage"
+COMBINED_TASK: Final = "review"
 
 
 class _Bound:
@@ -163,8 +174,10 @@ class Reviewer:
         build_task: Callable[[str], TemplatedTask],
         canary: str | None = None,
         repair_attempts: int = 1,
+        combined: bool = False,
     ) -> None:
         self._canary = canary or new_canary()
+        self._first = COMBINED_TASK if combined else TRIAGE_TASK
         self._repairs = max(0, repair_attempts)
         self._provider = provider
         self._session = session
@@ -229,7 +242,8 @@ class Reviewer:
     def _triage_attempt(  # noqa: PLR0911 - one return per outcome of the call
         self, payload: SanitisedPayload, facts: CandidateFacts, perspective: str, context: str
     ) -> tuple[LLMVerdict | None, str | None]:
-        task = self._task("triage")
+        name = self._first
+        task = self._task(name)
         bound = _Bound(task, perspective=perspective, context=context, canary=self._canary)
         result = self._dispatch(bound, payload)
         if result.kind == "blocked":
@@ -243,8 +257,9 @@ class Reviewer:
             return None, None
         self.counts.answered += 1
         try:
-            verdict = self._provider.parse(
-                RawResponse(result.status or 0, result.body, result.headers)
+            raw = RawResponse(result.status or 0, result.body, result.headers)
+            verdict = (
+                self._provider.parse(raw) if name == TRIAGE_TASK else self._combined(task, raw)
             )
             if task.last_suspected:
                 self.counts.injection_suspected += 1
@@ -252,7 +267,7 @@ class Reviewer:
                 verdict,
                 trusted_cwes=facts.cwe,
                 canaries=(self._canary,),
-                shingles=self._shingles["triage"],
+                shingles=self._shingles[name],
             )
         except ProviderRefused:
             self.counts.refused += 1
@@ -264,6 +279,25 @@ class Reviewer:
             _log.warning("llm_output_rejected", reason=rejected.reason)
             return None, "invalid"
         return cleaned, None
+
+    def _combined(self, task: TemplatedTask, raw: RawResponse) -> LLMVerdict:
+        """The verdict in a combined-review answer.
+
+        Raises:
+            ProviderUnavailable: the status is not 2xx.
+            ProviderRefused: the model refused.
+            ProviderParseError: the answer is not a schema-valid review.
+        """
+        if not 200 <= raw.status < 300:
+            raise ProviderUnavailable(f"http_status_{raw.status}", raw.status)
+        text = answer_text(self._provider, raw)
+        try:
+            answer = task.parse_text(unwrap_json(text))
+            if not isinstance(answer, ReviewAnswer):
+                raise ProviderParseError("review_violates_schema")
+            return verdict_of(answer)
+        except ValueError:
+            raise ProviderParseError("review_violates_schema") from None
 
     def _enrich_call[A: BaseModel](
         self,
@@ -309,7 +343,7 @@ class Reviewer:
                     context = extra[1]
         combined = vote(verdicts)
         merged = combined.verdict
-        task = self._task("triage")
+        task = self._task(self._first)
         suspected = bool(task.last_suspected)
         confidence = calibrate(
             merged.confidence,
@@ -318,9 +352,24 @@ class Reviewer:
             injection_suspected=suspected,
         )
         merged = merged.model_copy(update={"confidence": confidence})
-        if merged.is_vulnerable:
+        if merged.is_vulnerable and self._first == COMBINED_TASK:
+            merged = self._carry_enrichment(merged, verdicts)
+        if merged.is_vulnerable and not (self._first == COMBINED_TASK and _enriched(merged)):
             merged = self._enrich(payload, facts, merged)
         return Outcome(verdict=merged, consensus=combined)
+
+    def _carry_enrichment(self, merged: LLMVerdict, verdicts: list[LLMVerdict]) -> LLMVerdict:
+        """Combined mode: keep the impact and remediation one vulnerable sample already wrote."""
+        if _enriched(merged):
+            self.counts.enriched += 1
+            return merged
+        for each in verdicts:
+            if each.is_vulnerable and _enriched(each):
+                self.counts.enriched += 1
+                return merged.model_copy(
+                    update={"impact": each.impact, "remediation": each.remediation}
+                )
+        return merged
 
     def _context_rounds(
         self,
@@ -374,6 +423,55 @@ class Reviewer:
         )
 
 
+def _enriched(verdict: LLMVerdict) -> bool:
+    return bool(verdict.impact.strip() or verdict.remediation.strip())
+
+
+def verdict_of(answer: ReviewAnswer) -> LLMVerdict:
+    """The ``LLMVerdict`` of a combined-review answer, in pseudonym space.
+
+    The impact and remediation text is composed the way the separate explain and remediate tasks
+    compose theirs, and is left empty for a verdict that is not vulnerable.
+
+    Raises:
+        ValueError: the answer breaks the verdict model (for example ``is_vulnerable`` null
+            without a context request).
+    """
+    impact = remediation = ""
+    if answer.is_vulnerable:
+        impact = _impact_text(
+            ExplainAnswer(
+                analysis="",
+                impact=answer.impact,
+                attack_scenario=answer.exploit_scenario,
+                affected_assets=(),
+                severity=answer.severity,
+                exploit_preconditions="",
+            )
+        )
+        if impact:
+            impact = f"{impact}\n\nModel-assessed severity: {answer.severity}."
+        remediation = _remediation_text(
+            RemediateAnswer(
+                analysis="",
+                guidance=answer.remediation,
+                secure_example=answer.secure_example,
+                secure_example_language=answer.secure_example_language,
+                defence_in_depth=(),
+            )
+        )
+    return LLMVerdict(
+        is_vulnerable=answer.is_vulnerable,
+        confidence=answer.confidence,
+        cwe=tuple(number for number in answer.cwe if number >= 1)[:5],
+        reasoning=answer.reasoning,
+        impact=impact[:MAX_IMPACT],
+        remediation=remediation[:MAX_REMEDIATION],
+        needs_context=answer.needs_context,
+        cited_lines=answer.cited_lines,
+    )
+
+
 def _impact_text(answer: ExplainAnswer) -> str:
     parts = [answer.impact.strip()]
     if answer.attack_scenario.strip():
@@ -399,4 +497,4 @@ def _remediation_text(answer: RemediateAnswer) -> str:
     return "\n\n".join(part for part in parts if part)
 
 
-__all__ = ["Outcome", "OutputReport", "Reviewer", "answer_text"]
+__all__ = ["Outcome", "OutputReport", "Reviewer", "answer_text", "verdict_of"]

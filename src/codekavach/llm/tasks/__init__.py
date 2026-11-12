@@ -1,4 +1,4 @@
-"""Review tasks: triage, discover, explain, remediate, classify and summarise.
+"""Review tasks: triage, discover, explain, remediate, review, classify and summarise.
 
 Owning epic: E23. Normative layout: docs/ARCHITECTURE.md section 3.
 """

@@ -3,10 +3,14 @@
 Owning epic: E13. MVP; extended by E22 (hosted providers, budgets, caching) and E25 (context
 rounds, consensus).
 
-One candidate, one request. For each payload the stage renders the triage task, lets the provider
-prepare the request, and hands it to the ``EgressSession``, which runs the guard, writes the ledger
-and sends. The stage reads ``payloads.sanitised`` only (invariant I2): it never receives a slice,
-a candidate or a vault, and the session is the one object that sees payload text.
+One candidate, one request. For each payload the stage renders the triage task (or, in the
+combined review mode, the ``review`` task that also returns impact and remediation, see
+``LLMSettings.combined_review``), lets the provider prepare the request, and hands it to the
+``EgressSession``, which runs the guard, writes the ledger and sends. Payloads are reviewed in the
+order privacy-prepare published them (most severe first), and an ``item.reviewed`` event is
+published as each verdict lands, so a live view can show critical verdicts first. The stage reads
+``payloads.sanitised`` only (invariant I2): it never receives a slice, a candidate or a vault, and
+the session is the one object that sees payload text.
 
 **Fail closed (I4).** A request the guard blocks, a transport failure and an answer that is not a
 schema-valid verdict each fail that candidate (``fail_item``) and publish no verdict for it; the
@@ -31,6 +35,7 @@ from codekavach.core.models.payload import SanitisedPayload
 from codekavach.core.models.verdict import CandidateVerdict
 from codekavach.core.pipeline import keys
 from codekavach.core.pipeline.context import RunContext
+from codekavach.core.pipeline.events import ItemReviewed
 from codekavach.core.pipeline.items import (
     EGRESS_BLOCKED,
     ITEM_EXCEPTION,
@@ -121,6 +126,28 @@ CONCURRENCY_VARIABLE = "CODEKAVACH_LLM_CONCURRENCY"
 MAX_CONCURRENCY = 16
 
 
+def _verdict_token(verdict: object) -> str:
+    value = getattr(verdict, "is_vulnerable", None)
+    return "undecided" if value is None else ("vulnerable" if value else "not_vulnerable")
+
+
+def _announce(ctx: RunContext, item: str, outcome: Outcome, done: int, total: int) -> None:
+    """Publish ``item.reviewed`` for a verdict that landed (tokens only, no model text)."""
+    if outcome.verdict is None or ctx.stage is None:
+        return
+    ctx.events.publish(
+        ItemReviewed(
+            scan_id=ctx.scan_id,
+            stage=ctx.stage,
+            item_id=item,
+            verdict=_verdict_token(outcome.verdict),
+            confidence=outcome.verdict.confidence.value,
+            current=done,
+            total=total,
+        )
+    )
+
+
 def concurrency(provider: ProviderSettings, *, offline: bool) -> int:
     """How many candidates are reviewed at once (E22-03).
 
@@ -146,7 +173,7 @@ class LlmReviewStage:
     provides = frozenset({keys.VERDICTS_RAW})
     category = StageCategory.LLM
 
-    def run(self, ctx: RunContext) -> None:
+    def run(self, ctx: RunContext) -> None:  # noqa: PLR0915 - one linear sequence of steps
         """Publish one raw verdict per candidate that was sent, answered and parsed."""
         payloads = _read(ctx, keys.PAYLOADS_SANITISED, SanitisedPayload)
         if not ctx.config.llm.enabled or not payloads:
@@ -186,6 +213,8 @@ class LlmReviewStage:
             )
             session = cast("EgressSession", managed)
 
+            combined = llm.combined_review(provider_settings)
+
             def make_reviewer() -> Reviewer:
                 return Reviewer(
                     provider,
@@ -195,6 +224,7 @@ class LlmReviewStage:
                     wait_seconds=float(llm.timeout_seconds),
                     build_task=build_task,
                     repair_attempts=llm.max_repair_attempts,
+                    combined=combined,
                 )
 
             # One reviewer per worker: a reviewer's tasks keep per-call state (the injection
@@ -228,6 +258,7 @@ class LlmReviewStage:
                                         candidate_id=payload.candidate_id, verdict=outcome.verdict
                                     )
                                 )
+                                _announce(ctx, item, outcome, done, len(payloads))
                             elif (code := _FAILURE_CODES.get(outcome.failure or "")) is not None:
                                 ctx.fail_item(item, code)
                         ctx.emit_progress(done, len(payloads), "candidates")
@@ -245,6 +276,7 @@ class LlmReviewStage:
             provider=provider.id,
             prompts={name: f"{ver}:{digest[:12]}" for name, (ver, digest) in prompts.items()},
             workers=workers,
+            mode="combined" if combined else "separate",
             **counts.as_dict(),
             usage=managed.budget.summary(),
             retries=managed.retries,

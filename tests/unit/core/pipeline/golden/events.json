@@ -79,6 +79,32 @@
     "error_code": "timeout"
   },
   {
+    "event": "item.queued",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "stage": "privacy-prepare",
+    "item_id": "cand_01ARYZ6S41",
+    "rank": 1,
+    "total": 8,
+    "severity": "critical",
+    "cwe": [
+      89
+    ]
+  },
+  {
+    "event": "item.reviewed",
+    "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
+    "at": "2026-09-24T10:00:00Z",
+    "seq": 0,
+    "stage": "llm-review",
+    "item_id": "cand_01ARYZ6S41",
+    "verdict": "vulnerable",
+    "confidence": "high",
+    "current": 1,
+    "total": 8
+  },
+  {
     "event": "warning",
     "scan_id": "scan_01J8ZC3W6T5X0Q9V7R4M2N1K8P",
     "at": "2026-09-24T10:00:00Z",

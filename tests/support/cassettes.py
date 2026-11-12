@@ -1,7 +1,8 @@
 """Record and check the replay cassettes of the KavachBank fixture (E13-03).
 
 A cassette is the mock provider's answer to one payload and task, keyed by the payload hash
-(``<hash>.json`` for triage, ``<hash>.<task>.json`` for explain and remediate). The demo scans
+(``<hash>.json`` for triage, ``<hash>.<task>.json`` for explain, remediate and the combined
+review). The demo scans
 under a fixed salt (``demo_runner.DEMO_SALT_HEX``), so the payloads, and their hashes, are the same
 on every run; the recorder captures the payloads of one demo scan and writes the mock's answer for
 each. ``stale`` compares what a fresh recording would write with what is committed, which is the
@@ -25,7 +26,7 @@ from codekavach.llm.providers.replay import RECORD_VARIABLE, ReplayProvider
 from codekavach.llm.tasks import build_task
 from codekavach.privacy.stages import PrivacyPrepareStage
 
-RECORDED_TASKS = ("triage", "explain", "remediate")
+RECORDED_TASKS = ("triage", "explain", "remediate", "review")
 
 
 def _payloads(fixture: Path) -> list[SanitisedPayload]:

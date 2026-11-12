@@ -160,6 +160,8 @@ timeout_seconds = 120     # default
 max_retries = 2           # default
 max_repair_attempts = 1   # default
 consensus = 1             # default
+review_mode = "combined"  # default
+review_only = []          # default
 cache = true              # default
 
 [llm.budget]

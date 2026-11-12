@@ -44,7 +44,7 @@ from codekavach.privacy.errors import PseudonymError, RedactionError
 from codekavach.privacy.policy.records import PolicyDecisionRow
 from codekavach.privacy.pseudonymise.engine import Pseudonymiser
 from codekavach.privacy.redact.redactor import Redactor
-from codekavach.privacy.stages import PrivacyPrepareStage
+from codekavach.privacy.stages import REVIEW_LIMIT, PrivacyPrepareStage, review_rank
 from codekavach.privacy.vault.salt import vault_path
 from codekavach.report.model.build import summarise_ledger
 from tests.support.ingest import SALT_HEX, stages_registry
@@ -550,3 +550,50 @@ def test_retention_at_scan_start_removes_old_mappings_and_keeps_pseudonyms_stabl
     assert after[0][:7] == header[0][:7]  # id, format, vault id, source, kdf, wrapped key
     first_text = sorted(str(p.model_dump_json()).count("fn_") for p in first.payloads)
     assert first_text and len(second.payloads) == len(first.payloads)
+
+
+def test_payloads_are_queued_most_severe_first(sent: Run) -> None:
+    by_id = {str(c.id): c for c in sent.candidates}
+    ranks = [review_rank(by_id[str(p.candidate_id)]) for p in sent.payloads]
+    assert ranks == sorted(ranks)
+
+
+def test_a_review_limit_prepares_only_the_most_severe_and_records_the_rest(
+    tmp_path: Path, sent: Run
+) -> None:
+    """Quick review: N payloads, one request each, the others kept and marked not reviewed."""
+    root = copy_fixture(tmp_path)  # its own project: a scan in ``root`` replaces ``sent``'s records
+    run = run_and_capture(
+        root, home="home-limit", overrides={"llm": {"tasks": ["triage"], "review_limit": 2}}
+    )
+    assert len(run.payloads) == 2
+    sent_entries = [r for r in run.ledger if r.outcome is EgressOutcome.SENT]
+    assert len(sent_entries) == 2 and {r.task for r in run.ledger} == {"triage"}
+    limited = [code for code in failures_of(run.outcome, "privacy-prepare").values()
+               if code == REVIEW_LIMIT]  # fmt: skip
+    assert limited
+    assert len(run.findings) == len(run.candidates)  # deterministic findings are all kept
+    before = {str(c.id): c for c in sent.candidates}
+    best = sorted(review_rank(before[str(p.candidate_id)]) for p in sent.payloads)[:2]
+    now = {str(c.id): c for c in run.candidates}
+    assert sorted(review_rank(now[str(p.candidate_id)]) for p in run.payloads) == best
+    loaded = load_settings(
+        target=root, env={"CODEKAVACH_HOME": str(root.parent / "home-limit"), **ENV}
+    )
+    summary = summarise_ledger(run.outcome.state_dir, str(run.outcome.scan.id), loaded.settings)
+    assert dict(summary.not_reviewed)[REVIEW_LIMIT] == len(limited)
+
+
+def test_the_combined_review_sends_one_request_per_payload(tmp_path: Path) -> None:
+    root = copy_fixture(tmp_path)
+    run = run_and_capture(
+        root,
+        home="home-combined",
+        overrides={"llm": {"tasks": ["triage", "explain", "remediate"], "review_mode": "combined"}},
+    )
+    assert run.payloads and {r.task for r in run.ledger} == {"review"}
+    sent_entries = [r for r in run.ledger if r.outcome is EgressOutcome.SENT]
+    assert len(sent_entries) == len(run.payloads)
+    hashes = {p.payload_hash for p in run.payloads}
+    assert {r.payload_hash for r in sent_entries} == hashes
+    assert run.verdicts and any(v.verdict.remediation for v in run.verdicts)

@@ -157,6 +157,8 @@ timeout_seconds = 120
 max_retries = 2
 max_repair_attempts = 1
 consensus = 1
+review_mode = "combined"
+review_only = []
 cache = true
 
 [llm.budget]

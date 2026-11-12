@@ -170,6 +170,9 @@
       "max_retries": 2,
       "max_repair_attempts": 1,
       "consensus": 1,
+      "review_mode": "combined",
+      "review_limit": null,
+      "review_only": [],
       "cache": true,
       "budget": {
         "max_requests": null,
@@ -747,6 +750,24 @@
       "contributors": []
     },
     "llm.providers.mock.trust_tier": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "llm.review_limit": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "llm.review_mode": {
+      "layer": "default",
+      "source": null,
+      "line": null,
+      "contributors": []
+    },
+    "llm.review_only": {
       "layer": "default",
       "source": null,
       "line": null,

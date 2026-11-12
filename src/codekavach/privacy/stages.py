@@ -18,6 +18,16 @@ output only after every step succeeded, so a fault can never leave a half-redact
 ``payloads.sanitised``. Error codes name the step and nothing else: exception text is dropped
 because it may quote the code that is being protected.
 
+**Review order and quick review.** The payloads are published most severe first (engine severity,
+then the CWE family, then the engine's order), so the model's verdicts on critical and high findings
+arrive first, and each queued candidate is announced with an ``item.queued`` event. With a review
+limit (``llm.review_limit``, or the provider's ``options.review_limit``) only the N most severe
+candidates that policy lets leave are prepared at all; the rest keep their deterministic evidence
+and are recorded with ``llm_review_limit``, which the report lists as not reviewed by the model.
+``llm.review_only`` (finding fingerprints) restricts the scan's review to those candidates, for the
+on-demand review of one finding. Neither changes what one payload contains: every candidate's
+slice is still prepared, guarded and sent on its own.
+
 The original slices are published under ``slices`` (raw code, never readable by an LLM stage) so
 that the restore stage and ``privacy inspect`` can show them beside the payloads.
 """
@@ -34,7 +44,7 @@ from codekavach.config import Settings
 from codekavach.core.log import get_logger
 from codekavach.core.models import Candidate, RawCode
 from codekavach.core.models.disclosure import DisclosureRows, PayloadStub
-from codekavach.core.models.enums import PrivacyLevel
+from codekavach.core.models.enums import PrivacyLevel, Severity
 from codekavach.core.models.payload import (
     MAX_STUB_SUMMARIES,
     MAX_SUMMARY_LENGTH,
@@ -44,6 +54,7 @@ from codekavach.core.models.payload import (
 from codekavach.core.models.slice import CodeSlice
 from codekavach.core.pipeline import keys
 from codekavach.core.pipeline.context import ConsentDecision, RunContext
+from codekavach.core.pipeline.events import ItemQueued
 from codekavach.core.pipeline.items import (
     ITEM_EXCEPTION,
     PRIVACY_PSEUDONYMISE_FAILED,
@@ -87,6 +98,16 @@ _log = get_logger("codekavach.privacy.stages")
 SLICE_FAILED: Final = "privacy_slice_failed"
 BUDGET_EXCEEDED: Final = "privacy_aggregation_budget"
 VAULT_FAILED: Final = "privacy_vault_failed"
+REVIEW_LIMIT: Final = "llm_review_limit"
+# CWE families in review priority when engines agree on severity: code and command execution,
+# injection and deserialisation first, then credentials, access control, crypto and the rest.
+_CWE_PRIORITY: Final = (
+    (94, 95, 78, 77, 502, 917, 1336),
+    (89, 90, 643, 943, 611, 918, 22, 23, 36, 73),
+    (798, 259, 321, 522, 287, 306, 862, 863, 639, 284, 285, 269),
+    (327, 328, 330, 338, 326, 916, 295, 297, 319),
+    (79, 352, 601, 1021, 434, 400, 770, 209, 532, 200),
+)
 _RULE_UNSAFE: Final = frozenset(
     chr(code) for code in range(128) if not (chr(code).isalnum() or chr(code) in "_.:/-")
 )
@@ -106,6 +127,22 @@ class _FailedError(Exception):
 class _Outcome:
     payload: SanitisedPayload
     slice_: CodeSlice
+
+
+def _cwe_rank(cwes: tuple[int, ...]) -> int:
+    for position, family in enumerate(_CWE_PRIORITY):
+        if any(int(number) in family for number in cwes):
+            return position
+    return len(_CWE_PRIORITY)
+
+
+def review_rank(candidate: Candidate) -> tuple[int, int]:
+    """Sort key of the review order: engine severity (most severe first), then the CWE family."""
+    severity = candidate.engine_severity
+    return (
+        -(severity.rank if severity is not None else Severity.MEDIUM.rank),
+        _cwe_rank(tuple(int(c) for c in candidate.cwe)),
+    )
 
 
 def stub_of(payload: SanitisedPayload) -> PayloadStub:
@@ -299,8 +336,11 @@ class PrivacyPrepareStage:
             settings=ctx.config,
             create=True,
         ) as vault:
-            for done, candidate in enumerate(candidates, start=1):
-                ctx.check_cancelled()
+            only = frozenset(ctx.config.llm.review_only)
+            if only:  # the on-demand review of chosen findings: the others are not reviewed
+                candidates = [c for c in candidates if c.fingerprint in only]
+            resolved = []
+            for candidate in candidates:
                 decision = policy.resolve_candidate(
                     [location.path for location in candidate.locations],
                     tier,
@@ -311,8 +351,23 @@ class PrivacyPrepareStage:
                 level = decision.level
                 skip = decision.never_send or level is PrivacyLevel.L0 or not level_available(level)
                 decisions.append(PolicyDecisionRow.of(candidate.id, decision, withheld=skip))
+                resolved.append((candidate, level, skip))
+            limit = ctx.config.llm.effective_review_limit(provider)
+            eligible = sorted(
+                (c for c, _, skip in resolved if not skip), key=review_rank
+            )  # stable: engine order breaks ties
+            # With a limit, candidates are prepared most severe first until ``limit`` payloads
+            # exist, so a candidate that cannot be sliced (a secret, a dependency) takes no place.
+            queue = resolved if limit is None else sorted(resolved, key=lambda r: review_rank(r[0]))
+            limited = 0
+            for done, (candidate, level, skip) in enumerate(queue, start=1):
+                ctx.check_cancelled()
                 if skip:
                     withheld += 1
+                    continue
+                if limit is not None and len(payloads) >= limit:
+                    ctx.fail_item(str(candidate.id), REVIEW_LIMIT)  # kept, not sent
+                    limited += 1
                     continue
                 with guard_item(ctx, str(candidate.id), ITEM_EXCEPTION):
                     try:
@@ -343,11 +398,33 @@ class PrivacyPrepareStage:
                     ctx.emit_progress(done, len(candidates), "candidates")
         ctx.emit_progress(len(candidates), len(candidates), "candidates")
         account.save()
+        by_id = {str(c.id): c for c in candidates}
+        order = {str(c.id): position for position, c in enumerate(eligible)}
+        ranked = sorted(
+            zip(payloads, slices, strict=True), key=lambda pair: order[str(pair[0].candidate_id)]
+        )
+        payloads = [payload for payload, _ in ranked]
+        slices = [slice_ for _, slice_ in ranked]
+        for rank, payload in enumerate(payloads, start=1):
+            source = by_id[str(payload.candidate_id)]
+            ctx.events.publish(
+                ItemQueued(
+                    scan_id=ctx.scan_id,
+                    stage=self.name,
+                    item_id=str(payload.candidate_id),
+                    rank=rank,
+                    total=len(payloads),
+                    severity=source.engine_severity.value if source.engine_severity else None,
+                    cwe=tuple(int(c) for c in source.cwe),
+                )
+            )
         _log.info(
             "payloads_prepared",
             prepared=len(payloads),
             withheld=withheld,
             candidates=len(candidates),
+            review_limit=limit,
+            not_reviewed=limited,
         )
         _DISCLOSURES[ctx.scan_id] = disclosure
         _OVER_BUDGET[ctx.scan_id] = frozenset(over_budget)

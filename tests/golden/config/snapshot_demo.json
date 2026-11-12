@@ -1,7 +1,7 @@
 {
   "codekavach_version": "0.0.0-test",
   "created_at": "2026-10-01T09:30:00Z",
-  "fingerprint": "f1db69478cded37e6373e8bd53f17c7b27b16af52331581a1200a2209adc97c8",
+  "fingerprint": "0f73806f1e7a4c48117633e27665d85b4d8aac6467c3789d042c6fdbfd42be8c",
   "org_policies": [],
   "origins": {
     "aggregate.baseline_file": {
@@ -451,6 +451,24 @@
       "source": null
     },
     "llm.providers.mock.trust_tier": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.review_limit": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.review_mode": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.review_only": {
       "contributors": [],
       "layer": "default",
       "line": null,
@@ -1122,6 +1140,9 @@
           "trust_tier": null
         }
       },
+      "review_limit": null,
+      "review_mode": "combined",
+      "review_only": [],
       "tasks": [
         "triage",
         "explain",

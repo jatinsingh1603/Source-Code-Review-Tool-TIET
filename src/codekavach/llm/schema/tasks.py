@@ -17,7 +17,7 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from codekavach.core.models.enums import Confidence
-from codekavach.core.models.verdict import UntrustedText
+from codekavach.core.models.verdict import MAX_LINE, ContextRequest, UntrustedText
 
 Severity = Literal["critical", "high", "medium", "low", "info"]
 Cwe = Annotated[int, Field(ge=0, le=99999)]
@@ -109,6 +109,50 @@ class SummariseAnswer(_Answer):
     )
     overall_risk: Literal["critical", "high", "medium", "low"] = Field(
         description="Overall risk posture."
+    )
+
+
+# The combined review (``review`` task): triage, impact and remediation of one candidate in one
+# answer, for providers that serve one request at a time. The request still carries exactly one
+# payload. The triage fields mirror ``LLMVerdict`` and come first, ``reasoning`` before everything
+# else; the enrichment fields are empty strings when the code is not vulnerable. The review flow
+# folds the answer into an ``LLMVerdict`` in pseudonym space (``llm.review.verdict_of``), which
+# the output defence, consensus and the restore stage then treat like a triage verdict. The
+# docstring is the schema description the provider sees, so it stays one line.
+class ReviewAnswer(BaseModel):
+    """Triage verdict, impact and remediation of one finding."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    reasoning: Annotated[UntrustedText, Field(max_length=4000)] = Field(
+        description="Think step by step here first; refer to stand-in names exactly."
+    )
+    is_vulnerable: bool | None = Field(
+        description="true if vulnerable, false if not; null only together with needs_context."
+    )
+    confidence: Confidence = Field(description="low, medium or high.")
+    cwe: Annotated[tuple[Cwe, ...], Field(max_length=5)] = Field(
+        description="Applicable CWE numbers, most specific first, at most five."
+    )
+    cited_lines: Annotated[
+        tuple[Annotated[int, Field(ge=1, le=MAX_LINE)], ...], Field(max_length=20)
+    ] = Field(description="Line numbers of the given code the answer relies on.")
+    needs_context: Annotated[tuple[ContextRequest, ...], Field(max_length=3)] = Field(
+        description="Up to three pieces of additional code, only if you cannot decide."
+    )
+    severity: Severity = Field(description="Severity judged on the code shown.")
+    impact: Medium = Field(description="What an attacker can achieve; empty if not vulnerable.")
+    exploit_scenario: Medium = Field(
+        description="One realistic attack sequence; empty if not vulnerable."
+    )
+    remediation: Annotated[UntrustedText, Field(max_length=2000)] = Field(
+        description="The fix in plain ordered steps; empty if not vulnerable."
+    )
+    secure_example: Annotated[UntrustedText, Field(max_length=2500)] = Field(
+        description="Corrected vulnerable lines with the same stand-in names; empty if none."
+    )
+    secure_example_language: Annotated[UntrustedText, Field(max_length=32)] = Field(
+        description="Programming language of the example; empty if none."
     )
 
 
