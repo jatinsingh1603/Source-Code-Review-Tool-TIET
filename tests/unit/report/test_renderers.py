@@ -22,7 +22,7 @@ HOSTILE = (
 )
 EXTERNAL = re.compile(
     r"""(?:src|href|action|poster|data)\s*=\s*["']?\s*(?:https?:|//|data:|ftp:)"""
-    r"""|url\(|@import|<link\b|<script\b|<img\b|<iframe\b|<object\b|<embed\b""",
+    r"""|url\(|@import|<link\b|<script\b[^>]*\bsrc|<img\b|<iframe\b|<object\b|<embed\b""",
     re.IGNORECASE,
 )
 
@@ -61,7 +61,11 @@ def test_the_page_has_no_remote_resource_and_a_content_security_policy() -> None
     page = render_html(document())
     assert not EXTERNAL.search(page)
     assert 'http-equiv="Content-Security-Policy"' in page
-    assert "default-src &#39;none&#39;" in page and "img-src &#39;none&#39;" in page
+    assert "default-src &#39;none&#39;" in page and "form-action &#39;none&#39;" in page
+    assert page.count("<script") == 1  # the one inline, packaged script
+    script = page[page.index("<script>") : page.index("</script>")]
+    for banned in ("innerHTML", "eval(", "Function(", "document.write", "outerHTML"):
+        assert banned not in script
 
 
 def test_snippet_text_is_escaped_even_when_the_source_contains_markup() -> None:

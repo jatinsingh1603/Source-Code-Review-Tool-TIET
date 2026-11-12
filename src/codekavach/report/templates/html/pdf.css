@@ -1,0 +1,43 @@
+/* Paged-media rules for the WeasyPrint PDF. Only properties WeasyPrint supports are used. */
+@page {
+  size: A4; margin: 22mm 16mm 20mm 16mm;
+  @top-left { content: "{{ header }}"; font-family: Helvetica, Arial, sans-serif; font-size: 8pt; font-weight: 700; letter-spacing: 1.5pt; color: {{ theme.critical }}; }
+  @top-right { content: string(doctitle); font-family: Helvetica, Arial, sans-serif; font-size: 8pt; color: {{ theme.muted }}; }
+  @bottom-left { content: "{{ footer }}"; font-family: Helvetica, Arial, sans-serif; font-size: 8pt; color: {{ theme.muted }}; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: Helvetica, Arial, sans-serif; font-size: 8pt; color: {{ theme.muted }}; }
+}
+@page cover { margin: 0; @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
+body { font-size: 9.5pt; background: #ffffff; }
+main { max-width: none; padding: 0; }
+.doctitle { string-set: doctitle content(); display: none; }
+.cover { page: cover; margin: 0; height: 297mm; min-height: 0; padding: 40mm 22mm 22mm; page-break-after: always; }
+.cover .shield { right: 22mm; top: 36mm; }
+section.chapter { page-break-before: always; }
+section.chapter.cont { page-break-before: auto; }
+h2 { font-size: 17pt; margin-top: 0; }
+h3 { font-size: 12pt; }
+table { font-size: 8.5pt; page-break-inside: auto; }
+tr { page-break-inside: avoid; }
+.finding { border: 1px solid {{ theme.rule }}; border-left-width: 5px; border-radius: 6px; margin: 0 0 10mm; page-break-inside: auto; }
+.finding .fhead { padding: 8px 12px; background: {{ theme.panel }}; border-bottom: 1px solid {{ theme.rule }}; page-break-after: avoid; }
+.finding .fhead .rid { font-family: {{ theme.font_mono }}; font-size: 8pt; color: {{ theme.muted }}; margin-right: 8px; }
+.finding .fhead .ttl { font-weight: 700; font-size: 11pt; display: block; margin-top: 3px; }
+.finding.critical { border-left-color: {{ theme.critical }}; } .finding.high { border-left-color: {{ theme.high }}; }
+.finding.medium { border-left-color: {{ theme.medium }}; } .finding.low { border-left-color: {{ theme.low }}; }
+.finding.info { border-left-color: {{ theme.info }}; }
+.fbody { border-top: none; padding: 0 12px 10px; }
+.code { page-break-inside: avoid; }
+.code pre { font-size: 7.5pt; }
+.fact { flex: 1 1 28%; }
+.kpi .v { font-size: 20pt; }
+nav.toc ol { columns: 1; }
+nav.toc a::after { content: leader(".") " " target-counter(attr(href), page); color: {{ theme.muted }}; }
+.attest { page-break-inside: avoid; }
+.chart-card { page-break-inside: avoid; }
+.kpi { flex: 1 1 15%; padding: 8px 10px; }
+.chart-card .ck-chart { width: 100%; }
+.chart-card.donut .ck-chart { width: 60%; }
+#scope, #methodology, #rating, #roadmap { page-break-before: auto; margin-top: 12mm; }
+.split > div { flex: 1 1 45%; }
+td.status, td.cwe { white-space: nowrap; }
+#summary-table td.mono.small { font-size: 7pt; }

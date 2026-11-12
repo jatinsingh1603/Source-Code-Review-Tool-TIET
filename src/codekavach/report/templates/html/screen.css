@@ -1,0 +1,34 @@
+/* Screen-only rules of the interactive HTML report (never sent to WeasyPrint). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e6eaf2; --muted: #9aa5b8; --rule: #2d3646; --surface: #10151e; --panel: #171e2a;
+  --code-bg: #131a25; --hit: #3a3416; --brand: #5b8def; --accent: #26a69a;
+  --critical-bg: #2c1838; --high-bg: #361a1d; --medium-bg: #36251a; --low-bg: #332d16; --info-bg: #172741;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ink: #e6eaf2; --muted: #9aa5b8; --rule: #2d3646; --surface: #10151e; --panel: #171e2a;
+    --code-bg: #131a25; --hit: #3a3416; --brand: #5b8def; --accent: #26a69a;
+    --critical-bg: #2c1838; --high-bg: #361a1d; --medium-bg: #36251a; --low-bg: #332d16; --info-bg: #172741;
+  }
+}
+/* Topbar (interactive HTML only) */
+.topbar { position: sticky; top: 0; z-index: 20; background: var(--brand-dark); color: #fff; }
+.topbar .in { max-width: 1040px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
+.topbar .brand { font-weight: 700; letter-spacing: .02em; }
+.topbar .brand span { opacity: .75; font-weight: 400; margin-left: 8px; }
+.topbar button { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 6px; padding: 5px 10px; font: inherit; font-size: 12px; cursor: pointer; margin-left: 6px; }
+.banner { background: var(--critical); color: #fff; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: .18em; padding: 3px; text-transform: uppercase; }
+.toolbar { position: sticky; top: 42px; z-index: 10; background: var(--surface); padding: 10px 0; border-bottom: 1px solid var(--rule); display: flex; flex-wrap: wrap; align-items: center; }
+details.finding > summary::-webkit-details-marker { display: none; }
+:root[data-theme="dark"] .tk, :root[data-theme="dark"] .tnf, :root[data-theme="dark"] .tnc { filter: brightness(1.6); }
+@media (max-width: 640px) {
+  .cover { padding: 48px 24px; } .cover h1 { font-size: 30px; } .cover .shield { display: none; }
+  details.finding > summary { flex-wrap: wrap; } nav.toc ol { columns: 1; }
+}
+@media print {
+  :root { color-scheme: light; }
+  .topbar, .toolbar, .noprint, .banner { display: none !important; }
+  details.finding > .fbody { display: block; }
+}

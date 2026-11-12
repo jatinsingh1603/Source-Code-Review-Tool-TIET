@@ -1,30 +1,38 @@
-"""The self-contained HTML report.
+"""The self-contained, interactive HTML audit report (and the HTML the PDF is printed from).
 
-Owning epic: E13. MVP; extended by E31, which adds themes, the full section set and more formats.
+Owning epic: E13. MVP; extended by E31 (E31-02): cover, document control, executive summary,
+scope, methodology, rating method, charts, detailed findings with filters, roadmap, privacy
+attestation and appendices, with dark mode and print styles.
 
 Output handling is a security control here: both the client's code and the model's text are
 attacker-influenced (``docs/research/INSIGHTS.md`` section 7). Autoescaping is on for every value,
 the template never marks model or client text safe, nothing is linkified, the page loads no remote
-resource of any kind, and a content-security policy meta tag forbids the browser to fetch one. A
-snippet is text with line numbers and marked lines, never an image.
+resource of any kind, and a content-security policy meta tag forbids the browser to fetch one. The
+report template runs in a sandboxed environment; its only inline script reads data attributes
+and never builds markup. A snippet is text with line numbers and marked lines, never an image.
 """
 
+from collections import Counter
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 from typing import Any, Final
 
 from jinja2 import Environment, FunctionLoader, StrictUndefined, select_autoescape
+from jinja2.sandbox import SandboxedEnvironment
 from markupsafe import Markup, escape
 
 from codekavach.core.models.enums import Severity
 from codekavach.core.models.evidence import Evidence
-from codekavach.core.models.finding import Finding
 from codekavach.report.model.document import ReportDocument
+from codekavach.report.render.charts import bar_chart, donut, risk_matrix, severity_chart
+from codekavach.report.render.snippets import css_rules, token_rows
+from codekavach.report.render.theme import DEFAULT_THEME, Theme
 
-TEMPLATE: Final = "report.html.j2"
+# The inspection page (cli.inspect_page) keeps the stricter policy: it has no script and no image.
 CSP: Final = "default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; base-uri 'none'"
 SEVERITIES: Final = tuple(reversed(list(Severity)))
+SEVERITY_NAMES: Final = tuple(item.value for item in SEVERITIES)
 _SAFE_MARKING = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -/.,")
 
 
@@ -88,36 +96,140 @@ def environment() -> Environment:
     return env
 
 
-def _matrix(document: ReportDocument) -> dict[tuple[int, int], int]:
+REPORT_TEMPLATE: Final = "html/report.html.j2"
+REPORT_CSP: Final = (
+    "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; "
+    "base-uri 'none'; form-action 'none'"
+)
+LIKELIHOOD_TEXT: Final = {
+    1: "rare; requires unusual conditions or insider access.",
+    2: "unlikely; requires authentication and specific conditions.",
+    3: "possible; reachable by an authenticated user.",
+    4: "likely; reachable from the network with little effort.",
+    5: "almost certain; reachable anonymously and trivially exploitable.",
+}
+
+
+@dataclass(frozen=True)
+class ComplianceRow:
+    """One control of the compliance annex and the findings that are evidence against it."""
+
+    framework: str
+    clause: str
+    title: str | None
+    ids: tuple[str, ...]
+
+
+def compliance_rows(document: ReportDocument) -> list[ComplianceRow]:
+    """The compliance annex: one row per (framework, clause), findings in report order."""
+    rows: dict[tuple[str, str], tuple[str | None, list[str]]] = {}
+    for view in document.views:
+        for item in (*view.owasp, *view.compliance):
+            key = (item.framework, item.clause)
+            _title, ids = rows.setdefault(key, (item.title, []))
+            if view.report_id not in ids:
+                ids.append(view.report_id)
+    return [
+        ComplianceRow(framework, clause, title, tuple(ids))
+        for (framework, clause), (title, ids) in sorted(rows.items())
+    ]
+
+
+def _css_source(name: str, theme: Theme, **extra: str) -> str:
+    """A stylesheet template filled with validated theme values (hex colours, safe font stacks)."""
+    env = Environment(autoescape=False, undefined=StrictUndefined)  # noqa: S701 - CSS, validated
+    return env.from_string(_template_source(name)).render(
+        theme=theme, token_css=css_rules(), **extra
+    )
+
+
+def chart_set(document: ReportDocument, theme: Theme) -> dict[str, Markup]:
+    """The report's charts as inline SVG, generated from the finding views."""
+    facts = document.facts
+    counts = list(facts.by_severity) if facts else [(name, 0) for name in SEVERITY_NAMES]
+    cells: Counter[tuple[int, int]] = Counter(
+        (view.likelihood, view.impact_level) for view in document.views
+    )
+    cwe_rows = [(name, count, theme.brand) for name, count in (facts.top_cwes if facts else ())]
+    owasp_rows = [(name, count, theme.accent) for name, count in (facts.top_owasp if facts else ())]
     return {
-        (likelihood, impact): count for likelihood, impact, count in document.summary.risk_matrix
+        "donut": Markup(donut(counts, theme=theme)),  # noqa: S704 - generated, text escaped
+        "severity": Markup(severity_chart(counts, theme=theme)),  # noqa: S704
+        "matrix": Markup(risk_matrix(dict(cells), theme=theme)),  # noqa: S704
+        "cwe": Markup(bar_chart(cwe_rows, title="Top CWE", theme=theme)),  # noqa: S704
+        "owasp": Markup(bar_chart(owasp_rows, title="OWASP Top 10", theme=theme)),  # noqa: S704
     }
 
 
-def render_html(document: ReportDocument) -> str:
-    """The page for ``document`` as one string."""
-    findings: tuple[Finding, ...] = document.findings
+def _toc(document: ReportDocument) -> list[tuple[str, str]]:
+    toc = [
+        ("executive", "Executive summary"),
+        ("scope", "Scope and approach"),
+        ("methodology", "Methodology"),
+        ("rating", "Risk rating method"),
+        ("summary", "Summary of findings"),
+        ("findings", "Detailed findings"),
+        ("roadmap", "Remediation roadmap"),
+    ]
+    if document.privacy_attestation is not None:
+        toc.append(("privacy", "Privacy attestation"))
+    toc.append(("appendix", "Appendices"))
+    return toc
+
+
+def report_environment() -> Environment:
+    """The sandboxed, autoescaping environment of the audit report template."""
+    env = SandboxedEnvironment(
+        loader=FunctionLoader(_template_source),
+        autoescape=select_autoescape(default=True, default_for_string=True),
+        undefined=StrictUndefined,
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+    env.globals["snippet_rows"] = token_rows
+    env.globals["zip"] = zip
+    env.globals["likelihood_text"] = LIKELIHOOD_TEXT
+    return env
+
+
+def render_html(document: ReportDocument, *, pdf: bool = False, theme: Theme | None = None) -> str:
+    """The audit report page for ``document`` as one string; ``pdf`` selects the paged layout."""
+    chosen = theme or DEFAULT_THEME
+    header = running_header(document.classification).upper()
+    footer = running_header(f"{document.report_id} {document.project_name}")
+    css = _css_source("html/report.css", chosen)
+    if pdf:
+        css += _css_source("html/pdf.css", chosen, header=header, footer=footer)
+    else:
+        css += _css_source("html/screen.css", chosen)
+    views = document.views
     context: dict[str, Any] = {
         "doc": document,
-        "findings": findings,
-        "csp": CSP,
-        "header": running_header(document.classification),
-        "matrix": _matrix(document),
-        "by_severity": dict(document.summary.by_severity),
-        "by_status": dict(document.summary.by_status),
-        "attestation": document.privacy_attestation,
+        "views": views,
+        "pdf": pdf,
+        "csp": REPORT_CSP,
+        "css": Markup(css),  # noqa: S704 - generated from validated theme values
+        "script": Markup(_template_source("html/report.js")),  # noqa: S704 - packaged script
+        "charts": chart_set(document, chosen),
+        "toc": _toc(document),
+        "statuses": sorted({view.status for view in views}),
+        "cwes": sorted({c for view in views for c in view.cwe}),
+        "compliance": compliance_rows(document),
     }
-    return environment().get_template(TEMPLATE).render(**context)
+    return report_environment().get_template(REPORT_TEMPLATE).render(**context)
 
 
 class HtmlRenderer:
-    """Writes the report as one HTML file with its stylesheet inline."""
+    """Writes the report as one self-contained, interactive HTML file."""
 
     format = "html"
     extension = "html"
+    binary = False
 
-    def render(self, doc: ReportDocument, out: Path) -> Path:
+    def render(
+        self, doc: ReportDocument, out: Path, *, theme: Theme | None = None, context: Any = None
+    ) -> Path:
         """Write ``doc`` to ``out``."""
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(render_html(doc), encoding="utf-8", newline="\n")
+        out.write_text(render_html(doc, theme=theme), encoding="utf-8", newline="\n")
         return out
