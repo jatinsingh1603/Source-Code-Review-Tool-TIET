@@ -24,8 +24,10 @@ import {
 export function ScansPage() {
   const scansQ = useScans();
   const providers = useProviders().data;
-  const { projects } = useCurrentProject();
+  const { projects, current } = useCurrentProject();
+  const { can } = useSession();
   const [project, setProject] = useState("");
+  const target = project || current?.id || projects[0]?.id;
   const scans = useMemo(
     () => sortScans(scansQ.data ?? []).filter((s) => !project || s.project_id === project),
     [scansQ.data, project],
@@ -36,20 +38,27 @@ export function ScansPage() {
         crumbs={[{ label: "Scans" }]}
         title="Scans"
         actions={
-          <select className="inp" style={{ width: 220 }} aria-label="Project" value={project} onChange={(e) => setProject(e.target.value)}>
-            <option value="">All projects</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+          <>
+            <select className="inp" style={{ width: 220 }} aria-label="Project" value={project} onChange={(e) => setProject(e.target.value)}>
+              <option value="">All projects</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            {can("scans:run") && target && (
+              <ButtonLink variant="primary" to={`/projects/${target}/scan`}>
+                New scan
+              </ButtonLink>
+            )}
+          </>
         }
       />
       {scansQ.isError ? (
         <ErrorBanner what="Scans could not be loaded." error={scansQ.error} onRetry={() => void scansQ.refetch()} />
       ) : (
-        <ScansTable scans={scans} providers={providers} loading={scansQ.isLoading} />
+        <ScansTable scans={scans} providers={providers} loading={scansQ.isLoading} showProject={!project} />
       )}
     </Content>
   );

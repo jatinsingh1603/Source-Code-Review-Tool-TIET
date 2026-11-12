@@ -562,11 +562,14 @@ export function ScansTable({
   providers,
   loading,
   projects,
+  showProject,
 }: {
   scans: Scan[];
   providers?: ProviderInfo[];
   loading?: boolean;
   projects?: Project[];
+  /** Add a Project column (the cross-project Scans list). */
+  showProject?: boolean;
 }) {
   const { projects: ctxProjects } = useCurrentProject();
   const list = projects ?? ctxProjects;
@@ -576,6 +579,7 @@ export function ScansTable({
         <thead>
           <tr>
             <th>Scan</th>
+            {showProject && <th>Project</th>}
             <th>Target</th>
             <th>Level</th>
             <th>Provider</th>
@@ -588,7 +592,7 @@ export function ScansTable({
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={8}>
+              <td colSpan={showProject ? 9 : 8}>
                 <Skeleton />
               </td>
             </tr>
@@ -603,6 +607,7 @@ export function ScansTable({
                       {scanLabel(s.id)}
                     </Link>
                   </td>
+                  {showProject && <td className="wrap">{proj?.name ?? s.project_name ?? "—"}</td>}
                   <td className="mono sm">{scanTarget(s, proj)}</td>
                   <td>
                     <LevelBadge level={s.privacy_level} />
