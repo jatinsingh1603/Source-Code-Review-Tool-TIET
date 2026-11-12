@@ -2,6 +2,8 @@ import { useState } from "react";
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   Cell,
   Pie,
@@ -57,7 +59,7 @@ export function SeverityDonut({ counts }: { counts: SeverityCounts }) {
   const data = order.map((s) => ({ name: SEVERITY_LABEL[s], key: s, value: counts[s] ?? 0 }));
   const total = data.reduce((a, d) => a + d.value, 0);
   return (
-    <div className="flex flex-col items-center gap-6 sm:flex-row">
+    <div className="flex flex-col items-center gap-5 sm:flex-row xl:flex-col 2xl:flex-row">
       <div className="relative h-44 w-44 shrink-0" role="img" aria-label={`Findings by severity, ${total} in total`}>
         <ResponsiveContainer>
           <PieChart>
@@ -99,7 +101,7 @@ export function SeverityDonut({ counts }: { counts: SeverityCounts }) {
                 </span>
               </th>
               <td className="py-1.5 pl-4 text-right font-semibold tabular-nums text-fg">{d.value}</td>
-              <td className="w-14 py-1.5 pl-3 text-right tabular-nums text-fg-subtle">
+              <td className="w-12 py-1.5 pl-2 text-right text-xs tabular-nums text-fg-subtle">
                 {total ? `${Math.round((d.value / total) * 100)}%` : "—"}
               </td>
             </tr>
@@ -136,7 +138,31 @@ export function FindingsTrend({ trend }: { trend: TrendPoint[] }) {
           ]}
         />
       </div>
-      {view === "chart" ? (
+      {view === "chart" && data.length < 3 ? (
+        <div className="h-60" role="img" aria-label="Findings per scan, stacked by severity">
+          <ResponsiveContainer>
+            <BarChart data={data} margin={{ top: 6, right: 8, bottom: 0, left: -18 }} barCategoryGap="35%">
+              <CartesianGrid stroke="rgb(var(--ck-chart-grid))" vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: "rgb(var(--ck-chart-axis))", fontSize: 11 }} tickLine={false} axisLine={false} />
+              <YAxis allowDecimals={false} tick={{ fill: "rgb(var(--ck-chart-axis))", fontSize: 11 }} tickLine={false} axisLine={false} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgb(var(--ck-surface-2))" }} />
+              {order.map((s) => (
+                <Bar
+                  key={s}
+                  dataKey={s}
+                  name={SEVERITY_LABEL[s]}
+                  stackId="1"
+                  fill={SEV_CHART_COLOR[s]}
+                  stroke="rgb(var(--ck-surface))"
+                  strokeWidth={2}
+                  maxBarSize={72}
+                  isAnimationActive={false}
+                />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : view === "chart" ? (
         <div className="h-60" role="img" aria-label="Findings per scan over time, stacked by severity">
           <ResponsiveContainer>
             <AreaChart data={data} margin={{ top: 6, right: 8, bottom: 0, left: -18 }}>

@@ -122,27 +122,39 @@ const FORMAT_LABELS: Record<string, string> = {
   json: "JSON",
   csv: "CSV",
   xlsx: "Excel workbook",
-  md: "Markdown",
+  md: "Markdown report",
+  markdown: "Markdown report",
   docx: "Word document",
+  compliance: "Compliance mapping",
 };
+
+const FORMAT_ORDER = ["html", "pdf", "docx", "xlsx", "compliance", "sarif", "json", "csv", "md", "markdown"];
 
 export const ALL_REPORT_FORMATS = ["html", "pdf", "docx", "xlsx", "sarif", "json", "csv", "md"];
 
 /** The reports listing may be a list of strings, of objects, or `{formats: [...]}`. */
 export function normaliseFormats(data: unknown): ReportFormat[] {
   const list = unwrapList<unknown>(data, "formats", "available");
-  return list.map((f) => {
+  const out = list.map((f) => {
     if (typeof f === "string") return { format: f, label: FORMAT_LABELS[f] ?? f, available: true };
     const o = f as Partial<ReportFormat> & { fmt?: string; name?: string };
     const format = o.format ?? o.fmt ?? o.name ?? "unknown";
+    const serverLabel = o.label && o.label !== format.toUpperCase() ? o.label : undefined;
     return {
       format,
-      label: o.label ?? FORMAT_LABELS[format] ?? format,
+      label: FORMAT_LABELS[format] ?? serverLabel ?? format,
       available: o.available ?? true,
       reason: o.reason ?? null,
       media_type: o.media_type,
     };
   });
+  // `markdown` and `md` are the same renderer; show one card.
+  const deduped = out.some((f) => f.format === "md") ? out.filter((f) => f.format !== "markdown") : out;
+  const rank = (f: string) => {
+    const i = FORMAT_ORDER.indexOf(f);
+    return i < 0 ? FORMAT_ORDER.length : i;
+  };
+  return [...deduped].sort((a, b) => rank(a.format) - rank(b.format));
 }
 
 export function formatLabel(fmt: string): string {

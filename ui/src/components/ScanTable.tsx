@@ -3,6 +3,17 @@ import type { Scan, Severity } from "@/api/types";
 import { DataTable, PrivacyLevelBadge, ScanStatusBadge, type Column } from "@/components/ui";
 import { fmtDuration, fmtRelative, SEVERITY_LABEL } from "@/lib/format";
 import { sevDot } from "@/components/ui/Badge";
+import { useCurrentProject } from "@/app/project-context";
+
+/** Scan ids can be long; show a readable prefix and keep the full id in the title. */
+export function ScanId({ id }: { id: string }) {
+  const short = id.length > 16 ? `${id.slice(0, 14)}…` : id;
+  return (
+    <span className="font-mono text-sm font-medium text-fg" title={id}>
+      {short}
+    </span>
+  );
+}
 
 export function SeverityCountsInline({ counts }: { counts: Scan["counts"] }) {
   const order: Severity[] = ["critical", "high", "medium", "low"];
@@ -34,6 +45,8 @@ export function ScanTable({
   empty?: React.ReactNode;
 }) {
   const navigate = useNavigate();
+  const { projects } = useCurrentProject();
+  const projectName = (s: Scan) => s.project_name ?? projects.find((p) => p.id === s.project_id)?.name ?? s.project_id;
   const cols: Column<Scan>[] = [
     {
       id: "id",
@@ -42,11 +55,11 @@ export function ScanTable({
       cell: (s) =>
         compact ? (
           <span className="flex flex-col items-start gap-1">
-            <span className="font-mono text-sm font-medium text-fg">{s.id}</span>
+            <ScanId id={s.id} />
             <ScanStatusBadge status={s.status} />
           </span>
         ) : (
-          <span className="font-mono text-sm font-medium text-fg">{s.id}</span>
+          <ScanId id={s.id} />
         ),
       sortValue: (s) => s.id,
     },
@@ -55,8 +68,8 @@ export function ScanTable({
           {
             id: "project",
             header: "Project",
-            cell: (s: Scan) => <span className="whitespace-nowrap text-fg">{s.project_name ?? s.project_id}</span>,
-            sortValue: (s: Scan) => s.project_name ?? s.project_id,
+            cell: (s: Scan) => <span className="whitespace-nowrap text-fg">{projectName(s)}</span>,
+            sortValue: (s: Scan) => projectName(s),
           },
         ]
       : []),

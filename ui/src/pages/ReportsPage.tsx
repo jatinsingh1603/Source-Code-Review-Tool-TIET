@@ -19,6 +19,8 @@ const ICON: Record<string, typeof FileText> = {
   sarif: FileCode2,
   json: FileJson,
   md: FileText,
+  markdown: FileText,
+  compliance: FileSpreadsheet,
 };
 
 const DESC: Record<string, string> = {
@@ -30,6 +32,8 @@ const DESC: Record<string, string> = {
   sarif: "SARIF 2.1.0 for GitHub code scanning and IDEs",
   json: "Complete machine-readable results",
   md: "Markdown summary for pull requests and wikis",
+  markdown: "Markdown summary for pull requests and wikis",
+  compliance: "Findings mapped to PCI DSS, ISO 27001, NIST SSDF, RBI and more",
 };
 
 export default function ReportsPage() {

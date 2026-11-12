@@ -91,6 +91,7 @@ describe("response normalisation", () => {
   });
   it("normalises report formats from strings and objects", () => {
     expect(normaliseFormats(["html"])).toEqual([{ format: "html", label: "HTML report", available: true }]);
+    expect(normaliseFormats(["md", "markdown", "html"]).map((f) => f.format)).toEqual(["html", "md"]);
     const [f] = normaliseFormats({ formats: [{ format: "pdf", available: false, reason: "no renderer" }] });
     expect(f).toMatchObject({ format: "pdf", available: false, reason: "no renderer" });
   });
