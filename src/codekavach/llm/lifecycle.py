@@ -88,6 +88,7 @@ class ManagedSession:
         self._lock = threading.Lock()  # dispatch may run on several threads at once
         self._samples: Counter[tuple[str, str]] = Counter()
         self.retries = 0
+        self.budget_refusals = 0
 
     @classmethod
     def for_settings(
@@ -167,7 +168,11 @@ class ManagedSession:
         attempt = 0
         while True:
             if not offline and (limit := self._budget.exhausted()) is not None:
-                _log.warning("llm_budget_exhausted", limit=limit)
+                with self._lock:
+                    self.budget_refusals += 1
+                    first = self.budget_refusals == 1
+                if first:  # once per scan: every later candidate is refused for the same reason
+                    _log.warning("llm_budget_exhausted", limit=limit)
                 return Dispatch("failed", error_kind=BUDGET_EXHAUSTED)
             result = self._session.dispatch(
                 request,
