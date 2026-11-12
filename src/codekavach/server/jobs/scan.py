@@ -19,6 +19,7 @@ rated findings follow as ordinary ``finding`` events when the scan ends, each na
 import json
 import shutil
 import traceback
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
@@ -70,6 +71,17 @@ STAGE_LABELS: Final = {
 }
 TERMS_FILE: Final = Path("ground-truth") / "terms.txt"
 OPTIONS_FILE: Final = "scan-options.json"  # per-scan request options (review_limit)
+# Item failures that are expected on most code bases, worded for the scan log (reason, level).
+ITEM_FAILURE_WORDS: Final = {
+    "privacy_slice_failed": (
+        "no code slice to send (secrets, dependencies or configuration findings)",
+        "info",
+    ),
+    "privacy_pseudonymise_failed": (
+        "pseudonymisation did not succeed, so the request was aborted (fail closed, I4)",
+        "info",
+    ),
+}
 VERDICT_WORDS: Final = {
     "vulnerable": "confirmed by the model",
     "not_vulnerable": "judged not exploitable by the model",
@@ -104,6 +116,7 @@ class _Progress:
         self.counts: dict[str, tuple[Any, Any]] = {}
         self.queued: dict[str, tuple[str, list[int]]] = {}
         self.limited: dict[str, int] = {}  # per stage: candidates left out by the review limit
+        self.failed: dict[str, Counter[str]] = {}  # per stage: item failures by error code
 
     def _update(self, *, stage: str | None = None, progress: int | None = None) -> None:
         with self.job.state.db.transaction() as session:
@@ -128,6 +141,13 @@ class _Progress:
                 {"level": "info", "message": f"{self.limited.pop(stage)} candidates kept "
                  "their deterministic evidence and were not sent to the model (review "
                  "limit); review any of them from its finding page"},
+            )  # fmt: skip
+        for code, number in sorted(self.failed.pop(stage, Counter()).items()):
+            reason, level = ITEM_FAILURE_WORDS.get(code, (f"{stage} failed ({code})", "warning"))
+            self.log.append(
+                "log",
+                {"level": level, "message": f"{number} candidate{'s' if number != 1 else ''} "
+                 f"not sent to the model: {reason}; reported with deterministic evidence"},
             )  # fmt: skip
         status = {"stage.finished": "completed", "stage.failed": "failed"}.get(str(kind), "skipped")
         count, total = self.counts.get(stage, (None, None))
@@ -190,11 +210,8 @@ class _Progress:
             # One summary line when the stage ends, not one line per candidate.
             self.limited[stage] = self.limited.get(stage, 0) + 1
         elif kind == "item.failed":
-            self.log.append(
-                "log",
-                {"level": "warning", "message": f"{stage}: item {data.get('item_id')} failed "
-                 f"({data.get('error_code')})"},
-            )  # fmt: skip
+            # Counted and logged once per error code when the stage ends (no raw item ids).
+            self.failed.setdefault(stage, Counter())[str(data.get("error_code"))] += 1
         elif kind == "warning":
             self.log.append("log", {"level": "warning", "message": str(data.get("code"))})
 

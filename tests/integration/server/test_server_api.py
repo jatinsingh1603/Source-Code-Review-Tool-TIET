@@ -452,6 +452,7 @@ def test_a_quick_review_then_an_on_demand_review_of_one_finding(
     ]
     limited = [m for m in messages if "review limit" in m]
     assert len(limited) == 1, limited  # one summary line, not one per candidate
+    assert not [m for m in messages if "cand_" in m]  # item failures are counted, not listed
     target = next(
         item
         for item in findings
