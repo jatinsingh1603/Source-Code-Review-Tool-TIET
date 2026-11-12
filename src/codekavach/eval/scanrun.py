@@ -19,6 +19,7 @@ from typing import Any, Final
 from codekavach.config import load_settings
 from codekavach.core.models.finding import Finding
 from codekavach.core.pipeline import keys
+from codekavach.core.pipeline.context import ConsentDecision
 from codekavach.core.pipeline.runner import run_scan
 from codekavach.core.pipeline.salt import ScanSalt
 from codekavach.core.store.artefacts import OnDiskArtefactStore
@@ -127,6 +128,11 @@ def scan_dataset(
             loaded = load_settings(
                 target=root, env=env, cli_overrides=_overrides(level, provider, llm, extra)
             )
+            consent = (
+                ConsentDecision(granted=True, source="flag")
+                if llm and provider not in LOCAL_PROVIDERS and provider != "auto"
+                else None
+            )
             started = time.monotonic()
             outcome = run_scan(
                 loaded,
@@ -134,6 +140,7 @@ def scan_dataset(
                 salt=ScanSalt.from_hex(EVAL_SALT_HEX),
                 persist=False,
                 no_send=not llm,
+                consent=consent,
             )
             elapsed = time.monotonic() - started
             if outcome.result.status.value == "failed":

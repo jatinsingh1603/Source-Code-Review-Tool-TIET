@@ -1,0 +1,93 @@
+site_name: CodeKavach
+site_description: Privacy-preserving, LLM-assisted secure source code review
+site_url: https://jatinsingh1603.github.io/Source-Code-Review-Tool-TIET/
+repo_url: https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET
+repo_name: Source-Code-Review-Tool-TIET
+edit_uri: edit/main/docs/
+docs_dir: docs
+site_dir: site
+strict: false
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+exclude_docs: |
+  schemas/
+  status/
+  examples/*.toml
+
+nav:
+  - Home: guide/index.md
+  - Guides:
+      - User guide: guide/user-guide.md
+      - Auditor guide: guide/auditor-guide.md
+      - Admin guide: guide/admin-guide.md
+      - Provider guide: guide/providers.md
+      - Evaluation guide: guide/evaluation.md
+      - Installation: guide/install.md
+      - Deployment: guide/deploy.md
+      - Command-line guide: guide/cli.md
+      - Dependency scanning: guide/sca.md
+  - Privacy:
+      - Whitepaper: guide/whitepaper.md
+      - Levels, policy and score: privacy/policy-levels-score.md
+      - Organisation policy: configuration/organisation-policy.md
+      - Evaluation results: research/results/README.md
+  - Configuration:
+      - Overview: configuration/README.md
+      - Key reference: configuration/reference.md
+      - Error codes: configuration/error-codes.md
+  - Reference:
+      - Command-line reference (generated): reference/cli.md
+      - Global options: reference/cli-global-options.md
+      - JSON output: reference/cli-json-output.md
+      - Exit codes: reference/exit-codes.md
+      - REST API: reference/rest-api.md
+      - Pipeline: reference/pipeline.md
+      - Domain model: reference/domain-model.md
+      - Rule coverage: reference/rule-coverage.md
+  - Demo:
+      - Demo hub: demo/README.md
+      - "Demo 1: offline CLI": demo/DEMO1.md
+      - "Demo 2: dashboard": demo/DEMO2.md
+      - Docker runbook: demo/docker.md
+      - Hand-over checklist: demo/handover.md
+  - Architecture:
+      - Architecture: ARCHITECTURE.md
+      - Plan: PLAN.md
+      - Decision records: adr/README.md

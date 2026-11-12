@@ -5,18 +5,52 @@
 **Privacy-preserving, LLM-assisted secure source code review.**
 *Kavach* (कवच) means armour: CodeKavach lets an organisation get a standards-based security review of its source code from any large language model, **while keeping secrets and personal data local, and minimising and measuring how much business logic is disclosed to the LLM provider.**
 
-> Status: foundations in place: packaging, quality gates, the test harness, CI and the contributor documents are set up, and the product is built milestone by milestone on top of them. Follow progress on the [project board](../../projects) and in the [issue tracker](../../issues).
+> Status: a working product for a local demonstration and hand-over: web dashboard, REST API, CLI, privacy layer with an egress ledger, audit reports and an evaluation harness. Known limits of the privacy approach are stated below and in the [whitepaper](docs/guide/whitepaper.md). Follow progress on the [project board](../../projects) and in the [issue tracker](../../issues).
+
+## What it is
+
+CodeKavach finds vulnerabilities in source code with deterministic engines, lets a large language model judge and explain each candidate, and produces an audit-style report. Between the two it puts a **privacy layer**: secrets and personal data are redacted, identifiers are pseudonymised, only a minimal slice of code is prepared, an **egress guard** blocks anything that still contains a known secret or business term, and an **egress ledger** records every byte that left, so the claim "this is what the provider saw" can be checked.
+
+<!-- Screenshots: add docs/img/dashboard-overview.png, dashboard-finding.png and dashboard-ledger.png
+     (taken from the running dashboard), then replace this comment with the image links. -->
+| Overview | Finding detail | Egress ledger |
+|----------|----------------|---------------|
+| _screenshot: docs/img/dashboard-overview.png_ | _screenshot: docs/img/dashboard-finding.png_ | _screenshot: docs/img/dashboard-ledger.png_ |
 
 ## Quickstart
 
-The dashboard, REST API and CLI in one container (needs Docker with the compose plugin):
+**With Docker** (dashboard, REST API and CLI in one container; needs Docker with the compose plugin):
 
 ```bash
 cp .env.example .env          # set CODEKAVACH_ADMIN_PASSWORD; add CODEKAVACH_AGENTROUTER_API_KEY for a real model
 docker compose up -d --build  # then open http://127.0.0.1:8080 and log in as admin
 ```
 
-The sample project **KavachBank (sample)** is ready to scan. Without a key, scan with the `mock` or `replay` provider; nothing leaves the machine. Offline from a checkout, without Docker: `uv sync --all-extras && uv run codekavach demo --out demo-out`. More: [installation](docs/guide/install.md), [deployment (compose, Helm, air-gapped)](docs/guide/deploy.md), [dashboard demo runbook](docs/demo/DEMO2.md).
+**With uv** (CLI, or the server from a checkout; uv installs Python 3.12 if needed):
+
+```bash
+uv sync --all-extras
+uv run codekavach demo --out demo-out                      # offline, mock provider, writes an HTML and PDF report
+uv run codekavach scan fixtures/kavachbank --provider mock # a scan in the terminal
+uv run codekavach serve --host 127.0.0.1 --port 8080       # dashboard at http://127.0.0.1:8080
+```
+
+The sample project **KavachBank (sample)** is ready to scan in the dashboard. Without a key, scan with the `mock` or `replay` provider; nothing leaves the machine. With a key: `uv run codekavach scan PATH --provider agentrouter --accept-egress`.
+
+## Documentation
+
+| For | Read |
+|-----|------|
+| First scan and dashboard tour | [User guide](docs/guide/user-guide.md) |
+| Reading a report, the attestation and the ledger | [Auditor guide](docs/guide/auditor-guide.md) |
+| Docker deployment, users, policy | [Admin guide](docs/guide/admin-guide.md) |
+| AgentRouter, OpenAI, Anthropic, Ollama | [Provider guide](docs/guide/providers.md) |
+| The privacy approach and its limits | [Whitepaper](docs/guide/whitepaper.md) |
+| Detection and leakage measurements | [Evaluation guide](docs/guide/evaluation.md), [results](docs/research/results/README.md) |
+| Commands and API | [CLI reference](docs/reference/cli.md), [REST API](docs/reference/rest-api.md) |
+| Demo day | [demo hub](docs/demo/README.md), [dashboard runbook](docs/demo/DEMO2.md) |
+
+Build the documentation site locally with `pip install -r docs/requirements.txt && mkdocs serve`.
 
 ## The problem
 
