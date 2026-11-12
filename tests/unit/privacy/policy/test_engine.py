@@ -1,5 +1,7 @@
 """The policy engine: axes, strictest wins, never-send, path-free keys."""
 
+from pathlib import Path
+
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
@@ -105,3 +107,10 @@ def test_rule_key_is_always_path_free(path: str, tier: TrustTier) -> None:
     assert RULE_KEY_PATTERN.match(decision.rule_key)
     assert "/" not in decision.rule_key
     assert decision.level >= PrivacyLevel.L1
+
+
+def test_shipped_example_is_valid() -> None:
+
+    example = Path(__file__).parents[4] / "docs" / "examples" / "codekavach.policy.example.toml"
+    document, digest = load_document(example)
+    assert document.path and len(digest) == 64

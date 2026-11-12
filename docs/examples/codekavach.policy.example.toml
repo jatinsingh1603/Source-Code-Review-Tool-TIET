@@ -1,0 +1,26 @@
+# Per-repository privacy policy; it can only tighten what settings and the organisation allow.
+policy_version = 1
+
+[[path]]
+pattern = "services/payments/**"
+level = "L4"
+
+[[path]]
+pattern = "**/secrets/**"
+never_send = true
+
+[[language]]
+language = "java"
+level = "L3"
+
+[[rule]]
+match = "CWE-89"
+level = "L3"
+
+[[classification]]
+tag = "pci"
+patterns = ["**/card*/**"]
+level = "L4"
+
+[provider_tiers]
+public = "L3"
