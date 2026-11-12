@@ -9,19 +9,23 @@ option: it comes from the secret reference ``integrations.github.token``. The co
 ``--offline``, because it needs the network.
 """
 
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
+from rich.console import Console
+from rich.table import Table
 
+from codekavach.cli.backends import load_backend
 from codekavach.cli.context import get_context, with_target
 from codekavach.cli.deferred import (
     check_project,
     check_repository,
     check_scan,
-    run_backend,
 )
 from codekavach.cli.errors import UsageError
+from codekavach.cli.output import TABLE_BOX, get_output
 
 sync_app = typer.Typer(help="Send findings to a client system.", no_args_is_help=True)
 
@@ -64,36 +68,54 @@ def github_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     Creates or updates one issue per finding in the client's repository and places the items on
     the client's Projects v2 board. It does not modify code, open pull requests or push commits.
     The token comes from the secret reference integrations.github.token, never from an option.
-    It needs the network and refuses --offline. Delivered by epic E34.
+    A real run needs the network and refuses --offline; with --dry-run it reads the existing
+    issues when a token is set (GET only) and prints what would be created, updated or closed.
     """
     check_scan(scan)
     check_repository(repo)
     check_project(project)
-    if get_context(ctx).offline:
+    offline = get_context(ctx).offline
+    if offline and not dry_run:
         raise UsageError(
             "sync github needs the network and cannot run with --offline",
             code="offline_network_conflict",
-            hint="drop --offline, or sync from a machine that may connect",
+            hint="drop --offline, or use --dry-run, which then reads nothing from GitHub",
         )
     path = Path(target)
     if not path.is_dir():
         raise UsageError(f"project directory does not exist: {target}", code="target_not_found")
     settings = with_target(ctx, path).settings
-    run_backend(
-        ctx,
-        module="codekavach.integrations.github",
-        attribute="run_github_sync",
-        feature="GitHub sync",
-        epic="E34",
-        arguments={
-            "target": path,
-            "scan": scan,
-            "repo": repo if repo is not None else settings.integrations.github.repository,
-            "project": project,
-            "issues": issues,
-            "board": board,
-            "dry_run": dry_run,
-            "max_issues": max_issues,
-            "settings": settings,
-        },
+    backend = load_backend(
+        "codekavach.integrations.github", "run_github_sync", feature="GitHub sync", epic="E34"
     )
+    result = backend(
+        target=path,
+        scan=scan,
+        repo=repo or settings.integrations.github.repository,
+        project=project,
+        issues=issues,
+        board=board,
+        dry_run=dry_run,
+        max_issues=max_issues,
+        settings=settings,
+        offline=offline,
+    )
+    get_output(ctx).result(result, human=lambda console: _render(console, result))
+
+
+def _render(console: Console, result: Mapping[str, Any]) -> None:
+    mode = "dry run: nothing was changed" if result.get("dry_run") else "applied"
+    console.print(
+        f"{result.get('repo')}: {result.get('created', 0)} to create, "
+        f"{result.get('updated', 0)} to update, {result.get('closed', 0)} to close ({mode})",
+        markup=False,
+    )
+    table = Table(show_header=True, header_style="bold", box=TABLE_BOX, pad_edge=False)
+    for column in ("action", "severity", "issue", "title"):
+        table.add_column(column, overflow="fold")
+    for item in result.get("items", ()):
+        number = f"#{item['number']}" if item.get("number") else "-"
+        table.add_row(item["action"], item.get("severity", ""), number, item.get("title", ""))
+    console.print(table)
+    for note in result.get("notes", ()):
+        console.print(f"note: {note}", markup=False)

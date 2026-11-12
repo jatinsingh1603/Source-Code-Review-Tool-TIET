@@ -426,6 +426,17 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
 # Modules that exist for reasons other than the architecture tree.
 ALLOWED_EXTRA_MODULES: frozenset[str] = frozenset(
     {
+        "codekavach.integrations.store",
+        "codekavach.integrations.github.transport",
+        "codekavach.integrations.github.findings",
+        "codekavach.integrations.github.sarif",
+        "codekavach.integrations.github.checks",
+        "codekavach.integrations.github.issues",
+        "codekavach.integrations.github.projects",
+        "codekavach.integrations.github.sync",
+        "codekavach.integrations.github.webhook",
+        "codekavach.integrations.mcp.server",
+        "codekavach.cli.findings",
         "codekavach.__main__",
         "codekavach.cli._version",
         "codekavach.cli.app",
@@ -471,6 +482,7 @@ INIT_IMPORT_ALLOWLIST: frozenset[str] = frozenset(
     {
         "codekavach",
         "codekavach.config",
+        "codekavach.integrations.github",
         "codekavach.core.log",
         "codekavach.core.models",
         "codekavach.parsing",

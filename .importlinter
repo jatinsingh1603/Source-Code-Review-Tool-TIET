@@ -39,6 +39,9 @@
 #                          the raw original-bearing record, so no other module can hold one. Sources
 #                          are listed one by one (see the contract); a test keeps the list complete.
 #
+# i1 exception (E34): codekavach.integrations.github.transport is the named, allow-listed non-LLM
+#                          transport to the GitHub API (docs/reference/cli-network-behaviour.md).
+#
 # Rule: never widen a contract (a new ignore_imports line, a removed forbidden module, a new
 # source exemption) without an ADR. ADR-0003 describes the exception procedure for I1.
 #
@@ -87,6 +90,7 @@ ignore_imports =
     codekavach.privacy.egress.transport -> httpx
     codekavach.privacy.egress.transport -> httpcore
     codekavach.privacy.vault.kms -> httpx
+    codekavach.integrations.github.transport -> httpx
 unmatched_ignore_imports_alerting = none
 
 [importlinter:contract:adr0002-no-engine-imports]
