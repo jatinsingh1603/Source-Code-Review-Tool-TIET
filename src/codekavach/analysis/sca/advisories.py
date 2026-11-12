@@ -57,6 +57,9 @@ class AdvisoryMatch:
     cvss_vector: str | None = None
     source: str = "codekavach-native"
     modified: str = ""
+    sources: tuple[str, ...] = ("codekavach-native",)
+    symbols: tuple[str, ...] = ()
+    cvss4_vector: str | None = None
 
     @property
     def cve(self) -> str | None:
@@ -180,12 +183,27 @@ def _severity(record: dict[str, Any]) -> str:
     return SEVERITY_WORDS.get(word, "medium")
 
 
-def _cvss_vector(record: dict[str, Any]) -> str | None:
+def _cvss_vector(record: dict[str, Any], prefix: str = "CVSS:3") -> str | None:
     for entry in record.get("severity", []) or []:
         score = str(entry.get("score", ""))
-        if score.startswith("CVSS:"):
+        if score.startswith(prefix):
             return score
     return None
+
+
+def _symbols(record: dict[str, Any], name: str, ecosystem: str) -> tuple[str, ...]:
+    """Advisory-named symbols: OSV ``ecosystem_specific`` imports and ``affected_functions``."""
+    found: list[str] = []
+    for affected in record.get("affected", []):
+        if normalise_name(ecosystem, (affected.get("package") or {}).get("name", "")) != (
+            normalise_name(ecosystem, name)
+        ):
+            continue
+        specific = affected.get("ecosystem_specific") or {}
+        found.extend(str(f) for f in specific.get("affected_functions", []) or [])
+        for entry in specific.get("imports", []) or []:
+            found.extend(str(s) for s in entry.get("symbols", []) or [])
+    return tuple(dict.fromkeys(f.rsplit(".", 1)[-1] for f in found))
 
 
 def match(
@@ -232,6 +250,8 @@ def match(
                 fixed=tuple(newer),
                 references=refs[:6],
                 cvss_vector=_cvss_vector(record),
+                cvss4_vector=_cvss_vector(record, "CVSS:4.0/"),
+                symbols=_symbols(record, dep.name, dep.ecosystem),
                 modified=str(record.get("modified", "")),
             )
     return sorted(found.values(), key=lambda m: (m.dependency.purl, m.advisory_id))

@@ -46,6 +46,38 @@ def cvss31_score(vector: str) -> float | None:
     return _roundup(min(raw, 10.0))
 
 
+_V4_BASE: dict[str, frozenset[str]] = {
+    "AV": frozenset("NALP"),
+    "AC": frozenset("LH"),
+    "AT": frozenset("NP"),
+    "PR": frozenset("NLH"),
+    "UI": frozenset("NPA"),
+    "VC": frozenset("HLN"),
+    "VI": frozenset("HLN"),
+    "VA": frozenset("HLN"),
+    "SC": frozenset("HLN"),
+    "SI": frozenset("HLN"),
+    "SA": frozenset("HLN"),
+}
+
+
+def cvss4_valid(vector: str) -> bool:
+    """Whether ``vector`` is a well-formed CVSS v4.0 vector with all eleven base metrics.
+
+    The v4 score is not recomputed here: it is defined by a 270-entry macro-vector lookup that this
+    project does not transcribe from memory (a wrong table would be worse than none). The validated
+    vector is recorded as ``sca.cvss4_vector`` so the report states it, and the severity word still
+    comes from the advisory. A later change can add the table without touching callers.
+    """
+    if not vector.startswith("CVSS:4.0/"):
+        return False
+    try:
+        metrics = dict(part.split(":", 1) for part in vector.split("/")[1:])
+    except ValueError:
+        return False
+    return all(metrics.get(k) in allowed for k, allowed in _V4_BASE.items())
+
+
 @dataclass(frozen=True)
 class Signals:
     """Exploitation data for one CVE, with provenance."""

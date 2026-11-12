@@ -358,7 +358,12 @@
         }
        ]
       }
-     ]
+     ],
+     "ecosystem_specific": {
+      "affected_functions": [
+       "zipObjectDeep"
+      ]
+     }
     }
    ],
    "database_specific": {
@@ -404,7 +409,12 @@
         }
        ]
       }
-     ]
+     ],
+     "ecosystem_specific": {
+      "affected_functions": [
+       "template"
+      ]
+     }
     }
    ],
    "database_specific": {
@@ -451,7 +461,14 @@
         }
        ]
       }
-     ]
+     ],
+     "ecosystem_specific": {
+      "affected_functions": [
+       "toNumber",
+       "trim",
+       "trimEnd"
+      ]
+     }
     }
    ],
    "database_specific": {
@@ -681,7 +698,12 @@
         }
        ]
       }
-     ]
+     ],
+     "ecosystem_specific": {
+      "affected_functions": [
+       "verify"
+      ]
+     }
     }
    ],
    "database_specific": {

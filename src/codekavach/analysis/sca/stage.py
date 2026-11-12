@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Final
 
 from codekavach.analysis.sca import keys as sca_keys
+from codekavach.analysis.sca.adapters import ADAPTERS, MatcherUnavailable
 from codekavach.analysis.sca.advisories import (
     AdvisoryMatch,
     default_mirror_dir,
@@ -24,10 +25,12 @@ from codekavach.analysis.sca.advisories import (
     match,
     normalise_name,
 )
-from codekavach.analysis.sca.enrich import Enricher, cvss31_score
+from codekavach.analysis.sca.enrich import Enricher, cvss4_valid, cvss31_score
 from codekavach.analysis.sca.manifests import build_graph, is_manifest_path
 from codekavach.analysis.sca.model import DependencyGraph
 from codekavach.analysis.sca.reach import ReachIndex
+from codekavach.analysis.sca.reachability import CALLED, IMPORTED, UNREACHABLE, classify
+from codekavach.analysis.sca.reconcile import agreement_bonus, reconcile
 from codekavach.analysis.sca.sbom import to_cyclonedx
 from codekavach.analysis.sca.versions import sort_key
 from codekavach.core.log import get_logger
@@ -38,11 +41,17 @@ from codekavach.core.pipeline import keys
 from codekavach.core.pipeline.context import RunContext
 from codekavach.core.pipeline.stage import StageCategory
 from codekavach.ingest.models import SourceFile
+from codekavach.parsing.callgraph import CallGraph
 
 SCA_ENGINE: Final = "codekavach-sca"
 RULE_ID: Final = "sca.vulnerable-dependency"
 MAX_MANIFEST_BYTES: Final = 5 * 1024 * 1024
 _RANK = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+_STEP_UP = {
+    Confidence.LOW: Confidence.MEDIUM,
+    Confidence.MEDIUM: Confidence.HIGH,
+    Confidence.HIGH: Confidence.HIGH,
+}
 _LOG = get_logger("codekavach.analysis.sca.stage")
 
 
@@ -65,6 +74,31 @@ def read_manifests(root: Path, paths: list[str]) -> dict[str, str]:
         except OSError:
             continue
     return texts
+
+
+def run_adapters(
+    ctx: RunContext, graph: DependencyGraph, directory: Path
+) -> list[list[AdvisoryMatch]]:
+    """Rows from the optional matchers named by ``CODEKAVACH_SCA_ADAPTERS``.
+
+    ``auto`` (the default) runs those whose executable is installed (Trivy additionally needs its
+    pinned digest); ``none`` runs no third-party matcher; a comma list names them. An absent or
+    failing matcher is skipped and recorded, never fatal.
+    """
+    wanted = os.environ.get("CODEKAVACH_SCA_ADAPTERS", "auto").strip().lower()
+    if wanted == "none":
+        return []
+    names = list(ADAPTERS) if wanted in {"auto", ""} else [n.strip() for n in wanted.split(",")]
+    rows: list[list[AdvisoryMatch]] = []
+    for name in names:
+        runner = ADAPTERS.get(name)
+        if runner is None:
+            continue
+        try:
+            rows.append(runner(ctx.source_root, graph.dependencies, directory))
+        except MatcherUnavailable as error:
+            _LOG.info("sca_matcher_skipped", matcher=name, reason=str(error)[:120])
+    return rows
 
 
 def _fmt_pct(value: float) -> str:
@@ -92,11 +126,12 @@ def _message(
     return "\n".join(lines)[:2000]
 
 
-def build_candidates(
+def build_candidates(  # noqa: PLR0915
     matches: list[AdvisoryMatch],
     reach: ReachIndex,
     enricher: Enricher,
     sources: list[str],
+    graph: CallGraph | None = None,
 ) -> list[Candidate]:
     """One candidate per vulnerable component."""
     grouped: dict[tuple[str, str], list[AdvisoryMatch]] = {}
@@ -130,16 +165,23 @@ def build_candidates(
     for (group, location, _), fingerprint in zip(built, fingerprint_batch(parts), strict=True):
         first = group[0]
         dep = first.dependency
-        hint = reach.reach(dep)
-        if hint.status == "imported":
-            reach_note = f"Reachability: the package is imported ({hint.path}:{hint.line})."
+        symbols = tuple(dict.fromkeys(x for m in group for x in m.symbols))
+        verdict = classify(dep, reach.reach(dep), symbols, graph)
+        if verdict.status == CALLED:
+            reach_note = f"Reachability: an advisory-named symbol is called ({verdict.evidence})."
             confidence = Confidence.HIGH
-        elif hint.status == "not_imported":
+        elif verdict.status == IMPORTED:
+            where = f" ({verdict.evidence})" if verdict.evidence else ""
+            reach_note = f"Reachability: the package is imported{where}; basis: {verdict.basis}."
+            confidence = Confidence.HIGH
+        elif verdict.status == UNREACHABLE:
             reach_note = "Reachability: no import of the package was found in the scanned code; it may be a transitive or unused dependency."
             confidence = Confidence.LOW
         else:
             reach_note = "Reachability: unknown for this ecosystem."
             confidence = Confidence.MEDIUM
+        if any(agreement_bonus(m) for m in group):
+            confidence = _STEP_UP[confidence]
         cves = [m.cve for m in group if m.cve]
         signals = [enricher.signals(c) for c in cves]
         kev_hits = [c for c, s in zip(cves, signals, strict=True) if s.kev]
@@ -160,7 +202,9 @@ def build_candidates(
             ("sca.ecosystem", dep.ecosystem),
             ("sca.advisory", first.advisory_id),
             ("sca.advisories", ",".join(m.advisory_id for m in group)[:480]),
-            ("sca.reachability", hint.status),
+            ("sca.reachability", verdict.status),
+            ("sca.reachability_basis", verdict.basis),
+            ("sca.matchers", ",".join(dict.fromkeys(x for m in group for x in m.sources))),
             ("sca.sources", ",".join(sources)[:200] or "seed"),
         ]
         if cves:
@@ -176,6 +220,9 @@ def build_candidates(
         score = cvss31_score(vector) if vector else None
         if score is not None:
             props.append(("cvss31_score", f"{score:.1f}"))
+        vector4 = next((m.cvss4_vector for m in group if m.cvss4_vector), None)
+        if vector4 and cvss4_valid(vector4):
+            props.append(("sca.cvss4_vector", vector4))
         out.append(
             Candidate.create(
                 rule_id=RULE_ID,
@@ -200,7 +247,7 @@ class AnalyseScaStage:
     name = "analyse-sca"
     version = "1"
     requires = frozenset({keys.FILES})
-    optional_requires: frozenset[str] = frozenset()
+    optional_requires = frozenset({keys.SYMBOLS, keys.CALL_GRAPH})
     provides = frozenset({keys.CANDIDATES_RAW, sca_keys.DEPENDENCIES, sca_keys.SBOM})
     category = StageCategory.ANALYSE
 
@@ -215,17 +262,30 @@ class AnalyseScaStage:
         ctx.artefacts.put(sca_keys.DEPENDENCIES, graph)
         project = root.name or "application"
         ctx.artefacts.put(sca_keys.SBOM, to_cyclonedx(graph, project))
-        candidates = self._match(ctx, graph, files)
+        call_graph = (
+            ctx.artefacts.get(keys.CALL_GRAPH, CallGraph)
+            if ctx.artefacts.has(keys.CALL_GRAPH)
+            else None
+        )
+        candidates = self._match(ctx, graph, files, call_graph)
         ctx.artefacts.put_part(keys.CANDIDATES_RAW, self.name, candidates)
 
     @staticmethod
-    def _match(ctx: RunContext, graph: DependencyGraph, files: list[SourceFile]) -> list[Candidate]:
+    def _match(
+        ctx: RunContext,
+        graph: DependencyGraph,
+        files: list[SourceFile],
+        call_graph: CallGraph | None = None,
+    ) -> list[Candidate]:
         if not graph.dependencies:
             return []
         directory = mirror_dir()
         wanted = {(d.ecosystem, normalise_name(d.ecosystem, d.name)) for d in graph.dependencies}
         mirror = load_mirror(directory, wanted)
-        matches = match(graph.dependencies, mirror)
+        matches = reconcile(
+            match(graph.dependencies, mirror),
+            *run_adapters(ctx, graph, directory),
+        )
         if not matches:
             return []
         reach = ReachIndex()
@@ -236,4 +296,4 @@ class AnalyseScaStage:
                 except OSError:
                     continue
                 reach.add_file(file.path, file.language.value, text)
-        return build_candidates(matches, reach, Enricher(directory), mirror.sources)
+        return build_candidates(matches, reach, Enricher(directory), mirror.sources, call_graph)

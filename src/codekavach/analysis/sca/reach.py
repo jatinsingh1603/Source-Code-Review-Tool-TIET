@@ -31,6 +31,14 @@ class Reach:
     line: int | None = None
 
 
+def import_names(dep: Dependency) -> set[str]:
+    """The module names ``dep`` is imported under (distribution name mapped to import name)."""
+    if dep.ecosystem == "PyPI":
+        wanted = _PY_ALIASES.get(dep.name.lower(), dep.name.replace("-", "_"))
+        return {wanted, wanted.lower(), dep.name.lower().replace("-", "_")}
+    return {dep.name}
+
+
 def python_modules(text: str) -> set[str]:
     """Top-level module names imported by Python source."""
     found: set[str] = set()
@@ -73,9 +81,7 @@ class ReachIndex:
     def reach(self, dep: Dependency) -> Reach:
         """The hint for ``dep``."""
         if dep.ecosystem == "PyPI":
-            wanted = _PY_ALIASES.get(dep.name.lower(), dep.name.replace("-", "_"))
-            candidates = {wanted, wanted.lower(), dep.name.lower().replace("-", "_")}
-            for name in candidates:
+            for name in import_names(dep):
                 if name in self._py:
                     return Reach("imported", *self._py[name])
             return Reach("not_imported") if self._py else Reach("unknown")
