@@ -73,11 +73,13 @@ To start a run by hand: on the Actions page choose **CI** then **Run workflow** 
 
 The Linux test cell used to run every test, the perf budgets and coverage in one process, about 14.5 minutes against a 15-minute limit. Now the cells use all runner cores with pytest-xdist and the perf budgets have their own job with no parallel workers, so the timings stay meaningful. The `--durations=30` list at the end of each test cell's log names the slowest tests.
 
+Measured on `main` on 12 November 2026, with about 12 700 tests: the test step of `test (ubuntu-latest, 3.12)` took 7 to 11 minutes against the 20-minute job limit, and the `perf` job about 6 minutes against 15. The tests that run the whole KavachBank demo (one to two minutes each on a busy runner) are marked `slow` with their own 420-second timeout, and every test worker starts with the product's logging configuration, so a failing stage no longer renders a traceback with every frame's local variables.
+
 ## Secrets and the LLM in CI
 
 CI never uses a real model and never needs a key: the demo job and every test use the offline `mock` or `replay` provider, and sockets are refused in tests. No repository secret is configured for CodeKavach.
 
-A client who wants their own workflow to call a real provider adds the key as a repository secret named `CODEKAVACH_LLM_API_KEY` (Settings, Secrets and variables, Actions, New repository secret) and passes it to the step as an environment variable; see [`action/README.md`](../../action/README.md) and, once it lands, the GitHub Actions runbook. Never put a key in a workflow file or in the repository.
+A client who wants their own workflow to call a real provider adds the key as a repository secret named `CODEKAVACH_LLM_API_KEY` (Settings, Secrets and variables, Actions, New repository secret) and passes it to the step as an environment variable; see [`action/README.md`](../../action/README.md) and the [GitHub Actions runbook](github-actions.md). Never put a key in a workflow file or in the repository.
 
 ## If something is red on the day
 
@@ -86,6 +88,7 @@ A client who wants their own workflow to call a real provider adds the key as a 
 | The latest run is red or still running | "The team pushed during the last hours; here is the last completed green run." | Open the reference run below instead. |
 | The latest run was cancelled | "Several commits arrived together; the pipeline tests the newest one and drops the queued ones in between." | Open the next completed run. |
 | A macOS cell is slow or queued | "macOS runners are shared and slower; the Linux cells hold the same tests." | Open a Linux cell. |
+| Only `commits` is red | "A commit message broke the convention, for example a subject over 72 characters. History on `main` is never rewritten; the job checks only the commits of each push, so the next push is judged on its own." | Open the job log: it names the commit and the rule. |
 | GitHub is unreachable | "The same gates run locally." | Run the local commands above. |
 
 ## Reference run
