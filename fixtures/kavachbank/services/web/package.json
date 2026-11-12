@@ -1,0 +1,12 @@
+{
+  "name": "kavachbank-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KavachBank web front end (deliberately outdated dependencies)",
+  "dependencies": {
+    "express": "4.16.0",
+    "lodash": "4.17.15",
+    "axios": "0.21.0",
+    "jsonwebtoken": "8.5.1"
+  }
+}

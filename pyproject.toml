@@ -47,6 +47,7 @@ ingest = "codekavach.ingest.stage:IngestStage"
 parse = "codekavach.parsing.stage:ParseStage"
 analyse-rules = "codekavach.analysis.rules.stage:AnalyseRulesStage"
 analyse-taint = "codekavach.analysis.taint.stage:AnalyseTaintStage"
+analyse-sca = "codekavach.analysis.sca.stage:AnalyseScaStage"
 analyse-engines = "codekavach.analysis.engines.stage:AnalyseEnginesStage"
 aggregate = "codekavach.analysis.aggregate.stage:AggregateStage"
 privacy-prepare = "codekavach.privacy.stages:PrivacyPrepareStage"
@@ -258,6 +259,10 @@ ignore = [
 # Project tooling is outside the codekavach package that ADR-0003 governs; this is the only
 # tools file with the exemption (tests/process/test_status_report.py).
 "tools/status_report.py" = ["TID251"]
+# E19-01: the one allow-listed, non-LLM outbound path (public advisory data only), see the module docstring.
+"src/codekavach/analysis/sca/update.py" = ["TID251"]
+"src/codekavach/analysis/sca/**" = ["E501", "PLR0912", "PLR0917", "PLW2901", "PERF401", "SIM105", "SIM108", "D415"]  # parsers and messages: long literals, many format branches
+"src/codekavach/cli/sca.py" = ["E501", "B008"]
 "src/codekavach/cli/**" = ["B008"]   # Typer uses function calls as argument defaults
 "tests/typing/*" = ["F841", "B018"]  # typing case files hold deliberately unused names and expressions
 "src/codekavach/core/log/**" = ["TID251"]  # the only place that creates loggers (ADR-0005)

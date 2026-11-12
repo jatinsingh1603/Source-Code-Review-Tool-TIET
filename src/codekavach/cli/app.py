@@ -206,6 +206,10 @@ LAZY_COMMANDS: tuple[LazyEntry, ...] = (
               "Inspect and manage configuration.", optional=True),
     LazyEntry("rules", "codekavach.cli.rules:rules_app", "group",
               "List, show, validate, test and bundle native rule packs."),
+    LazyEntry("sca", "codekavach.cli.sca:sca_app", "group",
+              "Refresh the advisory mirror and list vulnerable dependencies."),
+    LazyEntry("sbom", "codekavach.cli.sca:sbom_command", "command",
+              "Generate a CycloneDX or SPDX bill of materials."),
 )  # fmt: skip
 
 

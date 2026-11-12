@@ -1,0 +1,706 @@
+{
+ "name": "codekavach-seed",
+ "note": "Records transcribed from the GitHub Advisory Database for the packages planted in fixtures/kavachbank. Run `codekavach sca update` for the full OSV mirror.",
+ "advisories": [
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-462w-v97r-4m45",
+   "aliases": [
+    "CVE-2019-10906"
+   ],
+   "summary": "Jinja2 sandbox escape via str.format_map",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "PyPI",
+      "name": "jinja2"
+     },
+     "ranges": [
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "2.10.1"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "HIGH",
+    "cwe_ids": [],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-462w-v97r-4m45"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-10906"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-g3rq-g295-4j3m",
+   "aliases": [
+    "CVE-2020-28493"
+   ],
+   "summary": "Jinja2 ReDoS in the urlize filter",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "PyPI",
+      "name": "jinja2"
+     },
+     "ranges": [
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "2.11.3"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "MODERATE",
+    "cwe_ids": [
+     "CWE-400"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-g3rq-g295-4j3m"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2020-28493"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-h5c8-rqwp-cp95",
+   "aliases": [
+    "CVE-2024-22195"
+   ],
+   "summary": "Jinja2 xmlattr filter accepts keys with spaces, enabling XSS",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "PyPI",
+      "name": "jinja2"
+     },
+     "ranges": [
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "3.1.3"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "MODERATE",
+    "cwe_ids": [
+     "CWE-79"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-h5c8-rqwp-cp95"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-22195"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-x84v-xcm2-53pg",
+   "aliases": [
+    "CVE-2018-18074"
+   ],
+   "summary": "Requests sends the Authorization header to a different host after a redirect",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "PyPI",
+      "name": "requests"
+     },
+     "ranges": [
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "2.20.0"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "HIGH",
+    "cwe_ids": [
+     "CWE-522"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-x84v-xcm2-53pg"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2018-18074"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-j8r2-6x86-q33q",
+   "aliases": [
+    "CVE-2023-32681"
+   ],
+   "summary": "Requests leaks Proxy-Authorization headers to destination servers",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "PyPI",
+      "name": "requests"
+     },
+     "ranges": [
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "2.3.0"
+        },
+        {
+         "fixed": "2.31.0"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "MODERATE",
+    "cwe_ids": [
+     "CWE-200"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-j8r2-6x86-q33q"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-32681"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-8q59-q68h-6hv4",
+   "aliases": [
+    "CVE-2020-14343"
+   ],
+   "summary": "PyYAML arbitrary code execution when loading untrusted YAML with the full loader",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "PyPI",
+      "name": "pyyaml"
+     },
+     "ranges": [
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "5.4"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "CRITICAL",
+    "cwe_ids": [
+     "CWE-20"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-8q59-q68h-6hv4"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2020-14343"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-m2qf-hxjv-5gpq",
+   "aliases": [
+    "CVE-2023-30861"
+   ],
+   "summary": "Flask may cache a response with a session cookie behind a caching proxy",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "PyPI",
+      "name": "flask"
+     },
+     "ranges": [
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "2.2.5"
+        }
+       ]
+      },
+      {
+       "type": "ECOSYSTEM",
+       "events": [
+        {
+         "introduced": "2.3.0"
+        },
+        {
+         "fixed": "2.3.2"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "HIGH",
+    "cwe_ids": [
+     "CWE-539"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-m2qf-hxjv-5gpq"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-30861"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-p6mc-m468-83gw",
+   "aliases": [
+    "CVE-2020-8203"
+   ],
+   "summary": "Prototype pollution in lodash zipObjectDeep",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "npm",
+      "name": "lodash"
+     },
+     "ranges": [
+      {
+       "type": "SEMVER",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "4.17.19"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "HIGH",
+    "cwe_ids": [
+     "CWE-1321"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-p6mc-m468-83gw"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2020-8203"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-35jh-r3h4-6jhm",
+   "aliases": [
+    "CVE-2021-23337"
+   ],
+   "summary": "Command injection in lodash template",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "npm",
+      "name": "lodash"
+     },
+     "ranges": [
+      {
+       "type": "SEMVER",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "4.17.21"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "HIGH",
+    "cwe_ids": [
+     "CWE-77",
+     "CWE-94"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-35jh-r3h4-6jhm"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-23337"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-29mw-wpgm-hmr9",
+   "aliases": [
+    "CVE-2020-28500"
+   ],
+   "summary": "ReDoS in lodash toNumber, trim and trimEnd",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "npm",
+      "name": "lodash"
+     },
+     "ranges": [
+      {
+       "type": "SEMVER",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "4.17.21"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "MODERATE",
+    "cwe_ids": [
+     "CWE-1333"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-29mw-wpgm-hmr9"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2020-28500"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-rv95-896h-c2vc",
+   "aliases": [
+    "CVE-2024-29041"
+   ],
+   "summary": "Express open redirect in malformed URLs",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "npm",
+      "name": "express"
+     },
+     "ranges": [
+      {
+       "type": "SEMVER",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "4.19.2"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "MODERATE",
+    "cwe_ids": [
+     "CWE-601"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-rv95-896h-c2vc"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-29041"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-qw6h-vgh9-j6wx",
+   "aliases": [
+    "CVE-2024-43796"
+   ],
+   "summary": "Express XSS via response.redirect()",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "npm",
+      "name": "express"
+     },
+     "ranges": [
+      {
+       "type": "SEMVER",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "4.20.0"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "LOW",
+    "cwe_ids": [
+     "CWE-79"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-qw6h-vgh9-j6wx"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-43796"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-4w2v-q235-vp99",
+   "aliases": [
+    "CVE-2020-28168"
+   ],
+   "summary": "Axios server-side request forgery through redirects",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "npm",
+      "name": "axios"
+     },
+     "ranges": [
+      {
+       "type": "SEMVER",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "0.21.1"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "MODERATE",
+    "cwe_ids": [
+     "CWE-918"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-4w2v-q235-vp99"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2020-28168"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-cph5-m8f7-6c5x",
+   "aliases": [
+    "CVE-2021-3749"
+   ],
+   "summary": "Axios inefficient regular expression complexity",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "npm",
+      "name": "axios"
+     },
+     "ranges": [
+      {
+       "type": "SEMVER",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "0.21.2"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "HIGH",
+    "cwe_ids": [
+     "CWE-1333"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-cph5-m8f7-6c5x"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-3749"
+    }
+   ]
+  },
+  {
+   "schema_version": "1.6.0",
+   "id": "GHSA-27h2-hvpr-p74q",
+   "aliases": [
+    "CVE-2022-23529"
+   ],
+   "summary": "jsonwebtoken insecure implementation of key retrieval",
+   "affected": [
+    {
+     "package": {
+      "ecosystem": "npm",
+      "name": "jsonwebtoken"
+     },
+     "ranges": [
+      {
+       "type": "SEMVER",
+       "events": [
+        {
+         "introduced": "0"
+        },
+        {
+         "fixed": "9.0.0"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "severity": "HIGH",
+    "cwe_ids": [
+     "CWE-287"
+    ],
+    "seed": true
+   },
+   "references": [
+    {
+     "type": "ADVISORY",
+     "url": "https://github.com/advisories/GHSA-27h2-hvpr-p74q"
+    },
+    {
+     "type": "WEB",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-23529"
+    }
+   ]
+  }
+ ]
+}

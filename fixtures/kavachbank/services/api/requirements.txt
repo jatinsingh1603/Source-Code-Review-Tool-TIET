@@ -1,0 +1,6 @@
+# KavachBank API dependencies. Deliberately outdated: several pins carry published advisories.
+Flask==2.2.3
+Jinja2==2.10
+requests==2.19.1
+PyYAML==5.3
+psycopg2-binary==2.9.5
