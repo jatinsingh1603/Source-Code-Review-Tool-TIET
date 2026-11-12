@@ -121,6 +121,22 @@ jobs:
       - run: uv run pre-commit run --all-files --show-diff-on-failure
         env:
           UV_NO_SYNC: "1"
+          SKIP: detect-secrets
+      - name: Secret scan (a new secret fails; a moved line number in the baseline does not)
+        # detect-secrets also exits non-zero when it only rewrites the line numbers of audited
+        # entries, which every edit above one of them causes. CI fails on a new finding only.
+        run: |
+          set +e
+          uv run pre-commit run detect-secrets --all-files > detect-secrets.txt 2>&1
+          status=$?
+          cat detect-secrets.txt
+          if grep -q "Potential secrets about to be committed" detect-secrets.txt; then exit 1; fi
+          if [ "$status" -ne 0 ] && ! grep -q "The baseline file was updated" detect-secrets.txt; then
+            exit "$status"
+          fi
+          exit 0
+        env:
+          UV_NO_SYNC: "1"
 
   commits:
     runs-on: ubuntu-latest

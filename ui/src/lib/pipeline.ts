@@ -15,4 +15,3 @@ export const STAGES: { n: string; title: string; members: (s: string) => boolean
 
 /** Engine groups the server runs on every scan (per-scan selection is an API gap). */
 export const ENGINE_GROUPS = ["Rules (SAST)", "External engines (Opengrep, Bandit, ESLint) when installed", "Secrets · SCA · IaC", "Taint engine"];
-
