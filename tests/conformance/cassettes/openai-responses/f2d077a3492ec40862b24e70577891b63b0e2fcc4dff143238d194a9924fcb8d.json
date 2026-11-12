@@ -1,0 +1,302 @@
+{
+  "body": {
+    "access_programs": null,
+    "background": false,
+    "completed_at": 1794519611,
+    "content_filters": [
+      {
+        "blocked": false,
+        "content_filter_offsets": {
+          "check_offset": 0,
+          "end_offset": 3512,
+          "start_offset": 0
+        },
+        "content_filter_raw": [],
+        "content_filter_results": {
+          "hate": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "self_harm": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "sexual": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "violence": {
+            "filtered": false,
+            "severity": "safe"
+          }
+        },
+        "source_type": "prompt"
+      },
+      {
+        "blocked": false,
+        "content_filter_offsets": {
+          "check_offset": 0,
+          "end_offset": 3064,
+          "start_offset": 0
+        },
+        "content_filter_raw": [],
+        "content_filter_results": {
+          "hate": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "self_harm": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "sexual": {
+            "filtered": false,
+            "severity": "safe"
+          },
+          "violence": {
+            "filtered": false,
+            "severity": "safe"
+          }
+        },
+        "source_type": "completion"
+      }
+    ],
+    "created_at": 1794519603,
+    "error": null,
+    "frequency_penalty": 0.0,
+    "id": "redacted",
+    "incomplete_details": null,
+    "instructions": "redacted",
+    "max_output_tokens": 4096,
+    "max_tool_calls": null,
+    "metadata": "redacted",
+    "model": "gpt-5.6-sol",
+    "moderation": null,
+    "object": "response",
+    "output": [
+      {
+        "content": [],
+        "encrypted_content": "redacted",
+        "id": "redacted",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "{\"cited_lines\":[1,2,3],\"confidence\":\"high\",\"cwe\":[],\"impact\":\"\",\"is_vulnerable\":false,\"needs_context\":[],\"reasoning\":\"`request.args.get('q')` supplies attacker-controlled data, and the path to the returned response is satisfiable when `q` is present. Although the response body is an XSS-relevant sink, `escape(value)` applies HTML escaping before the value is concatenated into the plain HTML text context. There is no subsequent decoding or unsafe context transition, so injected markup cannot execute.\",\"remediation\":\"\"}",
+            "type": "output_text"
+          }
+        ],
+        "id": "redacted",
+        "phase": "final_answer",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "presence_penalty": 0.0,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "prompt_cache_retention": "24h",
+    "reasoning": {
+      "context": "all_turns",
+      "effort": "max",
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": true,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "description": null,
+        "name": "triage_verdict",
+        "schema": {
+          "additionalProperties": false,
+          "description": "The model's structured answer for one candidate, in pseudonym space.",
+          "properties": {
+            "cited_lines": {
+              "default": [],
+              "description": "List the line numbers of the given code that your answer relies on.",
+              "items": {
+                "maximum": 100000,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "maxItems": 20,
+              "title": "Cited Lines",
+              "type": "array"
+            },
+            "confidence": {
+              "description": "Rate your confidence as low, medium or high.",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "title": "Confidence",
+              "type": "string"
+            },
+            "cwe": {
+              "default": [],
+              "description": "List the CWE numbers that apply, most specific first, at most five.",
+              "items": {
+                "maximum": 99999,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "maxItems": 5,
+              "title": "Cwe",
+              "type": "array"
+            },
+            "impact": {
+              "default": "",
+              "description": "Describe what an attacker could achieve; leave empty if none. Names in the code are placeholders; repeat them exactly as written.",
+              "maxLength": 2000,
+              "title": "Impact",
+              "type": "string"
+            },
+            "is_vulnerable": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Answer true if the code is vulnerable, false if not; use null only together with needs_context.",
+              "title": "Is Vulnerable"
+            },
+            "needs_context": {
+              "default": [],
+              "description": "Request up to three pieces of additional code if you cannot decide.",
+              "items": {
+                "additionalProperties": false,
+                "description": "A request for more code before the model can decide.",
+                "properties": {
+                  "kind": {
+                    "description": "State which kind of additional code you need.",
+                    "enum": [
+                      "callee_body",
+                      "caller",
+                      "type_definition",
+                      "config_value",
+                      "other"
+                    ],
+                    "title": "ContextKind",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "description": "Explain in one sentence why you need it. Names in the code are placeholders; repeat them exactly as written.",
+                    "maxLength": 300,
+                    "title": "Reason",
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "description": "Give the name you need more code for. Names in the code are placeholders; repeat them exactly as written.",
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "title": "Symbol",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "symbol",
+                  "reason"
+                ],
+                "title": "ContextRequest",
+                "type": "object"
+              },
+              "maxItems": 3,
+              "title": "Needs Context",
+              "type": "array"
+            },
+            "reasoning": {
+              "description": "Explain the data flow and why it is or is not exploitable. Names in the code are placeholders; repeat them exactly as written.",
+              "maxLength": 4000,
+              "title": "Reasoning",
+              "type": "string"
+            },
+            "remediation": {
+              "default": "",
+              "description": "Describe how to fix the code; leave empty if none. Names in the code are placeholders; repeat them exactly as written.",
+              "maxLength": 4000,
+              "title": "Remediation",
+              "type": "string"
+            }
+          },
+          "required": [
+            "reasoning",
+            "is_vulnerable",
+            "confidence",
+            "cwe",
+            "impact",
+            "remediation",
+            "needs_context",
+            "cited_lines"
+          ],
+          "title": "LLMVerdict",
+          "type": "object"
+        },
+        "strict": true,
+        "type": "json_schema"
+      },
+      "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    },
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 0.98,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1435,
+      "input_tokens_details": {
+        "cache_write_tokens": 1432,
+        "cached_tokens": 0
+      },
+      "output_tokens": 646,
+      "output_tokens_details": {
+        "reasoning_tokens": 516
+      },
+      "total_tokens": 2081
+    },
+    "user": null
+  },
+  "conformance": {
+    "host": "agentrouter.org",
+    "kind": "openai",
+    "model": "gpt-5.6-sol",
+    "payload": "codekavach.privacy.egress.probe.PROBE_SNIPPET",
+    "prompt_version": "v2",
+    "recorded_at": "2026-11-12",
+    "wire_format": "openai-responses"
+  },
+  "payload_hash": "f2d077a3492ec40862b24e70577891b63b0e2fcc4dff143238d194a9924fcb8d",
+  "status": 200
+}

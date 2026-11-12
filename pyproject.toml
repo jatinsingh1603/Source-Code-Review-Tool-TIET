@@ -220,6 +220,7 @@ markers = [
   "slow: takes more than about two seconds",
   "perf: performance budget test; part of the default run; limits scale with CODEKAVACH_PERF_FACTOR; macOS CI cells deselect it",
   "network: needs external network; deselected by default and never run in CI",
+  "conformance: provider conformance suite (E22-04); offline and cassette modes run in CI",
   "requires_engine(name): needs an external analysis engine on PATH; skipped when absent",
 ]
 

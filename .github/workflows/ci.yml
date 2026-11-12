@@ -395,9 +395,31 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+  provider-conformance:
+    # Every registered provider adapter against the same contract (E22-04): offline and cassette
+    # modes only. Live mode needs CODEKAVACH_CONFORMANCE_LIVE=1 and a key and never runs here.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked --all-extras
+      - name: Run the provider conformance suite
+        run: |
+          uv run pytest -q tests/conformance -m conformance
+          uv run pytest -q tests/unit/llm/test_providers_doc.py
+        env:
+          UV_NO_SYNC: "1"
+          CODEKAVACH_CONFORMANCE_LIVE: "0"
+
   ci-ok:
     if: always()
-    needs: [lint, typecheck, contracts, hooks, commits, test, perf, ui, docker, build, licences, demo, detector-eval]
+    needs: [lint, typecheck, contracts, hooks, commits, test, perf, ui, docker, build, licences, demo, detector-eval, provider-conformance]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

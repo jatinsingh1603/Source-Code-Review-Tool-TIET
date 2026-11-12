@@ -1,0 +1,4 @@
+# Payload hashes that tools/record_conformance.py may record a cassette for.
+# Only the bundled synthetic probe payload (codekavach.privacy.egress.probe.PROBE_SNIPPET);
+# never a hash of client code.
+f2d077a3492ec40862b24e70577891b63b0e2fcc4dff143238d194a9924fcb8d

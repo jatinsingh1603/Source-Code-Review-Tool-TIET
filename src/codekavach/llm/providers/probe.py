@@ -24,7 +24,9 @@ from codekavach.config import Settings
 from codekavach.config.paths import ensure_state_dir, user_config_dir
 from codekavach.core.pipeline.context import ConsentDecision
 from codekavach.llm.providers.base import (
+    LLMProvider,
     OfflineProvider,
+    PreparedRequest,
     ProviderError,
     ProviderParseError,
     ProviderRefused,
@@ -128,27 +130,39 @@ def _dispatch(
         return send(session)
 
 
-def probe_provider(
+@dataclass(frozen=True, slots=True, repr=False)
+class ProbeExchange:
+    """One probe sent: the adapter, the request it built and what the egress session returned.
+
+    Used by ``probe_provider`` and by ``tools/record_conformance.py``, which records ``result``'s
+    body as a conformance cassette (never a header).
+    """
+
+    provider: LLMProvider
+    request: PreparedRequest
+    result: Dispatch
+    latency_ms: int
+
+
+def exchange_probe(
     provider_id: str,
     settings: Settings,
     *,
     model: str | None = None,
-    structured: bool = False,
     timeout: float = 30.0,
     consent: ConsentDecision | None = None,
     state_dir: Path | None = None,
-) -> ProbeOutcome:
-    """Send the constant probe to ``provider_id`` and report what happened."""
+) -> ProbeExchange:
+    """Send the constant probe payload to ``provider_id`` through the egress session.
+
+    Raises:
+        ProviderError: the provider is not configured or its adapter cannot be built.
+    """
     configured = settings.llm.providers.get(provider_id)
     if configured is None:
-        return ProbeOutcome(False, provider_id, "unknown", model, reason_code="bad_response")
-    kind = configured.kind.value
+        raise ProviderError("provider_not_configured")
     chosen = model or settings.llm.model or configured.model
-    try:
-        provider = build_provider(provider_id, configured, model=chosen)
-    except ProviderError as error:
-        reason = "unauthorised" if error.reason == "api_key_not_available" else "bad_response"
-        return ProbeOutcome(False, provider_id, kind, chosen, reason_code=reason)
+    provider = build_provider(provider_id, configured, model=chosen)
     task = TriageTask()
     payload = probe_payload()
     request = provider.prepare(task, payload)
@@ -170,6 +184,38 @@ def probe_provider(
 
     result = _dispatch(effective, consent, state_dir, send)
     latency = round((time.monotonic() - started) * 1000)
+    return ProbeExchange(provider, request, result, latency)
+
+
+def probe_provider(
+    provider_id: str,
+    settings: Settings,
+    *,
+    model: str | None = None,
+    structured: bool = False,
+    timeout: float = 30.0,
+    consent: ConsentDecision | None = None,
+    state_dir: Path | None = None,
+) -> ProbeOutcome:
+    """Send the constant probe to ``provider_id`` and report what happened."""
+    configured = settings.llm.providers.get(provider_id)
+    if configured is None:
+        return ProbeOutcome(False, provider_id, "unknown", model, reason_code="bad_response")
+    kind = configured.kind.value
+    chosen = model or settings.llm.model or configured.model
+    try:
+        sent = exchange_probe(
+            provider_id,
+            settings,
+            model=model,
+            timeout=timeout,
+            consent=consent,
+            state_dir=state_dir,
+        )
+    except ProviderError as error:
+        reason = "unauthorised" if error.reason == "api_key_not_available" else "bad_response"
+        return ProbeOutcome(False, provider_id, kind, chosen, reason_code=reason)
+    provider, request, result, latency = sent.provider, sent.request, sent.result, sent.latency_ms
     seq = result.ledger_seq
     if result.kind == "blocked":
         return ProbeOutcome(

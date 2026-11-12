@@ -625,8 +625,13 @@ def test_a_crashing_probe_is_reported_by_its_class_only(
 
 
 def test_without_the_adapters_the_probe_is_skipped_as_not_in_this_build(
-    cli: Cli, project: Path
+    cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # The adapters ship with this build (E22); a build without them is simulated.
+    def unavailable(*_args: object, **_kwargs: object) -> object:
+        raise BackendUnavailableError("no provider probe")
+
+    fake_backend(monkeypatch, PROBE, unavailable)
     entry = only(cli, project, LOCAL_PROVIDER, "--probe-providers")
     assert (entry["status"], entry["summary"]) == ("skip", doctor.NOT_IN_BUILD)
 
