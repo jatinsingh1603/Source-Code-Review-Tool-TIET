@@ -13,6 +13,11 @@
 │ --name                              <str>   File name without extension. [default: report]       │
 │ --overwrite       --no-overwrite            Replace existing files. [default: overwrite]         │
 │ --fail-fast                                 Stop at the first format that fails.                 │
+│ --baseline                          <str>   Earlier scan id: also write a retest delta report.   │
+│ --org                               <str>   Organisation that prepared the report.               │
+│ --client                            <str>   Organisation the report is prepared for.             │
+│ --manifest        --no-manifest             Write a SHA-256 integrity manifest.                  │
+│                                             [default: manifest]                                  │
 │ --help        -h                            Show this message and exit.                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮

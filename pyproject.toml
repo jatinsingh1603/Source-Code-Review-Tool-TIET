@@ -75,6 +75,14 @@ vertex = "codekavach.llm.providers.registry:vertex_spec"
 [project.entry-points."codekavach.renderers"]
 html = "codekavach.report.render.html:HtmlRenderer"
 pdf = "codekavach.report.render.pdf:PdfRenderer"
+sarif = "codekavach.report.render.exports:SarifRenderer"
+json = "codekavach.report.render.exports:JsonRenderer"
+csv = "codekavach.report.render.exports:CsvRenderer"
+markdown = "codekavach.report.render.exports:MarkdownRenderer"
+md = "codekavach.report.render.exports:MdRenderer"
+xlsx = "codekavach.report.render.xlsx:XlsxRenderer"
+docx = "codekavach.report.render.docx:DocxRenderer"
+compliance = "codekavach.report.render.bundle:ComplianceRenderer"
 
 [dependency-groups]
 lint = ["ruff>=0.16", "import-linter"]

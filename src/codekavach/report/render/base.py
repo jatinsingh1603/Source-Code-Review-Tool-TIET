@@ -10,16 +10,39 @@ arrives as a registration, not as an edit to the report stage.
 
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Final, Protocol, runtime_checkable
 
 from codekavach.config import Settings
 from codekavach.core.plugins.registry import registry_from_environment
 from codekavach.report.model.document import ReportDocument
 
+REASON_CODES: Final = frozenset(
+    {
+        "missing_system_library",
+        "missing_optional_extra",
+        "template_error",
+        "asset_not_found",
+        "output_too_large",
+        "unsupported_language",
+    }
+)
+
+
+class RenderError(Exception):
+    """A renderer could not write its format; ``reason_code`` is one of ``REASON_CODES``."""
+
+    def __init__(self, message: str, *, reason_code: str = "template_error") -> None:
+        super().__init__(message)
+        self.reason_code = reason_code if reason_code in REASON_CODES else "template_error"
+
 
 @runtime_checkable
 class Renderer(Protocol):
-    """One output format."""
+    """One output format.
+
+    Built-in renderers also set ``binary: bool`` and accept keyword-only ``theme`` and
+    ``context`` arguments with defaults, so the call ``renderer.render(doc, out)`` always works.
+    """
 
     format: str
     extension: str

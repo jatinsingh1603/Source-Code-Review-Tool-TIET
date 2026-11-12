@@ -221,6 +221,54 @@ def _render_table(scan: "Scan", findings: int, files: Sequence[RenderedFile]) ->
     return render
 
 
+def _written(fmt: str, path: Path) -> RenderedFile:
+    data = path.read_bytes()
+    if os.name != "nt":
+        path.chmod(REPORT_FILE_MODE)
+    return RenderedFile(fmt, path, len(data), hashlib.sha256(data).hexdigest())
+
+
+def _render_delta(
+    lookup: ScanLookup,
+    baseline: str,
+    document: Any,
+    *,
+    settings: Any,
+    destination: Path,
+    stem: str,
+) -> list[RenderedFile]:
+    """Write ``<stem>.delta.html`` and ``<stem>.delta.json`` against the baseline scan."""
+    previous = lookup.get(baseline)
+    previous_findings = lookup.findings(baseline) if previous is not None else None
+    if previous is None or previous_findings is None:
+        raise UsageError("no stored scan with findings matches --baseline", code="scan_not_found")
+    build_document = load_backend(
+        "codekavach.report.model", "build_report_document", feature="report content", epic="E30"
+    )
+    module = "codekavach.report.render.bundle"
+    build_delta = load_backend(module, "build_delta", feature="delta report", epic="E31")
+    render_delta = load_backend(module, "render_delta_html", feature="delta report", epic="E31")
+    delta_json = load_backend(module, "delta_json", feature="delta report", epic="E31")
+    before = build_document(previous, previous_findings, settings, None)
+    delta = build_delta(document, before)
+    html_path = render_delta(delta, document, destination / f"{stem}.delta.html")
+    json_path = destination / f"{stem}.delta.json"
+    json_path.write_text(delta_json(delta), encoding="utf-8")
+    return [_written("delta", Path(html_path)), _written("delta-json", json_path)]
+
+
+def _write_manifest(
+    document: Any, files: Sequence[RenderedFile], destination: Path
+) -> list[RenderedFile]:
+    """Write the integrity manifest over every written file."""
+    write = load_backend(
+        "codekavach.report.render.bundle", "write_manifest", feature="manifest", epic="E31"
+    )
+    written = [item.path for item in files if item.status == "written"]
+    manifest_path, sums = write(written, destination, doc=document)
+    return [_written("manifest", Path(manifest_path)), _written("sha256sums", Path(sums))]
+
+
 def report_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     ctx: typer.Context,
     target: Annotated[
@@ -241,6 +289,20 @@ def report_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     fail_fast: Annotated[
         bool, typer.Option("--fail-fast", help="Stop at the first format that fails.")
     ] = False,
+    baseline: Annotated[
+        str | None,
+        typer.Option("--baseline", help="Earlier scan id: also write a retest delta report."),
+    ] = None,
+    organisation: Annotated[
+        str | None, typer.Option("--org", help="Organisation that prepared the report.")
+    ] = None,
+    client: Annotated[
+        str | None, typer.Option("--client", help="Organisation the report is prepared for.")
+    ] = None,
+    manifest: Annotated[
+        bool,
+        typer.Option("--manifest/--no-manifest", help="Write a SHA-256 integrity manifest."),
+    ] = True,
 ) -> None:
     """Render the report of a stored scan."""
     project = Path(target)
@@ -291,7 +353,12 @@ def report_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         epic="E13",
     )
     document = build_document(
-        stored, findings, settings, summarise(state_dir, str(stored.id), settings)
+        stored,
+        findings,
+        settings,
+        summarise(state_dir, str(stored.id), settings),
+        organisation=organisation,
+        prepared_for=client,
     )
     files = render_all(
         registry,
@@ -302,8 +369,19 @@ def report_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         overwrite=overwrite,
         fail_fast=fail_fast,
     )
+    if baseline is not None:
+        files.extend(
+            _render_delta(
+                lookup, baseline, document, settings=settings, destination=destination, stem=name
+            )
+        )
+    data: dict[str, Any] = {"scan_id": str(stored.id), "files": [item.to_json() for item in files]}
+    if manifest and any(item.status == "written" for item in files):
+        data["manifest"] = [
+            item.to_json() for item in _write_manifest(document, files, destination)
+        ]
     out.result(
-        {"scan_id": str(stored.id), "files": [item.to_json() for item in files]},
+        data,
         human=_render_table(stored, len(findings), files),
     )
     failed = [item.format for item in files if item.status != "written"]

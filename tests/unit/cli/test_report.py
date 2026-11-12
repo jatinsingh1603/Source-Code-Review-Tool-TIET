@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import stat
 from collections.abc import Callable, Sequence
@@ -34,6 +35,7 @@ SNIPPET = "cur.execute('SELECT * FROM accounts WHERE owner = ' + owner)"
 SCAN_ID = "scan_01ARYZ6S410000000000000000"
 LOOKUP = "codekavach.core.store.repositories.open_scan_lookup"
 DOCUMENT = "codekavach.report.model.build_report_document"
+MANIFEST = "codekavach.report.render.bundle.write_manifest"
 REGISTRY = "codekavach.report.render.renderer_registry"
 
 
@@ -108,8 +110,18 @@ def backends_installed(
     monkeypatch: pytest.MonkeyPatch, renderers: dict[str, FakeRenderer], lookup: FakeLookup
 ) -> None:
     fake_backend(monkeypatch, LOOKUP, lambda _state_dir: lookup)
-    fake_backend(monkeypatch, DOCUMENT, lambda scan, findings, *_rest: (scan.id, len(findings)))
+    fake_backend(
+        monkeypatch, DOCUMENT, lambda scan, findings, *_rest, **_kw: (scan.id, len(findings))
+    )
     fake_backend(monkeypatch, REGISTRY, lambda: FakeRegistry(renderers))
+    fake_backend(monkeypatch, MANIFEST, fake_manifest)
+
+
+def fake_manifest(files: list[Path], out_dir: Path, *, doc: object) -> tuple[Path, Path]:
+    manifest, sums = out_dir / "manifest.json", out_dir / "SHA256SUMS"
+    manifest.write_text(json.dumps([path.name for path in files]), encoding="utf-8")
+    sums.write_text("", encoding="utf-8")
+    return manifest, sums
 
 
 def report(cli: Cli, project: Path, *args: str, **kwargs: Any) -> CliResult:
@@ -356,3 +368,18 @@ def test_stored_scan_lookup(tmp_path: Path) -> None:
     with_errors = record(ScanStatus.COMPLETED_WITH_ERRORS, 3, [])
     assert lookup.latest(root) == with_errors
     assert lookup.findings(with_errors.id) == []
+
+
+def test_a_manifest_lists_every_written_file(
+    cli: Cli, project: Path, backends_installed: None
+) -> None:
+    result = report(cli, project, "--format", "html,pdf", "--output-dir", "out", "--json")
+    assert result.exit_code == 0, result.stderr
+    manifest = project / "out" / "manifest.json"
+    assert json.loads(manifest.read_text(encoding="utf-8")) == ["report.html", "report.pdf"]
+    assert [item["format"] for item in result.json["data"]["manifest"]] == [
+        "manifest",
+        "sha256sums",
+    ]
+    skipped = report(cli, project, "--format", "html", "--output-dir", "o2", "--no-manifest")
+    assert skipped.exit_code == 0 and not (project / "o2" / "manifest.json").exists()
