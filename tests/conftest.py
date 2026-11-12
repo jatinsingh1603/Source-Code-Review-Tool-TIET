@@ -90,6 +90,18 @@ def repo_root(pytestconfig: pytest.Config) -> Path:
     return pytestconfig.rootpath
 
 
+@pytest.fixture(scope="session", autouse=True)
+def project_logging() -> None:
+    """Start every worker with the product's logging configuration.
+
+    Without it structlog keeps its development defaults until a test configures it: debug events
+    print, and an event with ``exc_info`` is rendered as a rich traceback with every frame's
+    locals. A failing stage logs one (``stage_failed_detail``), and rendering the run context's
+    settings that way took longer than the 120 s test timeout on a CI runner.
+    """
+    configure_logging(force=True)
+
+
 @pytest.fixture
 def log_output() -> Iterator[io.StringIO]:
     """Configure JSON logging into a buffer; restore the default configuration afterwards."""

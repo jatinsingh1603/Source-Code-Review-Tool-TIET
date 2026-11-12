@@ -136,6 +136,7 @@ def test_abort_in_a_wave_cancels_cooperative_sibling() -> None:
     aborting = FakeStage(
         "analyse-a", requires={"scan.target"}, provides={"a.one"}, category=C.ANALYSE,
         raises=RuntimeError("boom"), failure_policy=FailurePolicy.ABORT_SCAN,
+        sleep_seconds=0.05,  # lets the sibling start first; without it, it may be skipped instead
     )  # fmt: skip
     sleeper = FakeStage(
         "analyse-b", requires={"scan.target"}, provides={"a.two"}, category=C.ANALYSE,
