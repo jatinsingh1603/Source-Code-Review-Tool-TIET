@@ -350,6 +350,13 @@ ABLATIONS: Final[dict[str, dict[str, Any]]] = {
 }
 
 
+def _drop_probe(art: ScanArtifacts) -> None:
+    """The injected probe file is not part of the dataset: keep it out of the F1 numbers."""
+    art.findings = [
+        f for f in art.findings if not any(loc.path == CANARY_FILE for loc in f.locations)
+    ]
+
+
 def run_leakage(
     scan: str | None = None,
     dataset: str | None = None,
@@ -378,6 +385,7 @@ def run_leakage(
         say(f"level {level}")
         art = scan_dataset(ds, level=level, provider=provider, inject=inject)
         entry = attack_level(ds, art, attackers=attackers, inject=inject)
+        _drop_probe(art)
         detection = evaluate_arm(ds, art, arm=f"{provider}@{level}")
         entry["detection_f1"] = detection.overall["f1"]
         entry["detection_recall"] = detection.overall["recall"]
@@ -397,6 +405,7 @@ def run_leakage(
             say(f"ablation {name}")
             art = scan_dataset(ds, level=base_level, provider=provider, inject=inject, extra=extra)
             entry = attack_level(ds, art, attackers=attackers, inject=inject)
+            _drop_probe(art)
             ablation_rows.append(
                 {
                     "ablation": name,

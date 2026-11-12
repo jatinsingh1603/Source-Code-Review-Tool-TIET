@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 380" font-family="Inter,Arial,sans-serif" font-size="12">
+<rect width="720" height="380" fill="#ffffff"/>
+<text x="360.0" y="26" text-anchor="middle" font-size="15" font-weight="600">Privacy-utility frontier on KavachBank</text>
+<line x1="60" x2="700" y1="300.0" y2="300.0" stroke="#e5e7eb"/>
+<text x="52" y="304.0" text-anchor="end" fill="#475569">0.0</text>
+<line x1="60" x2="700" y1="250.0" y2="250.0" stroke="#e5e7eb"/>
+<text x="52" y="254.0" text-anchor="end" fill="#475569">0.2</text>
+<line x1="60" x2="700" y1="200.0" y2="200.0" stroke="#e5e7eb"/>
+<text x="52" y="204.0" text-anchor="end" fill="#475569">0.4</text>
+<line x1="60" x2="700" y1="150.0" y2="150.0" stroke="#e5e7eb"/>
+<text x="52" y="154.0" text-anchor="end" fill="#475569">0.6</text>
+<line x1="60" x2="700" y1="100.0" y2="100.0" stroke="#e5e7eb"/>
+<text x="52" y="104.0" text-anchor="end" fill="#475569">0.8</text>
+<line x1="60" x2="700" y1="50.0" y2="50.0" stroke="#e5e7eb"/>
+<text x="52" y="54.0" text-anchor="end" fill="#475569">1.0</text>
+<rect x="76.0" y="152.8" width="58.9" height="147.2" fill="#2563eb"><title>privacy score / 100 L1: 0.589</title></rect>
+<rect x="140.0" y="72.7" width="58.9" height="227.3" fill="#16a34a"><title>detection F1 L1: 0.909</title></rect>
+<text x="140.0" y="318" text-anchor="middle" fill="#111827">L1</text>
+<rect x="236.0" y="78.0" width="58.9" height="222.0" fill="#2563eb"><title>privacy score / 100 L2: 0.888</title></rect>
+<rect x="300.0" y="72.7" width="58.9" height="227.3" fill="#16a34a"><title>detection F1 L2: 0.909</title></rect>
+<text x="300.0" y="318" text-anchor="middle" fill="#111827">L2</text>
+<rect x="396.0" y="78.0" width="58.9" height="222.0" fill="#2563eb"><title>privacy score / 100 L3: 0.888</title></rect>
+<rect x="460.0" y="72.7" width="58.9" height="227.3" fill="#16a34a"><title>detection F1 L3: 0.909</title></rect>
+<text x="460.0" y="318" text-anchor="middle" fill="#111827">L3</text>
+<rect x="556.0" y="50.0" width="58.9" height="250.0" fill="#2563eb"><title>privacy score / 100 L4: 1.000</title></rect>
+<rect x="620.0" y="72.7" width="58.9" height="227.3" fill="#16a34a"><title>detection F1 L4: 0.909</title></rect>
+<text x="620.0" y="318" text-anchor="middle" fill="#111827">L4</text>
+<rect x="60" y="350" width="12" height="12" fill="#2563eb"/>
+<text x="78" y="360" fill="#111827">privacy score / 100</text>
+<rect x="210" y="350" width="12" height="12" fill="#16a34a"/>
+<text x="228" y="360" fill="#111827">detection F1</text>
+</svg>

@@ -55,6 +55,10 @@ class ArmResult:
 
 
 def _kept(artifacts: ScanArtifacts) -> list[Any]:
+    # The mock provider answers with canned verdicts that carry no judgement, so its verdicts
+    # are not allowed to remove findings: a mock arm measures the pipeline, not a model.
+    if artifacts.provider == "mock":
+        return list(artifacts.findings)
     kept = []
     for finding in artifacts.findings:
         reviews = finding.provenance.llm_reviews
@@ -150,6 +154,8 @@ def run_detection(
         },
         "method": {
             "matcher": "same file, line window 3, same CWE family",
+            "llm_filter": "findings the LLM judged not vulnerable are dropped, except for the "
+            "mock provider, whose canned verdicts are ignored",
             "precision": "in-scope findings only; out-of-scope findings are counted separately",
             "bootstrap": "1000 resamples of tp/fp/fn units, seed 20260101, 95 percent",
         },
