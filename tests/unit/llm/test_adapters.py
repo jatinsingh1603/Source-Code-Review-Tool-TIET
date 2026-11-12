@@ -55,7 +55,12 @@ from codekavach.llm.providers.registry import (
     load_provider_metadata,
     mock_spec,
 )
-from codekavach.llm.selection import ProviderNotConfigured, select_provider
+from codekavach.llm.selection import (
+    ProviderNotConfigured,
+    provider_catalogue,
+    select_provider,
+    settings_for_provider,
+)
 from codekavach.llm.stages import concurrency
 from codekavach.llm.tasks.triage import TriageTask
 from codekavach.privacy.egress.session import Dispatch
@@ -434,3 +439,25 @@ def test_estimate_says_cost_unknown_without_prices() -> None:
     assert unknown.cost_usd is None and "cost unknown" in unknown.describe()
     priced = settings("openai", options={"price_input_per_mtok": 1.0, "price_output_per_mtok": 2.0})
     assert estimate_scan([1000], priced).cost_usd is not None
+
+
+def test_settings_for_provider_adds_the_builtin_and_rejects_an_unknown_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("CODEKAVACH_AGENTROUTER_API_KEY", raising=False)
+    chosen = settings_for_provider(Settings(), "agentrouter", model="gpt-test")
+    assert chosen.llm.selected_provider()[0] == "agentrouter"
+    assert chosen.llm.model == "gpt-test"
+    with pytest.raises(ProviderNotConfigured):
+        settings_for_provider(Settings(), "nope")
+
+
+def test_the_catalogue_lists_builtins_without_key_material(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CODEKAVACH_AGENTROUTER_API_KEY", "sk-test-PLANTED0000")
+    rows = {row["id"]: row for row in provider_catalogue(Settings())}
+    assert rows["agentrouter"]["configured"] is True
+    assert rows["agentrouter"]["min_privacy_level"] == "L3"
+    assert rows["mock"]["default"] is True
+    assert "PLANTED" not in json.dumps(rows)
