@@ -247,7 +247,8 @@ jobs:
       - name: Unit tests (npm test)
         if: steps.present.outputs.ui == 'true'
         working-directory: ui
-        run: npm test
+        # Vitest exits 1 when it finds no test file; the dashboard has none yet.
+        run: npm test -- --passWithNoTests
 
   docker:
     # Smoke build of the server image (build only, never pushed; the Container workflow publishes).
