@@ -61,6 +61,9 @@ NETWORK_DISTRIBUTIONS = {
 # ``weasyprint`` (the optional PDF renderer) can fetch a URL it is handed, so
 # ``codekavach.report.render.pdf`` gives it a fetcher that refuses every URL; the report holds none
 # (test_the_pdf_fetcher_refuses_every_url). Its dependencies only parse and draw.
+# The ``server`` extra (E32: ``fastapi``, ``starlette``, ``uvicorn``, ``python-multipart`` and
+# fastapi's no-op ``opentelemetry-api``) accepts inbound HTTP on the operator's machine and opens
+# no outbound connection; ``codekavach.server`` never calls a model itself.
 REVIEWED_OFFLINE = frozenset(
     (
         "alembic",
@@ -83,6 +86,7 @@ REVIEWED_OFFLINE = frozenset(
         "detect-secrets",
         "distlib",
         "execnet",
+        "fastapi",
         "filelock",
         "fonttools",
         "grimp",
@@ -108,6 +112,7 @@ REVIEWED_OFFLINE = frozenset(
         "mypy",
         "mypy-extensions",
         "nodeenv",
+        "opentelemetry-api",
         "packaging",
         "pathspec",
         "pillow",
@@ -129,6 +134,7 @@ REVIEWED_OFFLINE = frozenset(
         "pytest-xdist",
         "python-discovery",
         "python-dotenv",
+        "python-multipart",
         "pywin32-ctypes",
         "pyyaml",
         "referencing",
@@ -139,6 +145,7 @@ REVIEWED_OFFLINE = frozenset(
         "shellingham",
         "sortedcontainers",
         "sqlalchemy",
+        "starlette",
         "structlog",
         "tinycss2",
         "tinyhtml5",
@@ -154,6 +161,7 @@ REVIEWED_OFFLINE = frozenset(
         "types-pyyaml",
         "typing-extensions",
         "typing-inspection",
+        "uvicorn",
         "virtualenv",
         "weasyprint",
         "webencodings",

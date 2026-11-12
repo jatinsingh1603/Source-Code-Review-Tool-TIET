@@ -28,7 +28,7 @@ dependencies = ["typer>=0.27", "rich>=15.0", "pydantic>=2.9,<3", "pydantic-setti
 
 [project.optional-dependencies]
 # Reserved names. Later epics fill them; do not invent other extra names without an ADR.
-server = []      # E32: fastapi, uvicorn, postgres driver (SQLAlchemy is a core dependency)
+server = ["fastapi>=0.115,<1", "uvicorn>=0.30", "python-multipart>=0.0.9"]  # E32: REST API and dashboard server (SQLAlchemy is a core dependency)
 reports = ["weasyprint>=63,<70", "xlsxwriter>=3.2", "python-docx>=1.1", "pygments>=2.18"]     # E13-03 PDF; E31 XLSX, DOCX, snippet highlighting
 providers = []   # E22: provider SDKs and LiteLLM
 pii = []         # E08: PII detection models
