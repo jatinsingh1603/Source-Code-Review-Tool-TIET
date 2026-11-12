@@ -326,3 +326,102 @@ def test_baseline_compares_with_the_previous_scan(
                       headers=admin).json()  # fmt: skip
     assert page["baseline_scan_id"] is None
     assert all(item["baseline_state"] is None for item in page["items"])
+
+
+# --- statistics, engines, inventory, health -------------------------------------------------
+
+
+def test_stats_extras(
+    server: tuple[TestClient, Any],
+    admin: dict[str, str],
+    users: dict[str, dict[str, str]],
+    scan: dict[str, Any],
+) -> None:
+    client = server[0]
+    item = _reviewed(client, admin)
+    patch = {"status": "fixed", "comment": "patched"}
+    assert client.patch(f"{API}/findings/{item['id']}", json=patch,
+                        headers=admin).status_code == 200  # fmt: skip
+    body = client.get(f"{API}/stats", headers=users["viewer"]).json()
+    assert body["mttr_days"] is not None and body["mttr_days"] >= 0
+    assert body["mttr_samples"] == 1
+    assert "mttr_delta_days" in body
+    assert all("info" in point for point in body["trend"])
+    matrix = body["risk_matrix"]
+    assert sum(cell["count"] for cell in matrix) == scan["findings_total"]
+    assert all(1 <= cell["likelihood"] <= 5 and 1 <= cell["impact"] <= 5 for cell in matrix)
+    assert body["risk_matrix_bands"]
+    assert body["owasp_by_engine"]
+    assert {"owasp", "engine", "count"} <= set(body["owasp_by_engine"][0])
+    top = body["top_cwes"]
+    assert top and top[0]["count"] >= top[-1]["count"]
+    assert top[0]["cwe"].startswith("CWE-")
+    client.patch(f"{API}/findings/{item['id']}", json={"status": "open"}, headers=admin)
+
+
+def test_engines_list_install_status(
+    server: tuple[TestClient, Any], users: dict[str, dict[str, str]]
+) -> None:
+    rows = server[0].get(f"{API}/engines", headers=users["viewer"]).json()
+    builtin = [row for row in rows if row["kind"] == "builtin"]
+    assert {row["id"] for row in builtin} >= {"rules", "taint", "secrets", "iac", "sca"}
+    assert all(row["installed"] for row in builtin)
+    external = [row for row in rows if row["kind"] == "external"]
+    assert external
+    assert all(isinstance(row["installed"], bool) and row["status"] for row in external)
+
+
+def test_project_inventory(
+    server: tuple[TestClient, Any], admin: dict[str, str], scan: dict[str, Any]
+) -> None:
+    client = server[0]
+    body = client.get(f"{API}/projects/{scan['project_id']}/inventory", headers=admin).json()
+    assert body["scan_id"] == scan["id"]
+    python = next(row for row in body["languages"] if row["language"] == "python")
+    assert python["files"] > 0 and python["lines"] > 0
+    assert python["support"] == "full"
+    assert body["totals"]["lines"] == sum(row["lines"] for row in body["languages"])
+    assert client.get(f"{API}/projects/prj_missing/inventory", headers=admin).status_code == 404
+
+
+def test_health_network_and_system_health(
+    server: tuple[TestClient, Any], admin: dict[str, str], users: dict[str, dict[str, str]]
+) -> None:
+    client = server[0]
+    assert client.get(f"{API}/health").json()["network"] == "offline"
+    body = client.get(f"{API}/system/health", headers=admin).json()
+    names = {check["name"] for check in body["checks"]}
+    assert {"server:database", "server:disk", "server:vault_key"} <= names
+    assert body["status"] in {"pass", "warn", "fail"}
+    assert len(body["invariants"]["invariants"]) == 6
+    assert client.get(f"{API}/system/health", headers=users["auditor"]).status_code == 403
+
+
+def test_invariants_report_recorded_results(
+    server: tuple[TestClient, Any], users: dict[str, dict[str, str]], scan: dict[str, Any]
+) -> None:
+    client, state = server
+    url = f"{API}/privacy/invariants"
+    before = client.get(url, headers=users["viewer"]).json()
+    assert before["recorded"] is False
+    by_id = {row["id"]: row for row in before["invariants"]}
+    assert by_id["I1"]["status"] == "not_recorded"
+    assert by_id["I6"]["guard"]["passed"] is True
+    report = state.config.data_dir / "invariants" / "junit.xml"
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(
+        '<testsuites><testsuite name="pytest">'
+        '<testcase classname="tests.privacy.test_i1_single_egress" name="test_a"/>'
+        '<testcase classname="tests.privacy.test_vault_locality" name="test_b">'
+        '<failure message="boom"/></testcase>'
+        "</testsuite></testsuites>",
+        encoding="utf-8",
+    )
+    after = client.get(url, headers=users["viewer"]).json()
+    assert after["recorded"] is True and after["run_at"]
+    rows = {row["id"]: row for row in after["invariants"]}
+    assert rows["I1"]["status"] == "passed"
+    assert rows["I1"]["tests"]["passed"] == 1
+    assert rows["I3"]["status"] == "failed"
+    assert rows["I5"]["status"] == "not_recorded"
+    report.unlink()

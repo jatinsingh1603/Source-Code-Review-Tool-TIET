@@ -9,6 +9,7 @@ engine before it is saved. Provider keys are never accepted or returned here, on
 """
 
 import time
+from collections import Counter
 from pathlib import Path
 from typing import Any, Final
 
@@ -16,6 +17,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import func, select
 
 import codekavach
+from codekavach.core.log import get_logger
 from codekavach.server import audit
 from codekavach.server.auth.dependencies import (
     SessionDep,
@@ -26,12 +28,14 @@ from codekavach.server.auth.dependencies import (
 from codekavach.server.db.engine import as_utc
 from codekavach.server.db.models import AuditEvent, FindingRow, Project, ScanRow
 from codekavach.server.errors import ApiError
+from codekavach.server.insights import also_reported_by, merged_engines, mttr
 from codekavach.server.providers import list_providers, test_provider
 from codekavach.server.rbac import Permission
 from codekavach.server.results import SEVERITY_ORDER, scan_env
 from codekavach.server.schemas import PolicyBody, ProviderTestBody, SettingsBody
 from codekavach.server.state import ServerState
 
+_log = get_logger("codekavach.server.system")
 router = APIRouter(tags=["system"])
 ReadDep = Depends(require(Permission.read))
 SettingsDep = Depends(require(Permission.settings_write))
@@ -73,7 +77,32 @@ def health(state: StateDep) -> dict[str, Any]:
         "database": database,
         "active_scans": len(state.runner.active()),
         "uptime_seconds": int(time.time() - state.started_at),
+        "network": network_posture(state),
     }
+
+
+_posture: dict[str, tuple[float, str]] = {}
+
+
+def network_posture(state: ServerState) -> str:
+    """``online`` when the default provider is remote and enabled, else ``offline``.
+
+    It says whether a default scan would send payloads off this machine (through the egress
+    guard), not whether the host has a network connection. Cached for 30 seconds.
+    """
+    cached = _posture.get("value")
+    if cached is not None and time.monotonic() - cached[0] < 30.0:
+        return cached[1]
+    value = "offline"
+    try:
+        default = str(state.get_settings().get("default_provider") or "mock")
+        provider = _server_settings(state).llm.providers.get(default)
+        if provider is not None and provider.is_remote and provider.enabled:
+            value = "online"
+    except Exception as error:  # noqa: BLE001 - an unreadable configuration sends nothing
+        _log.info("server_network_posture_unknown", error_type=type(error).__name__)
+    _posture["value"] = (time.monotonic(), value)
+    return value
 
 
 @router.get("/version")
@@ -84,7 +113,9 @@ def version() -> dict[str, Any]:
 
 @router.get("/stats", dependencies=[ReadDep])
 def stats(session: SessionDep) -> dict[str, Any]:
-    """Figures for the dashboard home page."""
+    """Figures for the dashboard home page, over the latest completed scan of every project."""
+    from codekavach.server.routers.scans import scan_json  # noqa: PLC0415
+
     projects = session.scalar(select(func.count()).select_from(Project)) or 0
     scans = session.scalar(select(func.count()).select_from(ScanRow)) or 0
     latest: dict[str, ScanRow] = {}
@@ -95,17 +126,18 @@ def stats(session: SessionDep) -> dict[str, Any]:
         latest[row.project_id] = row
     by_severity = dict.fromkeys(SEVERITY_ORDER, 0)
     open_findings = 0
-    latest_ids = [row.id for row in latest.values()]
-    if latest_ids:
-        query = (
-            select(FindingRow.severity, FindingRow.status, func.count())
-            .where(FindingRow.scan_id.in_(latest_ids))
-            .group_by(FindingRow.severity, FindingRow.status)
-        )
-        for severity, status, count in session.execute(query):
-            by_severity[severity] = by_severity.get(severity, 0) + int(count)
-            if status in {"open", "confirmed"}:
-                open_findings += int(count)
+    rows = (
+        list(session.scalars(select(FindingRow).where(FindingRow.scan_id.in_(
+            [row.id for row in latest.values()]))))
+        if latest
+        else []
+    )  # fmt: skip
+    by_status: Counter[str] = Counter()
+    for item in rows:
+        by_severity[item.severity] = by_severity.get(item.severity, 0) + 1
+        by_status[item.status] += 1
+        if item.status in {"open", "confirmed"}:
+            open_findings += 1
     last = session.scalars(select(ScanRow).order_by(ScanRow.created_at.desc()).limit(1)).first()
     trend = [
         {
@@ -116,17 +148,93 @@ def stats(session: SessionDep) -> dict[str, Any]:
         }
         for row in completed[-20:]
     ]
-    from codekavach.server.routers.scans import scan_json  # noqa: PLC0415
-
+    folded: dict[str, list[str]] = {}
+    for scan in latest.values():
+        folded.update(also_reported_by(scan))
     return {
         "projects": projects,
         "scans": scans,
         "findings_by_severity": by_severity,
+        "findings_by_status": dict(sorted(by_status.items())),
         "findings_total": sum(by_severity.values()),
         "open_findings": open_findings,
-        "last_scan": scan_json(last) if last is not None else None,
+        "last_scan": scan_json(last, session.get(Project, last.project_id))
+        if last is not None
+        else None,
         "trend": trend,
+        **mttr(session),
+        "risk_matrix": _risk_matrix(rows),
+        "risk_matrix_bands": _risk_bands(rows),
+        "owasp_by_engine": _owasp_by_engine(rows, folded),
+        "top_cwes": _top_cwes(rows),
+        "scope": {"scan_ids": [row.id for row in latest.values()]},
     }
+
+
+def _risk_matrix(rows: list[FindingRow]) -> list[dict[str, int]]:
+    """Counts by likelihood level (1..5) and impact level (1..5) of the findings."""
+    cells: Counter[tuple[int, int]] = Counter()
+    for row in rows:
+        data = row.data or {}
+        likelihood = (data.get("likelihood") or {}).get("level")
+        impact = (data.get("impact") or {}).get("level")
+        if isinstance(likelihood, int) and isinstance(impact, int):
+            cells[(likelihood, impact)] += 1
+    return [
+        {"likelihood": likelihood, "impact": impact, "count": count}
+        for (likelihood, impact), count in sorted(cells.items())
+    ]
+
+
+def _risk_bands(rows: list[FindingRow]) -> list[dict[str, Any]]:
+    """Counts by the OWASP Risk Rating likelihood and impact bands (low, medium, high)."""
+    cells: Counter[tuple[str, str]] = Counter()
+    for row in rows:
+        risk = (row.data or {}).get("risk") or {}
+        likelihood, impact = risk.get("owasp_likelihood_band"), risk.get("owasp_impact_band")
+        if likelihood and impact:
+            cells[(str(likelihood), str(impact))] += 1
+    return [
+        {"likelihood": likelihood, "impact": impact, "count": count}
+        for (likelihood, impact), count in sorted(cells.items())
+    ]
+
+
+def _owasp_by_engine(rows: list[FindingRow], folded: dict[str, list[str]]) -> list[dict[str, Any]]:
+    """Counts by OWASP Top 10 category and every engine that reported the finding."""
+    cells: Counter[tuple[str, str]] = Counter()
+    titles: dict[str, str] = {}
+    for row in rows:
+        refs = [ref for ref in (row.data or {}).get("owasp") or [] if isinstance(ref, dict)]
+        engines = [item["engine"] for item in merged_engines(row, folded)]
+        for ref in refs:
+            category = str(ref.get("id") or "")
+            if not category:
+                continue
+            titles.setdefault(category, str(ref.get("title") or ""))
+            for engine in engines:
+                cells[(category, engine)] += 1
+    return [
+        {"owasp": owasp, "title": titles.get(owasp, ""), "engine": engine, "count": count}
+        for (owasp, engine), count in sorted(cells.items())
+    ]
+
+
+def _top_cwes(rows: list[FindingRow], limit: int = 10) -> list[dict[str, Any]]:
+    """The most frequent CWEs with their names, most frequent first."""
+    counts: Counter[str] = Counter()
+    names: dict[str, str | None] = {}
+    for row in rows:
+        primary = next((item for item in row.cwe.split(",") if item), None)
+        if primary is None:
+            continue
+        counts[primary] += 1
+        risk = (row.data or {}).get("risk") or {}
+        names.setdefault(primary, risk.get("cwe_name"))
+    return [
+        {"cwe": cwe, "name": names.get(cwe), "count": count}
+        for cwe, count in counts.most_common(limit)
+    ]
 
 
 def _server_settings(state: ServerState) -> Any:
