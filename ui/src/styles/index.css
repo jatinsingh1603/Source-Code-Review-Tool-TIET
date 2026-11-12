@@ -306,3 +306,8 @@ body {
 .tabs-row > .tab-act:hover {
   color: var(--text);
 }
+
+/* The kit resets headings and paragraphs only; a description list keeps the browser margin. */
+.ck dl.dl {
+  margin: 0;
+}

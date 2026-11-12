@@ -209,6 +209,29 @@ export function capitalise(s?: string | null): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  javascript: "JavaScript",
+  typescript: "TypeScript",
+  json: "JSON",
+  yaml: "YAML",
+  toml: "TOML",
+  xml: "XML",
+  html: "HTML",
+  css: "CSS",
+  sql: "SQL",
+  php: "PHP",
+  csharp: "C#",
+  cpp: "C++",
+  hcl: "HCL",
+  unknown: "Other",
+};
+
+/** A language id from the inventory as people write it ("javascript" → "JavaScript"). */
+export function languageLabel(id?: string | null): string {
+  if (!id) return "";
+  return LANGUAGE_NAMES[id.toLowerCase()] ?? capitalise(id);
+}
+
 /** Engine id to the design's detection-source names. */
 export function engineLabel(e?: string | null): string {
   if (!e) return "—";

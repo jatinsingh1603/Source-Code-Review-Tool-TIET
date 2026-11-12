@@ -11,6 +11,7 @@ interface ProjectCtx {
 
 const Ctx = createContext<ProjectCtx | null>(null);
 const KEY = "ck-current-project";
+const SAMPLE_ID = "prj_kavachbank_sample";
 
 /** The project selected in the top bar; pages default to its latest scan. */
 export function ProjectProvider({ children }: { children: ReactNode }) {
@@ -23,7 +24,8 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     }
   });
   const projects = useMemo(() => data ?? [], [data]);
-  const current = projects.find((p) => p.id === currentId) ?? projects[0] ?? null;
+  // With no choice stored yet, open on the bundled KavachBank sample (the demo's project), else the newest.
+  const current = projects.find((p) => p.id === currentId) ?? projects.find((p) => p.id === SAMPLE_ID) ?? projects[0] ?? null;
 
   useEffect(() => {
     if (current && current.id !== currentId) setId(current.id);

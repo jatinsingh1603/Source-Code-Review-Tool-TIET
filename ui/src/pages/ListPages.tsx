@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useCurrentProject } from "@/app/project-context";
 import { useSession } from "@/app/session";
 import { useDeleteProject, useProject, useProviders, useScans } from "@/api/queries";
 import { sortScans } from "@/lib/domain";
-import { fmtInt, fmtShort, scanLabel } from "@/lib/display";
+import { fmtInt, fmtShort, languageLabel, scanLabel } from "@/lib/display";
 import { ScansTable } from "./OverviewPage";
 import {
   Button,
@@ -104,7 +104,7 @@ export function ProjectsPage() {
                     {p.description && <div className="xs faint">{p.description}</div>}
                   </td>
                   <td className="mono sm">{p.source.type}</td>
-                  <td className="sm">{(p.languages ?? []).join(", ") || "—"}</td>
+                  <td className="sm">{(p.languages ?? []).map(languageLabel).join(", ") || "—"}</td>
                   <td className="num mono">{fmtInt(p.files)}</td>
                   <td className="num mono">{fmtInt(p.scan_count ?? p.scans)}</td>
                   <td className="mono sm">
@@ -145,6 +145,11 @@ export function ProjectDetailPage() {
   const navigate = useNavigate();
   const [confirm, setConfirm] = useState(false);
   const p = q.data;
+  const { current, setCurrentId } = useCurrentProject();
+  // A deep link to a project makes it the top bar's project, as a click in the list does.
+  useEffect(() => {
+    if (p && current?.id !== p.id) setCurrentId(p.id);
+  }, [p, current?.id, setCurrentId]);
   if (q.isError) {
     return (
       <Content>
@@ -187,7 +192,7 @@ export function ProjectDetailPage() {
               {src?.ref ? ` · ${src.ref}` : ""}
             </dd>
             <dt>Languages</dt>
-            <dd>{(p.languages ?? []).join(", ") || "—"}</dd>
+            <dd>{(p.languages ?? []).map(languageLabel).join(", ") || "—"}</dd>
             <dt>Files</dt>
             <dd className="mono">{fmtInt(p.files)}</dd>
             <dt>Created</dt>

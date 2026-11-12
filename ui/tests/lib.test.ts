@@ -6,6 +6,7 @@ import { atLeastAsStrict, confidenceFraction, LEVELS_BY_STRICTNESS } from "@/lib
 import { egressSummary } from "@/lib/egress";
 import { validateGitUrl } from "@/lib/validate";
 import { permissionsFor } from "@/lib/permissions";
+import { languageLabel } from "@/lib/display";
 import type { ProviderInfo } from "@/api/types";
 
 describe("segmentLines", () => {
@@ -101,5 +102,15 @@ describe("misc helpers", () => {
     expect(v.has("privacy:read")).toBe(false);
     expect(v.has("users:admin")).toBe(false);
     expect(permissionsFor("admin").has("users:admin")).toBe(true);
+  });
+});
+
+describe("languageLabel", () => {
+  it("writes inventory language ids the way people do", () => {
+    expect(languageLabel("javascript")).toBe("JavaScript");
+    expect(languageLabel("yaml")).toBe("YAML");
+    expect(languageLabel("python")).toBe("Python");
+    expect(languageLabel("unknown")).toBe("Other");
+    expect(languageLabel(null)).toBe("");
   });
 });
