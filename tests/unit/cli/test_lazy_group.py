@@ -13,7 +13,8 @@ from codekavach.cli.app import LAZY_COMMANDS, LazyEntry, LazyGroup, build_cli
 from tests.support.cli import run_cli
 
 ORDER = ["version", "scan", "report", "doctor", "completion", "init", "privacy", "providers",
-         "plugins", "sync", "eval", "demo", "vault", "config", "rules", "sca", "sbom"]  # fmt: skip
+         "plugins", "sync", "findings", "eval", "demo", "vault", "config", "rules", "serve", "sca",
+         "sbom"]  # fmt: skip
 
 
 def root() -> LazyGroup:

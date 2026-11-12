@@ -51,11 +51,13 @@
 │ providers   Inspect and test LLM providers.                                                      │
 │ plugins     Inspect installed plugins and check that their stages form a pipeline.               │
 │ sync        Send findings to a client system.                                                    │
+│ findings    Print the findings of a stored scan as JSON or SARIF.                                │
 │ eval        Run the detection and leakage evaluations.                                           │
 │ demo        Run the Demo 1 sequence offline on the mock provider.                                │
 │ vault       Manage the local mapping vault. Its contents never appear in any output.             │
 │ config      Inspect and manage configuration.                                                    │
 │ rules       List, show, validate, test and bundle native rule packs.                             │
+│ serve       Run the REST API server and the web dashboard.                                       │
 │ sca         Refresh the advisory mirror and list vulnerable dependencies.                        │
 │ sbom        Generate a CycloneDX or SPDX bill of materials.                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
