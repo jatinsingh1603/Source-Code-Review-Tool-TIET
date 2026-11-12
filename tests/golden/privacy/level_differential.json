@@ -1,0 +1,55 @@
+{
+  "buckets": {
+    "CWE-22": {
+      "both": 1,
+      "l1_only": 0,
+      "l3_only": 0
+    },
+    "CWE-327": {
+      "both": 1,
+      "l1_only": 0,
+      "l3_only": 0
+    },
+    "CWE-329": {
+      "both": 1,
+      "l1_only": 0,
+      "l3_only": 0
+    },
+    "CWE-502": {
+      "both": 1,
+      "l1_only": 0,
+      "l3_only": 0
+    },
+    "CWE-639": {
+      "both": 3,
+      "l1_only": 0,
+      "l3_only": 0
+    },
+    "CWE-78": {
+      "both": 1,
+      "l1_only": 0,
+      "l3_only": 0
+    },
+    "CWE-79": {
+      "both": 1,
+      "l1_only": 0,
+      "l3_only": 0
+    },
+    "CWE-862": {
+      "both": 1,
+      "l1_only": 0,
+      "l3_only": 0
+    },
+    "CWE-89": {
+      "both": 1,
+      "l1_only": 0,
+      "l3_only": 0
+    },
+    "CWE-918": {
+      "both": 1,
+      "l1_only": 0,
+      "l3_only": 0
+    }
+  },
+  "tolerance": 0
+}
