@@ -183,6 +183,7 @@ def _source_root(state: ServerState, project: Project) -> tuple[Path, tuple[str,
     from codekavach.server.jobs.workspace import COPY_IGNORE, SAMPLE_IGNORE  # noqa: PLC0415
 
     config = state.config
+    ignore: tuple[str, ...]
     if project.source_type == "sample" and config.sample_dir is not None:
         root, ignore = config.sample_dir, SAMPLE_IGNORE
     elif project.source_type == "path" and config.allow_local_paths and project.source_path:
@@ -222,7 +223,9 @@ def inventory(project_id: str, state: StateDep, session: SessionDep) -> dict[str
     files: list[Any]
     if scan is None or not scan.workspace or not scan.core_scan_id:
         source = _source_root(state, project)
-        empty = {"project_id": project_id, "scan_id": None, "languages": [], "totals": None}
+        empty: dict[str, Any] = {
+            "project_id": project_id, "scan_id": None, "languages": [], "totals": None,
+        }  # fmt: skip
         if source is None:
             return empty
         try:
