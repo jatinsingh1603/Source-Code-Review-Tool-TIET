@@ -9,7 +9,13 @@ from hypothesis import strategies as st
 from pydantic import ValidationError
 
 from codekavach.core.models import DataClassification, ModelError, PrivacyLevel, canonical_json
-from codekavach.core.models.egress import GENESIS_PREV_HASH, EgressRecord, TokenCounts
+from codekavach.core.models.egress import (
+    GENESIS_PREV_HASH,
+    EgressRecord,
+    EgressRecordV1,
+    TokenCounts,
+    load_egress_record,
+)
 from codekavach.core.models.enums import EgressOutcome
 from tests.support.golden import assert_matches_golden
 
@@ -48,10 +54,17 @@ EXPECTED_PROPERTIES = {
     "outcome",
     "block_code",
     "ref_seq",
+    "policy_hash",
+    "policy_rule_key",
 }
 
 
-def seal(prev: EgressRecord | None = None, **overrides: Any) -> EgressRecord:
+def seal(
+    prev: EgressRecord | None = None,
+    *,
+    record_class: type[EgressRecord] = EgressRecord,
+    **overrides: Any,
+) -> EgressRecord:
     fields: dict[str, Any] = {
         "prev": prev,
         "timestamp": T0 if prev is None else prev.timestamp + timedelta(seconds=1),
@@ -66,19 +79,22 @@ def seal(prev: EgressRecord | None = None, **overrides: Any) -> EgressRecord:
         "outcome": EgressOutcome.SENT,
     }
     fields.update(overrides)
-    return EgressRecord.seal(**fields)
+    return record_class.seal(**fields)
 
 
 def golden_chain() -> list[EgressRecord]:
-    sent = seal()
+    """The published version-1 chain: sealed by ``EgressRecordV1``, bytes frozen in the golden."""
+    sent = seal(record_class=EgressRecordV1)
     completed = seal(
         sent,
+        record_class=EgressRecordV1,
         outcome=EgressOutcome.COMPLETED,
         ref_seq=1,
         token_counts=TokenCounts(prompt=118, completion=64, estimated=False),
     )
     blocked = seal(
         completed,
+        record_class=EgressRecordV1,
         candidate_id=CAND_2,
         outcome=EgressOutcome.BLOCKED,
         block_code="residual_secret",
@@ -88,7 +104,8 @@ def golden_chain() -> list[EgressRecord]:
 
 
 def test_vector() -> None:
-    record = seal()
+    """The published version-1 vector still verifies unchanged (E25-03)."""
+    record = seal(record_class=EgressRecordV1)
     assert canonical_json(record, exclude=frozenset({"entry_hash"})).decode() == VECTOR_BYTES
     assert record.entry_hash == VECTOR_HASH
     assert record.seq == 1
@@ -102,10 +119,8 @@ def test_golden_chain() -> None:
     chain = golden_chain()
     text = "".join(record.model_dump_json() + "\n" for record in chain)
     assert_matches_golden(text, GOLDEN)
-    stored = [
-        EgressRecord.model_validate_json(line)
-        for line in GOLDEN.read_text(encoding="utf-8").splitlines()
-    ]
+    stored = [load_egress_record(line) for line in GOLDEN.read_text(encoding="utf-8").splitlines()]
+    assert all(type(record) is EgressRecordV1 for record in stored)
     assert stored[0].entry_hash == VECTOR_HASH
     previous: EgressRecord | None = None
     for record in stored:
@@ -287,3 +302,77 @@ def test_chains_verify_and_detect_edits(length: int, data: st.DataObject) -> Non
         for record in edited:
             record.verify_link(previous)
             previous = record
+
+
+# version 2: the policy hash and the path-free rule key (E25-03)
+
+POLICY_HASH = "9e816792dea395acf6bbe1824df84283a521e5e18cb25d013e113010acfca93c"
+# pragma: allowlist nextline secret
+VECTOR_V2_HASH = "eff93675f9aa90c012e6169f037a254e9323d702f1990aa96841aa2322bc26f6"
+VECTOR_V2_BYTES = (
+    '{"block_code":null,"candidate_id":"cand_01ARYZ6S410000000000000001","level":"L3",'
+    '"model":"mock-1","outcome":"sent","payload_hash":"' + PAYLOAD_HASH + '",'
+    '"policy_hash":"' + POLICY_HASH + '","policy_rule_key":"classification:pci",'
+    '"prev_hash":"' + GENESIS_PREV_HASH + '","provider":"mock","ref_seq":null,'
+    '"request_hash":null,"scan_id":"scan_01ARYZ6S410000000000000000","schema_version":2,'
+    '"seq":1,"task":"triage","timestamp":"2026-10-05T04:30:00.000000Z",'
+    '"token_counts":{"completion":null,"estimated":true,"prompt":120}}'
+)
+
+
+def test_vector_v2() -> None:
+    record = seal(policy_hash=POLICY_HASH, policy_rule_key="classification:pci")
+    assert canonical_json(record, exclude=frozenset({"entry_hash"})).decode() == VECTOR_V2_BYTES
+    assert record.entry_hash == VECTOR_V2_HASH
+    assert EgressRecord.SCHEMA_VERSION == 2
+    assert type(load_egress_record(record.model_dump_json())) is EgressRecord
+
+
+def test_a_chain_mixing_both_versions_verifies() -> None:
+    old = golden_chain()
+    new = seal(old[-1], policy_hash=POLICY_HASH, policy_rule_key="base:")
+    newer = seal(
+        new,
+        outcome=EgressOutcome.COMPLETED,
+        ref_seq=new.seq,
+        policy_hash=POLICY_HASH,
+        policy_rule_key="base:",
+    )
+    lines = [record.model_dump_json() for record in [*old, new, newer]]
+    previous: EgressRecord | None = None
+    for line in lines:
+        record = load_egress_record(line)
+        record.verify_link(previous)
+        previous = record
+    assert [load_egress_record(x).schema_version for x in lines] == [1, 1, 1, 2, 2]
+
+
+def test_policy_fields_are_tamper_evident() -> None:
+    record = seal(policy_hash=POLICY_HASH, policy_rule_key="path_rule:0")
+    data = json.loads(record.model_dump_json())
+    data["policy_rule_key"] = "base:"
+    with pytest.raises(ValidationError, match="entry_hash"):
+        load_egress_record(json.dumps(data))
+
+
+@pytest.mark.parametrize(
+    "key", ["src/payments", "path_rule:src/x", "never_send:**", "a b:c", "path_rule:x.py"]
+)
+def test_policy_rule_key_admits_no_path_or_pattern(key: str) -> None:
+    with pytest.raises(ValidationError):
+        seal(policy_hash=POLICY_HASH, policy_rule_key=key)
+
+
+def test_policy_fields_are_set_together() -> None:
+    with pytest.raises(ValidationError, match="together"):
+        seal(policy_hash=POLICY_HASH)
+
+
+def test_a_version_1_entry_carries_no_policy_fields() -> None:
+    data = json.loads(seal(record_class=EgressRecordV1).model_dump_json())
+    assert "policy_hash" not in data
+    data["policy_hash"] = None
+    with pytest.raises(ValidationError):
+        load_egress_record(json.dumps(data))
+    with pytest.raises(ValueError, match="version-1"):
+        seal(record_class=EgressRecordV1, policy_hash=POLICY_HASH, policy_rule_key="base:")

@@ -21,8 +21,8 @@
     {
       "file": "egress_record.schema.json",
       "name": "EgressRecord",
-      "schema_version": 1,
-      "sha256": "50efceb2c790918eefc1e2f5f75908af63cbd8860dc3ef572f522384d81328ee"
+      "schema_version": 2,
+      "sha256": "a84bee70380d5c7d827ae9f30a3a3a3fc2fdc254e6ba8c6b91514b547d1f4614"
     },
     {
       "file": "evidence.schema.json",

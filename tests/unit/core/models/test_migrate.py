@@ -166,7 +166,7 @@ def test_non_migratable_models(monkeypatch: pytest.MonkeyPatch) -> None:
     assert load_versioned(Frozen, {"value": 1, "schema_version": 2}) == Frozen(value=1)
     record = make_egress_chain(1)[0]
     assert load_versioned(EgressRecord, record.model_dump_json()) == record
-    monkeypatch.setattr(EgressRecord, "SCHEMA_VERSION", 2)
+    monkeypatch.setattr(EgressRecord, "SCHEMA_VERSION", 3)
     with pytest.raises(MigrationError, match="hash chain"):
         load_versioned(EgressRecord, record.model_dump(mode="json"))
 

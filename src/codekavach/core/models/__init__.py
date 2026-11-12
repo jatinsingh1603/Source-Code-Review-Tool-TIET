@@ -22,7 +22,9 @@ from codekavach.core.models.canonical import (
 )
 from codekavach.core.models.egress import (
     EgressRecord,
+    EgressRecordV1,
     TokenCounts,
+    load_egress_record,
 )
 from codekavach.core.models.enums import (
     ActorKind,
@@ -183,6 +185,7 @@ __all__ = [
     "DetectionOrigin",
     "EgressOutcome",
     "EgressRecord",
+    "EgressRecordV1",
     "EgressTotals",
     "EngineRef",
     "Evidence",
@@ -259,6 +262,7 @@ __all__ = [
     "fingerprint_batch",
     "format_cwe",
     "format_placeholder",
+    "load_egress_record",
     "load_versioned",
     "migrate_document",
     "new_candidate_id",

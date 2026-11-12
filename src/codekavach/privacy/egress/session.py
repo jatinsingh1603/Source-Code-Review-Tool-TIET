@@ -115,7 +115,10 @@ class EgressSession:
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
         disclosure: ScanDisclosure | None = None,
+        policy: Mapping[str, tuple[str, str]] | None = None,
     ) -> None:
+        # candidate id -> (policy hash, path-free rule key), recorded on every entry (E25-03)
+        self._policy: Mapping[str, tuple[str, str]] = policy or {}
         self._settings = settings
         self._state = state_dir
         self._vault = vault
@@ -244,6 +247,7 @@ class EgressSession:
                 request_hash=hashlib.sha256(request.body).hexdigest(),
                 block_code=block_code,
                 ref_seq=ref_seq,
+                **self._governed(payload),
             )
 
         if not decision.allowed or decision.ticket is None:
@@ -289,6 +293,14 @@ class EgressSession:
         return Dispatch(
             "answered", status=status, body=body, headers=dict(headers), ledger_seq=sent.seq
         )
+
+    def _governed(self, payload: SanitisedPayload) -> dict[str, str | None]:
+        """The policy hash and rule key recorded for ``payload``'s candidate, if any."""
+        found = self._policy.get(str(payload.candidate_id))
+        return {
+            "policy_hash": None if found is None else found[0],
+            "policy_rule_key": None if found is None else found[1],
+        }
 
     @staticmethod
     def _follow_up(

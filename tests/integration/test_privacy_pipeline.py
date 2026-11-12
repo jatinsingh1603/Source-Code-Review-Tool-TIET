@@ -21,6 +21,7 @@ from pydantic import BaseModel
 
 from codekavach.config import load_settings
 from codekavach.core.models import Candidate, ScanStatus
+from codekavach.core.models.egress import EgressRecord
 from codekavach.core.models.enums import EgressOutcome
 from codekavach.core.models.finding import Finding
 from codekavach.core.models.payload import SanitisedPayload
@@ -37,6 +38,7 @@ from codekavach.privacy.egress.guard import EgressGuard
 from codekavach.privacy.egress.ledger import open_reader
 from codekavach.privacy.egress.models import EgressDecision
 from codekavach.privacy.errors import PseudonymError, RedactionError
+from codekavach.privacy.policy.records import PolicyDecisionRow
 from codekavach.privacy.pseudonymise.engine import Pseudonymiser
 from codekavach.privacy.redact.redactor import Redactor
 from codekavach.privacy.stages import PrivacyPrepareStage
@@ -156,7 +158,7 @@ def read[Model: BaseModel](outcome: ScanOutcome, key: str, model: type[Model]) -
     return store_of(outcome).get_list(key, model)
 
 
-def ledger_of(outcome: ScanOutcome) -> list[object]:
+def ledger_of(outcome: ScanOutcome) -> list[EgressRecord]:
     return list(open_reader(StateLayout(outcome.state_dir)).records(outcome.scan.id))
 
 
@@ -217,6 +219,23 @@ def test_one_request_per_payload_is_sent_and_completed(sent: Run) -> None:
     assert outcomes[EgressOutcome.SENT] == len(sent.payloads)
     assert outcomes[EgressOutcome.COMPLETED] == len(sent.payloads)
     assert outcomes[EgressOutcome.BLOCKED] == 0
+
+
+def test_every_ledger_entry_records_the_policy_hash_and_rule_key(sent: Run) -> None:
+    """E25-03: each entry names the policy that governed it, and nothing path-shaped."""
+    rows = {
+        str(row.candidate_id): row
+        for row in read(sent.outcome, keys.POLICY_DECISIONS, PolicyDecisionRow)
+    }
+    assert sent.ledger
+    for record in sent.ledger:
+        assert record.schema_version == 2
+        assert record.policy_hash and record.policy_rule_key
+        row = rows[str(record.candidate_id)]
+        assert (record.policy_hash, record.policy_rule_key) == (row.policy_hash, row.rule_key)
+        assert "/" not in record.policy_rule_key
+        assert "*" not in record.policy_rule_key
+    assert open_reader(StateLayout(sent.outcome.state_dir)).verify_chain().ok
 
 
 def test_every_sent_payload_has_a_raw_verdict(sent: Run) -> None:

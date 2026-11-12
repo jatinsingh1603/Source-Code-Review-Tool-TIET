@@ -59,7 +59,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:codekavach:schema:egress_record:1",
+  "$id": "urn:codekavach:schema:egress_record:2",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "One ledger entry: what left (or would have left) the machine, and when.",
@@ -111,6 +111,32 @@
       "title": "Payload Hash",
       "type": "string"
     },
+    "policy_hash": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Policy Hash"
+    },
+    "policy_rule_key": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z_]+:[A-Za-z0-9_-]{0,64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Policy Rule Key"
+    },
     "prev_hash": {
       "pattern": "^[0-9a-f]{64}$",
       "title": "Prev Hash",
@@ -154,7 +180,7 @@
       "type": "string"
     },
     "schema_version": {
-      "default": 1,
+      "default": 2,
       "title": "Schema Version",
       "type": "integer"
     },
@@ -201,5 +227,5 @@
   "title": "EgressRecord",
   "type": "object",
   "x-data-classification": "metadata",
-  "x-schema-version": 1
+  "x-schema-version": 2
 }

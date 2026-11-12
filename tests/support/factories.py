@@ -283,13 +283,15 @@ def make_finding(**overrides: Any) -> Finding:
     return base.evolve(**overrides) if overrides else base
 
 
-def make_egress_chain(n: int = 3) -> list[EgressRecord]:
-    """``n`` sealed ledger entries; the first is the E02-18 test vector."""
+def make_egress_chain(
+    n: int = 3, *, record_class: type[EgressRecord] = EgressRecord
+) -> list[EgressRecord]:
+    """``n`` sealed ledger entries; with ``EgressRecordV1`` the first is the E02-18 test vector."""
     chain: list[EgressRecord] = []
     for index in range(n):
         previous = chain[-1] if chain else None
         chain.append(
-            EgressRecord.seal(
+            record_class.seal(
                 prev=previous,
                 timestamp=FIXED_NOW + timedelta(seconds=index),
                 scan_id=SCAN_ID,

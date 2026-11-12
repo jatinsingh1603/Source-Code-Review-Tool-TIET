@@ -178,6 +178,9 @@ def detector_registry(settings: Settings) -> DetectorRegistry:
 # stages run in one process; a review that finds no entry (a resumed scan) starts from an empty
 # record, which the aggregation budget treats as no disclosure.
 _DISCLOSURES: dict[str, ScanDisclosure] = {}
+# The path-free policy record of each prepared candidate, handed the same way: candidate id ->
+# (policy hash, winning rule key). Every ledger entry of the scan carries both (E25-03).
+_POLICIES: dict[str, dict[str, tuple[str, str]]] = {}
 
 
 @contextmanager
@@ -211,6 +214,7 @@ def open_egress_session(
             consent=consent,
             dry_run=dry_run,
             disclosure=_DISCLOSURES.pop(scan_id, None),
+            policy=_POLICIES.pop(scan_id, None),
         ) as session,
     ):
         yield session
@@ -335,6 +339,9 @@ class PrivacyPrepareStage:
             candidates=len(candidates),
         )
         _DISCLOSURES[ctx.scan_id] = disclosure
+        _POLICIES[ctx.scan_id] = {
+            str(row.candidate_id): (row.policy_hash, row.rule_key) for row in decisions
+        }
         ctx.artefacts.put(keys.DISCLOSURE, DisclosureRows(rows=disclosure.as_attestation_rows()))
         ctx.artefacts.put(keys.POLICY_DECISIONS, decisions)
         ctx.artefacts.put(keys.SLICES, slices)

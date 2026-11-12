@@ -10,7 +10,7 @@ import pytest
 from pydantic import SecretStr
 
 from codekavach.core.models.canonical import sha256_hex
-from codekavach.core.models.egress import EgressRecord, TokenCounts
+from codekavach.core.models.egress import EgressRecord, EgressRecordV1, TokenCounts
 from codekavach.core.models.enums import EgressOutcome, PrivacyLevel
 from codekavach.core.models.text import SanitisedText
 from codekavach.core.store.layout import StateLayout
@@ -83,8 +83,10 @@ def test_entry_hash_reproduces_the_e02_18_vector(state: Path) -> None:
     chain = make_egress_chain(1)
     writer = open_writer(state, key_source="ephemeral")
     sealed = writer.append(chain[0], SanitisedText(VECTOR_PAYLOAD_TEXT))
-    assert sealed.entry_hash == VECTOR_HASH
     assert sealed == chain[0]
+    assert sealed.schema_version == EgressRecord.SCHEMA_VERSION
+    # The published version-1 vector is unchanged; the writer now seals version 2 (E25-03).
+    assert make_egress_chain(1, record_class=EgressRecordV1)[0].entry_hash == VECTOR_HASH
 
 
 def test_genesis_and_seq_assignment(writer: LedgerWriter) -> None:

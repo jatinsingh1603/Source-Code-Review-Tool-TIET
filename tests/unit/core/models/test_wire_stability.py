@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from codekavach.core.models.candidate import Candidate
-from codekavach.core.models.egress import EgressRecord
+from codekavach.core.models.egress import load_egress_record
 from codekavach.core.models.finding import Finding
 from codekavach.core.models.migrate import load_versioned
 from codekavach.core.models.scan import Scan
@@ -30,7 +30,7 @@ def _document(model: type[Candidate | Finding | Scan]) -> Callable[[str], str]:
 
 
 def _ledger(text: str) -> str:
-    records = [load_versioned(EgressRecord, line) for line in text.splitlines()]
+    records = [load_egress_record(line) for line in text.splitlines()]
     for previous, record in zip([None, *records], records, strict=False):
         record.verify_link(previous)
     return "".join(record.model_dump_json() + "\n" for record in records)

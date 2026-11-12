@@ -5,6 +5,7 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from codekavach.core.models import Severity
+from codekavach.core.models.egress import EgressRecordV1
 from codekavach.core.models.ids import decode_ulid, encode_ulid
 from codekavach.core.models.text import SanitisedText
 from tests.support import factories
@@ -78,7 +79,8 @@ def test_payload_override_recomputes_hash() -> None:
 def test_egress_chain() -> None:
     chain = make_egress_chain(5)
     assert len(chain) == 5
-    assert chain[0].entry_hash == VECTOR_HASH
+    assert chain[0].schema_version == 2
+    assert make_egress_chain(1, record_class=EgressRecordV1)[0].entry_hash == VECTOR_HASH
     previous = None
     for record in chain:
         record.verify_link(previous)

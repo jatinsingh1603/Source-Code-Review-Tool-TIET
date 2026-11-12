@@ -61,7 +61,12 @@ from pydantic import SecretStr, ValidationError
 
 from codekavach.config import Settings
 from codekavach.core.log import get_logger
-from codekavach.core.models.egress import HEX64_PATTERN, EgressRecord, TokenCounts
+from codekavach.core.models.egress import (
+    HEX64_PATTERN,
+    EgressRecord,
+    TokenCounts,
+    load_egress_record,
+)
 from codekavach.core.models.enums import EgressOutcome, PrivacyLevel
 from codekavach.core.models.errors import ModelError
 from codekavach.core.models.ids import CandidateId, ScanId
@@ -160,6 +165,8 @@ class EgressDraft:
     request_hash: str | None = None
     block_code: str | None = None
     ref_seq: int | None = None
+    policy_hash: str | None = None
+    policy_rule_key: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -269,6 +276,8 @@ def _as_draft(value: EgressRecord | EgressDraft) -> EgressDraft:
         request_hash=value.request_hash,
         block_code=value.block_code,
         ref_seq=value.ref_seq,
+        policy_hash=value.policy_hash,
+        policy_rule_key=value.policy_rule_key,
     )
 
 
@@ -293,7 +302,7 @@ def _link_reason(message: str) -> str:
 
 def _decode(raw: bytes) -> EgressRecord | None:
     try:
-        return EgressRecord.model_validate_json(raw)
+        return load_egress_record(raw)
     except ValueError:
         return None
 
@@ -629,7 +638,7 @@ class LedgerReader:
             if type(seq) is not int or seq != expected:
                 return ChainReport(False, walked, expected, "seq_gap")
             try:
-                record = EgressRecord.model_validate_json(raw)
+                record = load_egress_record(raw)  # a chain may mix schema versions
             except ValidationError as error:
                 return ChainReport(False, walked, expected, _entry_reason(error))
             try:
@@ -991,6 +1000,8 @@ class LedgerWriter(LedgerReader):
                 request_hash=draft.request_hash,
                 block_code=draft.block_code,
                 ref_seq=draft.ref_seq,
+                policy_hash=draft.policy_hash,
+                policy_rule_key=draft.policy_rule_key,
             )
             self._write_line(sealed)  # the index catches up on its next use, from the chain
         _LOG.info("ledger_append", seq=sealed.seq, outcome=sealed.outcome.value)

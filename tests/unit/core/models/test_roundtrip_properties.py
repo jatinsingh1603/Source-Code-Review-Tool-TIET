@@ -34,7 +34,7 @@ from codekavach.core.models import (
 )
 from codekavach.core.models.base import KavachModel, VersionedModel
 from codekavach.core.models.candidate import Candidate
-from codekavach.core.models.egress import EgressRecord
+from codekavach.core.models.egress import EgressRecord, EgressRecordV1
 from codekavach.core.models.enums import Language, PrivacyLevel, ScanStatus, SegmentRole
 from codekavach.core.models.evidence import Evidence
 from codekavach.core.models.export import EXPORTED_MODELS
@@ -68,6 +68,7 @@ MODEL_STRATEGIES: dict[type[KavachModel], SearchStrategy[Any]] = {
     Evidence: s.evidences(),
     Finding: s.findings(),
     EgressRecord: s.egress_chains(max_size=5).map(lambda chain: chain[-1]),
+    EgressRecordV1: s.egress_chains(max_size=5, version=1).map(lambda chain: chain[-1]),
     Project: s.projects(),
     Scan: s.scans(),
     ScanSummary: s.summaries(),

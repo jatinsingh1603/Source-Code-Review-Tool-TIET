@@ -19,7 +19,7 @@ from hypothesis import strategies as st
 from hypothesis.strategies import SearchStrategy
 
 from codekavach.core.models.candidate import Candidate
-from codekavach.core.models.egress import EgressRecord, TokenCounts
+from codekavach.core.models.egress import EgressRecord, EgressRecordV1, TokenCounts
 from codekavach.core.models.enums import (
     CandidateKind,
     Confidence,
@@ -775,11 +775,14 @@ def findings() -> SearchStrategy[Finding]:
 
 
 @functools.cache
-def egress_chains(max_size: int = 20) -> SearchStrategy[list[EgressRecord]]:
+def egress_chains(max_size: int = 20, version: int = 2) -> SearchStrategy[list[EgressRecord]]:
     """Sealed ledger chains mixing sent, blocked, completed and failed entries.
 
     Completed and failed entries refer to an earlier sent entry; timestamps never decrease.
+    ``version=1`` seals every entry with ``EgressRecordV1`` (no policy fields); version-2 entries
+    carry a policy hash and a path-free rule key, or neither.
     """
+    record_class: type[EgressRecord] = EgressRecordV1 if version == 1 else EgressRecord
 
     @st.composite
     def build(draw: st.DrawFn) -> list[EgressRecord]:
@@ -797,8 +800,9 @@ def egress_chains(max_size: int = 20) -> SearchStrategy[list[EgressRecord]]:
             outcome = rng.choice(choices)
             moment += timedelta(milliseconds=rng.randint(0, 60_000))
             completion = rng.randint(0, 4000) if outcome is EgressOutcome.COMPLETED else None
+            governed = version >= 2 and rng.random() < 0.7
             chain.append(
-                EgressRecord.seal(
+                record_class.seal(
                     prev=chain[-1] if chain else None,
                     timestamp=moment,
                     scan_id=scan_id,
@@ -823,6 +827,12 @@ def egress_chains(max_size: int = 20) -> SearchStrategy[list[EgressRecord]]:
                     ref_seq=(
                         rng.choice(sent)
                         if outcome in (EgressOutcome.COMPLETED, EgressOutcome.FAILED)
+                        else None
+                    ),
+                    policy_hash=rng.randbytes(32).hex() if governed else None,
+                    policy_rule_key=(
+                        rng.choice(("base:", "path_rule:0", "classification:pci"))
+                        if governed
                         else None
                     ),
                 )
