@@ -97,6 +97,12 @@ name = "payments-api"
 # max_blocks = 5000
 #~ Time limit for lowering one file, in seconds.
 # timeout_seconds = 10.0
+#~ Most steps in one reported taint path; longer paths are trimmed.
+# max_path_steps = 64
+#~ Most paths reported for one sink; the shortest are kept.
+# max_paths_per_sink = 10
+#~ Extra passes over a function with a loop before taint propagation stops.
+# loop_iterations = 3
 #~ Record why each taint step was taken, for debugging a missed finding.
 # explain = false
 

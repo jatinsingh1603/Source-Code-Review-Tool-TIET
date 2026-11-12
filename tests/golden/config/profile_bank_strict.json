@@ -262,9 +262,12 @@
   },
   "taint": {
     "explain": false,
+    "loop_iterations": 3,
     "max_access_path": 3,
     "max_blocks": 5000,
     "max_function_nodes": 20000,
+    "max_path_steps": 64,
+    "max_paths_per_sink": 10,
     "timeout_seconds": 10.0
   }
 }
