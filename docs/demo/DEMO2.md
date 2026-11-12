@@ -29,45 +29,46 @@ If `ps` stays at `(health: starting)` for more than a minute, run `docker compos
 
 ## 2. Log in
 
-Open `http://127.0.0.1:8080`. Log in as `admin` with the password from `.env` (default `kavach-admin`; the server also prints it in its log at first start). The Overview shows the project count, open findings by severity and the trend across scans.
+Open `http://127.0.0.1:8080`. Log in as `admin` with the password from `.env` (default `kavach-admin`; the server also prints it in its log at first start). The Overview shows open findings by severity, the privacy score, bytes egressed, the zero-leak check, the trend across scans, the risk matrix, the OWASP heatmap and the privacy guard status. Choose the project in the first pill of the top bar.
 
 The project **KavachBank (sample)** is created on first start from `fixtures/kavachbank`, a small banking application with planted vulnerabilities and planted secrets. Its ground truth is in `fixtures/kavachbank/ground-truth/manifest.yaml`.
 
 ## 3. Check the model before you need it
 
-Settings, then Providers: press **Test** next to `agentrouter`. It should answer `ok` with a latency of a few seconds and the model `gpt-5.6-sol`. If it fails, do not debug in front of the audience; use the fallback (section 8).
+Providers (side navigation, under Deliver): press **Run health checks**; the `agentrouter` card shows its status, with the latency in the tooltip. It should answer `ok` with a latency of a few seconds and the model `gpt-5.6-sol`. If it fails, do not debug in front of the audience; use the fallback (section 8).
 
 ## 4. Scan the sample with the real model
 
-1. Projects, **KavachBank (sample)**, **New scan**.
+1. With **KavachBank (sample)** selected in the top bar, Overview, **New scan**.
 2. Privacy level **L3** (the default: slices around each candidate, secrets as typed placeholders, identifiers pseudonymised).
-3. Provider `agentrouter`, model `gpt-5.6-sol`, **Send to provider** on.
-4. Start. The scan page streams the stages (ingest, parse, rules, taint, engines, privacy, LLM review, restore, rate) with progress and a log, and findings appear as they are confirmed. A scan of the sample takes a minute or two; each model call takes about four seconds.
+3. Provider `agentrouter`, model `gpt-5.6-sol`, **No-send (dry run)** off.
+4. **Start scan**. The live view shows the nine-stage pipeline with counts, the egress meter (payloads, bytes, secrets, listed terms) and the streaming log. A scan of the sample takes a minute or two; each model call takes about four seconds.
 
 Say while it runs: the deterministic engines (own rules, taint, Opengrep, Bandit) find the candidates; the model only reviews a sanitised slice of each one and says whether it is exploitable and why.
 
 ## 5. Walk through the findings
 
-Open the scan's findings. Filter by severity **critical** and **high**. Open one SQL injection or command injection finding and show, top to bottom:
+Press **Open findings**. Pick the **Critical and high** view. Open one SQL injection or command injection finding and show, top to bottom:
 
-- The code snippet with line numbers, on the real file and line, with the real identifiers. The payloads sent to the model carried pseudonyms instead of these names (the ledger in the Privacy view shows each payload); the real names were restored locally from the vault.
+- The tabs **What the LLM saw** (the pseudonymised payload) and **Real code** (the real file and line, kept local); **Inspect side by side** opens Privacy Inspect. The real names were restored locally from the vault.
 - The taint path: source, steps, sink.
 - The LLM verdict: vulnerable or not, confidence, reasoning, impact and remediation, with the provider and model that produced it.
 - The classification: CWE, OWASP Top 10, ASVS, CAPEC, CVSS 4.0 and 3.1 vectors with scores, likelihood and impact, and the compliance clauses.
-- Status workflow: mark one finding **confirmed** and one **false positive** with a comment, then show its history.
+- Status workflow: change the status in Details, add a comment, and show the Activity timeline.
 
 ## 6. Privacy Centre
 
-Open the scan's Privacy view:
+Open **Privacy Centre**, then **Privacy Inspect** and **Egress Ledger** from the side navigation:
 
-- Level, payloads sent, payloads blocked by the guard, placeholders by type, pseudonyms, tokens sent.
+- Privacy Centre: the privacy score and its parts, exposure budgets, the invariant suite, policy decisions and the explanation for one file, and the attestation (Download PDF or JSON).
 - **Zero-leak check**: how many listed terms were searched in every payload and how many occurrences were found (expected 0). Say what it does not cover: it is verbatim only, and the shape of the code still leaves (see the hub's questions).
-- **Ledger**: the hash-chained list of every payload. Open one entry: original on the left, the exact payload on the right, secrets (red), personal data, renamed identifiers (blue) and literals marked. Press **Verify chain** and show it passes.
+- **Privacy Inspect**: original on the left, the exact payload on the right, secrets (red), renamed identifiers (blue) and generalised literals marked.
+- **Egress Ledger**: the hash-chained list of every payload. Select a record to see it; press **Verify again** and show it passes.
 - The attestation text that goes into the report.
 
 ## 7. Reports
 
-From the scan, Reports: download **PDF** and open it (executive summary, risk matrix, findings with evidence and remediation, privacy attestation). Mention the other formats: HTML, SARIF (for GitHub code scanning), JSON, CSV, XLSX, Markdown and DOCX. Reports contain client code: keep them with the classification of the code.
+Reports: pick the formats in the builder, press **Generate report** and open the **PDF** (executive summary, risk matrix, findings with evidence and remediation, privacy attestation). Mention the other formats: HTML, SARIF (for GitHub code scanning), JSON, CSV, XLSX, Markdown and DOCX. Reports contain client code: keep them with the classification of the code.
 
 ## 8. Fallback when the network or the key fails
 

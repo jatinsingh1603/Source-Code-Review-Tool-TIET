@@ -52,7 +52,7 @@ export default function LoginPage() {
   const tryDemo = () => {
     nextRef.current = "/demo";
     if (api.isMock) {
-      void login("demo", "demo").then(() => navigate("/demo", { replace: true }));
+      void login("admin", "kavach-admin").then(() => navigate("/demo", { replace: true }));
       return;
     }
     setDemoHint(true);

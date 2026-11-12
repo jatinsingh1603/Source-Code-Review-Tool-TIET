@@ -42,18 +42,25 @@ src/
                 events.ts (SSE over fetch with Last-Event-ID, backoff, polling fallback),
                 useScanEvents.ts (live scan reducer)
   app/          router, session (auth, role guards), current project, selected scan
-  components/   ui/ design-system primitives, layout/ shell, charts/, feature components
-  lib/          formatting, privacy-level semantics, CVSS parsing, markup segmentation, theme
+  components/   ui/ primitives that emit the design's markup, layout/ shell and command palette,
+                feature components (privacy markup, frontier chart, filters, GitHub sync)
+  data/         sample-eval/: copies of the committed evaluation results (docs/research/results)
+  lib/          formatting and display conventions, privacy-level semantics, policy globs,
+                CVSS parsing, markup segmentation, preferences
   mock/         fixture data and the in-browser mock backend
   pages/        one file per route
-  styles/       tokens.css (all design tokens) and index.css
+  styles/       fonts.ts (bundled @fontsource fonts) and index.css (Tailwind utilities, overlays)
 ```
 
-## Design tokens
+## Design
 
-Every colour, font, radius, shadow and layout size is a CSS variable in `src/styles/tokens.css`, with a light set on `:root` and a dark set on `:root.dark`; `tailwind.config.ts` maps them into the Tailwind theme (`bg-surface`, `text-fg-muted`, `bg-sev-critical-soft`, `text-lvl-3`, ...). To apply a new design system, replace the values in `tokens.css`; components do not hard-code colours. Colours are RGB channel triplets so opacity modifiers work (`bg-primary/10`).
+The dashboard reproduces the approved design in [`design/`](design/README.md): `design/tokens.css` and `design/components.css` are imported as they are (in `main.tsx`), Tailwind uses `design/tailwind.preset.cjs` without its preflight, and components emit the class names listed in `design/COMPONENTS.md`. Screens follow `design/SCREENS.md`. When the code and the design disagree, the design wins; change the design first.
 
-Severity is always shown as colour plus icon plus label. The chart severity colours (`--ck-chart-*`) were checked for colour-vision-deficiency separation in both themes; badge colours are separate tokens tuned for text contrast.
+Light theme only, as designed. Fonts (IBM Plex Sans, Mono and Serif; Noto Sans Devanagari for the brand line) are bundled from `@fontsource`, so the dashboard makes no request outside its own server and works air-gapped. Icons are inline SVG.
+
+Severity is always a colour plus a marker shape plus a word; privacy levels are neutral grey with a five-bar meter.
+
+Values the API does not report are not invented: an element is derived from data the client has (for example the risk matrix from the findings) or shows an empty state. The Evaluation screen shows the committed sample results, labelled "Sample results", until the server has its own runs.
 
 ## Privacy levels in the interface
 
@@ -61,8 +68,8 @@ The interface follows `docs/ARCHITECTURE.md` section 6.1: L0 sends nothing, L4 s
 
 ## Rendering rules
 
-Finding text, model reasoning and code come from untrusted sources and are always rendered as text: no `dangerouslySetInnerHTML` (lint rule plus a test), no Markdown-to-HTML, no remote images or fonts. The HTML report preview is shown in a sandboxed iframe with scripts disabled. The bearer token lives in memory and `sessionStorage`, so closing the tab ends the session.
+Finding text, model reasoning and code come from untrusted sources and are always rendered as text: no `dangerouslySetInnerHTML` (lint rule plus a test), no Markdown-to-HTML, no remote images or fonts. The HTML report preview is shown in a sandboxed iframe with scripts disabled. The bearer token lives in memory and `sessionStorage`, so closing the tab ends the session, unless the user ticks "Remember this device" at sign-in.
 
 ## Pages
 
-Login, Overview (stat tiles, severity donut, findings trend, recent scans, privacy posture), Projects (sample, local path, git URL, archive upload), Project detail (scan history), New scan (source, privacy level with an egress preview, provider and model with a connection test, send toggle, rules), Scan (live stage stepper, progress, log and findings from the event stream; cancel), Findings (filters in the URL, bulk status change, GitHub sync), Finding detail (code evidence, data-flow path, model verdict, CVSS v4 and v3.1, OWASP, CWE, ASVS, CAPEC, compliance, remediation, triage, history), Privacy Centre (attestation, placeholders by type, ledger with hash-chain status and verification, side-by-side original and payload viewer), Reports (download every format, inline HTML preview), Providers and settings (provider cards with test, defaults, policy editor), Users (roles, activation, create and delete).
+The nineteen screens of `design/SCREENS.md`: Login, Overview, Set up a project, Scan launch and live view, Findings, Finding detail, Privacy Centre, Privacy Inspect, Egress Ledger, Privacy policy, Providers, Reports, Integrations, Evaluation, Admin (users, organisations, API tokens, provider keys, audit log, retention, system health), Settings, Demo mode and How it works, plus Projects, Project detail and Scans lists in the same table pattern. ⌘K / Ctrl+K opens the command palette.

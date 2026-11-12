@@ -206,7 +206,7 @@ export default function LedgerPage() {
         </div>
       )}
 
-      <section className={seq !== null ? "g g-side" : "g"}>
+      <section className={seq !== null ? "g g-side" : "g"} style={seq !== null ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}>
         <div className="stack">
           <div className="row">
             <label className="search" style={{ maxWidth: 280, background: "var(--surface)", cursor: "text" }}>

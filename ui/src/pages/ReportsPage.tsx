@@ -8,7 +8,7 @@ import { isOpen, sevCounts, sortScans } from "@/lib/domain";
 import { fmtDate, fmtInt, fmtShort, scanLabel } from "@/lib/display";
 import { frameworkLabel } from "@/lib/format";
 import { CWE_SHORT } from "@/lib/taxonomy";
-import { Button, Content, Empty, ErrorBanner, Hash, Icon, PageHeader, Skeleton, useToast } from "@/components/ui";
+import { Button, Content, Dialog, Empty, ErrorBanner, Hash, Icon, PageHeader, Skeleton, useToast } from "@/components/ui";
 
 const FORMAT_NAME: Record<string, string> = {
   pdf: "PDF",
@@ -74,11 +74,12 @@ export default function ReportsPage() {
     if (ok) toast.success("Report generated", `${ok} file${ok === 1 ? "" : "s"} downloaded.`);
   };
 
+  const [preview, setPreview] = useState<string | null>(null);
   const openHtml = async () => {
     if (!scanId) return;
     try {
       const { blob } = await fetchReport(scanId, "html");
-      window.open(URL.createObjectURL(blob), "_blank", "noopener");
+      setPreview(await blob.text());
     } catch (e) {
       toast.error("Preview failed", e instanceof Error ? e.message : undefined);
     }
@@ -278,6 +279,11 @@ export default function ReportsPage() {
           </div>
         </section>
       )}
+      <Dialog open={preview !== null} onClose={() => setPreview(null)} title="HTML report" size="lg" description="Shown in a sandbox: scripts in the report do not run.">
+        {preview !== null && (
+          <iframe title="HTML report preview" sandbox="" srcDoc={preview} style={{ width: "100%", height: "70vh", border: "1px solid var(--border)", borderRadius: 6 }} />
+        )}
+      </Dialog>
     </Content>
   );
 }
