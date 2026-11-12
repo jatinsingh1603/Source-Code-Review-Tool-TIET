@@ -111,7 +111,9 @@ def rate(
 def test_without_restored_verdicts_every_candidate_still_becomes_a_finding(tmp_path: Path) -> None:
     findings, summary, _ = rate(tmp_path, [make_candidate()])
     assert len(findings) == 1 and summary.findings_total == 1
-    assert findings[0].severity is Severity.HIGH
+    # SQL injection on an unauthenticated path: the family's CVSS v4.0 vector scores critical.
+    assert findings[0].severity is Severity.CRITICAL
+    assert findings[0].cvss4_score is not None and findings[0].cvss4_score >= 9.0
     assert findings[0].provenance.llm_reviews == ()
     assert summary.candidates_reviewed_by_llm == 0
 
@@ -122,7 +124,7 @@ def test_a_dismissing_verdict_keeps_the_finding_open_and_records_the_reasoning(
     findings, summary, _ = rate(tmp_path, [make_candidate()], [verdict(False)])
     (finding,) = findings
     assert finding.status is FindingStatus.OPEN
-    assert finding.severity is Severity.HIGH
+    assert finding.severity is Severity.CRITICAL  # the model never moves the severity by default
     assert finding.confidence is Confidence.LOW
     assert finding.remediation == "Use a parameterised query."
     assert summary.findings_total == 1 and summary.candidates_reviewed_by_llm == 1
@@ -137,7 +139,9 @@ def test_a_dropped_verdict_adds_no_model_text(tmp_path: Path) -> None:
     )
     findings, summary, _ = rate(tmp_path, [make_candidate()], [dropped])
     (finding,) = findings
-    assert finding.remediation == "" and finding.impact.narrative == ""
+    assert finding.remediation.startswith("Use parameterised queries")  # knowledge base default
+    assert "attacker" not in finding.impact.narrative
+    assert finding.impact.narrative.startswith("CVSS v4.0")
     assert summary.candidates_reviewed_by_llm == 0
 
 

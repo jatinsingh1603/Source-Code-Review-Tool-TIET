@@ -58,15 +58,19 @@ weaknesses:
      summary: "A process is started with secrets on its command line or environment where other local users can read them."}
   - {id: 242, name: Use of Inherently Dangerous Function, abstraction: base, family: memory-safety, asvs: [V5.4.1], capec: [],
      summary: "A function that can never be used safely (for example gets) is called."}
+  - {id: 250, name: Execution with Unnecessary Privileges, abstraction: base, family: security-misconfiguration, owasp: A05, owasp_basis: derived, asvs: [V14.2.6], capec: [104, 470, 69],
+     summary: "Code runs with more privileges than it needs (for example a root or privileged container), amplifying any other weakness."}
   - {id: 252, name: Unchecked Return Value, abstraction: base, family: input-validation, asvs: [], capec: [],
      summary: "The return value of a function is not checked, so a failure goes unnoticed."}
   - {id: 259, name: Use of Hard-coded Password, abstraction: variant, family: hardcoded-secret, owasp: A07, owasp_basis: official, asvs: [V2.10.4, V6.4.1], capec: [191, 70],
      summary: "A password is embedded in the source code or configuration shipped with it."}
   - {id: 269, name: Improper Privilege Management, abstraction: class, family: broken-access-control, top25: 15, owasp: A04, owasp_basis: official, asvs: [V4.1.3], capec: [122, 233, 58],
      summary: "Privileges are not properly assigned, modified, tracked or checked, giving an actor unintended control."}
+  - {id: 284, name: Improper Access Control, abstraction: pillar, family: broken-access-control, owasp: A01, owasp_basis: official, asvs: [V4.1.1], capec: [19],
+     summary: "Access to a resource is not restricted, or is restricted incorrectly, for unauthorised actors."}
   - {id: 287, name: Improper Authentication, abstraction: class, family: broken-authentication, top25: 14, owasp: A07, owasp_basis: official, asvs: [], capec: [114, 115, 151, 194],
      summary: "A claim of identity is not proven, or is proven insufficiently."}
-  - {id: 295, name: Improper Certificate Validation, abstraction: base, family: security-misconfiguration, owasp: A07, owasp_basis: official, asvs: [V9.2.1], capec: [459, 475],
+  - {id: 295, name: Improper Certificate Validation, abstraction: base, family: weak-cryptography, owasp: A07, owasp_basis: official, asvs: [V9.2.1], capec: [459, 475],
      summary: "TLS certificates are not validated (for example verify=False), enabling interception of the connection."}
   - {id: 306, name: Missing Authentication for Critical Function, abstraction: base, family: broken-authentication, top25: 25, owasp: A07, owasp_basis: official, asvs: [], capec: [12, 36, 62],
      summary: "A function that needs a proven identity, or consumes significant resources, does not require authentication."}
@@ -118,10 +122,16 @@ weaknesses:
      summary: "A pointer expected to be valid is NULL when dereferenced, typically crashing the process."}
   - {id: 489, name: Active Debug Code, abstraction: base, family: security-misconfiguration, owasp: A05, owasp_basis: derived, asvs: [V14.3.2], capec: [121],
      summary: "Debug code or debug mode (for example Flask debug=True) is left enabled in deployed code."}
+  - {id: 494, name: Download of Code Without Integrity Check, abstraction: base, family: integrity, owasp: A08, owasp_basis: official, asvs: [V10.3.2], capec: [184, 185, 186, 187],
+     summary: "Code or images are downloaded and used without verifying their origin and integrity."}
   - {id: 502, name: Deserialization of Untrusted Data, abstraction: base, family: deserialisation, top25: 16, owasp: A08, owasp_basis: official, asvs: [V5.5.1, V5.5.3], capec: [586],
      summary: "Untrusted data is deserialised with a mechanism that can instantiate objects, often leading to remote code execution."}
+  - {id: 522, name: Insufficiently Protected Credentials, abstraction: class, family: broken-authentication, owasp: A04, owasp_basis: official, asvs: [V2.4.1], capec: [102, 50],
+     summary: "Credentials are transmitted or stored in a way that lets them be intercepted or retrieved."}
   - {id: 532, name: Insertion of Sensitive Information into Log File, abstraction: base, family: information-exposure, owasp: A09, owasp_basis: official, asvs: [V7.1.1, V7.1.2], capec: [215],
      summary: "Secrets, credentials or personal data are written to log files."}
+  - {id: 539, name: Use of Persistent Cookies Containing Sensitive Information, abstraction: base, family: security-misconfiguration, owasp: A04, owasp_basis: official, asvs: [V3.4.1], capec: [21, 31, 39],
+     summary: "Sensitive information is kept in cookies that persist beyond the session."}
   - {id: 598, name: Use of GET Request Method With Sensitive Query Strings, abstraction: variant, family: information-exposure, owasp: A04, owasp_basis: official, asvs: [V8.3.1], capec: [],
      summary: "Sensitive data travels in URL query strings, where it is logged and cached."}
   - {id: 601, name: "URL Redirection to Untrusted Site ('Open Redirect')", abstraction: base, family: csrf, owasp: A01, owasp_basis: official, asvs: [V5.1.5], capec: [178],
@@ -136,16 +146,22 @@ weaknesses:
      summary: "A record is looked up by an identifier from the request without checking that the user may access it (IDOR)."}
   - {id: 643, name: "Improper Neutralization of Data within XPath Expressions ('XPath Injection')", abstraction: base, family: sql-injection, owasp: A03, owasp_basis: official, asvs: [V5.3.10], capec: [83],
      summary: "An XPath query is built from external input without neutralisation."}
+  - {id: 668, name: Exposure of Resource to Wrong Sphere, abstraction: class, family: information-exposure, owasp: A01, owasp_basis: official, asvs: [], capec: [],
+     summary: "A resource is made available to actors who should not be able to reach it (for example a service bound to all interfaces or a mounted host path)."}
   - {id: 680, name: Integer Overflow to Buffer Overflow, abstraction: compound, family: memory-safety, asvs: [V5.4.3], capec: [10, 100, 14, 24, 45, 46, 47, 8, 9, 92],
      summary: "An integer overflow causes less memory to be allocated than needed, leading to a buffer overflow."}
   - {id: 732, name: Incorrect Permission Assignment for Critical Resource, abstraction: class, family: broken-access-control, owasp: A01, owasp_basis: derived, asvs: [V4.1.3], capec: [1, 17, 122, 127],
      summary: "A security-critical resource (file, key, directory) is given permissions that let unintended actors read or modify it."}
+  - {id: 770, name: Allocation of Resources Without Limits or Throttling, abstraction: base, family: denial-of-service, asvs: [], capec: [125, 130, 147],
+     summary: "Resources are allocated on request without limits (no memory, CPU or rate limits), enabling exhaustion."}
   - {id: 776, name: "Improper Restriction of Recursive Entity References in DTDs ('XML Entity Expansion')", abstraction: base, family: xml-external-entities, owasp: A05, owasp_basis: official, asvs: [V5.5.2], capec: [197],
      summary: "Recursive entity definitions in a DTD are expanded without limit (billion laughs)."}
   - {id: 787, name: Out-of-bounds Write, abstraction: base, family: memory-safety, top25: 2, asvs: [V5.4.1], capec: [100, 123],
      summary: "Data is written past the end, or before the beginning, of the intended buffer."}
   - {id: 798, name: Use of Hard-coded Credentials, abstraction: base, family: hardcoded-secret, top25: 22, owasp: A07, owasp_basis: official, asvs: [V2.10.4, V6.4.1], capec: [191, 70],
      summary: "Credentials such as passwords, API keys or tokens are embedded in the source code."}
+  - {id: 829, name: Inclusion of Functionality from Untrusted Control Sphere, abstraction: class, family: integrity, owasp: A08, owasp_basis: official, asvs: [V10.3.2], capec: [175, 201, 251],
+     summary: "Functionality (scripts, actions, images, plug-ins) is included from a source outside the product's control."}
   - {id: 862, name: Missing Authorization, abstraction: class, family: broken-access-control, top25: 9, owasp: A01, owasp_basis: official, asvs: [V4.1.1, V4.1.3, V4.2.1], capec: [665],
      summary: "An action or resource is reachable without any check that the actor is allowed to use it."}
   - {id: 863, name: Incorrect Authorization, abstraction: class, family: broken-access-control, top25: 18, owasp: A01, owasp_basis: official, asvs: [V4.1.3, V4.2.1], capec: [122, 1],

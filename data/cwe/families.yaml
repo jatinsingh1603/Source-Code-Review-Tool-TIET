@@ -390,8 +390,8 @@ families:
     compliance: [secure-coding-injection]
   security-misconfiguration:
     title: Insecure configuration and session handling
-    cvss4: CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:P/VC:L/VI:L/VA:N/SC:N/SI:N/SA:N
-    cvss31: CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N
+    cvss4: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:P/VC:L/VI:L/VA:N/SC:N/SI:N/SA:N
+    cvss31: CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N
     threat:
       skill: 4
       motive: 5
