@@ -1,0 +1,166 @@
+{
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "nodejsscan",
+          "rules": [
+            {
+              "id": "join_resolve_path_traversal",
+              "name": "JoinResolvePathTraversal",
+              "properties": {
+                "tags": [
+                  "security",
+                  "external/cwe/cwe-22"
+                ]
+              },
+              "helpUri": "https://ajinabraham.github.io/nodejsscan/#join_resolve_path_traversal"
+            },
+            {
+              "id": "express_xss",
+              "name": "ExpressXss",
+              "properties": {
+                "tags": [
+                  "security",
+                  "external/cwe/cwe-79"
+                ]
+              },
+              "helpUri": "https://ajinabraham.github.io/nodejsscan/#express_xss"
+            }
+          ],
+          "version": "1.0.2",
+          "informationUri": "https://github.com/ajinabraham/njsscan",
+          "semanticVersion": "1.0.2"
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "endTimeUtc": "2026-11-12T21:54:36Z"
+        }
+      ],
+      "results": [
+        {
+          "message": {
+            "text": "Path constructed with user input can result in Path Traversal. Ensure that user input does not reach `join()` or `resolve()`. "
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "  const file = path.join(config.exportDir, req.query.file);"
+                  },
+                  "endColumn": 59,
+                  "endLine": 8,
+                  "startColumn": 16,
+                  "startLine": 8
+                },
+                "artifactLocation": {
+                  "uri": "services/web/exporter.js"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "owasp-web": "A5: Broken Access Control",
+            "cwe": "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+          },
+          "ruleId": "join_resolve_path_traversal",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Path constructed with user input can result in Path Traversal. Ensure that user input does not reach `join()` or `resolve()`. "
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "  const resolved = path.resolve(root, req.query.file);"
+                  },
+                  "endColumn": 54,
+                  "endLine": 14,
+                  "startColumn": 20,
+                  "startLine": 14
+                },
+                "artifactLocation": {
+                  "uri": "services/web/exporter.js"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "owasp-web": "A5: Broken Access Control",
+            "cwe": "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+          },
+          "ruleId": "join_resolve_path_traversal",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Untrusted User Input in Response will result in Reflected Cross Site Scripting Vulnerability."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "  res.send('<h1>Welcome back, ' + req.query.name + '</h1>');"
+                  },
+                  "endColumn": 60,
+                  "endLine": 18,
+                  "startColumn": 3,
+                  "startLine": 18
+                },
+                "artifactLocation": {
+                  "uri": "services/web/renderer.js"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "owasp-web": "A1: Injection",
+            "cwe": "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+          },
+          "ruleId": "express_xss",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Untrusted User Input in Response will result in Reflected Cross Site Scripting Vulnerability."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "  res.send('<h1>Welcome back, ' + escapeHtml(req.query.name) + '</h1>');"
+                  },
+                  "endColumn": 72,
+                  "endLine": 22,
+                  "startColumn": 3,
+                  "startLine": 22
+                },
+                "artifactLocation": {
+                  "uri": "services/web/renderer.js"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "owasp-web": "A1: Injection",
+            "cwe": "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+          },
+          "ruleId": "express_xss",
+          "ruleIndex": 1
+        }
+      ]
+    }
+  ],
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
+}

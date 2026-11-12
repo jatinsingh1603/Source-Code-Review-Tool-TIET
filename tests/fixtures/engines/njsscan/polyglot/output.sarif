@@ -1,0 +1,67 @@
+{
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "nodejsscan",
+          "rules": [
+            {
+              "id": "generic_os_command_exec",
+              "name": "GenericOsCommandExec",
+              "properties": {
+                "tags": [
+                  "security",
+                  "external/cwe/cwe-78"
+                ]
+              },
+              "helpUri": "https://ajinabraham.github.io/nodejsscan/#generic_os_command_exec"
+            }
+          ],
+          "version": "1.0.2",
+          "informationUri": "https://github.com/ajinabraham/njsscan",
+          "semanticVersion": "1.0.2"
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "endTimeUtc": "2026-11-12T21:54:20Z"
+        }
+      ],
+      "results": [
+        {
+          "message": {
+            "text": "User controlled data in 'child_process.exec()' can result in Remote OS Command Execution."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "  cp.exec('ls ' + req.query.dir);  // PG-VULN-002"
+                  },
+                  "endColumn": 33,
+                  "endLine": 6,
+                  "startColumn": 3,
+                  "startLine": 6
+                },
+                "artifactLocation": {
+                  "uri": "server.js"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "owasp-web": "A1: Injection",
+            "cwe": "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+          },
+          "ruleId": "generic_os_command_exec",
+          "ruleIndex": 0
+        }
+      ]
+    }
+  ],
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
+}

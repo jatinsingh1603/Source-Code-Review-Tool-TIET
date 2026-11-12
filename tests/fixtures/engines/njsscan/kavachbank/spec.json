@@ -1,0 +1,9 @@
+{
+  "engine_version": "1.0.2",
+  "output_file": "output.sarif",
+  "languages": [
+    "javascript"
+  ],
+  "planted_secrets": [],
+  "recording": "Captured from a real run of njsscan 1.0.2 via --engines-live on files copied from fixtures/kavachbank."
+}

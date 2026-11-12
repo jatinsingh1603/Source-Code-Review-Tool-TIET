@@ -1,0 +1,150 @@
+[
+  {
+    "cwe": [
+      22
+    ],
+    "engine": "njsscan",
+    "engine_confidence": null,
+    "engine_severity": "medium",
+    "engine_version": "1.0.2",
+    "fingerprint": "ckfp1:e663e2c71c8fd53cb015e4bf01041d8d",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 59,
+        "end_line": 8,
+        "path": "services/web/exporter.js",
+        "start_col": 16,
+        "start_line": 8,
+        "symbol": null
+      }
+    ],
+    "message": "Path constructed with user input can result in Path Traversal. Ensure that user input does not reach `join()` or `resolve()`.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "nodejsscan@1.0.2"
+      ]
+    ],
+    "rule_id": "join_resolve_path_traversal",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      22
+    ],
+    "engine": "njsscan",
+    "engine_confidence": null,
+    "engine_severity": "medium",
+    "engine_version": "1.0.2",
+    "fingerprint": "ckfp1:020daf659aa8fa7509b2d3306aec36b7",
+    "id": "cand-1",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 54,
+        "end_line": 14,
+        "path": "services/web/exporter.js",
+        "start_col": 20,
+        "start_line": 14,
+        "symbol": null
+      }
+    ],
+    "message": "Path constructed with user input can result in Path Traversal. Ensure that user input does not reach `join()` or `resolve()`.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "nodejsscan@1.0.2"
+      ]
+    ],
+    "rule_id": "join_resolve_path_traversal",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      79
+    ],
+    "engine": "njsscan",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "1.0.2",
+    "fingerprint": "ckfp1:c542a9a484d4301df6f5131401f6dd7d",
+    "id": "cand-2",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 60,
+        "end_line": 18,
+        "path": "services/web/renderer.js",
+        "start_col": 3,
+        "start_line": 18,
+        "symbol": null
+      }
+    ],
+    "message": "Untrusted User Input in Response will result in Reflected Cross Site Scripting Vulnerability.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "nodejsscan@1.0.2"
+      ]
+    ],
+    "rule_id": "express_xss",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      79
+    ],
+    "engine": "njsscan",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "1.0.2",
+    "fingerprint": "ckfp1:cd85baa91d5da6712951ed380c88c4f5",
+    "id": "cand-3",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 72,
+        "end_line": 22,
+        "path": "services/web/renderer.js",
+        "start_col": 3,
+        "start_line": 22,
+        "symbol": null
+      }
+    ],
+    "message": "Untrusted User Input in Response will result in Reflected Cross Site Scripting Vulnerability.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "nodejsscan@1.0.2"
+      ]
+    ],
+    "rule_id": "express_xss",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

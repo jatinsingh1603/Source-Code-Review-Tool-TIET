@@ -1,0 +1,298 @@
+[
+  {
+    "cwe": [
+      89
+    ],
+    "engine": "bandit",
+    "engine_confidence": "medium",
+    "engine_severity": "medium",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:5f332121067bde1ea870a87170dbcf89",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 11,
+        "path": "services/api/accounts.py",
+        "start_col": null,
+        "start_line": 11,
+        "symbol": null
+      }
+    ],
+    "message": "Possible SQL injection vector through string-based query construction.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B608",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      78
+    ],
+    "engine": "bandit",
+    "engine_confidence": "high",
+    "engine_severity": "low",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:a223613e356d50990c07aded01519b64",
+    "id": "cand-1",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 4,
+        "path": "services/api/reports.py",
+        "start_col": null,
+        "start_line": 4,
+        "symbol": null
+      }
+    ],
+    "message": "Consider possible security implications associated with the subprocess module.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B404",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      78
+    ],
+    "engine": "bandit",
+    "engine_confidence": "high",
+    "engine_severity": "high",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:f81604d348ca40aca0bce971b3c0278f",
+    "id": "cand-2",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 9,
+        "path": "services/api/reports.py",
+        "start_col": null,
+        "start_line": 9,
+        "symbol": null
+      }
+    ],
+    "message": "subprocess call with shell=True identified, security issue.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B602",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      78
+    ],
+    "engine": "bandit",
+    "engine_confidence": "high",
+    "engine_severity": "high",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:4980f4f4417d5df3ad23b01e29f698ba",
+    "id": "cand-3",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 16,
+        "path": "services/api/reports.py",
+        "start_col": null,
+        "start_line": 16,
+        "symbol": null
+      }
+    ],
+    "message": "subprocess call with shell=True identified, security issue.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B602",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      327
+    ],
+    "engine": "bandit",
+    "engine_confidence": "high",
+    "engine_severity": "high",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:d7a442224a09dad1c908d50d2891ec7a",
+    "id": "cand-4",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 7,
+        "path": "services/api/security.py",
+        "start_col": null,
+        "start_line": 7,
+        "symbol": null
+      }
+    ],
+    "message": "The pyCrypto library and its module AES are no longer actively maintained and have been deprecated. Consider using pyca/cryptography library.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B413",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      327
+    ],
+    "engine": "bandit",
+    "engine_confidence": "high",
+    "engine_severity": "high",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:4a006263520ed072b494943943856afa",
+    "id": "cand-5",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 15,
+        "path": "services/api/security.py",
+        "start_col": null,
+        "start_line": 15,
+        "symbol": null
+      }
+    ],
+    "message": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B324",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      502
+    ],
+    "engine": "bandit",
+    "engine_confidence": "high",
+    "engine_severity": "low",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:48da00f270584d4f04992d68f7061ace",
+    "id": "cand-6",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 4,
+        "path": "services/api/serialisation.py",
+        "start_col": null,
+        "start_line": 4,
+        "symbol": null
+      }
+    ],
+    "message": "Consider possible security implications associated with pickle module.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B403",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      502
+    ],
+    "engine": "bandit",
+    "engine_confidence": "high",
+    "engine_severity": "medium",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:468e6c19ef999f21a9248d7c3c3727a3",
+    "id": "cand-7",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 14,
+        "path": "services/api/serialisation.py",
+        "start_col": null,
+        "start_line": 14,
+        "symbol": null
+      }
+    ],
+    "message": "Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B301",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

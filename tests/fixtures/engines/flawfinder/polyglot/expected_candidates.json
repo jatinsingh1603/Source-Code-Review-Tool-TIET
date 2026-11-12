@@ -1,0 +1,77 @@
+[
+  {
+    "cwe": [
+      119,
+      120
+    ],
+    "engine": "flawfinder",
+    "engine_confidence": "low",
+    "engine_severity": "low",
+    "engine_version": "2.0.20",
+    "fingerprint": "ckfp1:68841dd24f09cfa9544f9574063e1f0d",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "c",
+    "locations": [
+      {
+        "end_col": 17,
+        "end_line": 5,
+        "path": "vuln.c",
+        "start_col": 5,
+        "start_line": 5,
+        "symbol": null
+      }
+    ],
+    "message": "buffer/char:Statically-sized arrays can be improperly restricted, leading to potential overflows or other issues (CWE-119!/CWE-120).",
+    "properties": [
+      [
+        "cwe.source",
+        "taxonomy"
+      ],
+      [
+        "engine.run",
+        "Flawfinder@2.0.20"
+      ]
+    ],
+    "rule_id": "FF1013",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      120
+    ],
+    "engine": "flawfinder",
+    "engine_confidence": "low",
+    "engine_severity": "high",
+    "engine_version": "2.0.20",
+    "fingerprint": "ckfp1:982d75638498772f62f22d347d5a0306",
+    "id": "cand-1",
+    "kind": "vulnerability",
+    "language": "c",
+    "locations": [
+      {
+        "end_col": 37,
+        "end_line": 6,
+        "path": "vuln.c",
+        "start_col": 5,
+        "start_line": 6,
+        "symbol": null
+      }
+    ],
+    "message": "buffer/strcpy:Does not check for buffer overflows when copying to destination [MS-banned] (CWE-120).",
+    "properties": [
+      [
+        "cwe.source",
+        "taxonomy"
+      ],
+      [
+        "engine.run",
+        "Flawfinder@2.0.20"
+      ]
+    ],
+    "rule_id": "FF1001",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

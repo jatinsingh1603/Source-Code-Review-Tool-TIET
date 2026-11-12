@@ -1,0 +1,39 @@
+[
+  {
+    "cwe": [
+      78
+    ],
+    "engine": "njsscan",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "1.0.2",
+    "fingerprint": "ckfp1:df058ea9f883d31a4abc605cfa70e004",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 33,
+        "end_line": 6,
+        "path": "server.js",
+        "start_col": 3,
+        "start_line": 6,
+        "symbol": null
+      }
+    ],
+    "message": "User controlled data in 'child_process.exec()' can result in Remote OS Command Execution.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "nodejsscan@1.0.2"
+      ]
+    ],
+    "rule_id": "generic_os_command_exec",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

@@ -1,0 +1,39 @@
+[
+  {
+    "cwe": [
+      78
+    ],
+    "engine": "bandit",
+    "engine_confidence": "high",
+    "engine_severity": "high",
+    "engine_version": "1.9.4",
+    "fingerprint": "ckfp1:e2f449fa87872cd83485e9a35d1bf4c0",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": null,
+        "end_line": 9,
+        "path": "app.py",
+        "start_col": null,
+        "start_line": 9,
+        "symbol": null
+      }
+    ],
+    "message": "Starting a process with a shell, possible injection detected, security issue.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "bandit@unknown"
+      ]
+    ],
+    "rule_id": "B605",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]
