@@ -3,7 +3,7 @@ schema_version: 1
 application: {name: Ledgerly, language: python}
 planted_vulnerabilities:
   - {id: LG-VULN-001, cwe: 89,  class: sql_injection,            file: app/db.py,       line: 15}
-  - {id: LG-VULN-002, cwe: 328, class: weak_hash,                file: app/db.py,       line: 25}
+  - {id: LG-VULN-002, cwe: 328, class: weak_hash,                file: app/db.py,       line: 29}
   - {id: LG-VULN-003, cwe: 502, class: insecure_deserialisation, file: app/importer.py, line: 11}
   - {id: LG-VULN-004, cwe: 502, class: unsafe_yaml,              file: app/importer.py, line: 15}
   - {id: LG-VULN-005, cwe: 78,  class: command_injection,        file: app/importer.py, line: 20}
@@ -12,4 +12,4 @@ planted_vulnerabilities:
 planted_secrets:
   - {id: LG-SEC-001, file: app/db.py, line: 6, note: synthetic password, not valid anywhere}
 negative_controls:
-  - {file: app/db.py, line: 21, note: parameterised query, must not be reported}
+  - {file: app/db.py, line: 24, note: parameterised query, must not be reported}

@@ -13,13 +13,17 @@ def connect(path="ledgerly.db"):
 def find_invoices(conn, customer):
     """Look up invoices by customer name."""
     query = "SELECT id, total FROM invoices WHERE customer = '" + customer + "'"
-    return conn.execute(query).fetchall()
+    cur = conn.cursor()
+    cur.execute(query)
+    return cur.fetchone()
 
 
 def find_invoices_safely(conn, customer):
     """Same lookup with a bound parameter."""
-    return conn.execute("SELECT id, total FROM invoices WHERE customer = ?", (customer,)).fetchall()
+    cur = conn.cursor()
+    cur.execute("SELECT id, total FROM invoices WHERE customer = ?", (customer,))
+    return cur.fetchone()
 
 
-def hash_api_token(token):
-    return hashlib.md5(token.encode()).hexdigest()
+def badge_fingerprint(raw):
+    return hashlib.md5(raw).digest()

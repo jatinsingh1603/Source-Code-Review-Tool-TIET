@@ -17,7 +17,7 @@ def load_settings(text):
 
 def convert_attachment(name):
     """Convert an uploaded attachment to PDF."""
-    subprocess.call("soffice --convert-to pdf " + name, shell=True)
+    subprocess.run("soffice --convert-to pdf " + name, shell=True)
 
 
 def surcharge(total, days_late):
