@@ -15,6 +15,8 @@ export interface TabsProps {
   className?: string;
   /** Accessible name of the tab list. */
   label?: string;
+  /** Shown after the tabs on the same underline (Findings "+ Save view"). */
+  after?: ReactNode;
 }
 
 function useRovingKeys<T extends { id: string; disabled?: boolean }>(
@@ -41,11 +43,11 @@ function useRovingKeys<T extends { id: string; disabled?: boolean }>(
 }
 
 /** Underlined tabs with counts (COMPONENTS.md §11); arrow keys move between tabs. */
-export function Tabs({ tabs, value, onChange, className, label }: TabsProps) {
+export function Tabs({ tabs, value, onChange, className, label, after }: TabsProps) {
   const base = useId();
   const { refs, onKey } = useRovingKeys(tabs, value, onChange);
-  return (
-    <div role="tablist" aria-label={label} onKeyDown={onKey} className={cn("tabs", className)}>
+  const list = (
+    <div role="tablist" aria-label={label} onKeyDown={onKey} className={cn("tabs", !after && className)}>
       {tabs.map((t, i) => {
         const active = t.id === value;
         return (
@@ -68,6 +70,13 @@ export function Tabs({ tabs, value, onChange, className, label }: TabsProps) {
           </button>
         );
       })}
+    </div>
+  );
+  if (!after) return list;
+  return (
+    <div className={cn("tabs-row", className)}>
+      {list}
+      {after}
     </div>
   );
 }

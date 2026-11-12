@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { qk, useFindings, useUsers } from "@/api/queries";
 import { endpoints, fetchReport, saveBlob } from "@/api/endpoints";
-import type { Finding, FindingPatch, Severity } from "@/api/types";
+import type { Finding, FindingPatch, SavedView, Severity } from "@/api/types";
 import { useSelectedScan } from "@/app/useSelectedScan";
 import { useSession } from "@/app/session";
 import { useCurrentProject } from "@/app/project-context";
@@ -38,6 +38,24 @@ const PAGE = 12;
 type View = "open" | "crit" | "new" | "review" | "mine" | "suppressed" | "all";
 const LIST_KEYS = ["severity", "cwe", "owasp", "engine", "language", "status", "verdict", "level"] as const;
 type ListKey = (typeof LIST_KEYS)[number];
+/** Filters a saved view keeps (the server's `FindingFilters` names). */
+const VIEW_KEYS = [...LIST_KEYS, "q", "assignee", "baseline_state"] as const;
+/** A saved view's tab id in `?view=`. */
+const SAVED = "saved:";
+
+/** The filters a built-in tab stands for, so a view saved from it keeps meaning the same. */
+const BASE_FILTERS: Partial<Record<View, Record<string, string>>> = {
+  open: { status: "open,confirmed" },
+  crit: { severity: "critical,high", status: "open,confirmed" },
+  new: { baseline_state: "new" },
+  mine: { assignee: "me" },
+  suppressed: { status: "accepted_risk,false_positive" },
+};
+
+function savedViews(data: unknown): SavedView[] {
+  const list = Array.isArray(data) ? data : ((data as { items?: unknown[] } | null)?.items ?? []);
+  return (list as SavedView[]).filter((v) => v && !v.builtin && v.id && v.name);
+}
 
 const EXT_LANG: Record<string, string> = {
   py: "Python",
@@ -103,10 +121,14 @@ export default function FindingsPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState(params.get("q") ?? "");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [dialog, setDialog] = useState<null | "assign" | "suppress" | "sync">(null);
+  const [dialog, setDialog] = useState<null | "assign" | "suppress" | "sync" | "save">(null);
+  const viewsQ = useQuery({ queryKey: ["views"], queryFn: () => endpoints.views(), retry: false, staleTime: 60_000 });
+  const saved = useMemo(() => savedViews(viewsQ.data), [viewsQ.data]);
   const [busy, setBusy] = useState(false);
 
-  const view = (params.get("view") as View) || "open";
+  const rawView = params.get("view") ?? "open";
+  const savedView = rawView.startsWith(SAVED) ? saved.find((v) => SAVED + v.id === rawView) : undefined;
+  const view = (rawView.startsWith(SAVED) ? "all" : rawView) as View;
   const page = Math.max(1, Number(params.get("page") ?? 1) || 1);
   const list = (k: ListKey) => (params.get(k) ?? "").split(",").filter(Boolean);
   const setParam = (k: string, v: string | null) => {
@@ -169,18 +191,28 @@ export default function FindingsPage() {
   const lik = Number(params.get("likelihood") ?? 0);
   const imp = Number(params.get("impact") ?? 0);
   const qq = (params.get("q") ?? "").toLowerCase();
-  const filtered = all.filter((f) => {
-    if (!inView(f, view)) return false;
+  /** Whether `f` passes a set of filters (the URL's, or a saved view's). */
+  const matches = (f: Finding, get: (k: string) => string) => {
     for (const k of LIST_KEYS) {
-      const vals = list(k);
+      const vals = get(k).split(",").filter(Boolean);
       if (vals.length && !vals.includes(valueOf[k](f))) return false;
     }
+    const who = get("assignee");
+    if (who && !(who === "me" ? inView(f, "mine") : f.assignee === who)) return false;
+    const bs = get("baseline_state");
+    if (bs && !bs.split(",").includes(stateOf(f) ?? "")) return false;
+    const text = get("q").toLowerCase();
+    if (text) {
+      const hay = `${f.title} ${f.id} ${findingLabel(f.id)} ${locationOf(f)?.path ?? ""} ${f.cwe ?? ""}`.toLowerCase();
+      if (!hay.includes(text)) return false;
+    }
+    return true;
+  };
+  const filtered = all.filter((f) => {
+    if (!inView(f, view)) return false;
+    if (!matches(f, (k) => params.get(k) ?? "")) return false;
     if (lik && riskLevel(f.likelihood) !== lik) return false;
     if (imp && riskLevel(f.impact) !== imp) return false;
-    if (qq) {
-      const hay = `${f.title} ${f.id} ${findingLabel(f.id)} ${locationOf(f)?.path ?? ""} ${f.cwe ?? ""}`.toLowerCase();
-      if (!hay.includes(qq)) return false;
-    }
     return true;
   });
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
@@ -197,7 +229,42 @@ export default function FindingsPage() {
     return [...m.entries()].map(([value, count]) => ({ value, count, label: label ? label(value) : value }));
   };
   const sevOrder: Severity[] = ["critical", "high", "medium", "low", "info"];
-  const anyFilter = LIST_KEYS.some((k) => list(k).length) || !!qq || !!lik || !!imp;
+  const anyFilter =
+    LIST_KEYS.some((k) => list(k).length) || !!qq || !!lik || !!imp || !!params.get("assignee") || !!params.get("baseline_state");
+  /** The current tab and filters as the server's filter names, for "+ Save view". */
+  const currentFilters = (): Record<string, string> => {
+    const out: Record<string, string> = { ...(BASE_FILTERS[view] ?? {}) };
+    for (const k of VIEW_KEYS) {
+      const v = params.get(k);
+      if (v) out[k] = v;
+    }
+    return out;
+  };
+  const openView = (id: string) => {
+    const n = new URLSearchParams();
+    if (params.get("scan")) n.set("scan", params.get("scan")!);
+    const sv = id.startsWith(SAVED) ? saved.find((v) => SAVED + v.id === id) : undefined;
+    if (sv) {
+      n.set("view", id);
+      for (const [k, v] of Object.entries(sv.filters ?? {})) if (v && (VIEW_KEYS as readonly string[]).includes(k)) n.set(k, v);
+      setQ(sv.filters?.q ?? "");
+    } else {
+      if (id !== "open") n.set("view", id);
+      if (!savedView) for (const k of VIEW_KEYS) if (params.get(k)) n.set(k, params.get(k)!);
+      if (savedView) setQ("");
+    }
+    setParams(n, { replace: true });
+  };
+  const removeView = async (v: SavedView) => {
+    try {
+      await endpoints.deleteView(v.id);
+      toast.success("View deleted", `"${v.name}" was removed.`);
+      void qc.invalidateQueries({ queryKey: ["views"] });
+      openView("open");
+    } catch (e) {
+      toast.error("The view could not be deleted", e instanceof Error ? e.message : undefined);
+    }
+  };
 
   const tabs: { id: View; label: string }[] = [
     { id: "open", label: "All open" },
@@ -268,13 +335,27 @@ export default function FindingsPage() {
 
       <Tabs
         label="Saved views"
-        value={view}
-        onChange={(v) => setParam("view", v === "open" ? null : v)}
-        tabs={tabs.map((t) => ({
-          id: t.id,
-          label: t.label,
-          count: findingsQ.data ? all.filter((f) => inView(f, t.id)).length : undefined,
-        }))}
+        value={savedView ? rawView : view}
+        onChange={openView}
+        tabs={[
+          ...tabs.map((t) => ({
+            id: t.id as string,
+            label: t.label,
+            count: findingsQ.data ? all.filter((f) => inView(f, t.id)).length : undefined,
+          })),
+          ...saved.map((v) => ({
+            id: SAVED + v.id,
+            label: v.name,
+            count: findingsQ.data ? all.filter((f) => matches(f, (k) => v.filters?.[k] ?? "")).length : undefined,
+          })),
+        ]}
+        after={
+          viewsQ.data !== null && (
+            <button type="button" className="tab-act" onClick={() => setDialog("save")} disabled={!scanId}>
+              + Save view
+            </button>
+          )
+        }
       />
 
       <div className="row" style={{ gap: 8 }}>
@@ -330,12 +411,17 @@ export default function FindingsPage() {
             setQ("");
             const n = new URLSearchParams();
             if (params.get("scan")) n.set("scan", params.get("scan")!);
-            if (params.get("view")) n.set("view", params.get("view")!);
+            if (params.get("view") && !savedView) n.set("view", params.get("view")!);
             setParams(n, { replace: true });
           }}
         >
           Clear
         </button>
+        {savedView && (
+          <button className="btn sm ghost" type="button" onClick={() => void removeView(savedView)}>
+            Delete view “{savedView.name}”
+          </button>
+        )}
       </div>
 
       {selected.size > 0 && (
@@ -538,6 +624,21 @@ export default function FindingsPage() {
         busy={busy}
         onSuppress={(reason) => void patchAll({ status: "accepted_risk", comment: reason }, "suppressed")}
       />
+      <SaveViewDialog
+        open={dialog === "save"}
+        onClose={() => setDialog(null)}
+        filters={dialog === "save" ? currentFilters() : {}}
+        onSaved={(v) => {
+          setDialog(null);
+          qc.setQueryData(["views"], (old: unknown) => [...(Array.isArray(old) ? old : []), v]);
+          const n = new URLSearchParams();
+          if (params.get("scan")) n.set("scan", params.get("scan")!);
+          n.set("view", SAVED + v.id);
+          for (const [k, val] of Object.entries(v.filters ?? {})) if (val) n.set(k, val);
+          setParams(n, { replace: true });
+          toast.success("View saved", `"${v.name}" is now one of your tabs.`);
+        }}
+      />
       {scanId && dialog === "sync" && (
         <GithubSyncDialog scanId={scanId} open onClose={() => setDialog(null)} findingIds={[...selected]} />
       )}
@@ -627,6 +728,102 @@ export function SuppressDialog({
       <Field label="Reason">
         {(id) => <Textarea id={id} rows={3} value={v} onChange={(e) => setV(e.target.value)} />}
       </Field>
+    </Dialog>
+  );
+}
+
+const FILTER_NAMES: Record<string, string> = {
+  severity: "Severity",
+  cwe: "CWE",
+  owasp: "OWASP",
+  engine: "Engine",
+  language: "Language",
+  status: "Status",
+  verdict: "Verdict",
+  level: "Privacy level",
+  q: "Text",
+  assignee: "Assignee",
+  baseline_state: "Baseline",
+};
+
+function SaveViewDialog({
+  open,
+  onClose,
+  filters,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  filters: Record<string, string>;
+  onSaved: (v: SavedView) => void;
+}) {
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  useEffect(() => {
+    if (open) {
+      setName("");
+      setError(null);
+    }
+  }, [open]);
+  const entries = Object.entries(filters);
+  const save = async () => {
+    if (!name.trim() || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      onSaved(await endpoints.createView(name.trim(), filters));
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title="Save view"
+      description="Keeps the current tab and filters under a name, as a tab of your own on Findings."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" disabled={!name.trim()} loading={busy} onClick={() => void save()}>
+            Save view
+          </Button>
+        </>
+      }
+    >
+      <form
+        className="stack s12"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+      >
+        <Field label="Name">
+          {(id) => (
+            <Input id={id} value={name} maxLength={128} autoFocus placeholder="For example: Open injection flaws" onChange={(e) => setName(e.target.value)} />
+          )}
+        </Field>
+        <div className="stack s6">
+          <span className="lbl">Filters</span>
+          {entries.length ? (
+            <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+              {entries.map(([k, v]) => (
+                <span key={k} className="tag">
+                  {FILTER_NAMES[k] ?? k}: {v.split(",").join(", ")}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="sm muted">No filters: the view lists every finding of the scan.</span>
+          )}
+        </div>
+        {error !== null && <ErrorBanner what="The view could not be saved." error={error} />}
+      </form>
     </Dialog>
   );
 }

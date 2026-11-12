@@ -47,6 +47,12 @@ describe("primitives", () => {
     expect(onChange).toHaveBeenCalledWith("b");
   });
 
+  it("Tabs keep a trailing action outside the tab list", () => {
+    render(<Tabs value="a" onChange={() => {}} tabs={[{ id: "a", label: "A" }]} after={<button type="button">+ Save view</button>} />);
+    const action = screen.getByRole("button", { name: "+ Save view" });
+    expect(screen.getByRole("tablist")).not.toContainElement(action);
+  });
+
   it("Toggle is a switch", () => {
     const onChange = vi.fn();
     render(<Toggle checked={false} onChange={onChange} label="Send" />);

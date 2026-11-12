@@ -279,3 +279,30 @@ body {
     display: none;
   }
 }
+
+/* Tabs with a trailing action on the same underline (Findings "+ Save view"). */
+.tabs-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.tabs-row > .tabs {
+  border-bottom: 0;
+  min-width: 0;
+}
+.tabs-row > .tab-act {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0 10px;
+  min-height: 40px;
+  color: var(--muted);
+  font: 500 13px "IBM Plex Sans", system-ui, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: none;
+}
+.tabs-row > .tab-act:hover {
+  color: var(--text);
+}
