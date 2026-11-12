@@ -1,0 +1,39 @@
+[
+  {
+    "cwe": [
+      78
+    ],
+    "engine": "semgrep-ce",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "1.100.0",
+    "fingerprint": "ckfp1:9339b99005508cf15739b2cda186ddf7",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "python",
+    "locations": [
+      {
+        "end_col": 19,
+        "end_line": 4,
+        "path": "app.py",
+        "start_col": 5,
+        "start_line": 4,
+        "symbol": null
+      }
+    ],
+    "message": "os.system with a variable",
+    "properties": [
+      [
+        "cwe.source",
+        "tags"
+      ],
+      [
+        "engine.run",
+        "Semgrep OSS@unknown"
+      ]
+    ],
+    "rule_id": "rules.os-system",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

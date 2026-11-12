@@ -67,3 +67,114 @@ install = "install Node.js, then in the CodeKavach tools directory run: npm inst
 weight = 4
 telemetry_env = { DO_NOT_TRACK = "1" }
 notes = "Pinned with eslint-plugin-security 4.2.1 (Apache-2.0) and eslint-plugin-no-unsanitized 4.1.5 (MPL-2.0, file-level copyleft, used unmodified). ESLint documents no telemetry; DO_NOT_TRACK is defence in depth."
+
+# --- E15 (#228, #229, #325, #326): engines for Go, Kotlin, PHP, Ruby, C, C++, C# ----------------
+# Written from the documented output shape; no engine was installed when the cases were made.
+
+[engines.gosec]
+pinned_version = "2.22.0"
+min_version = "2.22.0"
+spdx_licence = "Apache-2.0"
+distribution = "client_installed"
+hosted_allowed = true
+scans_proprietary_code = true
+install = "go install github.com/securego/gosec/v2/cmd/gosec@latest"
+weight = 2
+no_documented_opt_out = true
+notes = "gosec documents no telemetry and makes no network request. Run with -no-fail so the exit code means completion."
+
+[engines.flawfinder]
+pinned_version = "2.0.19"
+min_version = "2.0.19"
+spdx_licence = "GPL-2.0-or-later"
+distribution = "client_installed"
+hosted_allowed = true
+scans_proprietary_code = true
+install = "pipx install flawfinder"
+weight = 1
+no_documented_opt_out = true
+notes = "Flawfinder is a lexical scanner with many false positives; its candidates are stamped low confidence. Off by default."
+
+[engines.cppcheck]
+pinned_version = "2.16.0"
+min_version = "2.16.0"
+spdx_licence = "GPL-3.0-or-later"
+distribution = "client_installed"
+hosted_allowed = true
+scans_proprietary_code = true
+install = "apt install cppcheck"
+weight = 2
+no_documented_opt_out = true
+notes = "Run as a separate process only; its XML version 2 report is converted to SARIF by the adapter."
+
+[engines.detekt]
+pinned_version = "1.23.7"
+min_version = "1.23.7"
+spdx_licence = "Apache-2.0"
+distribution = "client_installed"
+hosted_allowed = true
+scans_proprietary_code = true
+install = "download detekt-cli from https://github.com/detekt/detekt/releases and put it on PATH"
+weight = 1
+no_documented_opt_out = true
+notes = "Style rules are off in the CodeKavach configuration; few security rules exist, so candidates default to low confidence."
+
+[engines.psalm-taint]
+pinned_version = "6.8.0"
+min_version = "6.8.0"
+spdx_licence = "MIT"
+distribution = "client_installed"
+hosted_allowed = true
+scans_proprietary_code = true
+install = "composer require --dev vimeo/psalm"
+weight = 3
+no_documented_opt_out = true
+notes = "Needs psalm.xml and vendor/autoload.php in the project; nothing is installed or fetched by the adapter."
+
+[engines.brakeman]
+pinned_version = "7.0.0"
+min_version = "7.0.0"
+spdx_licence = "LicenseRef-Brakeman-Public-Use"
+distribution = "client_installed"
+hosted_allowed = false
+scans_proprietary_code = false
+install = "gem install brakeman"
+weight = 2
+no_documented_opt_out = true
+notes = "Brakeman Public Use License: free for analysing code, not an open-source licence, never bundled; off by default and needs a Rails app."
+
+[engines.semgrep-ce]
+pinned_version = "1.100.0"
+min_version = "1.100.0"
+spdx_licence = "LGPL-2.1-only"
+distribution = "client_installed"
+hosted_allowed = true
+scans_proprietary_code = true
+install = "pipx install semgrep"
+weight = 3
+no_documented_opt_out = true
+notes = "Rules only from engines.rule_paths; --metrics=off and --disable-version-check are passed. Off by default."
+
+[engines.njsscan]
+pinned_version = "0.4.3"
+min_version = "0.4.3"
+spdx_licence = "LGPL-3.0-or-later"
+distribution = "client_installed"
+hosted_allowed = true
+scans_proprietary_code = true
+install = "pip install njsscan"
+weight = 2
+no_documented_opt_out = true
+notes = "Runs offline. Off by default."
+
+[engines.devskim]
+pinned_version = "1.0.0"
+min_version = "1.0.0"
+spdx_licence = "MIT"
+distribution = "client_installed"
+hosted_allowed = true
+scans_proprietary_code = true
+install = "dotnet tool install --global Microsoft.CST.DevSkim.CLI"
+weight = 1
+no_documented_opt_out = true
+notes = "Runs offline. Off by default."

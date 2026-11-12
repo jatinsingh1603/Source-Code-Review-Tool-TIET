@@ -32,3 +32,9 @@
 "security/detect-non-literal-fs-filename" = 22
 "security/detect-disable-mustache-escape" = 79
 "security/detect-no-csrf-before-method-override" = 352
+
+# gosec, Brakeman, Psalm, njsscan, DevSkim and cppcheck put CWE numbers in their output; rows below
+# cover only the detekt rules whose documentation states the weakness.
+[engines.detekt]
+"detekt.exceptions.PrintStackTrace" = 209
+"detekt.exceptions.SwallowedException" = 390

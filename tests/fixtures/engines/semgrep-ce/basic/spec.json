@@ -1,0 +1,16 @@
+{
+  "engine_version": "1.100.0",
+  "output_file": "output.sarif",
+  "languages": [
+    "python"
+  ],
+  "planted_secrets": [],
+  "recording": "NOT captured from a run: written from the documented Semgrep output shape against a synthetic sample. Re-record with --engines-live when the engine is installed.",
+  "settings": {
+    "engines": {
+      "rule_paths": [
+        "{case}/rules"
+      ]
+    }
+  }
+}

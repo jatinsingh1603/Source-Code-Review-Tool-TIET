@@ -1,0 +1,39 @@
+[
+  {
+    "cwe": [
+      120
+    ],
+    "engine": "flawfinder",
+    "engine_confidence": "low",
+    "engine_severity": "medium",
+    "engine_version": "2.0.19",
+    "fingerprint": "ckfp1:6af2fbb8bb6e0140d8062f2fe10615d4",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "c",
+    "locations": [
+      {
+        "end_col": 15,
+        "end_line": 5,
+        "path": "vuln.c",
+        "start_col": 3,
+        "start_line": 5,
+        "symbol": null
+      }
+    ],
+    "message": "strcpy: Does not check for buffer overflows when copying to destination",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "Flawfinder@unknown"
+      ]
+    ],
+    "rule_id": "FF1004",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

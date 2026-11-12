@@ -73,7 +73,7 @@ _LEVELS: Final = {2: "warning", 1: "note"}
 SPEC: Final = EngineSpec(
     id=ENGINE_ID,
     name="ESLint with the security rule set",
-    languages=frozenset({Language.JAVASCRIPT}),
+    languages=frozenset({Language.JAVASCRIPT, Language.TYPESCRIPT}),
     tier=BuildTier.NO_BUILD,
     output_format="json",
     spdx_licence="MIT",
@@ -207,7 +207,7 @@ class EslintSecurityAdapter:
 
     def applies_to(self, languages: Collection[Language], files: Sequence[SourceFile]) -> bool:
         """True when the scan has files in a language the engine handles."""
-        return Language.JAVASCRIPT in set(languages)
+        return bool(SPEC.languages & set(languages))
 
     def build_invocation(
         self, root: Path, files: Sequence[SourceFile], settings: Settings

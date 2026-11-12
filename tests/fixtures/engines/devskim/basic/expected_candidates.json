@@ -1,0 +1,39 @@
+[
+  {
+    "cwe": [
+      327
+    ],
+    "engine": "devskim",
+    "engine_confidence": null,
+    "engine_severity": "medium",
+    "engine_version": "1.0.0",
+    "fingerprint": "ckfp1:d97975dbbbeb64d99998f8f0ee986cc5",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "csharp",
+    "locations": [
+      {
+        "end_col": 49,
+        "end_line": 5,
+        "path": "Program.cs",
+        "start_col": 17,
+        "start_line": 5,
+        "symbol": null
+      }
+    ],
+    "message": "Weak/Broken Hash Algorithm",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "DevSkim@unknown"
+      ]
+    ],
+    "rule_id": "DS126858",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

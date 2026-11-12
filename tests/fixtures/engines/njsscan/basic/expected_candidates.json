@@ -1,0 +1,39 @@
+[
+  {
+    "cwe": [
+      89
+    ],
+    "engine": "njsscan",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "0.4.3",
+    "fingerprint": "ckfp1:a44f414f41ee2bd0fedac6d471d18fb6",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 54,
+        "end_line": 4,
+        "path": "server.js",
+        "start_col": 3,
+        "start_line": 4,
+        "symbol": null
+      }
+    ],
+    "message": "Untrusted input concatenated with a raw SQL query",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "nodejsscan@unknown"
+      ]
+    ],
+    "rule_id": "node_sqli_injection",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

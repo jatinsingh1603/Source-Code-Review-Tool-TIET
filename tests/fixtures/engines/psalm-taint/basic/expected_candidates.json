@@ -1,0 +1,39 @@
+[
+  {
+    "cwe": [
+      79
+    ],
+    "engine": "psalm-taint",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "6.8.0",
+    "fingerprint": "ckfp1:287a4a124538a4dfa54ee841f32bf8bb",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "php",
+    "locations": [
+      {
+        "end_col": 23,
+        "end_line": 3,
+        "path": "index.php",
+        "start_col": 6,
+        "start_line": 3,
+        "symbol": null
+      }
+    ],
+    "message": "Detected tainted HTML",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "Psalm@unknown"
+      ]
+    ],
+    "rule_id": "TaintedHtml",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

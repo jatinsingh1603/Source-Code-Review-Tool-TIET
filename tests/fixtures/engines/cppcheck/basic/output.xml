@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<results version="2">
+  <cppcheck version="2.16.0"/>
+  <errors>
+    <error id="bufferAccessOutOfBounds" severity="error" msg="Buffer is accessed out of bounds: buf" verbose="Buffer is accessed out of bounds: buf" cwe="788">
+      <location file="vuln.cpp" line="6" column="8"/>
+    </error>
+    <error id="uninitvar" severity="error" msg="Uninitialized variable: n" verbose="Uninitialized variable: n" cwe="457">
+      <location file="vuln.cpp" line="11" column="10"/>
+    </error>
+  </errors>
+</results>

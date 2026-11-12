@@ -1,0 +1,40 @@
+{
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "detekt",
+          "rules": [
+            {
+              "id": "detekt.exceptions.PrintStackTrace",
+              "name": "PrintStackTrace"
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "detekt.exceptions.PrintStackTrace",
+          "level": "warning",
+          "message": {
+            "text": "Do not print a stack trace."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "Main.kt"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 9
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

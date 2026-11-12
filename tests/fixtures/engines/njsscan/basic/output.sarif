@@ -1,0 +1,48 @@
+{
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "nodejsscan",
+          "rules": [
+            {
+              "id": "node_sqli_injection",
+              "name": "node_sqli_injection",
+              "properties": {
+                "tags": [
+                  "CWE-89"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "node_sqli_injection",
+          "level": "error",
+          "message": {
+            "text": "Untrusted input concatenated with a raw SQL query"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "server.js"
+                },
+                "region": {
+                  "startLine": 4,
+                  "startColumn": 3
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": "CWE-89"
+          }
+        }
+      ]
+    }
+  ]
+}

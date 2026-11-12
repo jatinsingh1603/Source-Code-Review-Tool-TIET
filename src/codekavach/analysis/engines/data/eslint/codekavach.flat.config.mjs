@@ -10,7 +10,34 @@
 import security from "eslint-plugin-security";
 import noUnsanitized from "eslint-plugin-no-unsanitized";
 
+// TypeScript is parsed with @typescript-eslint/parser when the operator installed it in the tools
+// directory (npm install @typescript-eslint/parser typescript). Without it TypeScript files are
+// not linted and JavaScript is unaffected.
+let tsParser = null;
+try {
+  tsParser = (await import("@typescript-eslint/parser")).default;
+} catch {
+  tsParser = null;
+}
+
+const tsBlock = tsParser
+  ? [
+      {
+        files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+        languageOptions: { parser: tsParser, ecmaVersion: "latest", sourceType: "module" },
+        linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
+        plugins: { security, "no-unsanitized": noUnsanitized },
+        rules: {
+          ...security.configs.recommended.rules,
+          "no-unsanitized/method": "error",
+          "no-unsanitized/property": "error",
+        },
+      },
+    ]
+  : [];
+
 export default [
+  ...tsBlock,
   {
     files: ["**/*.js", "**/*.mjs", "**/*.cjs", "**/*.jsx"],
     languageOptions: {

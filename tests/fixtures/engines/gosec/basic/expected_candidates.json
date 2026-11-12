@@ -1,0 +1,39 @@
+[
+  {
+    "cwe": [
+      78
+    ],
+    "engine": "gosec",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "2.22.0",
+    "fingerprint": "ckfp1:c03cf81050e87d1060da1e002afa1dd3",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "go",
+    "locations": [
+      {
+        "end_col": 58,
+        "end_line": 9,
+        "path": "main.go",
+        "start_col": 2,
+        "start_line": 9,
+        "symbol": null
+      }
+    ],
+    "message": "Subprocess launched with a potential tainted input or cmd arguments",
+    "properties": [
+      [
+        "cwe.source",
+        "tags"
+      ],
+      [
+        "engine.run",
+        "gosec@unknown"
+      ]
+    ],
+    "rule_id": "G204",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

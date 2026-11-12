@@ -1,0 +1,76 @@
+[
+  {
+    "cwe": [
+      788
+    ],
+    "engine": "cppcheck",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "2.16.0",
+    "fingerprint": "ckfp1:2af8276777b0b130e2df1613115930c5",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "cpp",
+    "locations": [
+      {
+        "end_col": 16,
+        "end_line": 6,
+        "path": "vuln.cpp",
+        "start_col": 8,
+        "start_line": 6,
+        "symbol": null
+      }
+    ],
+    "message": "Buffer is accessed out of bounds: buf",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "cppcheck@unknown"
+      ]
+    ],
+    "rule_id": "bufferAccessOutOfBounds",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      457
+    ],
+    "engine": "cppcheck",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "2.16.0",
+    "fingerprint": "ckfp1:276179a0b23f1ea0732fbfc3272228f5",
+    "id": "cand-1",
+    "kind": "vulnerability",
+    "language": "cpp",
+    "locations": [
+      {
+        "end_col": 10,
+        "end_line": 11,
+        "path": "vuln.cpp",
+        "start_col": 10,
+        "start_line": 11,
+        "symbol": null
+      }
+    ],
+    "message": "Uninitialized variable: n",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "cppcheck@unknown"
+      ]
+    ],
+    "rule_id": "uninitvar",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

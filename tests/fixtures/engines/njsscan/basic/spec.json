@@ -1,0 +1,9 @@
+{
+  "engine_version": "0.4.3",
+  "output_file": "output.sarif",
+  "languages": [
+    "javascript"
+  ],
+  "planted_secrets": [],
+  "recording": "NOT captured from a run: written from the documented njsscan output shape against a synthetic sample. Re-record with --engines-live when the engine is installed."
+}

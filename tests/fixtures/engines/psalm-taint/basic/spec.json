@@ -1,0 +1,9 @@
+{
+  "engine_version": "6.8.0",
+  "output_file": "output.sarif",
+  "languages": [
+    "php"
+  ],
+  "planted_secrets": [],
+  "recording": "NOT captured from a run: written from the documented Psalm output shape against a synthetic sample. Re-record with --engines-live when the engine is installed."
+}

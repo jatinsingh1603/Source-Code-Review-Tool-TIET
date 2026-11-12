@@ -1,0 +1,9 @@
+{
+  "engine_version": "2.16.0",
+  "output_file": "output.xml",
+  "languages": [
+    "cpp"
+  ],
+  "planted_secrets": [],
+  "recording": "NOT captured from a run: written from the documented cppcheck XML version 2 output shape against a synthetic sample. Re-record with --engines-live when the engine is installed."
+}

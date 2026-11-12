@@ -1,0 +1,39 @@
+[
+  {
+    "cwe": [
+      89
+    ],
+    "engine": "brakeman",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "7.0.0",
+    "fingerprint": "ckfp1:33cc6cebea4b6c912e5eb7322ec0dd25",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "ruby",
+    "locations": [
+      {
+        "end_col": 58,
+        "end_line": 3,
+        "path": "app/controllers/users_controller.rb",
+        "start_col": 5,
+        "start_line": 3,
+        "symbol": null
+      }
+    ],
+    "message": "Possible SQL injection",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "Brakeman@unknown"
+      ]
+    ],
+    "rule_id": "BRAKEMAN-SQL-INJECTION",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

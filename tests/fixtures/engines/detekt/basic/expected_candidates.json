@@ -1,0 +1,39 @@
+[
+  {
+    "cwe": [
+      209
+    ],
+    "engine": "detekt",
+    "engine_confidence": null,
+    "engine_severity": "low",
+    "engine_version": "1.23.7",
+    "fingerprint": "ckfp1:2e459a99a9253fc2e838172f609638c3",
+    "id": "cand-0",
+    "kind": "vulnerability",
+    "language": "kotlin",
+    "locations": [
+      {
+        "end_col": 28,
+        "end_line": 5,
+        "path": "Main.kt",
+        "start_col": 9,
+        "start_line": 5,
+        "symbol": null
+      }
+    ],
+    "message": "Do not print a stack trace.",
+    "properties": [
+      [
+        "cwe.source",
+        "fallback"
+      ],
+      [
+        "engine.run",
+        "detekt@unknown"
+      ]
+    ],
+    "rule_id": "detekt.exceptions.PrintStackTrace",
+    "schema_version": 1,
+    "taint_path": null
+  }
+]

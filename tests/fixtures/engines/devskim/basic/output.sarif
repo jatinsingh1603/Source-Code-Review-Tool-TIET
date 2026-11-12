@@ -1,0 +1,43 @@
+{
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "DevSkim",
+          "rules": [
+            {
+              "id": "DS126858",
+              "name": "Weak/Broken Hash Algorithm"
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "DS126858",
+          "level": "warning",
+          "message": {
+            "text": "Weak/Broken Hash Algorithm"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "Program.cs"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 17
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": "CWE-327"
+          }
+        }
+      ]
+    }
+  ]
+}

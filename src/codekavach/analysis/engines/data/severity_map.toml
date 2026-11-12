@@ -32,3 +32,15 @@
 #
 # [engines.example.rules]
 # "EX9" = "low"
+
+# --- E15 engines ----------------------------------------------------------------------------
+# detekt is a style and bug-pattern analyser: its findings are leads, not vulnerabilities.
+[engines.detekt]
+default_level_map = { error = "low", warning = "low", note = "info" }
+
+# cppcheck style, performance and portability findings arrive as notes.
+[engines.cppcheck]
+default_level_map = { error = "high", warning = "medium", note = "low" }
+
+[engines.flawfinder]
+default_level_map = { error = "high", warning = "medium", note = "low" }

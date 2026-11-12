@@ -1,0 +1,52 @@
+# CodeKavach's detekt configuration (E15-02). Passed with --config and --build-upon-default-config:
+# the repository's own detekt.yml is hidden from the engine. Style rules are switched off so that
+# what is left is the bug-pattern families that can matter for an audit; detekt has few security
+# rules, and its candidates default to low confidence (see data/severity_map.toml).
+
+build:
+  maxIssues: -1
+  excludeCorrectable: false
+
+config:
+  validation: false
+
+style:
+  active: false
+
+formatting:
+  active: false
+
+complexity:
+  active: false
+
+naming:
+  active: false
+
+comments:
+  active: false
+
+potential-bugs:
+  active: true
+  UnsafeCast:
+    active: true
+  UnsafeCallOnNullableType:
+    active: true
+  Deprecation:
+    active: true
+  EqualsAlwaysReturnsTrueOrFalse:
+    active: true
+  ImplicitDefaultLocale:
+    active: true
+  UnconditionalJumpStatementInLoop:
+    active: true
+
+exceptions:
+  active: true
+  TooGenericExceptionCaught:
+    active: true
+  SwallowedException:
+    active: true
+  PrintStackTrace:
+    active: true
+  InstanceOfCheckForException:
+    active: true

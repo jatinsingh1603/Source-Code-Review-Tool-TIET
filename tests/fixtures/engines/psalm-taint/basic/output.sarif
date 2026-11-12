@@ -1,0 +1,43 @@
+{
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Psalm",
+          "rules": [
+            {
+              "id": "TaintedHtml",
+              "name": "TaintedHtml"
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "TaintedHtml",
+          "level": "error",
+          "message": {
+            "text": "Detected tainted HTML"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "index.php"
+                },
+                "region": {
+                  "startLine": 3,
+                  "startColumn": 6
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": "CWE-79"
+          }
+        }
+      ]
+    }
+  ]
+}

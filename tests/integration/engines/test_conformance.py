@@ -11,8 +11,17 @@ from pathlib import Path
 import pytest
 
 from codekavach.analysis.engines.adapters.bandit import BanditAdapter
+from codekavach.analysis.engines.adapters.brakeman import BrakemanAdapter
+from codekavach.analysis.engines.adapters.cppcheck import CppcheckAdapter
+from codekavach.analysis.engines.adapters.detekt import DetektAdapter
+from codekavach.analysis.engines.adapters.devskim import DevskimAdapter
 from codekavach.analysis.engines.adapters.eslint_security import EslintSecurityAdapter
+from codekavach.analysis.engines.adapters.flawfinder import FlawfinderAdapter
+from codekavach.analysis.engines.adapters.gosec import GosecAdapter
+from codekavach.analysis.engines.adapters.njsscan import NjsscanAdapter
 from codekavach.analysis.engines.adapters.opengrep import OpengrepAdapter
+from codekavach.analysis.engines.adapters.psalm import PsalmAdapter
+from codekavach.analysis.engines.adapters.semgrep_ce import SemgrepCeAdapter
 from codekavach.analysis.engines.base import EngineAdapter
 from codekavach.analysis.engines.registry import get_adapter
 from codekavach.core.models import Language
@@ -34,6 +43,15 @@ def adapter_for(case: RecordedCase) -> EngineAdapter:
         "opengrep": OpengrepAdapter,
         "bandit": BanditAdapter,
         "eslint-security": EslintSecurityAdapter,
+        "brakeman": BrakemanAdapter,
+        "cppcheck": CppcheckAdapter,
+        "detekt": DetektAdapter,
+        "devskim": DevskimAdapter,
+        "flawfinder": FlawfinderAdapter,
+        "gosec": GosecAdapter,
+        "njsscan": NjsscanAdapter,
+        "psalm-taint": PsalmAdapter,
+        "semgrep-ce": SemgrepCeAdapter,
     }
     if case.engine_id in known:
         return known[case.engine_id]()

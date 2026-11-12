@@ -79,10 +79,42 @@ in the spec, so a correction is a data change.
   CodeKavach-owned directory (`engines.options.eslint-security.options.tools_dir`, a restricted setting), never in the
   scanned project's `node_modules`. `codekavach doctor` reports a missing plugin by name.
 * `eslint-plugin-no-unsanitized` is MPL-2.0 (file-level copyleft). It is installed unmodified from npm; none of its files is copied into this repository.
-* TypeScript is not linted by `eslint-security`: that needs a parser plugin which this rule set does not include.
+* TypeScript is linted by `eslint-security` only when `@typescript-eslint/parser` and `typescript` are also installed in the tools directory; the flat config loads the parser dynamically, so without it TypeScript files are skipped and JavaScript is unaffected. No TypeScript conformance case is recorded yet.
 * The conformance cases for Bandit and ESLint are real recorded runs. The Opengrep case is written by hand from the documented
   SARIF shape (its spec.json says so); re-record it with `--engines-live` once the binary is installed.
 * ESLint's `security/*` rules carry no CWE; `data/cwe_fallback.toml` maps only the rules whose documentation names the weakness.
+
+## The command-line family (E15-02, E15-03, E15-04)
+
+These adapters share `adapters/cli_engine.py` (`CliAdapter`): a subclass names the executable and
+returns its options and targets, and the base class does probing, the argument vector, telemetry
+flags, extra arguments and SARIF ingestion. Every one runs as a subprocess, is client-installed,
+and is skipped with an install hint when its binary is absent. None of the conformance cases below
+was captured from a real run (no engine was installed when they were written): each `spec.json`
+says so, and `--engines-live` re-records them.
+
+| Engine id | Module | Languages | Licence | Notes |
+|-----------|--------|-----------|---------|-------|
+| `gosec` | `adapters/gosec.py` | Go | Apache-2.0 | `-fmt=sarif -no-fail` |
+| `flawfinder` | `adapters/flawfinder.py` | C, C++ | GPL-2.0+ | SARIF on stdout, confidence forced low, off by default |
+| `cppcheck` | `adapters/cppcheck.py` | C, C++ | GPL-3.0+ | XML v2 converted to SARIF; DTDs refused |
+| `detekt` | `adapters/detekt.py` | Kotlin | Apache-2.0 | CodeKavach config only; low severity |
+| `psalm-taint` | `adapters/psalm.py` | PHP | MIT | needs `psalm.xml` and `vendor/autoload.php` |
+| `brakeman` | `adapters/brakeman.py` | Ruby | Brakeman Public Use | needs a Rails app; off until licence attestation |
+| `semgrep-ce` | `adapters/semgrep_ce.py` | many | LGPL-2.1 | rules only from `engines.rule_paths`; metrics off; off by default |
+| `njsscan` | `adapters/njsscan.py` | JavaScript, TypeScript | LGPL-3.0+ | off by default |
+| `devskim` | `adapters/devskim.py` | C#, C, C++, Java, JS, Python, Go, PHP, Ruby, Kotlin | MIT | off by default |
+
+### Engines documented but not shipped as adapters
+
+* **SpotBugs with FindSecBugs** (Java, LGPL-2.1 / LGPL-3.0): needs compiled classes, so it belongs in the build tier
+  (`BuildTier.BUILD`). Run `spotbugs -sarif -pluginList findsecbugs.jar <classes>` and ingest the SARIF with
+  `ingest_sarif`; no adapter exists yet.
+* **security-code-scan** (C#, LGPL-3.0): a Roslyn analyser that runs inside `dotnet build`; it needs the build tier and
+  `-p:ErrorLog=<out>.sarif`. No adapter exists yet.
+* **MobSF** (Android/iOS, GPL-3.0): a server with an API, not a command-line scanner; it fits the E20 container tier. No adapter.
+* **PHPCS security audit** (PHP, MIT/GPL): `phpcs --standard=Security --report=json`; the JSON has no CWE or taint
+  path, so it is a lead for review only. No adapter exists yet; Psalm taint analysis is the shipped PHP engine.
 
 ## Adding a manifest row
 

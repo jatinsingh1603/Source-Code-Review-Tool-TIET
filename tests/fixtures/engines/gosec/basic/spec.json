@@ -1,0 +1,9 @@
+{
+  "engine_version": "2.22.0",
+  "output_file": "output.sarif",
+  "languages": [
+    "go"
+  ],
+  "planted_secrets": [],
+  "recording": "NOT captured from a run: written from the documented gosec output shape against a synthetic sample. Re-record with --engines-live when the engine is installed."
+}

@@ -1,0 +1,9 @@
+{
+  "engine_version": "1.23.7",
+  "output_file": "output.sarif",
+  "languages": [
+    "kotlin"
+  ],
+  "planted_secrets": [],
+  "recording": "NOT captured from a run: written from the documented detekt output shape against a synthetic sample. Re-record with --engines-live when the engine is installed."
+}

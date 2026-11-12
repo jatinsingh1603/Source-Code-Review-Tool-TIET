@@ -1,0 +1,43 @@
+{
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Brakeman",
+          "rules": [
+            {
+              "id": "BRAKEMAN-SQL-INJECTION",
+              "name": "SQL Injection"
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "BRAKEMAN-SQL-INJECTION",
+          "level": "error",
+          "message": {
+            "text": "Possible SQL injection"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app/controllers/users_controller.rb"
+                },
+                "region": {
+                  "startLine": 3,
+                  "startColumn": 5
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": "CWE-89"
+          }
+        }
+      ]
+    }
+  ]
+}

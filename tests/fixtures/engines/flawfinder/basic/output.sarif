@@ -1,0 +1,48 @@
+{
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Flawfinder",
+          "rules": [
+            {
+              "id": "FF1004",
+              "name": "strcpy",
+              "properties": {
+                "tags": [
+                  "external/cwe/cwe-120"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "FF1004",
+          "level": "warning",
+          "message": {
+            "text": "strcpy: Does not check for buffer overflows when copying to destination"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "vuln.c"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 3
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": "CWE-120"
+          }
+        }
+      ]
+    }
+  ]
+}

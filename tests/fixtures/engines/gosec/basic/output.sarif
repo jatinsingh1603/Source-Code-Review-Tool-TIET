@@ -1,0 +1,46 @@
+{
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "gosec",
+          "rules": [
+            {
+              "id": "G204",
+              "name": "Subprocess launched with variable",
+              "properties": {
+                "tags": [
+                  "security",
+                  "external/cwe/cwe-78"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "G204",
+          "level": "error",
+          "message": {
+            "text": "Subprocess launched with a potential tainted input or cmd arguments"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "main.go"
+                },
+                "region": {
+                  "startLine": 9,
+                  "startColumn": 2
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
