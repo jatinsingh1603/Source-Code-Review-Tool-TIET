@@ -1,0 +1,445 @@
+{
+ "source": "Expected scores from the FIRST scoring algorithm as implemented by the Red Hat 'cvss' library (cvss 3.x, LGPL, used offline only to generate this file); codekavach was cross-checked against it on 100000 random vectors with no difference. The first rows are canonical examples (for instance AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H = 9.8).",
+ "vectors": [
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+   "score": 9.3,
+   "severity": "Critical"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H",
+   "score": 10.0,
+   "severity": "Critical"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:N/SI:N/SA:N",
+   "score": 0.0,
+   "severity": "None"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+   "score": 8.5,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:P/VC:N/VI:N/VA:N/SC:L/SI:L/SA:N",
+   "score": 5.3,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:U",
+   "score": 8.1,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/CR:H/IR:H/AR:H/MSI:S/MSA:S",
+   "score": 10.0,
+   "severity": "Critical"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:P/PR:H/UI:A/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N",
+   "score": 1.0,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:A/VC:H/VI:N/VA:H/SC:L/SI:N/SA:H/CR:H/AR:H/MAC:X/MAT:N/MVC:X/MVI:L/MVA:L/MSC:L/R:I/U:Amber",
+   "score": 7.1,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:P/PR:L/UI:N/VC:N/VI:L/VA:L/SC:L/SI:H/SA:H/CR:M/MAC:H/MAT:P/MPR:N/MUI:X/MVA:N/MSC:N/U:Green",
+   "score": 5.1,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:P/PR:N/UI:N/VC:H/VI:L/VA:L/SC:H/SI:N/SA:H/CR:M/IR:L/MAT:P/MVA:X/S:N/AU:N/V:X/RE:M/U:Red",
+   "score": 4.4,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:P/VC:N/VI:N/VA:N/SC:N/SI:H/SA:L/MAT:X/MUI:N/MVI:H/MVA:L/S:N/R:U",
+   "score": 9.2,
+   "severity": "Critical"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:P/PR:L/UI:N/VC:L/VI:H/VA:H/SC:H/SI:N/SA:L/MAV:X/MVC:H/MVA:N/MSA:X/AU:N/U:Clear",
+   "score": 8.6,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:N/PR:N/UI:N/VC:L/VI:N/VA:H/SC:H/SI:L/SA:L/E:U/MAT:N/MUI:X/S:X/AU:X/U:Green",
+   "score": 1.6,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:P/PR:L/UI:P/VC:H/VI:N/VA:H/SC:H/SI:H/SA:H/E:X/IR:X/MAT:N/MVC:L/MSI:N/MSA:X/S:X/AU:Y/V:X",
+   "score": 6.9,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:N/PR:N/UI:P/VC:H/VI:L/VA:H/SC:N/SI:H/SA:H/E:X/IR:H/AR:X/MAC:X/MAT:N/MPR:H",
+   "score": 5.9,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:H/AT:P/PR:H/UI:N/VC:H/VI:L/VA:L/SC:L/SI:H/SA:N/E:A/CR:M/MAV:N/MAC:H/MPR:H/MSC:X/R:U/V:X",
+   "score": 5.7,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:P/PR:N/UI:A/VC:H/VI:H/VA:H/SC:H/SI:L/SA:L/E:P/CR:L/MVI:N/MVA:L/MSI:H/AU:N/R:A/RE:X",
+   "score": 1.7,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:P/VC:H/VI:H/VA:H/SC:L/SI:H/SA:H/E:U/AR:X/MAC:L/MUI:A/MVA:X/MSC:X/MSI:S/V:C/U:Clear",
+   "score": 8.9,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:N/PR:H/UI:A/VC:H/VI:N/VA:N/SC:L/SI:L/SA:H/E:X/AR:L/MAC:H/MAT:P/MPR:N/MVA:N/MSC:L/MSI:S/MSA:N/AU:Y/V:C/RE:H",
+   "score": 6.8,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:H/UI:P/VC:N/VI:H/VA:N/SC:N/SI:N/SA:L/AR:L/MAV:X/MUI:A/MSA:H/S:X/R:X",
+   "score": 8.0,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:P/PR:H/UI:N/VC:H/VI:N/VA:N/SC:N/SI:H/SA:N/MAC:H/MAT:X/S:N/AU:Y/V:X/RE:X/U:Green",
+   "score": 6.8,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:H/AT:P/PR:L/UI:P/VC:N/VI:L/VA:L/SC:L/SI:L/SA:H/IR:H/MAV:P/MAC:X/MUI:N/MVA:H/MSC:N/MSA:X/S:N/R:X/RE:X",
+   "score": 5.7,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:N/PR:L/UI:N/VC:L/VI:L/VA:H/SC:L/SI:H/SA:L/IR:L/MAC:L/MAT:P/MVA:H/MSC:H/MSA:L/S:P/R:U/U:Red",
+   "score": 5.9,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:H/AT:N/PR:N/UI:N/VC:L/VI:N/VA:H/SC:N/SI:L/SA:L/E:P/CR:X/IR:M/AR:M/MAC:L/MUI:N/MVC:X/MSC:X/S:N/AU:N/R:U/V:X/RE:H",
+   "score": 4.8,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:P/PR:N/UI:P/VC:H/VI:L/VA:L/SC:L/SI:H/SA:L/E:U/CR:L/IR:L/MAT:N/MPR:X/MSC:X/RE:L",
+   "score": 1.7,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:A/VC:H/VI:H/VA:H/SC:N/SI:H/SA:N/MAT:P/MVI:H/MVA:N/MSI:N/R:I/V:D/U:Amber",
+   "score": 7.2,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:P/PR:H/UI:N/VC:H/VI:N/VA:L/SC:L/SI:H/SA:L/E:U/MAV:N/MPR:L/MUI:N/MVC:L/MVI:N/MVA:X/AU:Y/R:X/V:C/U:Amber",
+   "score": 1.3,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:H/AT:P/PR:L/UI:P/VC:L/VI:N/VA:H/SC:H/SI:H/SA:L/E:X/CR:X/MAC:H/MAT:P/MSI:S/MSA:S/S:X/R:U",
+   "score": 7.3,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:A/VC:L/VI:H/VA:H/SC:L/SI:H/SA:N/E:U/IR:H/AR:M/MAC:X/MVI:L/MVA:X/MSA:S/AU:X/R:U",
+   "score": 4.7,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:P/PR:L/UI:P/VC:H/VI:N/VA:H/SC:L/SI:H/SA:H/MAV:P/MPR:H/MUI:X/MSC:X/S:X/V:D/RE:M",
+   "score": 6.0,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:H/AT:P/PR:H/UI:A/VC:H/VI:H/VA:H/SC:L/SI:N/SA:H/E:X/CR:L/AR:H/MAT:P/MUI:X/MVI:N/MVA:H/MSC:L/R:A/V:X/U:Amber",
+   "score": 6.8,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:H/UI:A/VC:L/VI:H/VA:N/SC:N/SI:N/SA:H/MAC:H/MUI:A/MVA:H/MSA:N/R:U/RE:M",
+   "score": 5.7,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:N/PR:H/UI:N/VC:H/VI:L/VA:H/SC:H/SI:L/SA:N/IR:H/AR:L/MAT:X/MVC:N/MVI:L/MSC:X/AU:N/RE:X/U:X",
+   "score": 5.3,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:H/AT:P/PR:N/UI:A/VC:L/VI:H/VA:N/SC:H/SI:H/SA:L/CR:M/IR:L/MAC:X/MVC:X/MSI:S/MSA:L/RE:X",
+   "score": 7.1,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:L/SI:L/SA:L/E:X/AR:L/MAV:N/MPR:X/MVI:H/MSA:S/S:N/V:D/U:Green",
+   "score": 9.7,
+   "severity": "Critical"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:P/VC:L/VI:H/VA:N/SC:L/SI:N/SA:N/E:U/CR:L/MAV:N/MAT:P/MPR:H/MSA:X/V:D",
+   "score": 1.8,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:N/PR:H/UI:P/VC:N/VI:H/VA:L/SC:N/SI:L/SA:L/MAV:A/MAT:P/MVA:L/MSI:H/MSA:N/S:X/R:U/RE:X/U:Amber",
+   "score": 5.6,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:H/AT:P/PR:H/UI:A/VC:N/VI:H/VA:N/SC:L/SI:L/SA:L/CR:M/MPR:H/MUI:A/MVI:H/MSC:L/MSI:L/U:Amber",
+   "score": 3.9,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:P/PR:L/UI:P/VC:L/VI:H/VA:N/SC:N/SI:L/SA:H/E:A/CR:H/IR:M/MAV:X/MVC:L/MVI:H/MVA:L/MSI:L/S:P/AU:N",
+   "score": 4.4,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:N/PR:H/UI:N/VC:N/VI:H/VA:N/SC:L/SI:H/SA:L/CR:L/IR:H/AR:L/MAV:L/MAT:N/MVA:N/MSC:H/R:I/V:C",
+   "score": 8.2,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:P/PR:H/UI:A/VC:H/VI:N/VA:H/SC:L/SI:L/SA:L/CR:M/AR:M/MUI:A/MVI:H/MVA:H/MSI:H/S:P/AU:N/R:A/V:D/RE:L",
+   "score": 6.9,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:A/VC:N/VI:H/VA:L/SC:H/SI:H/SA:N/MAV:N/MVC:H/MVA:X/AU:X/R:A/V:D",
+   "score": 9.2,
+   "severity": "Critical"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:N/PR:L/UI:N/VC:N/VI:L/VA:N/SC:H/SI:H/SA:L/IR:L/AR:L/MUI:N/MVC:L/MVI:H/MVA:H/MSC:L/R:A/V:D/U:Red",
+   "score": 5.4,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:P/PR:H/UI:A/VC:L/VI:N/VA:N/SC:L/SI:H/SA:N/E:X/MVI:L/MSI:H/S:P/V:D/U:Red",
+   "score": 2.0,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H/IR:M/AR:X/MSC:L/S:X/R:U/RE:H",
+   "score": 9.3,
+   "severity": "Critical"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:P/PR:H/UI:A/VC:L/VI:N/VA:L/SC:N/SI:H/SA:L/CR:H/MAT:N/MSC:L/AU:Y/V:D",
+   "score": 4.4,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:L/VA:L/SC:L/SI:N/SA:N/E:U/CR:M/AR:M/MAC:L/MPR:H/MUI:A/MVI:H/MSI:S/MSA:L/S:P/R:A",
+   "score": 7.0,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:A/VC:N/VI:H/VA:N/SC:L/SI:N/SA:H/CR:L/MUI:N/MVA:N/RE:M",
+   "score": 8.9,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:H/AT:N/PR:N/UI:P/VC:L/VI:H/VA:N/SC:L/SI:L/SA:H/E:X/IR:M/AR:L/MAV:N/MUI:X/MVA:N/S:P/R:A/RE:X",
+   "score": 5.8,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:P/PR:H/UI:A/VC:H/VI:H/VA:L/SC:N/SI:N/SA:H/MUI:X/MVI:L/MSI:H/V:D/RE:H/U:Red",
+   "score": 5.9,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:N/PR:H/UI:N/VC:N/VI:N/VA:L/SC:L/SI:H/SA:H/MAV:P/MAT:P/MPR:L/MVI:H/MSI:H/MSA:H/S:X/AU:Y",
+   "score": 5.9,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:H/AT:P/PR:N/UI:P/VC:N/VI:L/VA:L/SC:N/SI:L/SA:H/CR:H/MAT:X/MPR:X/MVC:X/MVA:H",
+   "score": 6.9,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:P/VC:N/VI:N/VA:L/SC:N/SI:N/SA:H/IR:X/MAV:P/MVC:H/MVI:N/S:N/RE:X/U:Amber",
+   "score": 6.7,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:N/PR:N/UI:A/VC:L/VI:N/VA:H/SC:N/SI:L/SA:L/AR:X/MAC:L/MPR:N/MSC:L/MSI:N/V:C",
+   "score": 5.2,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:P/PR:H/UI:A/VC:L/VI:N/VA:H/SC:L/SI:L/SA:N/CR:L/MAT:P/MSC:H/MSI:L/S:N",
+   "score": 5.6,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:A/VC:L/VI:L/VA:N/SC:H/SI:N/SA:H/MAV:L/MAT:N/MVC:H/MVA:X/MSC:L/MSI:H/AU:Y",
+   "score": 8.3,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:P/PR:L/UI:N/VC:H/VI:L/VA:H/SC:H/SI:N/SA:H/AR:L/MAV:X/MPR:X/MVA:H/MSI:L/AU:N/V:D/U:Clear",
+   "score": 5.9,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:L/AT:P/PR:H/UI:A/VC:H/VI:L/VA:N/SC:L/SI:L/SA:H/E:A/CR:X/IR:H/MUI:N/MVA:L/MSI:N/S:X/R:A",
+   "score": 7.1,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:P/PR:H/UI:N/VC:L/VI:H/VA:L/SC:H/SI:L/SA:N/E:P/IR:L/AR:H/MUI:N/MSI:H/RE:M",
+   "score": 1.6,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:N/PR:L/UI:N/VC:H/VI:N/VA:L/SC:H/SI:H/SA:N/IR:M/MUI:P/MSC:X/S:N",
+   "score": 5.8,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:H/AT:N/PR:H/UI:P/VC:H/VI:H/VA:H/SC:L/SI:L/SA:N/CR:H/MAV:X/MPR:X/MUI:A/MVI:H/MSA:H/AU:Y/R:I/V:X",
+   "score": 7.0,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:P/PR:N/UI:P/VC:N/VI:H/VA:L/SC:H/SI:L/SA:L/MAT:P/MUI:N/MVA:X/MSI:H/S:P/AU:Y/R:I",
+   "score": 7.2,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:N/PR:H/UI:P/VC:N/VI:L/VA:N/SC:N/SI:L/SA:N/AR:H/MAT:P/MPR:L/MUI:P/MVC:L/S:X/AU:Y/R:X",
+   "score": 1.0,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:P/PR:N/UI:N/VC:N/VI:L/VA:L/SC:L/SI:H/SA:H/E:P/MAV:N/MAC:H/MAT:P/MUI:N/MVC:H/MVI:H/MSC:H",
+   "score": 9.0,
+   "severity": "Critical"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:P/PR:H/UI:P/VC:H/VI:N/VA:N/SC:L/SI:N/SA:H/MPR:H/MUI:A/U:Red",
+   "score": 5.7,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:N/PR:N/UI:N/VC:L/VI:L/VA:L/SC:H/SI:N/SA:L/AR:M/MAV:X/MPR:X/MVI:N",
+   "score": 4.2,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:H/AT:P/PR:L/UI:A/VC:N/VI:H/VA:N/SC:H/SI:H/SA:L/MVI:H/MVA:N/MSI:N/S:P",
+   "score": 6.9,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:A/VC:L/VI:H/VA:H/SC:N/SI:N/SA:N/E:A/IR:H/AR:H/MAT:N/MUI:X/MSA:L/AU:N/RE:H/U:X",
+   "score": 6.8,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:P/PR:H/UI:P/VC:H/VI:N/VA:N/SC:L/SI:H/SA:N/E:U/CR:M/MAC:H/MUI:X/MSI:H/MSA:X/AU:X/R:U",
+   "score": 0.6,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:L/VI:N/VA:L/SC:H/SI:H/SA:H/E:U/IR:M/MAC:L/MAT:X/MPR:H/MSI:S/MSA:H/S:N/AU:N/R:U",
+   "score": 4.4,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:N/PR:L/UI:N/VC:H/VI:N/VA:L/SC:L/SI:N/SA:N/E:X/IR:X/MSC:H/MSA:N/R:I/V:D",
+   "score": 5.6,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:A/VC:H/VI:N/VA:L/SC:N/SI:L/SA:H/E:U/CR:M/IR:X/AR:X/MVI:N/R:X/U:Amber",
+   "score": 4.0,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:N/AC:H/AT:N/PR:L/UI:A/VC:N/VI:H/VA:L/SC:H/SI:L/SA:H/CR:M/MAC:L/MPR:X/MVA:N/V:D/RE:M",
+   "score": 8.3,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:P/PR:N/UI:P/VC:H/VI:L/VA:N/SC:H/SI:L/SA:L/CR:X/MAV:X/MUI:P/MVC:L/MSI:H/MSA:N/AU:X/R:X/RE:L/U:Red",
+   "score": 5.1,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:P/PR:H/UI:P/VC:H/VI:N/VA:N/SC:H/SI:L/SA:N/AR:L/MUI:P/MVC:X/MVI:H/MSC:H/S:P/V:X/RE:H",
+   "score": 6.7,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:P/PR:N/UI:P/VC:L/VI:H/VA:N/SC:L/SI:L/SA:L/E:U/CR:H/MAT:N/MPR:H/MUI:X/MVI:L/S:X/V:C",
+   "score": 0.1,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:N/VC:L/VI:H/VA:H/SC:H/SI:H/SA:N/MAV:L/MPR:N/MVI:L/MVA:X/R:U/V:X",
+   "score": 8.4,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:P/PR:H/UI:P/VC:H/VI:N/VA:N/SC:L/SI:L/SA:H/MAV:N/MAC:X/MSA:S/V:X/RE:M",
+   "score": 8.4,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:P/PR:N/UI:P/VC:H/VI:L/VA:L/SC:N/SI:N/SA:H/CR:X/AR:M/MPR:X/MVC:L/MVA:H/MSC:N/MSA:N/AU:X/R:A",
+   "score": 1.8,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:H/AT:P/PR:H/UI:P/VC:N/VI:N/VA:N/SC:H/SI:N/SA:N/MAC:L/MPR:H/MVC:H/MVI:L/MSC:L/U:Green",
+   "score": 4.3,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:N/PR:H/UI:N/VC:N/VI:N/VA:N/SC:L/SI:N/SA:L/E:U/CR:M/AR:L/MAV:L/MAT:X/MVI:N/MVA:N/AU:Y/V:D/RE:M",
+   "score": 1.0,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:N/PR:H/UI:A/VC:H/VI:N/VA:N/SC:N/SI:N/SA:L/MAV:X/MUI:N/MVI:L/MSI:S/AU:Y/V:C",
+   "score": 8.2,
+   "severity": "High"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:H/AT:N/PR:L/UI:N/VC:L/VI:H/VA:N/SC:L/SI:L/SA:N/IR:H/MAC:H/MVI:L/MSA:N",
+   "score": 2.1,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:P/PR:L/UI:P/VC:L/VI:H/VA:H/SC:L/SI:H/SA:H/E:X/MAT:X/MPR:N/MUI:N/MVI:L/MVA:N/R:X/V:C/RE:M",
+   "score": 5.6,
+   "severity": "Medium"
+  },
+  {
+   "vector": "CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:A/VC:H/VI:H/VA:L/SC:L/SI:H/SA:N/E:A/CR:H/MAV:X/MAC:H/MAT:P/MVA:N/MSI:S/AU:N/RE:M",
+   "score": 9.2,
+   "severity": "Critical"
+  },
+  {
+   "vector": "CVSS:4.0/AV:P/AC:L/AT:P/PR:H/UI:A/VC:L/VI:N/VA:N/SC:L/SI:H/SA:L/IR:H/AR:L/MAV:A/MPR:L/MVI:N/MSI:N/U:Green",
+   "score": 1.0,
+   "severity": "Low"
+  },
+  {
+   "vector": "CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:H/SC:L/SI:H/SA:H/CR:L/AR:M/MSA:N/R:A/V:X/RE:X",
+   "score": 7.3,
+   "severity": "High"
+  }
+ ]
+}
