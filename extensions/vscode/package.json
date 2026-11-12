@@ -1,0 +1,76 @@
+{
+  "name": "codekavach",
+  "displayName": "CodeKavach Secure Code Review",
+  "description": "Privacy-preserving security review: scan your workspace, see findings in the Problems panel and a tree view.",
+  "version": "0.1.0",
+  "publisher": "codekavach",
+  "license": "MIT",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Linters", "Other"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      { "command": "codekavach.scan", "title": "CodeKavach: Scan Workspace" },
+      { "command": "codekavach.refresh", "title": "CodeKavach: Reload Findings From Last Scan" },
+      { "command": "codekavach.setPrivacyLevel", "title": "CodeKavach: Set Privacy Level" },
+      { "command": "codekavach.showFinding", "title": "CodeKavach: Show Finding Details" },
+      { "command": "codekavach.openDashboard", "title": "CodeKavach: Open Dashboard" }
+    ],
+    "viewsContainers": {
+      "activitybar": [{ "id": "codekavach", "title": "CodeKavach", "icon": "media/shield.svg" }]
+    },
+    "views": {
+      "codekavach": [{ "id": "codekavach.findings", "name": "Findings" }]
+    },
+    "viewsWelcome": [
+      {
+        "view": "codekavach.findings",
+        "contents": "No findings loaded.\n[Scan Workspace](command:codekavach.scan)"
+      }
+    ],
+    "configuration": {
+      "title": "CodeKavach",
+      "properties": {
+        "codekavach.executable": {
+          "type": "string",
+          "default": "codekavach",
+          "description": "Path of the codekavach command."
+        },
+        "codekavach.privacyLevel": {
+          "type": "string",
+          "enum": ["L0", "L1", "L2", "L3", "L4"],
+          "default": "L3",
+          "description": "What may leave your machine when an LLM provider is used."
+        },
+        "codekavach.provider": {
+          "type": "string",
+          "default": "",
+          "description": "LLM provider id (for example agentrouter or ollama). Empty runs deterministic analysis only; nothing is sent anywhere."
+        },
+        "codekavach.dashboardUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8080",
+          "description": "Address of the CodeKavach dashboard."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.5.0"
+  }
+}
