@@ -5,13 +5,13 @@
         "application data",
         "user accounts"
       ],
-      "analysis": "Mock analysis fa01f35343f5: attacker-influenced data reaches the sink.",
+      "analysis": "Mock analysis 2a8f8c4fbcb6: attacker-influenced data reaches the sink.",
       "attack_scenario": "Mock scenario: the attacker sends crafted input.",
       "exploit_preconditions": "Mock: the entry point is reachable by an untrusted caller.",
       "impact": "Mock impact: an attacker could read or modify data handled by this code.",
-      "severity": "medium"
+      "severity": "critical"
     }
   },
-  "payload_hash": "fa01f35343f5e6d93521de1375cddba2a14291f9908ea833ddf20d04553fa989",
+  "payload_hash": "2a8f8c4fbcb6b0e9c816098504055c5fa36ac6c5782e81d0edf6da57b2059254",
   "status": 200
 }
