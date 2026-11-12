@@ -56,6 +56,8 @@ Recorded on 2026-11-12, linux/amd64, Docker 28.5:
 
 Verified on that build: `docker run --rm --network none --read-only ... codekavach:local scan /data/kb --provider mock` completes all stages offline with the vault on a passphrase key, and `codekavach demo` inside the container writes `report.pdf`. The bundle's `install.sh --pip` installs from the bundled wheels inside a `python:3.12-slim` container started with `--network none`, and a mock scan of the sample then completes.
 
+Re-verified on 2026-11-13 against commit `cc5bfb7` (image 624 MB): `docker compose up` reaches `(healthy)`, `/api/v1/health` answers `ok`, the dashboard is served at `/`, the `admin` login works, the sample project is seeded, a mock scan of KavachBank at L2 completes (66 findings) and the HTML, PDF, SARIF, XLSX and DOCX reports download; with `CODEKAVACH_AGENTROUTER_API_KEY` set, `agentrouter` is reported as configured and `POST /api/v1/providers/agentrouter/test` answers `ok` from `gpt-5.6-sol`. Scans, users and the vault passphrase survive a container restart (named volume).
+
 The pip mode installs the wheel, which does not carry `rules/`; the rule packs come from the bundle directory (`--rules <bundle>/rules/mit/packs/default`). The Docker mode keeps the checkout layout and needs no flag.
 
 ## Not done yet (E39-02 follow-ups)
