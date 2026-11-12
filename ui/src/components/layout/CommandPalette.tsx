@@ -40,7 +40,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   useFocusTrap(true, ref, onClose);
-  const { current } = useCurrentProject();
+  const { current, projects } = useCurrentProject();
   const scans = useScans(current?.id).data ?? [];
   const allScansQ = useScans().data;
   const latest = pickDefault(scans);
@@ -71,7 +71,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         out.push({
           key: `s-${s.id}`,
           lead: <span className="pal-k">SCAN</span>,
-          text: `${scanLabel(s.id)} · ${s.project_name ?? ""} ${s.privacy_level}`.trim(),
+          text: `${scanLabel(s.id)} · ${s.project_name ?? projects.find((p) => p.id === s.project_id)?.name ?? ""} · ${s.privacy_level}`,
           go: go(`/scans/${s.id}`),
         });
       }
@@ -99,7 +99,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       }
     }
     return out;
-  }, [findingsQ, allScansQ, term, latest, navigate, onClose, can]);
+  }, [findingsQ, allScansQ, term, latest, navigate, onClose, can, projects]);
 
   useEffect(() => setSel(0), [term]);
 
