@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useFinding, useFindingHistory, useLedgerEntry, usePatchFinding, useProviders, useReviewFinding, useSettings, useUsers } from "@/api/queries";
 import { FINDING_STATUSES, type Finding, type FindingStatus, type PrivacyLevel, type TaintStep } from "@/api/types";
 import { useSession } from "@/app/session";
+import { useFollowScanProject } from "@/app/useSelectedScan";
 import { enginesOf, locationOf, verdictOf } from "@/lib/domain";
 import { capitalise, byteLength, fmtDate, fmtHash, fmtInt, fmtSeq, fmtShort, findingLabel, LEVEL_NAME, lineCount, payloadLineCount, scanLabel } from "@/lib/display";
 import { confidenceFraction, frameworkLabel, STATUS_LABEL } from "@/lib/format";
@@ -101,6 +102,7 @@ export default function FindingDetailPage() {
   const q = useFinding(id);
   const f = q.data;
   const history = useFindingHistory(id);
+  useFollowScanProject(f?.scan_id);
   const reviews = f?.provenance?.llm_reviews ?? [];
   const seq = reviews.find((r) => r.ledger_seq !== null && r.ledger_seq !== undefined)?.ledger_seq ?? null;
   const ledger = useLedgerEntry(f?.scan_id, seq);
@@ -407,7 +409,7 @@ export default function FindingDetailPage() {
                   aria-label="Status"
                   value={f.status}
                   disabled={!can("findings:triage") || patch.isPending}
-                  onChange={(e) => doPatch({ status: e.target.value as FindingStatus }, "Status updated")}
+                  onChange={(e) => e.target.value !== f.status && doPatch({ status: e.target.value as FindingStatus }, "Status updated")}
                 >
                   {FINDING_STATUSES.map((s) => (
                     <option key={s} value={s}>
@@ -449,7 +451,7 @@ export default function FindingDetailPage() {
               <dt>Payload</dt>
               <dd>
                 {seq !== null ? (
-                  <Link className="mono acc sm" to={`/privacy/ledger?scan=${f.scan_id}&seq=${seq}`} style={{ textDecoration: "none" }}>
+                  <Link className="mono acc sm" to={`/privacy/ledger?scan=${f.scan_id}&seq=${seq}`} title="Open this payload in the egress ledger">
                     #{fmtSeq(seq)}
                     {ledger.data ? ` · ${fmtHash(ledger.data.entry.payload_hash)}` : ""}
                   </Link>
@@ -494,6 +496,7 @@ export default function FindingDetailPage() {
                   })}
                 </dl>
               )}
+              <OtherRatings f={f} />
             </div>
           )}
 
@@ -663,7 +666,7 @@ function SawTab({ f, seq, ledger }: { f: Finding; seq: number | null; ledger: Re
       <div className="row between sm">
         <span className="muted">
           Payload{" "}
-          <Link className="mono acc" to={`/privacy/ledger?scan=${f.scan_id}&seq=${seq}`} style={{ textDecoration: "none" }}>
+          <Link className="mono acc" to={`/privacy/ledger?scan=${f.scan_id}&seq=${seq}`} title="Open this payload in the egress ledger">
             #{fmtSeq(seq)}
           </Link>{" "}
           · {lv} {LEVEL_NAME[lv]?.toLowerCase()} · {sent} of {total || "—"} lines · {fmtInt(bytes)} bytes
@@ -767,5 +770,45 @@ function ReasonTab({ f, conf, onReview, reviewing }: { f: Finding; conf: number 
         </div>
       )}
     </div>
+  );
+}
+
+interface RiskDetail {
+  owasp_likelihood?: number;
+  owasp_impact?: number;
+  owasp_likelihood_band?: string;
+  owasp_impact_band?: string;
+  owasp_overall?: string;
+}
+
+/** CVSS 3.1 and the OWASP risk rating, under the CVSS 4.0 card (the report carries all three). */
+function OtherRatings({ f }: { f: Finding }) {
+  const risk = (f as Finding & { risk?: RiskDetail | null }).risk ?? null;
+  const v31 = f.cvss31_score;
+  const hasOwasp = risk?.owasp_overall && risk.owasp_likelihood !== undefined && risk.owasp_impact !== undefined;
+  if ((v31 === null || v31 === undefined) && !hasOwasp) return null;
+  return (
+    <dl className="dl sm" style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+      {v31 !== null && v31 !== undefined && (
+        <Pair k="CVSS 3.1">
+          <span title={f.cvss31_vector ?? undefined}>
+            <b>{v31.toFixed(1)}</b> {cvssRating(v31)}
+          </span>
+          {f.cvss31_vector && (
+            <div className="mono xs muted" style={{ wordBreak: "break-all" }}>
+              {f.cvss31_vector}
+            </div>
+          )}
+        </Pair>
+      )}
+      {hasOwasp && (
+        <Pair k="OWASP risk">
+          <b>{capitalise(risk!.owasp_overall!)}</b>
+          <div className="xs muted">
+            Likelihood {risk!.owasp_likelihood!.toFixed(1)} {risk!.owasp_likelihood_band ?? ""} · impact {risk!.owasp_impact!.toFixed(1)} {risk!.owasp_impact_band ?? ""}
+          </div>
+        </Pair>
+      )}
+    </dl>
   );
 }
