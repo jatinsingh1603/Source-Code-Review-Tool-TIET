@@ -91,21 +91,47 @@ def network_posture(state: ServerState) -> str:
     """``online`` when the default provider is remote and enabled, else ``offline``.
 
     It says whether a default scan would send payloads off this machine (through the egress
-    guard), not whether the host has a network connection. Cached for 30 seconds.
+    guard), not whether the host has a network connection. Cached for 30 seconds. A scan that
+    is queued or running now with a remote provider also makes it ``online``, so the dashboard
+    does not say "offline" while payloads are leaving.
     """
     cached = _posture.get("value")
     if cached is not None and time.monotonic() - cached[0] < 30.0:
-        return cached[1]
-    value = "offline"
-    try:
-        default = str(state.get_settings().get("default_provider") or "mock")
-        provider = _server_settings(state).llm.providers.get(default)
-        if provider is not None and provider.is_remote and provider.enabled:
-            value = "online"
-    except Exception as error:  # noqa: BLE001 - an unreadable configuration sends nothing
-        _log.info("server_network_posture_unknown", error_type=type(error).__name__)
-    _posture["value"] = (time.monotonic(), value)
+        value = cached[1]
+    else:
+        value = "offline"
+        try:
+            default = str(state.get_settings().get("default_provider") or "mock")
+            provider = _server_settings(state).llm.providers.get(default)
+            if provider is not None and provider.is_remote and provider.enabled:
+                value = "online"
+        except Exception as error:  # noqa: BLE001 - an unreadable configuration sends nothing
+            _log.info("server_network_posture_unknown", error_type=type(error).__name__)
+        _posture["value"] = (time.monotonic(), value)
+    if value == "offline" and _remote_scan_running(state):
+        return "online"
     return value
+
+
+def _remote_scan_running(state: ServerState) -> bool:
+    """Whether a queued or running scan of this process uses a remote provider."""
+    active = state.runner.active()
+    if not active:
+        return False
+    try:
+        with state.db.transaction() as session:
+            names = {
+                str(row.provider)
+                for row in session.scalars(select(ScanRow).where(ScanRow.id.in_(active)))
+                if row.send and row.provider not in {None, "", "none"}
+            }
+        providers = _server_settings(state).llm.providers
+        return any(
+            (chosen := providers.get(name)) is not None and chosen.is_remote for name in names
+        )
+    except Exception as error:  # noqa: BLE001 - unknown is reported as online, not offline
+        _log.info("server_network_posture_unknown", error_type=type(error).__name__)
+        return True
 
 
 @router.get("/version")
