@@ -24,7 +24,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Final, Literal
 
 import typer
 from rich.console import Console
@@ -236,6 +236,31 @@ def _check_provider_key(out: Output, cli_ctx: "CliContext", provider_id: str) ->
         f"provider '{provider_id}' has no API key ({where} is not set); "
         "the scan continues without LLM review",
     )
+
+
+VAULT_HINT: Final = (
+    "no usable OS keyring for the pseudonym vault, so no payload can be prepared for the LLM; "
+    "use a passphrase: export CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE=passphrase "
+    "CODEKAVACH_PRIVACY__VAULT__PASSPHRASE=env:MY_VAULT_PASSPHRASE MY_VAULT_PASSPHRASE=<secret>"
+)
+
+
+def _check_vault_key(out: Output, cli_ctx: "CliContext", provider_id: str) -> None:
+    """Warn, before any work, that the vault's keyring is unusable for an LLM run (E22).
+
+    Without a vault key the ``privacy-prepare`` stage fails closed (I4) and no candidate reaches
+    the provider; the deterministic findings are still reported. The check only asks which
+    keyring backend is active; it reads no secret.
+    """
+    from codekavach.config.errors import ConfigError  # noqa: PLC0415
+    from codekavach.config.keys import KeyringUnavailableError, open_keyring  # noqa: PLC0415
+
+    if provider_id == "mock" or cli_ctx.settings.privacy.vault.key_source != "keyring":
+        return
+    try:
+        open_keyring("keyring")
+    except (KeyringUnavailableError, ConfigError):
+        out.warn("vault_key_unavailable", VAULT_HINT)
 
 
 def resolve_provider(cli_ctx: "CliContext") -> ProviderChoice:
@@ -667,6 +692,7 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         out.info(f"remote egress to {provider.id} accepted via {consent.source}")
     if provider.id is not None and not no_llm:
         _check_provider_key(out, cli_ctx, provider.id)
+        _check_vault_key(out, cli_ctx, provider.id)
     result = execute_scan(
         cli_ctx,
         target,
