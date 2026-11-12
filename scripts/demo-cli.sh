@@ -142,7 +142,7 @@ step "Privacy: audit the ledger" "Hash chain, payload hashes, and a search for e
   privacy ledger verify . --check-terms "$TERMS" --include-blocked
 
 step "Privacy: explain a decision" "Why was a value redacted or renamed?" \
-  "every privacy decision is explainable" -- privacy explain --help
+  "the privacy level of any file is explained axis by axis (path, language, rule, classification)" -- privacy explain services/api/interest_engine.py
 
 # Ask the build which formats exist, so a format that has not landed is skipped, not a failure.
 WANT="html pdf sarif xlsx docx"; FORMATS=""
@@ -156,7 +156,7 @@ if [ -d "$OUT/reports" ]; then printf '%s' "$D"; ls -1 "$OUT/reports" | sed 's/^
 
 step "Send findings to GitHub (dry run)" "Issues and a project board; here only what would change." \
   "findings reach the client's tracker without code leaving, and dry-run changes nothing" -- \
-  sync github . --dry-run
+  sync github . --repo example-org/kavachbank --dry-run
 
 step "Leakage: what could a curious provider learn?" "Beyond verbatim terms: attack the payloads and measure." \
   "privacy is measured, not asserted" -- eval leakage --level L3
