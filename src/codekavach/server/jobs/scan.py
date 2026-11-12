@@ -545,6 +545,7 @@ def _store(  # noqa: PLR0917 - the parts of one result
                 out_dir=paths.reports,
                 zero_leak=privacy.zero_leak,
                 stem="report",
+                project_name=project.name,
             )
         except Exception as error:  # noqa: BLE001 - a report can be rendered later on demand
             log.append("log", {"level": "warning", "message": f"{fmt} report not rendered: "

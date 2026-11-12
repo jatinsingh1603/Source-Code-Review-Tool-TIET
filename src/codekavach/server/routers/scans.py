@@ -20,6 +20,7 @@ from fastapi.responses import FileResponse, Response, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from codekavach.core.log import get_logger
 from codekavach.server import audit
 from codekavach.server.auth.dependencies import (
     Principal,
@@ -35,12 +36,15 @@ from codekavach.server.events import stream
 from codekavach.server.finding_query import FindingFilters, list_findings
 from codekavach.server.rbac import Permission
 from codekavach.server.reports import (
+    ALIASES,
     LABELS,
     MEDIA_TYPES,
     apply_statuses,
     available_formats,
     is_fresh,
     render,
+    render_manifest,
+    report_file,
 )
 from codekavach.server.results import (
     SEVERITY_ORDER,
@@ -57,6 +61,7 @@ ReadDep = Depends(require(Permission.read))
 RunDep = Depends(require(Permission.scan_run))
 LedgerDep = Depends(require(Permission.ledger_read))
 OriginalDep = Depends(require(Permission.original_read))
+_log = get_logger("codekavach.server.scans")
 ReportDep = Depends(require(Permission.report_read))
 SyncDep = Depends(require(Permission.sync))
 LEVELS: Final = ("L0", "L1", "L2", "L3", "L4")
@@ -708,31 +713,28 @@ def download_attestation(
 
 @router.get("/scans/{scan_id}/reports", dependencies=[ReportDep])
 def list_reports(scan_id: str, state: StateDep, session: SessionDep) -> dict[str, Any]:
-    """The report formats that can be downloaded for this scan."""
+    """The report formats that can be downloaded for this scan, and the integrity manifest."""
     row = get_scan_row(session, scan_id)
-    formats = available_formats()
-    rendered = {}
-    if row.workspace:
-        reports = ScanPaths(Path(row.workspace)).reports
-        if reports.is_dir():
-            rendered = {item.suffix.lstrip("."): item.stat().st_size for item in reports.iterdir()}
-    return {
-        "scan_id": scan_id,
-        "ready": row.status == "completed",
-        "formats": [
-            {
-                "format": fmt,
-                "label": LABELS.get(fmt, fmt.upper()),
-                "media_type": MEDIA_TYPES.get(fmt, "application/octet-stream"),
-                "available": True,
-                "reason": None,
-                "rendered": fmt in rendered,
-                "size": rendered.get(fmt),
-                "url": f"/api/v1/scans/{scan_id}/reports/{fmt}",
-            }
-            for fmt in formats
-        ],
-    }
+    formats = [fmt for fmt in available_formats() if fmt not in ALIASES]
+    reports = ScanPaths(Path(row.workspace)).reports if row.workspace else None
+
+    def entry(fmt: str, path: Path | None) -> dict[str, Any]:
+        done = path is not None and path.is_file()
+        return {
+            "format": fmt,
+            "label": LABELS.get(fmt, fmt.upper()),
+            "media_type": MEDIA_TYPES.get(fmt, "application/octet-stream"),
+            "available": True,
+            "reason": None,
+            "rendered": done,
+            "size": path.stat().st_size if done and path is not None else None,
+            "url": f"/api/v1/scans/{scan_id}/reports/{fmt}",
+        }
+
+    items = [entry(fmt, report_file(reports, fmt) if reports else None) for fmt in formats]
+    if formats:
+        items.append(entry("manifest", reports / MANIFEST if reports else None))
+    return {"scan_id": scan_id, "ready": row.status == "completed", "formats": items}
 
 
 @router.get("/scans/{scan_id}/reports/{fmt}")
@@ -748,12 +750,14 @@ def download_report(
     """Download the report in ``fmt`` (rendered now when missing or older than the triage)."""
     row = get_scan_row(session, scan_id)
     paths, core_id = _completed(row)
-    if fmt not in available_formats():
+    formats = available_formats()
+    if fmt == "manifest" and formats:
+        target = _manifest(state, session, row, paths, core_id, formats)
+        return _report_response(request, state, session, row, principal, fmt, target, inline)
+    if fmt not in formats:
         raise ApiError(404, "format_unavailable", f"no renderer for the format {fmt}")
     results = scan_results(state, row)
-    extension = fmt
-    existing = [item for item in paths.reports.glob("report.*") if item.suffix == f".{fmt}"]
-    target = existing[0] if existing else paths.reports / f"report.{extension}"
+    target = report_file(paths.reports, fmt)
     if not is_fresh(target, as_utc(row.triage_updated_at)):
         statuses = {
             item.id: item.status
@@ -769,17 +773,84 @@ def download_report(
                 out_dir=paths.reports,
                 zero_leak=(row.privacy or {}).get("zero_leak"),
                 stem="report",
+                project_name=_project_name(session, row),
             )
         except Exception as error:  # noqa: BLE001 - reported as an API error, not a 500
             raise ApiError(
                 503, "report_failed", f"the {fmt} report could not be rendered",
                 hint=type(error).__name__,
             ) from None  # fmt: skip
+    return _report_response(request, state, session, row, principal, fmt, target, inline)
+
+
+MANIFEST: Final = "manifest.json"
+
+
+def _project_name(session: Session, row: ScanRow) -> str | None:
+    project = session.get(Project, row.project_id)
+    return project.name if project else None
+
+
+def _manifest(
+    state: ServerState,
+    session: Session,
+    row: ScanRow,
+    paths: ScanPaths,
+    core_id: str,
+    formats: list[str],
+) -> Path:
+    """Render every missing or stale format, then hash them all into ``manifest.json``."""
+    changed = as_utc(row.triage_updated_at)
+    statuses = {
+        item.id: item.status
+        for item in session.scalars(select(FindingRow).where(FindingRow.scan_id == row.id))
+    }
+    results = scan_results(state, row)
+    settings = state.report_settings(results.settings)
+    findings = apply_statuses(read_findings(paths, core_id), statuses)
+    name = _project_name(session, row)
+    files: list[Path] = []
+    for fmt in formats:
+        if fmt in ALIASES:
+            continue
+        target = report_file(paths.reports, fmt)
+        if not is_fresh(target, changed):
+            leak = (row.privacy or {}).get("zero_leak")
+            try:
+                target = render(fmt, scan_json=paths.scan_json, state_dir=paths.state_dir,
+                                findings=findings, settings=settings, out_dir=paths.reports,
+                                zero_leak=leak, stem="report", project_name=name)  # fmt: skip
+            except Exception as error:  # noqa: BLE001 - a format that cannot render is left out
+                _log.warning("manifest_format_skipped", format=fmt, error_type=type(error).__name__)
+                continue
+        files.append(target)
+    try:
+        return render_manifest(scan_json=paths.scan_json, state_dir=paths.state_dir,
+                               findings=findings, settings=settings, out_dir=paths.reports,
+                               files=files, project_name=name)  # fmt: skip
+    except Exception as error:  # noqa: BLE001 - reported as an API error, not a 500
+        raise ApiError(503, "report_failed", "the integrity manifest could not be written",
+                       hint=type(error).__name__) from None  # fmt: skip
+
+
+def _report_response(
+    request: Request,
+    state: ServerState,
+    session: Session,
+    row: ScanRow,
+    principal: Any,
+    fmt: str,
+    target: Path,
+    inline: bool,
+) -> FileResponse:
+    scan_id = row.id
     audit.record(state.db, actor=principal.username, action="report.download",
                  resource=f"{scan_id}.{fmt}", client=client_of(request))  # fmt: skip
     project = session.get(Project, row.project_id)
     base = re.sub(r"[^A-Za-z0-9]+", "-", project.name if project else "project").strip("-")
-    filename = f"codekavach-{base.lower() or 'project'}-{scan_id}.{target.suffix.lstrip('.')}"
+    # "report.compliance.html" keeps its "compliance.html" so it never shares a name with the HTML.
+    suffix = target.name.split(".", 1)[1] if target.name.startswith("report.") else target.name
+    filename = f"codekavach-{base.lower() or 'project'}-{scan_id}.{suffix}"
     response = FileResponse(
         target,
         media_type=MEDIA_TYPES.get(fmt, "application/octet-stream"),

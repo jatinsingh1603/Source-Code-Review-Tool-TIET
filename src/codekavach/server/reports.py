@@ -31,6 +31,9 @@ MEDIA_TYPES: Final = {
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "md": "text/markdown; charset=utf-8",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "markdown": "text/markdown; charset=utf-8",
+    "compliance": "text/html; charset=utf-8",
+    "manifest": "application/json",
 }
 LABELS: Final = {
     "html": "HTML report",
@@ -41,7 +44,12 @@ LABELS: Final = {
     "xlsx": "Excel workbook",
     "md": "Markdown report",
     "docx": "Word document",
+    "markdown": "Markdown report",
+    "compliance": "Compliance annex",
+    "manifest": "Integrity manifest",
 }
+#: Formats that only repeat another one under a second name (``markdown`` is ``md``).
+ALIASES: Final = {"markdown": "md"}
 
 
 def available_formats(settings: "Settings | None" = None) -> list[str]:
@@ -64,6 +72,11 @@ def extension_of(fmt: str, settings: "Settings | None" = None) -> str:
         return str(value).lstrip(".") or fmt
     except Exception:  # noqa: BLE001 - fall back to the format name
         return fmt
+
+
+def report_file(out_dir: Path, fmt: str, stem: str = "report") -> Path:
+    """Where the rendered ``fmt`` is kept: one file per format, never shared between two."""
+    return out_dir / f"{stem}.{extension_of(fmt)}"
 
 
 def apply_statuses(findings: "Sequence[Finding]", statuses: dict[str, str]) -> "list[Finding]":
@@ -91,6 +104,7 @@ def render(
     out_dir: Path,
     zero_leak: dict[str, Any] | None,
     stem: str,
+    project_name: str | None = None,
 ) -> Path:
     """Render ``fmt`` into ``out_dir`` and return the file.
 
@@ -117,13 +131,44 @@ def render(
         )
     document = build_report_document(
         scan, list(findings), settings, summarise_ledger(state_dir, str(scan.id), settings,
-                                                         zero_leak=leak)
+                                                         zero_leak=leak),
+        project_name=project_name,
     )  # fmt: skip
     out_dir.mkdir(parents=True, exist_ok=True)
     extension = str(getattr(renderer, "extension", fmt)).lstrip(".") or fmt
     target = out_dir / f"{stem}.{extension}"
     written = renderer.render(document, target)
     return Path(written)
+
+
+def render_manifest(
+    *,
+    scan_json: Path,
+    state_dir: Path,
+    findings: "Sequence[Finding]",
+    settings: "Settings",
+    out_dir: Path,
+    files: "Sequence[Path]",
+    project_name: str | None = None,
+) -> Path:
+    """Write ``manifest.json`` (SHA-256 and size of every rendered report file) into ``out_dir``."""
+    from codekavach.core.models.scan import Scan  # noqa: PLC0415
+    from codekavach.report.model.build import (  # noqa: PLC0415
+        build_report_document,
+        summarise_ledger,
+    )
+    from codekavach.report.render.bundle import write_manifest  # noqa: PLC0415
+
+    scan = Scan.model_validate(json.loads(scan_json.read_text(encoding="utf-8")))
+    document = build_report_document(
+        scan,
+        list(findings),
+        settings,
+        summarise_ledger(state_dir, str(scan.id), settings),
+        project_name=project_name,
+    )
+    manifest, _sums = write_manifest(files, out_dir, doc=document)
+    return manifest
 
 
 def is_fresh(path: Path, changed_at: datetime | None) -> bool:

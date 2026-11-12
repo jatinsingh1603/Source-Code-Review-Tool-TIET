@@ -304,8 +304,28 @@ def test_reports(
     assert html.status_code == 200
     assert "attachment" in html.headers["content-disposition"]
     assert b"<html" in html.content.lower()
+    project = client.get(f"/api/v1/projects/{scan['project_id']}", headers=users["viewer"]).json()
+    assert f"<title>Secure Source Code Review Report: {project['name']}".encode() in html.content
     missing = client.get(f"/api/v1/scans/{scan['id']}/reports/nope", headers=users["viewer"])
     assert missing.status_code == 404
+    assert "markdown" not in formats  # an alias of md, listed once
+    assert "manifest" in formats
+
+
+def test_compliance_annex_never_replaces_the_html_report(
+    server: tuple[TestClient, Any], scan: dict[str, Any], users: dict[str, dict[str, str]]
+) -> None:
+    client = server[0]
+    base = f"/api/v1/scans/{scan['id']}/reports"
+    annex = client.get(f"{base}/compliance", headers=users["viewer"])
+    assert annex.status_code == 200
+    assert annex.headers["content-disposition"].endswith('.compliance.html"')
+    html = client.get(f"{base}/html", headers=users["viewer"])
+    assert html.content != annex.content
+    manifest = client.get(f"{base}/manifest", headers=users["viewer"])
+    if manifest.status_code == 200:
+        files = {item["file"] for item in manifest.json()["files"]}
+        assert {"report.html", "report.compliance.html"} <= files
 
 
 def test_stats_and_settings(
