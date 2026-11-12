@@ -171,7 +171,7 @@ export default function SettingsPage() {
               </div>
               <div className="fld">
                 <label htmlFor="st-e">Email</label>
-                <input id="st-e" className="inp" value={user?.email || user?.username || ""} disabled />
+                <input id="st-e" className="inp" value={user?.email ?? ""} placeholder="Not set · an admin can add it" disabled />
               </div>
             </div>
             <div className="g g-2">
@@ -271,6 +271,18 @@ export default function SettingsPage() {
                 <span>
                   <b>Copy this token now; it is shown once.</b> <span className="mono" style={{ wordBreak: "break-all" }}>{newToken}</span>
                 </span>
+                <button
+                  className="btn sm"
+                  type="button"
+                  onClick={() =>
+                    void navigator.clipboard.writeText(newToken).then(
+                      () => toast.success("Copied", "Paste it where your CLI or script reads it."),
+                      () => toast.error("Copy failed", "Select the token and copy it by hand."),
+                    )
+                  }
+                >
+                  Copy
+                </button>
               </div>
             )}
             {((Array.isArray(tokensQ.data) ? tokensQ.data : []) as PersonalToken[])
