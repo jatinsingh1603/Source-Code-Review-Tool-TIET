@@ -120,7 +120,7 @@ def _attestation(scan: dict[str, Any], verify: dict[str, Any]) -> list[str]:
     lines.append(f"| Privacy level | **{scan.get('privacy_level', '?')}** |")
     lines.append(f"| LLM provider | `{provider.get('id', 'none')}` ({where}) |")
     lines.append(
-        f"| Payloads | {egress.get('recorded', 0)} recorded in the egress ledger, "
+        f"| Model requests | {egress.get('recorded', 0)} recorded in the egress ledger, "
         f"{egress.get('blocked', 0)} blocked by the egress guard |"
     )
     if not verify:
@@ -138,7 +138,7 @@ def _attestation(scan: dict[str, Any], verify: dict[str, Any]) -> list[str]:
     lines.append(f"| Ledger hash chain | {chain_text} |")
     unread = len(payloads.get("missing") or []) + len(payloads.get("unreadable") or [])
     lines.append(
-        f"| Payload hashes | {data.get('payloads_checked', 0)} checked, "
+        f"| Stored payloads | {data.get('payloads_checked', 0)} distinct payloads re-hashed, "
         f"{len(payloads.get('mismatched') or [])} mismatches, {unread} missing or unreadable |"
     )
     hits = terms.get("hits") or []
