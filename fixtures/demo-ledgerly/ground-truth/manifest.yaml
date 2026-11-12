@@ -1,9 +1,9 @@
-# Planted issues of demo-ledgerly. Synthetic; never deploy. Lines are 1-based.
+# Planted issues of demo-ledgerly. Synthetic; never deploy. Lines are 1-based and name the sink.
 schema_version: 1
 application: {name: Ledgerly, language: python}
 planted_vulnerabilities:
-  - {id: LG-VULN-001, cwe: 89,  class: sql_injection,            file: app/db.py,       line: 15}
-  - {id: LG-VULN-002, cwe: 328, class: weak_hash,                file: app/db.py,       line: 29}
+  - {id: LG-VULN-001, cwe: 89,  class: sql_injection,            file: app/db.py,       line: 17}
+  - {id: LG-VULN-002, cwe: 327, class: weak_hash,                file: app/db.py,       line: 29}
   - {id: LG-VULN-003, cwe: 502, class: insecure_deserialisation, file: app/importer.py, line: 11}
   - {id: LG-VULN-004, cwe: 502, class: unsafe_yaml,              file: app/importer.py, line: 15}
   - {id: LG-VULN-005, cwe: 78,  class: command_injection,        file: app/importer.py, line: 20}
