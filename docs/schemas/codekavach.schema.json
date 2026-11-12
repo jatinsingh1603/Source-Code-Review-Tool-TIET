@@ -1,5 +1,25 @@
 {
   "$defs": {
+    "AggregateSettings": {
+      "additionalProperties": false,
+      "description": "Where the accepted-findings baseline and the suppression rules live.",
+      "properties": {
+        "baseline_file": {
+          "default": ".codekavach/baseline.json",
+          "description": "Baseline of accepted findings, relative to the project root; findings in it are known and are not reviewed again.",
+          "title": "Baseline File",
+          "type": "string"
+        },
+        "suppressions_file": {
+          "default": ".codekavach/suppressions.yaml",
+          "description": "Suppression rules, relative to the project root; every rule needs a justification.",
+          "title": "Suppressions File",
+          "type": "string"
+        }
+      },
+      "title": "AggregateSettings",
+      "type": "object"
+    },
     "BudgetSettings": {
       "additionalProperties": false,
       "description": "Limits for one scan; ``None`` means unlimited.",
@@ -1000,6 +1020,10 @@
       "additionalProperties": false,
       "description": "A profile overlay: any settings sections, all optional.",
       "properties": {
+        "aggregate": {
+          "$ref": "#/$defs/AggregateSettings",
+          "description": "Baseline and suppression files applied after analysis."
+        },
         "description": {
           "description": "One line saying what the profile is for.",
           "type": "string"
@@ -1052,6 +1076,10 @@
         "scan": {
           "$ref": "#/$defs/ScanSettings",
           "description": "What to scan and how."
+        },
+        "secrets": {
+          "$ref": "#/$defs/SecretsSettings",
+          "description": "Options of the secret scan."
         },
         "taint": {
           "$ref": "#/$defs/TaintSettings",
@@ -1824,6 +1852,28 @@
       "title": "ScanSettings",
       "type": "object"
     },
+    "SecretsSettings": {
+      "additionalProperties": false,
+      "description": "Options of the secret scan beyond the working tree.",
+      "properties": {
+        "history": {
+          "default": false,
+          "description": "Also scan the added lines of past commits for credentials that were removed.",
+          "title": "History",
+          "type": "boolean"
+        },
+        "history_max_commits": {
+          "default": 200,
+          "description": "Most recent commits the history scan reads.",
+          "maximum": 5000,
+          "minimum": 1,
+          "title": "History Max Commits",
+          "type": "integer"
+        }
+      },
+      "title": "SecretsSettings",
+      "type": "object"
+    },
     "Severity": {
       "description": "Severity of a candidate or finding, in ascending order.",
       "enum": [
@@ -2048,6 +2098,10 @@
   "additionalProperties": false,
   "description": "Settings of codekavach.toml and the user configuration file (ADR-0006).",
   "properties": {
+    "aggregate": {
+      "$ref": "#/$defs/AggregateSettings",
+      "description": "Baseline and suppression files applied after analysis."
+    },
     "config_version": {
       "const": 1,
       "default": 1,
@@ -2120,6 +2174,10 @@
     "scan": {
       "$ref": "#/$defs/ScanSettings",
       "description": "What to scan and how."
+    },
+    "secrets": {
+      "$ref": "#/$defs/SecretsSettings",
+      "description": "Options of the secret scan."
     },
     "taint": {
       "$ref": "#/$defs/TaintSettings",

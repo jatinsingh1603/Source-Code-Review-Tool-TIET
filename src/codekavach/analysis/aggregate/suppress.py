@@ -163,3 +163,67 @@ def _has_marker(lines: list[str], line: int) -> bool:
     return any(
         1 <= n <= len(lines) and "codekavach:ignore" in lines[n - 1] for n in (line, line - 1)
     )
+
+
+def describe_file_rules(path: Path, *, today: date | None = None) -> list[dict[str, str]]:
+    """Every entry of the suppressions file with its state: active, expired or invalid.
+
+    ``invalid`` means the entry has no rule or no justification, so it silences nothing.
+    """
+    try:
+        document: Any = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError):
+        return []
+    items = document.get("suppressions", []) if isinstance(document, dict) else []
+    now = today or date.today()  # noqa: DTZ011 - a calendar date in the scanner's local zone
+    rows: list[dict[str, str]] = []
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict):
+            continue
+        why = str(item.get("justification", "")).strip()
+        rule = str(item.get("rule", "")).strip()
+        expires = item.get("expires")
+        if isinstance(expires, str):
+            try:
+                expires = date.fromisoformat(expires)
+            except ValueError:
+                expires = None
+        state = "invalid" if not why or not rule else "active"
+        if state == "active" and isinstance(expires, date) and expires < now:
+            state = "expired"
+        rows.append(
+            {
+                "source": "file",
+                "rule": rule,
+                "path": str(item.get("path", "**")),
+                "justification": why,
+                "expires": expires.isoformat() if isinstance(expires, date) else "",
+                "state": state,
+            }
+        )
+    return rows
+
+
+def inline_markers(text: str, path: str) -> list[dict[str, str]]:
+    """Every ``codekavach:ignore`` marker in ``text``; ``state`` is invalid without a reason."""
+    if "codekavach:ignore" not in text:
+        return []
+    rows: list[dict[str, str]] = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        if "codekavach:ignore" not in line:
+            continue
+        match = _INLINE.search(line.rstrip())
+        if match is None:
+            continue
+        why = (match.group("why") or "").strip()
+        rows.append(
+            {
+                "source": "inline",
+                "rule": (match.group("ids") or "*").strip(),
+                "path": f"{path}:{number}",
+                "justification": why,
+                "expires": "",
+                "state": "active" if why else "invalid",
+            }
+        )
+    return rows

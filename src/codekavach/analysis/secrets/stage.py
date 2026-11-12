@@ -227,9 +227,16 @@ class AnalyseSecretsStage:
             found.extend(candidates_for(file.path, file.language, hits))
             if done % 100 == 0:
                 ctx.emit_progress(done, len(files), "files")
-        if os.environ.get(HISTORY_ENV) == "1":
+        if ctx.config.secrets.history or os.environ.get(HISTORY_ENV) == "1":
             from codekavach.analysis.secrets.history import scan_history  # noqa: PLC0415
 
-            found.extend(scan_history(Path(ctx.source_root), ctx.config, registry))
+            found.extend(
+                scan_history(
+                    Path(ctx.source_root),
+                    ctx.config,
+                    registry,
+                    max_commits=ctx.config.secrets.history_max_commits,
+                )
+            )
         ctx.emit_progress(len(files), len(files), "files")
         ctx.artefacts.put_part(keys.CANDIDATES_RAW, self.name, found)

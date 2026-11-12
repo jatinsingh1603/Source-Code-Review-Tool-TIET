@@ -21,7 +21,9 @@ _COMMIT = re.compile(r"^commit ([0-9a-f]{40})$")
 _FILE = re.compile(r"^\+\+\+ b/(.+)$")
 
 
-def scan_history(root: Path, settings: Settings, registry: DetectorRegistry) -> list[Candidate]:
+def scan_history(
+    root: Path, settings: Settings, registry: DetectorRegistry, *, max_commits: int = MAX_COMMITS
+) -> list[Candidate]:
     """Candidates for secrets added in past commits; empty when ``root`` is not a checkout."""
     from codekavach.analysis.secrets.stage import (  # noqa: PLC0415
         candidates_for,
@@ -35,7 +37,7 @@ def scan_history(root: Path, settings: Settings, registry: DetectorRegistry) -> 
         "-C",
         str(root),
         "log",
-        f"-n{MAX_COMMITS}",
+        f"-n{max_commits}",
         "-p",
         "--no-color",
         "--no-ext-diff",

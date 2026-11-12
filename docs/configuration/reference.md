@@ -58,6 +58,24 @@ Defaults too long for the table:
 
 1. `scan.exclude`: `[".git/**", ".codekavach/**", "node_modules/**", ".venv/**", "venv/**", "__pycache__/**", "dist/**", "build/**", "target/**", "vendor/**"]`
 
+## `[aggregate]`
+
+Baseline and suppression files applied after analysis.
+
+| Key | Type | Default | Environment variable | Markers | Description |
+|-----|------|---------|----------------------|---------|-------------|
+| `aggregate.baseline_file` | str | `".codekavach/baseline.json"` | `CODEKAVACH_AGGREGATE__BASELINE_FILE` |  | Baseline of accepted findings, relative to the project root; findings in it are known and are not reviewed again. |
+| `aggregate.suppressions_file` | str | `".codekavach/suppressions.yaml"` | `CODEKAVACH_AGGREGATE__SUPPRESSIONS_FILE` |  | Suppression rules, relative to the project root; every rule needs a justification. |
+
+## `[secrets]`
+
+Options of the secret scan.
+
+| Key | Type | Default | Environment variable | Markers | Description |
+|-----|------|---------|----------------------|---------|-------------|
+| `secrets.history` | bool | `false` | `CODEKAVACH_SECRETS__HISTORY` |  | Also scan the added lines of past commits for credentials that were removed. |
+| `secrets.history_max_commits` | int | `200` | `CODEKAVACH_SECRETS__HISTORY_MAX_COMMITS` |  | Most recent commits the history scan reads. |
+
 ## `[ingest]`
 
 Resource guards for repository discovery.

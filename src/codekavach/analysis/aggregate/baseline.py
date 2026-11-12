@@ -52,3 +52,18 @@ def write_baseline(path: Path, candidates: Iterable[Candidate]) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
     return len(entries)
+
+
+def write_entries(path: Path, entries: Iterable[dict[str, str]]) -> int:
+    """Record ready-made entries (fingerprint, rule_id, path, line) as the baseline."""
+    ordered = sorted(
+        entries, key=lambda e: (e.get("path", ""), e.get("line", ""), e["fingerprint"])
+    )
+    document = {
+        "version": BASELINE_VERSION,
+        "created": datetime.now(UTC).isoformat(timespec="seconds"),
+        "entries": ordered,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return len(ordered)

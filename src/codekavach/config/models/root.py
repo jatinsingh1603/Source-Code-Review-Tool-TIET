@@ -8,6 +8,7 @@ from typing import Any, Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
+from codekavach.config.models.aggregate import AggregateSettings, SecretsSettings
 from codekavach.config.models.base import restricted
 from codekavach.config.models.engines import EnginesSettings
 from codekavach.config.models.ingest import IngestSettings
@@ -51,6 +52,13 @@ class Settings(BaseSettings):
         default_factory=ProjectSettings, description="Identity of the scanned project."
     )
     scan: ScanSettings = Field(default_factory=ScanSettings, description="What to scan and how.")
+    aggregate: AggregateSettings = Field(
+        default_factory=AggregateSettings,
+        description="Baseline and suppression files applied after analysis.",
+    )
+    secrets: SecretsSettings = Field(
+        default_factory=SecretsSettings, description="Options of the secret scan."
+    )
     ingest: IngestSettings = Field(
         default_factory=IngestSettings, description="Resource guards for repository discovery."
     )

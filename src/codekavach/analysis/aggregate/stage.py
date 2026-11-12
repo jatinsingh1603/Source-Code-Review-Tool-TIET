@@ -66,10 +66,12 @@ class AggregateStage:
             key=lambda c: (c.primary_location.path, c.primary_location.start_line, c.rule_id),
         )
         correlated = raw_count - len(merged)
-        config_dir = Path(ctx.project_root) / ".codekavach"
-        rules = suppress.load_file_rules(config_dir / "suppressions.yaml")
+        root = Path(ctx.project_root)
+        rules = suppress.load_file_rules(root / ctx.config.aggregate.suppressions_file)
         merged, applied, unjustified = suppress.apply_suppressions(merged, ctx.source_root, rules)
-        baseline_path = Path(os.environ.get("CODEKAVACH_BASELINE") or config_dir / "baseline.json")
+        baseline_path = Path(
+            os.environ.get("CODEKAVACH_BASELINE") or root / ctx.config.aggregate.baseline_file
+        )
         known = baseline_file.load_baseline(baseline_path)
         delta = compute_delta(known, (c.fingerprint for c in merged)) if known else None
         if os.environ.get("CODEKAVACH_BASELINE_UPDATE") == "1":
