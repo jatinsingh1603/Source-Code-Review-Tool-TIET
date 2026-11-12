@@ -159,9 +159,12 @@ and nothing else, and goes through the egress guard and the ledger.
   the N most severe candidates that can be sliced; the others keep their deterministic evidence and
   are listed in the report as not reviewed (`llm_review_limit`). The `agentrouter` preset defaults
   to 8 (`options.review_limit`); 0 reviews every candidate.
-- **Cache.** A repeated scan of unchanged code with the same scan salt asks the same questions, and
-  the response cache answers them without egress (`llm.cache`, on by default), for the combined
-  task as for the others.
+- **Cache.** The response cache (`llm.cache`, on by default) answers a request whose payload, task,
+  prompt and model were already answered in the same state directory, without egress, for the
+  combined task as for the others. Pseudonyms depend on the scan salt, and every new scan draws a
+  fresh salt (so a provider cannot link two scans by their pseudonyms); a new scan of unchanged
+  code therefore asks again, and only repeated payloads within a scan, or runs that reuse a salt,
+  are answered from the cache.
 
 ### `POST /findings/{id}/review`
 

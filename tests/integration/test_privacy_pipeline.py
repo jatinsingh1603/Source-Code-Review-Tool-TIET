@@ -231,8 +231,13 @@ def test_one_request_per_payload_is_sent_and_completed(sent: Run) -> None:
 
 @pytest.fixture(scope="module")
 def enriched(root: Path) -> Run:
-    """Every review task: triage per payload, then explain and remediate per confirmed finding."""
-    tasks: dict[str, object] = {"llm": {"tasks": ["triage", "explain", "remediate"]}}
+    """Every review task: triage per payload, then explain and remediate per confirmed finding.
+
+    ``separate`` mode: the default combined mode asks one ``review`` request per payload instead
+    (``test_the_combined_review_sends_one_request_per_payload``)."""
+    tasks: dict[str, object] = {
+        "llm": {"tasks": ["triage", "explain", "remediate"], "review_mode": "separate"}
+    }
     return run_and_capture(root, home="home-tasks", overrides=tasks)
 
 
