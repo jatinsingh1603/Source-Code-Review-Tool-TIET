@@ -1,5 +1,7 @@
 """LLM consensus and confidence calibration (E23-03, issue 247).
 
+Owning epic: E23. Normative layout: docs/ARCHITECTURE.md section 3.
+
 ``vote`` combines several triage verdicts for one candidate (N samples of one model with
 different review perspectives, or one verdict per provider) into one. The rules are chosen so
 that a model can never talk a finding out of existence:
