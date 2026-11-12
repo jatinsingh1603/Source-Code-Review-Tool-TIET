@@ -104,6 +104,7 @@ In a truly offline site, load the image from a file: on a connected machine `doc
 | Login fails | The admin password is fixed at first start in the data volume. `scripts/demo-docker.sh --down --purge` resets it. |
 | Vault unreadable after editing `.env` | `CODEKAVACH_VAULT_PASSPHRASE` changed. Restore the old value or purge the volume. |
 | Apple Silicon is slow | An old image without an arm64 build is running under emulation. Pull `:main` again. |
+| `npm error Exit handler never called` while building locally | The default Docker build network stalls npm on some hosts. Build with `docker build --network host -f deploy/docker/Dockerfile -t codekavach:local .` (the demo script does this). The published image avoids the issue. |
 | Empty dashboard | Run `scripts/demo-docker.sh --seed`, or start a scan from the dashboard. |
 
 ## Fallback if the network fails on the day

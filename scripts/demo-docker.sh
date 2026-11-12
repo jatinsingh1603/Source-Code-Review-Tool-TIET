@@ -50,7 +50,14 @@ if [ "$down" = 1 ]; then
 fi
 
 if [ "$build" = 1 ]; then
-  "${compose[@]}" up -d --build
+  if docker image inspect "$CODEKAVACH_IMAGE" >/dev/null 2>&1; then
+    echo "Using the existing local image ${CODEKAVACH_IMAGE} (docker rmi it to force a rebuild)."
+    "${compose[@]}" up -d --no-build
+  else
+    # --network host: some networks stall npm inside the default build network.
+    docker build --network host -f deploy/docker/Dockerfile -t "$CODEKAVACH_IMAGE" .
+    "${compose[@]}" up -d --no-build
+  fi
 else
   echo "Pulling ${IMAGE} ..."
   if ! "${compose[@]}" pull codekavach; then
