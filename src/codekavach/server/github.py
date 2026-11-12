@@ -31,6 +31,18 @@ def sync_scan(
         )
     if not dry_run and not token_ref:
         raise ApiError(400, "token_required", "a token reference is needed to change issues")
+    notes: list[str] = []
+    if token_ref and not _reference_resolves(token_ref):
+        if not dry_run:
+            raise ApiError(
+                400,
+                "token_unresolved",
+                f"the token reference {token_ref} is not set on the server",
+                hint="set it in the server's environment, or preview with a dry run",
+            )
+        # A preview needs no token: plan as if the repository had no CodeKavach issues yet.
+        notes.append(f"{token_ref} is not set on the server: existing issues were not read")
+        token_ref = None
     try:
         from codekavach.integrations.github.sync import sync_findings  # noqa: PLC0415
     except ImportError:
@@ -51,4 +63,19 @@ def sync_scan(
         raise ApiError(
             502, "github_sync_failed", f"the GitHub sync failed: {type(error).__name__}"
         ) from None
-    return dict(result)
+    out = dict(result)
+    if notes:
+        rest = [n for n in out.get("notes") or [] if not str(n).startswith("no token")]
+        out["notes"] = [*notes, *rest]
+    return out
+
+
+def _reference_resolves(reference: str) -> bool:
+    """Whether a secret reference has a value here; the value itself is not kept."""
+    from codekavach.config.errors import SecretResolutionError  # noqa: PLC0415
+    from codekavach.config.keys import resolve_secret  # noqa: PLC0415
+
+    try:
+        return bool(resolve_secret(reference).get_secret_value())
+    except SecretResolutionError:
+        return False

@@ -541,6 +541,8 @@ export interface GithubSyncResult {
   updated: number;
   closed: number;
   items: GithubSyncItem[];
+  /** What the plan could not check, e.g. an unset token reference in a dry run. */
+  notes?: string[];
 }
 
 /** Server-sent event payloads of `GET /scans/{id}/events`. */

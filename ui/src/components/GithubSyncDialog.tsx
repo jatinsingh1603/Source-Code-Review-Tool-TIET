@@ -79,6 +79,11 @@ export function GithubSyncDialog({
             <Chip tone="new">{result.updated} to update</Chip>
             <Chip>{result.closed} to close</Chip>
           </div>
+          {result.notes?.map((n) => (
+            <p key={n} className="xs faint">
+              {n}
+            </p>
+          ))}
           <div className="tbl-wrap" style={{ maxHeight: 240, overflowY: "auto" }}>
             <table className="tbl">
               <tbody>

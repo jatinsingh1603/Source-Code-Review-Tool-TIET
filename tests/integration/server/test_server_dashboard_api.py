@@ -293,6 +293,24 @@ def test_sync_github_takes_finding_ids(
     assert response.json()["error"]["code"] == "finding_not_in_scan"
 
 
+def test_sync_github_dry_run_without_a_token(
+    server: tuple[TestClient, Any],
+    admin: dict[str, str],
+    scan: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = server[0]
+    monkeypatch.delenv("CK_TEST_UNSET_GITHUB_TOKEN", raising=False)
+    url = f"{API}/scans/{scan['id']}/sync/github"
+    body = {"repo": "example/repo", "token_ref": "env:CK_TEST_UNSET_GITHUB_TOKEN", "dry_run": True}
+    preview = client.post(url, json=body, headers=admin)
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["notes"][0].startswith("env:CK_TEST_UNSET_GITHUB_TOKEN is not set")
+    applied = client.post(url, json={**body, "dry_run": False}, headers=admin)
+    assert applied.status_code == 400
+    assert applied.json()["error"]["code"] == "token_unresolved"
+
+
 def test_saved_views(
     server: tuple[TestClient, Any],
     admin: dict[str, str],
