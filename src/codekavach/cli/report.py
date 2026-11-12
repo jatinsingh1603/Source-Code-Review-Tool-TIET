@@ -359,6 +359,7 @@ def report_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         summarise(state_dir, str(stored.id), settings),
         organisation=organisation,
         prepared_for=client,
+        project_name=settings.project.name or loaded.project_root.name,
     )
     files = render_all(
         registry,

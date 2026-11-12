@@ -17,7 +17,7 @@ passphrase is a random one that lives in this process only for the duration of t
 import os
 import secrets
 import shutil
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -37,8 +37,9 @@ from codekavach.core.store.layout import StateLayout
 from codekavach.privacy.egress.ledger import open_reader
 from codekavach.privacy.inspect_source import open_payload_source
 from codekavach.report.model.build import build_report_document, summarise_ledger
-from codekavach.report.model.document import ReportDocument, ZeroLeak
-from codekavach.report.render.base import RendererRegistry, renderer_registry
+from codekavach.report.model.document import ZeroLeak
+from codekavach.report.render.base import renderer_registry
+from codekavach.report.render.bundle import write_manifest
 from codekavach.report.render.pdf import PdfUnavailableError
 
 LOCAL_PROVIDERS: Final = frozenset({"mock", "replay"})
@@ -50,6 +51,18 @@ PROJECT_DIR: Final = "kavachbank"
 # cassettes are keyed by payload hash. The data is synthetic, so a published salt costs nothing.
 DEMO_SALT_HEX: Final = "6c" * 32  # pragma: allowlist secret
 REPLAY_ID: Final = "rec"
+DEMO_FORMATS: Final = (
+    "html",
+    "pdf",
+    "sarif",
+    "json",
+    "csv",
+    "xlsx",
+    "docx",
+    "markdown",
+    "compliance",
+)
+DEMO_PROJECT_NAMES: Final = {"kavachbank": "KavachBank"}
 CASSETTES: Final = "cassettes"
 SUMMARY_NOTE: Final = (
     "This demo used the {kind} provider: it answers on this machine and opens no connection. "
@@ -279,19 +292,28 @@ def _run(
         findings,
         settings,
         summarise_ledger(outcome.state_dir, scan_id, settings, zero_leak=zero_leak),
+        project_name=settings.project.name or DEMO_PROJECT_NAMES.get(root.name, root.name),
     )
     formats = renderer_registry(settings)
-    for name in ("html", "pdf"):
-        render = _renderer(formats, name)
-        if render is None:
+    reports: list[Path] = []
+    for name in DEMO_FORMATS:
+        if name not in formats.names():
             skipped.append(f"{name}: renderer not installed")
             continue
+        renderer = formats.get(name)
         try:
-            written = render(document, out / f"report.{name}")
+            written = renderer.render(document, out / f"report.{renderer.extension}")
         except PdfUnavailableError as error:
             skipped.append(f"{name}: {error}")
             continue
+        except Exception as error:  # noqa: BLE001 - one format must not stop the demo
+            skipped.append(f"{name}: {getattr(error, 'reason_code', type(error).__name__)}")
+            continue
+        reports.append(Path(written))
         files.append(_file(f"{name} report", written))
+    if reports:
+        manifest, _sums = write_manifest(reports, out, doc=document)
+        files.append(_file("integrity manifest", manifest))
 
     report = DemoReport(
         scan_id=scan_id,
@@ -317,14 +339,6 @@ def _run(
             code="demo_verification_failed",
         )
     return report
-
-
-def _renderer(
-    formats: RendererRegistry, name: str
-) -> Callable[[ReportDocument, Path], Path] | None:
-    if name not in formats.names():
-        return None
-    return formats.get(name).render
 
 
 __all__ = ["DemoReport", "resolve_fixture", "run_demo"]

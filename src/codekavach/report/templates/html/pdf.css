@@ -41,3 +41,17 @@ nav.toc a::after { content: leader(".") " " target-counter(attr(href), page); co
 .split > div { flex: 1 1 45%; }
 td.status, td.cwe { white-space: nowrap; }
 #summary-table td.mono.small { font-size: 7pt; }
+/* WeasyPrint lays out flex boxes slowly; the paged layout uses inline blocks instead. */
+.facts, .kpis, .split, .two { display: block; margin-left: 0; margin-right: 0; }
+.fact { display: inline-block; width: 31.5%; margin: 0 0.6% 4px 0; vertical-align: top; }
+.kpi { display: inline-block; width: 18.4%; margin: 0 1% 6px 0; vertical-align: top; }
+.split > div, .two > div { display: inline-block; width: 48.5%; margin: 0 1% 0 0; vertical-align: top; }
+.posture { display: block; }
+.posture .word { display: inline-block; }
+/* Compact finding blocks: fewer pages, faster layout. */
+.fbody h4 { margin: 8px 0 3px; font-size: 7.5pt; }
+.fbody p { margin: 0 0 5px; }
+.fact { padding: 4px 6px; }
+.fact .v { font-size: 8.5pt; }
+.callout { padding: 5px 9px; margin: 5px 0; }
+.finding .fbody ul.small { margin: 2px 0; }

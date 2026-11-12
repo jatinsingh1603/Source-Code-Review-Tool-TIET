@@ -263,3 +263,58 @@ def verify_manifest(out_dir: Path) -> list[str]:
         if not path.is_file() or sha256_file(path) != item["sha256"]:
             bad.append(item["file"])
     return bad
+
+
+DEFAULT_BUNDLE: Final = (
+    "html",
+    "pdf",
+    "sarif",
+    "json",
+    "csv",
+    "xlsx",
+    "docx",
+    "markdown",
+    "compliance",
+)
+
+
+def render_bundle(
+    doc: ReportDocument,
+    out_dir: Path,
+    *,
+    formats: Sequence[str] = DEFAULT_BUNDLE,
+    stem: str = "report",
+    theme: Theme | None = None,
+    manifest: bool = True,
+) -> tuple[dict[str, Path], dict[str, str]]:
+    """Render ``formats`` of ``doc`` into ``out_dir`` and write the integrity manifest.
+
+    Returns the written files by format and, for each format that could not be written, its
+    reason code (never the error text, which may quote report content). This is the entry point
+    for the API server and other callers that want every format at once.
+    """
+    from codekavach.report.render.base import renderer_registry  # noqa: PLC0415 - avoid cycle
+
+    registry = renderer_registry()
+    written: dict[str, Path] = {}
+    failed: dict[str, str] = {}
+    for name in formats:
+        if name not in registry.names():
+            failed[name] = "renderer_unavailable"
+            continue
+        renderer = registry.get(name)
+        target = out_dir / f"{stem}.{renderer.extension}"
+        try:
+            try:
+                path = renderer.render(doc, target, theme=theme)  # type: ignore[call-arg]
+            except TypeError:
+                path = renderer.render(doc, target)
+            written[name] = Path(path)
+        except Exception as error:  # noqa: BLE001 - one format must not stop the others
+            reason = getattr(error, "reason_code", None)
+            failed[name] = reason if isinstance(reason, str) else "render_failed"
+    if manifest and written:
+        manifest_path, sums = write_manifest(list(written.values()), out_dir, doc=doc)
+        written["manifest"] = manifest_path
+        written["sha256sums"] = sums
+    return written, failed
