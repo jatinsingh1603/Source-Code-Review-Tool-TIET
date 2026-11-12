@@ -317,6 +317,23 @@ def test_stats_and_settings(
     assert stats["trend"]
     updated = client.put("/api/v1/settings", json={"org_name": "Thapar CSED"}, headers=admin)
     assert updated.json()["org_name"] == "Thapar CSED"
+    literal = client.put(
+        "/api/v1/settings",
+        json={"provider_key_refs": {"agentrouter": "sk-not-a-reference"}},
+        headers=admin,
+    )
+    assert literal.status_code == 400
+    assert literal.json()["error"]["code"] == "key_not_reference"
+    reference = client.put(
+        "/api/v1/settings",
+        json={"provider_key_refs": {"agentrouter": "env:CODEKAVACH_TEST_UNSET_KEY"}},
+        headers=admin,
+    )
+    assert reference.status_code == 200
+    providers = {item["id"]: item for item in client.get("/api/v1/providers", headers=admin).json()}
+    assert providers["agentrouter"]["key_refs"] == ["env:CODEKAVACH_TEST_UNSET_KEY"]
+    assert providers["agentrouter"]["configured"] is False
+    assert providers["agentrouter"]["local"] is False
     assert json.dumps(client.get("/api/v1/providers", headers=admin).json())
 
 

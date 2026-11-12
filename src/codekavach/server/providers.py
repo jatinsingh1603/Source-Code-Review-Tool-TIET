@@ -11,6 +11,7 @@ whether a request leaves the machine, and it does so through the egress transpor
 
 import inspect
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 from codekavach.core.log import get_logger
@@ -99,7 +100,9 @@ def list_providers(settings: "Settings", default: str | None) -> list[dict[str, 
     return rows
 
 
-def test_provider(provider_id: str, settings: "Settings", model: str | None) -> dict[str, Any]:
+def test_provider(
+    provider_id: str, settings: "Settings", model: str | None, state_dir: Path | None = None
+) -> dict[str, Any]:
     """Probe ``provider_id``: ``{ok, latency_ms, model, message}``."""
     provider = settings.llm.providers.get(provider_id)
     if provider is None:
@@ -112,7 +115,10 @@ def test_provider(provider_id: str, settings: "Settings", model: str | None) -> 
         probe = getattr(llm_providers, "probe_provider", None) or base.probe_provider
     except ImportError:
         return {"ok": False, "latency_ms": 0, "model": chosen, "message": "backend_unavailable"}
-    offered: dict[str, Any] = {"model": chosen, "timeout": 30.0, "structured": False}
+    offered: dict[str, Any] = {"model": chosen, "timeout": 60.0, "structured": False}
+    if state_dir is not None:
+        state_dir.mkdir(parents=True, exist_ok=True)
+        offered["state_dir"] = state_dir
     try:
         from codekavach.core.pipeline.context import ConsentDecision  # noqa: PLC0415
 
@@ -120,7 +126,8 @@ def test_provider(provider_id: str, settings: "Settings", model: str | None) -> 
     except ImportError:
         pass
     parameters = inspect.signature(probe).parameters
-    kwargs = {name: value for name, value in offered.items() if name in parameters}
+    open_ended = any(item.kind is item.VAR_KEYWORD for item in parameters.values())
+    kwargs = {name: value for name, value in offered.items() if open_ended or name in parameters}
     started = time.perf_counter()
     try:
         result = probe(provider_id, settings, **kwargs)
@@ -136,11 +143,18 @@ def test_provider(provider_id: str, settings: "Settings", model: str | None) -> 
         latency = (time.perf_counter() - started) * 1000
     message = (
         getattr(result, "message", None)
+        or getattr(result, "reason_code", None)
         or getattr(result, "reason", None)
         or ("ok" if getattr(result, "ok", False) else "failed")
     )
     network = getattr(result, "network", None)
+    extra = {
+        name: getattr(result, name)
+        for name in ("prompt_tokens", "completion_tokens", "structured_output", "ledger_seq")
+        if getattr(result, name, None) is not None
+    }
     return {
+        **extra,
         "ok": getattr(result, "ok", False) is True,
         "latency_ms": int(latency),
         "model": getattr(result, "model", None) or chosen,

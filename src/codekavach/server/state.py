@@ -42,7 +42,9 @@ DEFAULT_SETTINGS: Final[dict[str, Any]] = {
     "report_title": "Secure Source Code Review Report",
     "classification": "Confidential",
     "send_by_default": True,
+    "provider_key_refs": {},
 }
+KEY_REFERENCE_PREFIXES: Final = ("env:", "file:", "keyring:")
 
 
 def new_id(prefix: str) -> str:
@@ -106,6 +108,14 @@ class ServerState:
     def put_settings(self, values: dict[str, Any]) -> dict[str, Any]:
         """Store the known keys of ``values`` and return the merged settings."""
         current = self.get_settings()
+        refs = values.get("provider_key_refs")
+        if refs is not None:
+            if not isinstance(refs, dict) or not all(
+                isinstance(ref, str) and (not ref or ref.startswith(KEY_REFERENCE_PREFIXES))
+                for ref in refs.values()
+            ):
+                raise ValueError("provider keys are accepted only as env:, file: or keyring: refs")
+            values = {**values, "provider_key_refs": {k: v for k, v in refs.items() if v}}
         current.update({key: value for key, value in values.items() if key in DEFAULT_SETTINGS})
         with self.db.transaction() as session:
             row = session.get(SettingRow, SETTINGS_KEY)
@@ -114,6 +124,23 @@ class ServerState:
             else:
                 row.value = current
         return current
+
+    def provider_overrides(self) -> dict[str, Any]:
+        """Configuration overrides that add the built-in provider presets and key references.
+
+        The ``agentrouter`` preset is always offered; a key reference stored in the settings
+        (``provider_key_refs``) is applied to its provider. Only references are stored.
+        """
+        try:
+            from codekavach.config.models.llm import AGENTROUTER, PRESETS  # noqa: PLC0415
+        except ImportError:
+            return {}
+        refs = self.get_settings().get("provider_key_refs") or {}
+        providers: dict[str, Any] = {AGENTROUTER: {"preset": AGENTROUTER}}
+        for provider_id, ref in refs.items():
+            if provider_id in PRESETS and isinstance(ref, str) and ref:
+                providers.setdefault(provider_id, {"preset": provider_id})["api_key"] = ref
+        return {"llm": {"providers": providers}}
 
     def report_settings(self, settings: "Settings") -> "Settings":
         """``settings`` with the organisation name, title and classification of the server."""

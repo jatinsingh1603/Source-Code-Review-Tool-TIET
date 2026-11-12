@@ -81,6 +81,7 @@ class SettingsBody(BaseModel):
     report_title: str | None = Field(default=None, max_length=200)
     classification: str | None = Field(default=None, max_length=64)
     send_by_default: bool | None = None
+    provider_key_refs: dict[str, str] | None = None
 
 
 class PolicyBody(_Body):

@@ -187,8 +187,8 @@ def _materialise(project: Project, paths: ScanPaths, job: ScanJob) -> None:
     (source / ".git").mkdir(exist_ok=True)
 
 
-def _overrides(row: ScanRow) -> dict[str, Any]:
-    llm: dict[str, Any] = {}
+def _overrides(row: ScanRow, base: dict[str, Any]) -> dict[str, Any]:
+    llm: dict[str, Any] = dict(base.get("llm", {}))
     if row.provider in {"", "none"}:
         llm["enabled"] = False
     else:
@@ -244,7 +244,7 @@ def execute_scan(job: ScanJob) -> None:
             "provider": row.provider,
             "model": row.model,
             "send": row.send,
-            "overrides": _overrides(row),
+            "overrides": _overrides(row, state.provider_overrides()),
             "workspace": row.workspace,
         }
     paths = ScanPaths(Path(str(scan["workspace"])))

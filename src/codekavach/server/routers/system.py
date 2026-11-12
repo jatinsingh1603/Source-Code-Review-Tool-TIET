@@ -133,7 +133,9 @@ def _server_settings(state: ServerState) -> Any:
     from codekavach.config import load_settings  # noqa: PLC0415
 
     return load_settings(
-        target=None, env=scan_env(state.config.home_dir, state.passphrase_env)
+        target=None,
+        env=scan_env(state.config.home_dir, state.passphrase_env),
+        cli_overrides=state.provider_overrides() or None,
     ).settings
 
 
@@ -149,7 +151,10 @@ def put_settings(
 ) -> dict[str, Any]:
     """Change server settings (admin)."""
     values = body.model_dump(exclude_none=True)
-    updated = state.put_settings(values)
+    try:
+        updated = state.put_settings(values)
+    except ValueError as error:
+        raise ApiError(400, "key_not_reference", str(error)) from None
     audit.record(state.db, actor=principal.username, action="settings.update",
                  client=client_of(request), detail={"fields": sorted(values)})  # fmt: skip
     return updated
@@ -219,7 +224,7 @@ def provider_test(
 ) -> dict[str, Any]:
     """Probe a provider: reachability, latency and model only."""
     settings = _server_settings(state)
-    result = test_provider(provider_id, settings, model)
+    result = test_provider(provider_id, settings, model, state.config.home_dir / "probes")
     audit.record(state.db, actor=principal.username, action="provider.test",
                  resource=provider_id, client=client_of(request),
                  outcome="allowed" if result["ok"] else "failed")  # fmt: skip

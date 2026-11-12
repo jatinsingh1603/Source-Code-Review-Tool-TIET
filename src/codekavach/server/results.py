@@ -33,6 +33,12 @@ _REDACTION: Final = re.compile(r"<(SECRET|PII|TERM):[a-z][a-z0-9_]{0,47}:[1-9][0
 _RENAME: Final = re.compile(r"\b(fn|cls|var|param|field|mod|const|file)_[0-9]+\b")
 _LITERAL: Final = re.compile(r"<(STR|NUM|LIT|URL|PATH)[A-Z_]*(:[a-z0-9_]+)*(:[0-9]+)?>")
 _KIND_OF: Final = {"SECRET": "secret", "PII": "pii", "TERM": "literal"}
+# Server variables that are not configuration and must not reach a scan's loader.
+SERVER_ONLY_VARIABLES: Final = (
+    "CODEKAVACH_ADMIN_PASSWORD",
+    "CODEKAVACH_SERVER_",
+    "CODEKAVACH_DEV",
+)
 
 
 @dataclass
@@ -96,13 +102,16 @@ class PrivacySummary:
 def scan_env(home: Path, passphrase_env: str) -> dict[str, str]:
     """The environment the configuration loader sees for a server scan.
 
-    Nested ``CODEKAVACH_<SECTION>__<KEY>`` variables of the server process pass through (so an
-    operator configures providers and the vault the usual way); ``CODEKAVACH_HOME`` points into
-    the data directory, and the vault uses the server's passphrase file unless the operator chose
-    a key source.
+    The ``CODEKAVACH_*`` variables of the server process pass through, except the server's own,
+    so an operator configures providers, key variables such as ``CODEKAVACH_AGENTROUTER_API_KEY``
+    and the vault the usual way; ``CODEKAVACH_HOME`` points into the data directory, and the vault
+    uses the server's passphrase file unless the operator chose a key source.
     """
-    env = {key: value for key, value in os.environ.items() if key.startswith("CODEKAVACH_")}
-    env = {key: value for key, value in env.items() if "__" in key or key == "CODEKAVACH_CONFIG"}
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key.startswith("CODEKAVACH_") and not key.startswith(SERVER_ONLY_VARIABLES)
+    }
     env["CODEKAVACH_HOME"] = str(home)
     if "CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE" not in env:
         env["CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE"] = "passphrase"
