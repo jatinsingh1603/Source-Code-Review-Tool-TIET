@@ -63,6 +63,7 @@ LLM_NEUTRAL_ALLOWLIST: Mapping[str, str] = {
     "find_placeholders": "reads placeholder tokens in sanitised text",
     "PLACEHOLDER_PATTERN": "placeholder token syntax",
     "UntrustedText": "a str type that cleans provider answers; it carries no client input",
+    "MAX_LINE": "an integer bound on cited line numbers; no client data",
 }
 # Files under src/codekavach/llm/ allowed to read files, with the written justification for each.
 # Paths are relative to the repository root. Neither reads client data: one reads a template that
