@@ -1,9 +1,9 @@
 {
-  "engine_version": "0.4.3",
+  "engine_version": "0.4.2",
   "output_file": "output.sarif",
   "languages": [
     "javascript"
   ],
   "planted_secrets": [],
-  "recording": "NOT captured from a run: written from the documented njsscan output shape against a synthetic sample. Re-record with --engines-live when the engine is installed."
+  "recording": "Captured from a real run of njsscan 0.4.2 (pip, with Semgrep 1.185.0) on the tree via --engines-live."
 }

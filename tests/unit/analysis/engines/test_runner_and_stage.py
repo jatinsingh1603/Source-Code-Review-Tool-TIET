@@ -10,6 +10,8 @@ import pytest
 from pydantic import BaseModel, JsonValue
 
 from codekavach.analysis.engines import scheduler
+from codekavach.analysis.engines.adapters.njsscan import SPEC as NJSSCAN
+from codekavach.analysis.engines.adapters.semgrep_ce import SPEC as SEMGREP
 from codekavach.analysis.engines.base import OUTPUT_TOKEN, EngineInvocation, EngineRun
 from codekavach.analysis.engines.doctor import engine_checks
 from codekavach.analysis.engines.errors import (
@@ -24,7 +26,7 @@ from codekavach.analysis.engines.errors import (
 from codekavach.analysis.engines.install import GENERIC_HINT, install_hint, verify_installed
 from codekavach.analysis.engines.manifest import parse_manifest
 from codekavach.analysis.engines.registry import HOSTED_VARIABLE, EngineRegistry, default_registry
-from codekavach.analysis.engines.runner import RunLimits, run_engine
+from codekavach.analysis.engines.runner import RunLimits, _sandbox_limits, run_engine
 from codekavach.analysis.engines.sandbox import SandboxLimits, SandboxSet, SubprocessSandbox
 from codekavach.analysis.engines.stage import AnalyseEnginesStage
 from codekavach.config import Settings
@@ -352,3 +354,11 @@ def test_doctor_reports_every_registered_engine_even_a_broken_one() -> None:
         default_registry().unregister("doc-bad")
     assert by_id["doc-ok"].available is True
     assert by_id["doc-bad"].available is False
+
+
+def test_an_engine_that_needs_address_space_raises_the_memory_limit() -> None:
+    assert SEMGREP.min_memory_mb >= 8192 and NJSSCAN.min_memory_mb >= 8192
+    assert _sandbox_limits(16384, SandboxLimits(memory_mb=4096)).memory_mb == 16384
+    assert _sandbox_limits(16384, SandboxLimits(memory_mb=32768)).memory_mb == 32768
+    assert _sandbox_limits(16384, SandboxLimits(memory_mb=0)).memory_mb == 0
+    assert _sandbox_limits(0, SandboxLimits(memory_mb=4096)).memory_mb == 4096

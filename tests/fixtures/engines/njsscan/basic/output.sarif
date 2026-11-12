@@ -1,5 +1,4 @@
 {
-  "version": "2.1.0",
   "runs": [
     {
       "tool": {
@@ -8,41 +7,184 @@
           "rules": [
             {
               "id": "node_sqli_injection",
-              "name": "node_sqli_injection",
+              "name": "NodeSqliInjection",
               "properties": {
                 "tags": [
-                  "CWE-89"
+                  "security",
+                  "external/cwe/cwe-89"
                 ]
-              }
+              },
+              "helpUri": "https://ajinabraham.github.io/nodejsscan/#node_sqli_injection"
+            },
+            {
+              "id": "generic_os_command_exec",
+              "name": "GenericOsCommandExec",
+              "properties": {
+                "tags": [
+                  "security",
+                  "external/cwe/cwe-78"
+                ]
+              },
+              "helpUri": "https://ajinabraham.github.io/nodejsscan/#generic_os_command_exec"
+            },
+            {
+              "id": "eval_nodejs",
+              "name": "EvalNodejs",
+              "properties": {
+                "tags": [
+                  "security",
+                  "external/cwe/cwe-95"
+                ]
+              },
+              "helpUri": "https://ajinabraham.github.io/nodejsscan/#eval_nodejs"
+            },
+            {
+              "id": "express_xss",
+              "name": "ExpressXss",
+              "properties": {
+                "tags": [
+                  "security",
+                  "external/cwe/cwe-79"
+                ]
+              },
+              "helpUri": "https://ajinabraham.github.io/nodejsscan/#express_xss"
             }
-          ]
+          ],
+          "version": "0.4.2",
+          "informationUri": "https://github.com/ajinabraham/njsscan",
+          "semanticVersion": "0.4.2"
         }
       },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "endTimeUtc": "2026-11-12T21:35:34Z"
+        }
+      ],
       "results": [
         {
-          "ruleId": "node_sqli_injection",
-          "level": "error",
           "message": {
-            "text": "Untrusted input concatenated with a raw SQL query"
+            "text": "Untrusted input concatinated with raw SQL query can result in SQL Injection."
           },
+          "level": "error",
           "locations": [
             {
               "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "  connection.query(\"select * from t where a=\" + req.query.a, function (e, r) { res.send(r); });"
+                  },
+                  "endColumn": 95,
+                  "endLine": 7,
+                  "startColumn": 3,
+                  "startLine": 7
+                },
                 "artifactLocation": {
                   "uri": "server.js"
-                },
-                "region": {
-                  "startLine": 4,
-                  "startColumn": 3
                 }
               }
             }
           ],
           "properties": {
-            "cwe": "CWE-89"
-          }
+            "owasp-web": "A1: Injection",
+            "cwe": "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+          },
+          "ruleId": "node_sqli_injection",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "User controlled data in 'child_process.exec()' can result in Remote OS Command Execution."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "  cp.exec(\"ls \" + req.query.dir);"
+                  },
+                  "endColumn": 33,
+                  "endLine": 8,
+                  "startColumn": 3,
+                  "startLine": 8
+                },
+                "artifactLocation": {
+                  "uri": "server.js"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "owasp-web": "A1: Injection",
+            "cwe": "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+          },
+          "ruleId": "generic_os_command_exec",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "User controlled data in eval() or similar functions may result in Server Side Injection or Remote Code Injection"
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "  eval(req.query.code);"
+                  },
+                  "endColumn": 23,
+                  "endLine": 9,
+                  "startColumn": 3,
+                  "startLine": 9
+                },
+                "artifactLocation": {
+                  "uri": "server.js"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "owasp-web": "A1: Injection",
+            "cwe": "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+          },
+          "ruleId": "eval_nodejs",
+          "ruleIndex": 2
+        },
+        {
+          "message": {
+            "text": "Untrusted User Input in Response will result in Reflected Cross Site Scripting Vulnerability."
+          },
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "  res.send(\"<p>\" + req.query.name + \"</p>\");"
+                  },
+                  "endColumn": 44,
+                  "endLine": 10,
+                  "startColumn": 3,
+                  "startLine": 10
+                },
+                "artifactLocation": {
+                  "uri": "server.js"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "owasp-web": "A1: Injection",
+            "cwe": "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+          },
+          "ruleId": "express_xss",
+          "ruleIndex": 3
         }
       ]
     }
-  ]
+  ],
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
 }

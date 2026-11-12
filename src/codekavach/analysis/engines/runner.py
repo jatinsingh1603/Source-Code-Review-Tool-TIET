@@ -12,7 +12,7 @@ output quotes client code.
 
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Final
 
@@ -39,6 +39,13 @@ STDOUT_NAME: Final = "stdout.txt"
 STDERR_NAME: Final = "stderr.txt"
 
 _log = get_logger("codekavach.analysis.engines.runner")
+
+
+def _sandbox_limits(minimum_mb: int, limits: SandboxLimits) -> SandboxLimits:
+    """Raise the memory limit to what the engine needs; 0 (no limit) stays unlimited."""
+    if limits.memory_mb <= 0 or limits.memory_mb >= minimum_mb:
+        return limits
+    return replace(limits, memory_mb=minimum_mb)
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,7 +117,7 @@ def run_engine(
         workdir=invocation.workdir,
         env={**limits.extra_env, **invocation.env},
         passthrough=limits.passthrough,
-        limits=limits.sandbox,
+        limits=_sandbox_limits(adapter.spec.min_memory_mb, limits.sandbox),
         image=limits.image,
     )
     try:

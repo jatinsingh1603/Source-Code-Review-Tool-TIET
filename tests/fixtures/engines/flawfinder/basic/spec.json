@@ -1,9 +1,9 @@
 {
-  "engine_version": "2.0.19",
+  "engine_version": "2.0.20",
   "output_file": "output.sarif",
   "languages": [
     "c"
   ],
   "planted_secrets": [],
-  "recording": "NOT captured from a run: written from the documented Flawfinder output shape against a synthetic sample. Re-record with --engines-live when the engine is installed."
+  "recording": "Captured from a real run of Flawfinder 2.0.20 (pip) on the tree via --engines-live."
 }

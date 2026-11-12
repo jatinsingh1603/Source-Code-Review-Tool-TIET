@@ -1,1 +1,8 @@
-rules: []
+rules:
+  - id: os-system
+    languages: [python]
+    severity: ERROR
+    message: os.system called with a non-constant command
+    metadata:
+      cwe: ["CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"]
+    pattern: os.system(...)

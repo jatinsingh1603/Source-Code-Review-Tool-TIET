@@ -54,6 +54,7 @@ SPEC: Final = EngineSpec(
     config_filenames=(".semgrep.yml", ".semgrepignore", ".semgrep"),
     expect_exit_codes=frozenset({0, 1}),
     weight=3,
+    min_memory_mb=16384,
 )
 
 

@@ -75,6 +75,9 @@ class EngineSpec:
     code_flow_order: CodeFlowOrder = "source_first"
     default_kind: CandidateKind = CandidateKind.VULNERABILITY
     weight: int = 1
+    # Address space the engine needs under the sandbox's RLIMIT_AS; 0 keeps the configured limit.
+    # semgrep-core reserves more than 8 GiB of address space and dies silently below that.
+    min_memory_mb: int = 0
 
     def __post_init__(self) -> None:
         if not ENGINE_ID_PATTERN.match(self.id) or not SLUG_PATTERN.match(self.id):

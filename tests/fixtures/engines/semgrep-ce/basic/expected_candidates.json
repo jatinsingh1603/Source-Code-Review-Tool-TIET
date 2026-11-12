@@ -4,9 +4,9 @@
       78
     ],
     "engine": "semgrep-ce",
-    "engine_confidence": null,
+    "engine_confidence": "high",
     "engine_severity": "high",
-    "engine_version": "1.100.0",
+    "engine_version": "1.185.0",
     "fingerprint": "ckfp1:9339b99005508cf15739b2cda186ddf7",
     "id": "cand-0",
     "kind": "vulnerability",
@@ -21,7 +21,7 @@
         "symbol": null
       }
     ],
-    "message": "os.system with a variable",
+    "message": "os.system called with a non-constant command",
     "properties": [
       [
         "cwe.source",
@@ -29,7 +29,7 @@
       ],
       [
         "engine.run",
-        "Semgrep OSS@unknown"
+        "Semgrep OSS@1.185.0"
       ]
     ],
     "rule_id": "rules.os-system",

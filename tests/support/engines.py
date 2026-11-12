@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import sys
+import tempfile
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -309,14 +310,18 @@ def record_case(adapter: EngineAdapter, case_dir: Path) -> None:
     if os.environ.get(CI_VARIABLE):
         raise pytest.UsageError("--engines-live is refused when CI is set")
     case = RecordedCase.load(case_dir)
-    probe = adapter.probe(Settings())
+    probe = adapter.probe(case.settings(case_dir))
     if not probe.available:
         pytest.skip(f"{adapter.spec.id} is not installed")
-    invocation = adapter.build_invocation(case.tree, tree_files(case.tree), Settings())
+    out_dir = Path(tempfile.mkdtemp(prefix="ck-record-"))
+    settings = case.settings(out_dir)
+    # Record from a copy outside the repository: engines apply their default ignore lists
+    # (``tests/``, ``fixtures/``) to a path inside a checkout and would skip the whole case.
+    root = out_dir / "root"
+    shutil.copytree(case.tree, root)
+    invocation = adapter.build_invocation(root, tree_files(root), settings)
     assert invocation is not None
-    out_dir = case_dir / "live-output"
-    out_dir.mkdir(exist_ok=True)
-    limits = RunLimits(timeout_seconds=300.0, root=case.tree, out_dir=out_dir)
+    limits = RunLimits(timeout_seconds=300.0, root=root, out_dir=out_dir / "run")
     run = run_engine(
         adapter, invocation, sandbox=SubprocessSandbox(), limits=limits, version=probe.version or ""
     )

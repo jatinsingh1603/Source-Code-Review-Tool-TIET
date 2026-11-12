@@ -6,22 +6,22 @@
     "engine": "njsscan",
     "engine_confidence": null,
     "engine_severity": "high",
-    "engine_version": "0.4.3",
-    "fingerprint": "ckfp1:a44f414f41ee2bd0fedac6d471d18fb6",
+    "engine_version": "0.4.2",
+    "fingerprint": "ckfp1:3b7b10c366a6a4b879e9cf8197473dc1",
     "id": "cand-0",
     "kind": "vulnerability",
     "language": "javascript",
     "locations": [
       {
-        "end_col": 54,
-        "end_line": 4,
+        "end_col": 95,
+        "end_line": 7,
         "path": "server.js",
         "start_col": 3,
-        "start_line": 4,
+        "start_line": 7,
         "symbol": null
       }
     ],
-    "message": "Untrusted input concatenated with a raw SQL query",
+    "message": "Untrusted input concatinated with raw SQL query can result in SQL Injection.",
     "properties": [
       [
         "cwe.source",
@@ -29,10 +29,121 @@
       ],
       [
         "engine.run",
-        "nodejsscan@unknown"
+        "nodejsscan@0.4.2"
       ]
     ],
     "rule_id": "node_sqli_injection",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      78
+    ],
+    "engine": "njsscan",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "0.4.2",
+    "fingerprint": "ckfp1:75972b514e4dd40557cd54af0a150673",
+    "id": "cand-1",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 33,
+        "end_line": 8,
+        "path": "server.js",
+        "start_col": 3,
+        "start_line": 8,
+        "symbol": null
+      }
+    ],
+    "message": "User controlled data in 'child_process.exec()' can result in Remote OS Command Execution.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "nodejsscan@0.4.2"
+      ]
+    ],
+    "rule_id": "generic_os_command_exec",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      95
+    ],
+    "engine": "njsscan",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "0.4.2",
+    "fingerprint": "ckfp1:203351f6f5c7396d2e99c7cea04b8960",
+    "id": "cand-2",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 23,
+        "end_line": 9,
+        "path": "server.js",
+        "start_col": 3,
+        "start_line": 9,
+        "symbol": null
+      }
+    ],
+    "message": "User controlled data in eval() or similar functions may result in Server Side Injection or Remote Code Injection",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "nodejsscan@0.4.2"
+      ]
+    ],
+    "rule_id": "eval_nodejs",
+    "schema_version": 1,
+    "taint_path": null
+  },
+  {
+    "cwe": [
+      79
+    ],
+    "engine": "njsscan",
+    "engine_confidence": null,
+    "engine_severity": "high",
+    "engine_version": "0.4.2",
+    "fingerprint": "ckfp1:2a654f839fdc09a670d1098989eb35c0",
+    "id": "cand-3",
+    "kind": "vulnerability",
+    "language": "javascript",
+    "locations": [
+      {
+        "end_col": 44,
+        "end_line": 10,
+        "path": "server.js",
+        "start_col": 3,
+        "start_line": 10,
+        "symbol": null
+      }
+    ],
+    "message": "Untrusted User Input in Response will result in Reflected Cross Site Scripting Vulnerability.",
+    "properties": [
+      [
+        "cwe.source",
+        "properties"
+      ],
+      [
+        "engine.run",
+        "nodejsscan@0.4.2"
+      ]
+    ],
+    "rule_id": "express_xss",
     "schema_version": 1,
     "taint_path": null
   }

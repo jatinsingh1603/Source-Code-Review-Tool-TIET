@@ -7,5 +7,5 @@
   "planted_secrets": [
     "synthetic-placeholder"
   ],
-  "recording": "real Bandit 1.9.4 run: bandit -r . -f json --exit-zero --ignore-nosec; code snippets and metrics removed, timestamp fixed"
+  "recording": "Captured from a real run of Bandit 1.9.4 (pip) on the tree via --engines-live."
 }

@@ -36,6 +36,7 @@ SPEC: Final = EngineSpec(
     config_filenames=(".njsscan", ".semgrepignore"),
     expect_exit_codes=frozenset({0, 1}),
     weight=2,
+    min_memory_mb=16384,
 )
 
 

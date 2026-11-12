@@ -1,15 +1,15 @@
 {
-  "engine_version": "1.100.0",
+  "engine_version": "1.185.0",
   "output_file": "output.sarif",
   "languages": [
     "python"
   ],
   "planted_secrets": [],
-  "recording": "NOT captured from a run: written from the documented Semgrep output shape against a synthetic sample. Re-record with --engines-live when the engine is installed.",
+  "recording": "Captured from a real run of Semgrep 1.185.0 (pip) on the tree with rules/r.yml via --engines-live; the machine-specific path prefix in the rule id was trimmed to rules.os-system.",
   "settings": {
     "engines": {
       "rule_paths": [
-        "{case}/rules"
+        "{case}/tree/rules"
       ]
     }
   }

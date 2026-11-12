@@ -1,8 +1,37 @@
 {
   "errors": [],
-  "generated_at": "2026-01-01T00:00:00Z",
+  "generated_at": "2026-11-12T21:35:45Z",
+  "metrics": {
+    "./app.py": {
+      "CONFIDENCE.HIGH": 3,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 2,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 2,
+      "SEVERITY.LOW": 2,
+      "SEVERITY.MEDIUM": 1,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 13,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "_totals": {
+      "CONFIDENCE.HIGH": 3,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 2,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 2,
+      "SEVERITY.LOW": 2,
+      "SEVERITY.MEDIUM": 1,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 13,
+      "nosec": 0,
+      "skipped_tests": 0
+    }
+  },
   "results": [
     {
+      "code": "3 import sqlite3\n4 import subprocess\n5 \n",
       "col_offset": 0,
       "end_col_offset": 17,
       "filename": "./app.py",
@@ -22,6 +51,7 @@
       "test_name": "blacklist"
     },
     {
+      "code": "5 \n6 DB_PASSWORD = \"synthetic-placeholder\"  # pragma: allowlist secret\n7 \n",
       "col_offset": 14,
       "end_col_offset": 37,
       "filename": "./app.py",
@@ -41,6 +71,7 @@
       "test_name": "hardcoded_password_string"
     },
     {
+      "code": "10     cur = conn.cursor()\n11     cur.execute(\"SELECT * FROM accounts WHERE owner = '\" + owner + \"'\")\n12     return cur.fetchall()\n",
       "col_offset": 16,
       "end_col_offset": 56,
       "filename": "./app.py",
@@ -60,6 +91,7 @@
       "test_name": "hardcoded_sql_expressions"
     },
     {
+      "code": "15 def digest(data: bytes) -> str:\n16     return hashlib.md5(data).hexdigest()\n17 \n",
       "col_offset": 11,
       "end_col_offset": 28,
       "filename": "./app.py",
@@ -79,6 +111,7 @@
       "test_name": "hashlib"
     },
     {
+      "code": "19 def run(command: str) -> int:\n20     return subprocess.call(command, shell=True)\n",
       "col_offset": 11,
       "end_col_offset": 47,
       "filename": "./app.py",
