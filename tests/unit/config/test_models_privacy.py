@@ -206,7 +206,7 @@ def test_validation_iff_levels_meet_floor(
         assert privacy.floor_for_tier(tier).at_least(min_level)
 
 
-EGRESS_DEFAULTS = {
+EGRESS_DEFAULTS: dict[str, object] = {
     "max_payload_bytes": 262_144,
     "aggregation_budget_pct": 100.0,
     "lifetime_budget_pct": None,

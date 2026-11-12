@@ -31,6 +31,7 @@ The tier marker is applied automatically from the directory (`tests/conftest.py`
 | `perf` | Performance budget test; part of the default run; limits scale with `CODEKAVACH_PERF_FACTOR`; macOS CI cells deselect it |
 | `network` | Needs external network; deselected by default and never run in CI |
 | `requires_engine(name)` | Needs an external analysis engine on `PATH`; skipped when absent |
+| `conformance` | Provider conformance suite (E22-04); the offline and cassette modes run in CI |
 
 Markers are strict: a misspelt marker fails collection instead of silently deselecting a test.
 

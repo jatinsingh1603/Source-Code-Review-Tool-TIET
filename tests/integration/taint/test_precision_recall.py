@@ -31,9 +31,10 @@ from codekavach.analysis.taint.catalogue import Binding
 from codekavach.analysis.taint.frameworks import entry_seeds
 from codekavach.analysis.taint.interproc import ProjectIndex, compute_summaries, make_lookup
 from codekavach.analysis.taint.propagate import Budget, propagate_bound
-from codekavach.analysis.taint.stage import candidates_for, split_lines
+from codekavach.analysis.taint.stage import candidates_for
 from codekavach.config.models.taint import TaintSettings
 from codekavach.core.models import Candidate, Language
+from codekavach.core.models.text import split_lines
 from tests.support.kavachbank import FIXTURE_ROOT, load_manifest, load_negative_controls
 from tests.support.taint import lower_source
 
@@ -147,8 +148,12 @@ def result() -> dict[str, object]:
 
 
 def test_recall_floor(result: dict[str, object]) -> None:
-    assert result["recall"] >= 0.5, result["missed"]
+    recall = result["recall"]
+    assert isinstance(recall, float | int)
+    assert recall >= 0.5, result["missed"]
 
 
 def test_precision_floor(result: dict[str, object]) -> None:
-    assert result["precision"] >= 0.5, result["unmatched_certain"]
+    precision = result["precision"]
+    assert isinstance(precision, float | int)
+    assert precision >= 0.5, result["unmatched_certain"]
