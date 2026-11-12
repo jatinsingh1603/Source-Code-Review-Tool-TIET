@@ -1,4 +1,7 @@
-"""Optional third-party SCA matchers, run as external processes and never imported (E19-02)."""
+"""Optional third-party SCA matchers, run as external processes and never imported.
+
+Owning epic: E19 (E19-02). Normative layout: docs/ARCHITECTURE.md section 3.
+"""
 
 from codekavach.analysis.sca.adapters.base import MatcherUnavailable, run_matcher
 from codekavach.analysis.sca.adapters.osv_scanner import scan as osv_scan
