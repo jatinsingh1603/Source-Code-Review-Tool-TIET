@@ -101,7 +101,7 @@ export function CodeBlock({
                   <span
                     aria-hidden
                     className="sticky left-0 select-none bg-inherit pl-3 pr-4 text-right text-code-gutter"
-                    style={{ minWidth: `${gutterWidth + 3}ch` }}
+                    style={{ minWidth: `calc(${gutterWidth}ch + 1.75rem)` }}
                   >
                     {r.number}
                   </span>

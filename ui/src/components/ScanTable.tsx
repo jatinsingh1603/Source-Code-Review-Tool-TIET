@@ -24,10 +24,13 @@ export function ScanTable({
   showProject = false,
   dense,
   empty,
+  compact = false,
 }: {
   scans: Scan[];
   showProject?: boolean;
   dense?: boolean;
+  /** Hide provider and duration columns (for narrow cards). */
+  compact?: boolean;
   empty?: React.ReactNode;
 }) {
   const navigate = useNavigate();
@@ -44,7 +47,7 @@ export function ScanTable({
           {
             id: "project",
             header: "Project",
-            cell: (s: Scan) => <span className="text-fg">{s.project_name ?? s.project_id}</span>,
+            cell: (s: Scan) => <span className="whitespace-nowrap text-fg">{s.project_name ?? s.project_id}</span>,
             sortValue: (s: Scan) => s.project_name ?? s.project_id,
           },
         ]
@@ -57,26 +60,26 @@ export function ScanTable({
       sortValue: (s) => (s.counts?.critical ?? 0) * 1000 + (s.counts?.high ?? 0) * 100 + (s.counts?.medium ?? 0),
     },
     { id: "level", header: "Privacy", cell: (s) => <PrivacyLevelBadge level={s.privacy_level} />, sortValue: (s) => s.privacy_level },
-    {
+    ...(compact ? [] : [{
       id: "provider",
       header: "Provider",
-      cell: (s) => (
-        <span className="text-sm text-fg-muted">
+      cell: (s: Scan) => (
+        <span className="whitespace-nowrap text-sm text-fg-muted">
           {s.provider === "none" || !s.provider ? "Local only" : `${s.provider}${s.model ? ` · ${s.model}` : ""}`}
         </span>
       ),
-    },
+    }]),
     {
       id: "when",
       header: "Started",
-      cell: (s) => <span className="text-sm text-fg-muted">{fmtRelative(s.started_at ?? s.created_at)}</span>,
+      cell: (s) => <span className="whitespace-nowrap text-sm text-fg-muted">{fmtRelative(s.started_at ?? s.created_at)}</span>,
       sortValue: (s) => s.started_at ?? s.created_at ?? "",
     },
-    {
+    ...(compact ? [] : [{
       id: "dur",
       header: "Duration",
-      cell: (s) => <span className="text-sm tabular-nums text-fg-muted">{s.started_at ? fmtDuration(s.started_at, s.finished_at) : "—"}</span>,
-    },
+      cell: (s: Scan) => <span className="text-sm tabular-nums text-fg-muted">{s.started_at ? fmtDuration(s.started_at, s.finished_at) : "—"}</span>,
+    }]),
   ];
   return (
     <DataTable

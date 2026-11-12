@@ -18,7 +18,7 @@ function Pane({
   lines: Segment[][];
   tone: "local" | "remote";
 }) {
-  const width = String(lines.length).length + 2;
+  const width = String(lines.length).length;
   return (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border">
       <div
@@ -36,7 +36,7 @@ function Pane({
       <pre className="flex-1 overflow-auto bg-code-bg py-2 font-mono text-[12.5px] leading-[21px]">
         {lines.map((segs, i) => (
           <div key={i} className="flex min-w-max pr-4">
-            <span aria-hidden className="select-none pl-3 pr-3 text-right text-code-gutter" style={{ minWidth: `${width + 1}ch` }}>
+            <span aria-hidden className="select-none pl-3 pr-3 text-right text-code-gutter" style={{ minWidth: `calc(${width}ch + 1.5rem)` }}>
               {i + 1}
             </span>
             <span className="whitespace-pre text-fg">
@@ -80,6 +80,7 @@ export function MarkLegend() {
 export function SideBySide({ detail }: { detail: LedgerDetail }) {
   const [view, setView] = useState<"split" | "payload">("split");
   const hasOriginal = !!detail.original_text;
+  const blocked = (detail.entry.outcome ?? "").startsWith("blocked");
   const original = useMemo(
     () => segmentLines(detail.original_text ?? "", detail.markup.filter((m) => m.side === "original")),
     [detail],
@@ -120,7 +121,7 @@ export function SideBySide({ detail }: { detail: LedgerDetail }) {
           />
         )}
         <Pane
-          title="Payload (what the provider received)"
+          title={blocked ? "Payload (blocked before egress, never sent)" : "Payload (what the provider received)"}
           note={`${detail.entry.provider} · ${detail.entry.model} · sha256 ${shortHash(detail.entry.payload_hash, 12)}`}
           icon={<Cloud className="h-4 w-4 text-info" aria-hidden />}
           lines={payload}

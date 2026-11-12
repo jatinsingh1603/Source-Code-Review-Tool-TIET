@@ -1,8 +1,8 @@
-import { Link, useNavigate } from "react-router-dom";
-import { AlertOctagon, Bug, FolderGit2, Plus, ScanSearch, TrendingUp, PieChart as PieIcon, History } from "lucide-react";
+import { Link } from "react-router-dom";
+import { AlertOctagon, Bug, FolderGit2, ScanSearch, TrendingUp, PieChart as PieIcon, History } from "lucide-react";
 import { useScans, useStats } from "@/api/queries";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Button, Card, CardBody, CardHeader, EmptyState, ErrorState, Skeleton, StatTile } from "@/components/ui";
+import { Card, CardBody, CardHeader, EmptyState, ErrorState, Skeleton, StatTile } from "@/components/ui";
 import { FindingsTrend, SeverityDonut } from "@/components/charts/SeverityCharts";
 import { PrivacyPostureCard } from "@/components/PrivacyPosture";
 import { ScanTable } from "@/components/ScanTable";
@@ -15,8 +15,7 @@ export default function OverviewPage() {
   const stats = useStats();
   const scans = useScans();
   const { current } = useCurrentProject();
-  const { user, can } = useSession();
-  const navigate = useNavigate();
+  const { user } = useSession();
   const s = stats.data;
   const recent = (scans.data ?? []).slice(0, 6);
   const projectScan = pickDefault((scans.data ?? []).filter((x) => x.project_id === current?.id));
@@ -30,14 +29,6 @@ export default function OverviewPage() {
       <PageHeader
         title={`Welcome back${user?.display_name ? `, ${user.display_name.split(" ")[0]}` : ""}`}
         description="Security posture across your projects, from deterministic analysis and privacy-preserving model review."
-        actions={
-          can("scans:run") &&
-          current && (
-            <Button icon={<Plus className="h-4 w-4" />} onClick={() => navigate(`/projects/${current.id}/scan`)}>
-              New scan
-            </Button>
-          )
-        }
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -108,6 +99,7 @@ export default function OverviewPage() {
               scans={recent}
               showProject
               dense
+              compact
               empty={<EmptyState title="No scans yet" description="Create a project and start your first scan." />}
             />
           )}

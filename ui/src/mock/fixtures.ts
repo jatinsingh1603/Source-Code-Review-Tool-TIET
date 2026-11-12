@@ -37,7 +37,8 @@ export interface FindingTemplate {
   language: string;
   code: { start: number; text: string };
   taint: TaintStep[];
-  llm: { is_vulnerable: boolean; confidence: number; reasoning: string; impact: string; remediation: string };
+  /** null: never sent to a model (secrets are handled deterministically). */
+  llm: { is_vulnerable: boolean; confidence: number; reasoning: string; impact: string; remediation: string } | null;
   remediation: string;
   references: { title: string; url: string }[];
   engine: string;
@@ -476,10 +477,10 @@ def account_statement(account_id):
     owasp: "A02:2021 Cryptographic Failures",
     asvs: "V6.2.5",
     capec: "CAPEC-20",
-    cvss4_vector: "CVSS:4.0/AV:N/AC:H/AT:P/PR:L/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N",
-    cvss4_score: 2.1,
-    cvss31_vector: "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:L/I:N/A:N",
-    cvss31_score: 3.1,
+    cvss4_vector: "CVSS:4.0/AV:N/AC:H/AT:P/PR:L/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+    cvss4_score: 5.9,
+    cvss31_vector: "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N",
+    cvss31_score: 5.3,
     likelihood: "Low",
     impact: "Medium",
     compliance: [{ framework: "ISO/IEC 27001:2022", clause: "A.8.24", title: "Use of cryptography" }],
@@ -534,14 +535,7 @@ def account_statement(account_id):
 AWS_SECRET_ACCESS_KEY = "wJal********************************EKEY"`,
     },
     taint: [],
-    llm: {
-      is_vulnerable: true,
-      confidence: 0.6,
-      reasoning:
-        "Secrets are detected deterministically and never sent to a model; this verdict field records the deterministic detector's assessment.",
-      impact: "Cloud account takeover if the key is live.",
-      remediation: "Revoke the key, move it to a secret manager and load it from the environment.",
-    },
+    llm: null,
     remediation: "Rotate the credential, purge it from history and load it at runtime from a secret store.",
     references: [{ title: "OWASP Secrets Management Cheat Sheet", url: "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html" }],
     engine: "codekavach-secrets",
@@ -558,10 +552,10 @@ AWS_SECRET_ACCESS_KEY = "wJal********************************EKEY"`,
     owasp: "A04:2021 Insecure Design",
     asvs: "V11.1.4",
     capec: "CAPEC-125",
-    cvss4_vector: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N",
-    cvss4_score: 6.9,
-    cvss31_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
-    cvss31_score: 5.3,
+    cvss4_vector: "CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N",
+    cvss4_score: 2.3,
+    cvss31_vector: "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L",
+    cvss31_score: 3.7,
     likelihood: "Low",
     impact: "Low",
     compliance: [],
@@ -672,7 +666,7 @@ export function buildFinding(
       code: { path: t.path, start_line: t.code.start, lines, highlight: [{ start: t.line, end: t.line }], language: t.language },
       taint_path: t.taint,
     },
-    llm: withLlm ? { ...t.llm, model, provider } : null,
+    llm: withLlm && t.llm ? { ...t.llm, model, provider } : null,
     remediation: t.remediation,
     references: t.references,
     status: "open",

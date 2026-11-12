@@ -139,12 +139,12 @@ export default function NewScanPage() {
                   aria-checked={level === l}
                   onClick={() => setLevel(l)}
                   className={cn(
-                    "relative overflow-hidden rounded-lg border p-3 text-left transition-colors",
+                    "relative flex flex-col justify-start overflow-hidden rounded-lg border p-3 pt-4 text-left transition-colors",
                     level === l ? "border-primary bg-primary-soft/50 ring-1 ring-primary" : "border-border hover:bg-surface-2",
                   )}
                 >
                   <span className={cn("absolute inset-x-0 top-0 h-1", lvlBar[l])} aria-hidden />
-                  <span className="flex items-center justify-between">
+                  <span className="flex h-5 w-full items-center justify-between">
                     <span className="text-base font-bold text-fg">{l}</span>
                     {level === l && <CheckCircle2 className="h-4 w-4 text-primary" aria-hidden />}
                   </span>

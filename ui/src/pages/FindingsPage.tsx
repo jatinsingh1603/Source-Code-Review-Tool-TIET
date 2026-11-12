@@ -157,7 +157,7 @@ export default function FindingsPage() {
       header: "Model",
       cell: (f) =>
         f.llm ? (
-          <span className={cn("inline-flex items-center gap-1 text-xs", f.llm.is_vulnerable ? "text-danger" : "text-fg-muted")}>
+          <span className={cn("inline-flex items-center gap-1 whitespace-nowrap text-xs", f.llm.is_vulnerable ? "text-danger" : "text-fg-muted")}>
             <Bot className="h-3.5 w-3.5" aria-hidden />
             {f.llm.is_vulnerable ? "Confirmed" : "Dismissed"} · {fmtConfidence(f.llm.confidence)}
           </span>
@@ -166,7 +166,7 @@ export default function FindingsPage() {
         ),
       sortValue: (f) => (f.llm ? (f.llm.is_vulnerable ? 2 : 1) : 0),
     },
-    { id: "engine", header: "Engine", cell: (f) => <span className="text-xs text-fg-muted">{f.engine ?? "—"}</span>, sortValue: (f) => f.engine ?? "" },
+    { id: "engine", header: "Engine", cell: (f) => <span className="whitespace-nowrap text-xs text-fg-muted">{f.engine ?? "—"}</span>, sortValue: (f) => f.engine ?? "" },
     { id: "status", header: "Status", cell: (f) => <StatusBadge status={f.status} />, sortValue: (f) => f.status },
   ];
 
