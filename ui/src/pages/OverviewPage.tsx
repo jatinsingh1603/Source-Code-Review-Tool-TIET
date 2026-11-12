@@ -124,9 +124,15 @@ export default function OverviewPage() {
             <Kpi
               to="/privacy/ledger"
               label="Zero-leak check"
-              value={privacyQ.data ? fmtInt(privacyQ.data.zero_leak.occurrences) : "—"}
-              unit="terms found"
-              detail={privacyQ.data ? `${fmtInt(privacyQ.data.zero_leak.checked)} listed terms, verbatim` : "not checked"}
+              value={privacyQ.data?.zero_leak.checked ? fmtInt(privacyQ.data.zero_leak.occurrences) : "—"}
+              unit={privacyQ.data?.zero_leak.checked ? "terms found" : undefined}
+              detail={
+                privacyQ.data?.zero_leak.checked
+                  ? `${fmtInt(privacyQ.data.zero_leak.checked)} listed terms, verbatim`
+                  : privacyQ.data
+                    ? "not run: no listed terms for this project"
+                    : "not checked"
+              }
             />
             <Kpi
               label="Last scan"
@@ -197,11 +203,11 @@ function PrivacyScoreKpi({ p, prev }: { p?: PrivacySummary; prev?: PrivacySummar
 
 function EgressKpi({ p, scan }: { p?: PrivacySummary; scan?: Scan }) {
   const payloads = p?.payloads ?? (scan ? scanPayloads(scan) : null);
-  const frac =
-    p?.bytes_sent !== undefined && p?.bytes_sent !== null && p?.repo_bytes
-      ? ((p.bytes_sent / p.repo_bytes) * 100).toFixed(1)
-      : p?.disclosure?.repository_fraction_pct;
-  const detail = `${fmtInt(payloads)} payloads${frac !== undefined ? ` · ${frac}% of repo` : ""}`;
+  // The core's measure: distinct repository lines disclosed over inventory lines. Payload bytes
+  // over repository bytes would count the prompt text and repeated context, and can pass 100%.
+  const raw = p?.disclosure?.repository_fraction_pct;
+  const frac = raw !== undefined && raw !== "" && Number.isFinite(Number(raw)) ? Number(raw).toFixed(1) : undefined;
+  const detail = `${fmtInt(payloads)} payloads${frac !== undefined ? ` · ${frac}% of repo lines` : ""}`;
   if (p?.bytes_sent !== undefined && p?.bytes_sent !== null) {
     const b = fmtBytes(p.bytes_sent);
     return <Kpi to="/privacy/ledger" label="Bytes egressed, this scan" value={b.v} unit={b.unit} detail={detail} />;
