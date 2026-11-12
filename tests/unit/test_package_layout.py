@@ -616,6 +616,7 @@ ALLOWED_EXTRA_MODULES: frozenset[str] = frozenset(
         "codekavach.privacy.policy.loader",
         "codekavach.privacy.policy.model",
         "codekavach.privacy.policy.records",
+        "codekavach.privacy.slicing.strategies.wholefile",
         "codekavach.report.model.control",
         "codekavach.report.model.finding_view",
         "codekavach.report.model.ids",

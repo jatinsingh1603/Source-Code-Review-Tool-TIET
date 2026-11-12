@@ -260,6 +260,7 @@ class SliceStrategy(StrEnum):
     SINK_WINDOW = "sink_window"
     FORWARD_SLICE = "forward_slice"
     HOTSPOT = "hotspot"
+    WHOLE_FILE = "whole_file"  # the unminimised unit of privacy levels L1 and L2 (E25-02)
 
 
 class SlicePurpose(StrEnum):

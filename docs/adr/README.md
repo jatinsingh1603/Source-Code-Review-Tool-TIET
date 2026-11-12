@@ -52,6 +52,7 @@ If the title matches a `Reserved` row, the helper uses that number and changes t
 | [0007](0007-pipeline-contracts.md) | Pipeline contracts | Proposed | 2026-09-28 | | #126 (E04-01) |
 | [0008](0008-cli-conventions.md) | CLI conventions | Proposed | 2026-10-04 | | #160 (E05-01) |
 | [0009](0009-domain-model-conventions.md) | Domain-model conventions | Proposed | 2026-10-06 | | #49 (E02-01) |
+| [0010](0010-privacy-level-semantics.md) | Privacy level semantics | Proposed | 2026-11-13 | | #250 (E25-02) |
 
 ### Amendment records
 

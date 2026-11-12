@@ -16,8 +16,10 @@ minified file, an unsupported language) is raised at once: a smaller window of a
 does not send is still a file the policy does not send.
 
 ``privacy.slice.default_strategy`` is the richest strategy the project allows; the default,
-``enclosing_function``, never starts with a path. A hotspot candidate is cut for discovery by
-``HotspotStrategy`` and has no chain.
+``enclosing_function``, never starts with a path. Privacy levels L1 and L2 start from the whole
+file instead (``UNIT_CHAIN``, E25-02): whole file, then the enclosing function, then the window, so
+a file over the budget falls back with ``fallback_reason = "over_budget"``. A hotspot candidate
+is cut for discovery by ``HotspotStrategy`` and has no chain.
 """
 
 from typing import Protocol
@@ -31,12 +33,19 @@ from codekavach.privacy.slicing.strategies.backward import BackwardSliceStrategy
 from codekavach.privacy.slicing.strategies.enclosing import EnclosingFunctionStrategy
 from codekavach.privacy.slicing.strategies.hotspot import HotspotStrategy
 from codekavach.privacy.slicing.strategies.taintpath import TaintPathStrategy
+from codekavach.privacy.slicing.strategies.wholefile import WholeFileStrategy
 from codekavach.privacy.slicing.strategies.window import SinkWindowStrategy
 from codekavach.privacy.slicing.stubs import StubStats
 
 CHAIN = (
     SliceStrategy.TAINT_PATH,
     SliceStrategy.BACKWARD_SLICE,
+    SliceStrategy.ENCLOSING_FUNCTION,
+    SliceStrategy.SINK_WINDOW,
+)
+# The unminimised chain of levels L1 and L2: no path or def-use slice, only whole units.
+UNIT_CHAIN = (
+    SliceStrategy.WHOLE_FILE,
     SliceStrategy.ENCLOSING_FUNCTION,
     SliceStrategy.SINK_WINDOW,
 )
@@ -60,14 +69,18 @@ class StrategySelector:
         defuse_depth: int = 20,
         callee_depth: int = 1,
     ) -> None:
-        if ceiling not in CHAIN:
+        if ceiling is SliceStrategy.WHOLE_FILE:
+            self._chain: tuple[SliceStrategy, ...] = UNIT_CHAIN
+        elif ceiling in CHAIN:
+            self._chain = CHAIN[CHAIN.index(ceiling) :]
+        else:
             raise ValueError(f"{ceiling.value} is not a strategy the selector can start from")
-        self._chain = CHAIN[CHAIN.index(ceiling) :]
         self._strategies: dict[SliceStrategy, _Strategy] = {
             SliceStrategy.TAINT_PATH: TaintPathStrategy(callee_depth=callee_depth),
             SliceStrategy.BACKWARD_SLICE: BackwardSliceStrategy(depth=defuse_depth),
             SliceStrategy.ENCLOSING_FUNCTION: EnclosingFunctionStrategy(),
             SliceStrategy.SINK_WINDOW: SinkWindowStrategy(),
+            SliceStrategy.WHOLE_FILE: WholeFileStrategy(),
         }
 
     @classmethod

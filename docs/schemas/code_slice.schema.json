@@ -170,7 +170,8 @@
         "backward_slice",
         "sink_window",
         "forward_slice",
-        "hotspot"
+        "hotspot",
+        "whole_file"
       ],
       "title": "SliceStrategy",
       "type": "string"

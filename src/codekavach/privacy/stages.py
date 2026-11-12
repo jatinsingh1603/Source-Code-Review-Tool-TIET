@@ -63,7 +63,7 @@ from codekavach.privacy.detect.terms import register_term_detector
 from codekavach.privacy.egress.aggregation import AggregationBudget, ExposureAccount
 from codekavach.privacy.egress.session import EgressSession
 from codekavach.privacy.errors import PseudonymError, RedactionError
-from codekavach.privacy.levels import level_available, plan_for
+from codekavach.privacy.levels import UNIT_BUDGET_FACTOR, level_available, plan_for
 from codekavach.privacy.policy.engine import PolicyEngine
 from codekavach.privacy.policy.records import PolicyDecisionRow
 from codekavach.privacy.pseudonymise.engine import Pseudonymiser
@@ -377,8 +377,9 @@ class PrivacyPrepareStage:
         try:
             selector = StrategySelector.from_settings(ctx.config)
             ceiling = plan_for(level).strategy_ceiling
-            if ceiling is not None:  # L1 and L2 work on the enclosing unit, not the thin slice
+            if ceiling is not None:  # L1 and L2 work on whole files, not the thin slice
                 selector = StrategySelector(ceiling=ceiling)
+                budget = SliceBudget(budget.max_tokens * UNIT_BUDGET_FACTOR)
             slice_ = selector.build(candidate, index, budget=budget)
         except (SlicingError, KeyError):
             raise _FailedError(SLICE_FAILED) from None

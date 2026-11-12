@@ -5,6 +5,7 @@ request per candidate, a ledger entry per request, no raw text in a payload, ``-
 ``not_sent_dry_run`` entries and no verdict, and a candidate that fails is isolated from the rest.
 """
 
+import re
 import shutil
 import socket
 import sqlite3
@@ -366,6 +367,60 @@ def test_a_configured_aggregation_budget_blocks_requests_in_a_real_scan(root: Pa
     assert {r.outcome for r in run.ledger} == {EgressOutcome.BLOCKED}
     assert {r.block_code for r in run.ledger} == {"aggregation_budget"}
     assert set(failures_of(run.outcome, "llm-review").values()) == {"egress_blocked"}
+
+
+def _level(level: str) -> dict[str, object]:
+    return {"privacy": {"level": level, "min_level": "L1"}}
+
+
+def _by_site(run: Run) -> dict[tuple[str, str, int], str]:
+    """Payload text keyed by (rule, path, line): candidate ids differ between scans."""
+    sites = {
+        c.id: (c.rule_id or "", c.locations[0].path, c.locations[0].start_line)
+        for c in run.candidates
+    }
+    return {sites[p.candidate_id]: p.text.expose() for p in run.payloads}
+
+
+def test_l1_and_l2_send_whole_files_and_l3_a_subset(tmp_path: Path) -> None:
+    """E25-02: L1 keeps the names of whole files, L2 pseudonymises them, L3 sends the least.
+
+    Each level scans its own copy, so one level's vault cannot influence another's guard.
+    """
+    runs = {
+        level: run_and_capture(copy_fixture(tmp_path / level), overrides=_level(level))
+        for level in ("L1", "L2", "L3")
+    }
+    for level in ("L1", "L2"):
+        run = runs[level]
+        assert run.payloads
+        assert {p.level.value for p in run.payloads} == {level}
+        assert "whole_file" in {s.strategy.value for s in run.slices}
+        for slice_ in run.slices:
+            if slice_.strategy.value not in {"whole_file", "hotspot"}:
+                assert slice_.fallback_reason == "over_budget"  # a unit over budget falls back
+    texts = {level: _by_site(run) for level, run in runs.items()}
+    whole = {
+        (c.rule_id or "", c.locations[0].path, c.locations[0].start_line)
+        for c in runs["L1"].candidates
+        for s in runs["L1"].slices
+        if s.candidate_id == c.id and s.strategy.value == "whole_file"
+    }
+    shared = sorted(whole & set(texts["L2"]) & set(texts["L3"]))
+    assert shared
+    named = 0
+    for site in shared:
+        assert len(texts["L1"][site]) > len(texts["L3"][site])  # L3 is the minimised extent
+        source = (tmp_path / "L1" / "kavachbank" / site[1]).read_text(encoding="utf-8")
+        names = set(re.findall(r"^\s*def (\w{4,})", source, re.MULTILINE))
+        names = {n for n in names if not n.startswith("__")}
+        if names:
+            named += 1
+            l1_words = set(re.findall(r"\w+", texts["L1"][site]))
+            l2_words = set(re.findall(r"\w+", texts["L2"][site]))
+            assert names <= l1_words  # L1: the file's own names are kept
+            assert not names & l2_words  # L2: every one of them is pseudonymised
+    assert named
 
 
 def test_the_engagement_budget_spans_scans_and_every_refusal_is_ledgered(

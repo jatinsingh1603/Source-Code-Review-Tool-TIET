@@ -82,6 +82,7 @@ nav:
       - Pipeline: reference/pipeline.md
       - Domain model: reference/domain-model.md
       - Rule coverage: reference/rule-coverage.md
+      - Privacy levels: reference/privacy-levels.md
   - Demo:
       - Demo hub: demo/README.md
       - "Demo 1: offline CLI": demo/DEMO1.md
