@@ -36,8 +36,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: codekavach-review-${{ github.ref }}
-  cancel-in-progress: true
+  group: codekavach-review-${{ github.event_name }}-${{ github.ref }}
+  # Only a newer push to the same pull request cancels a run; a demo dispatch is never cancelled.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   FIXTURE: fixtures/kavachbank
