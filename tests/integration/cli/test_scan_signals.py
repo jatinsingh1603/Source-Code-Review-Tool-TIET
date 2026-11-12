@@ -57,7 +57,7 @@ def scan(tmp_path: Path, repo: Path) -> Iterator[subprocess.Popen[str]]:
         # read the parse output go with it.
         "CODEKAVACH_PLUGINS__DISABLE": (
             "stage:parse,stage:analyse-rules,stage:analyse-taint,stage:analyse-sca,"
-            "stage:analyse-engines,stage:aggregate,stage:rate"
+            "stage:analyse-engines,stage:analyse-secrets,stage:analyse-iac,stage:aggregate,stage:rate"
         ),
         # The privacy stages cannot be disabled by name; turning the LLM path off drops them.
         "CODEKAVACH_LLM__ENABLED": "false",

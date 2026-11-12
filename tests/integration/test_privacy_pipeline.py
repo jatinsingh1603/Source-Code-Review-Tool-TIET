@@ -216,10 +216,12 @@ def test_every_candidate_is_either_a_payload_or_a_failed_item(sent: Run) -> None
 
 
 def test_one_request_per_payload_is_sent_and_completed(sent: Run) -> None:
-    outcomes = Counter(record.outcome for record in sent.ledger)
+    # One triage request per payload; a confirmed finding adds explain and remediate (E23-02).
+    outcomes = Counter(record.outcome for record in sent.ledger if record.task == "triage")
     assert outcomes[EgressOutcome.SENT] == len(sent.payloads)
     assert outcomes[EgressOutcome.COMPLETED] == len(sent.payloads)
-    assert outcomes[EgressOutcome.BLOCKED] == 0
+    assert Counter(record.outcome for record in sent.ledger)[EgressOutcome.BLOCKED] == 0
+    assert {record.task for record in sent.ledger} <= {"triage", "explain", "remediate"}
 
 
 def test_every_ledger_entry_records_the_policy_hash_and_rule_key(sent: Run) -> None:
@@ -330,6 +332,9 @@ def test_a_request_the_guard_blocks_is_ledgered_and_the_scan_goes_on(
     calls = {"count": 0}
 
     def block_second(self: EgressGuard, *args: Any, **kwargs: Any) -> EgressDecision:
+        meta = args[1] if len(args) > 1 else kwargs["meta"]
+        if meta.task != "triage":  # explain and remediate follow a confirmed triage (E23-02)
+            return original(self, *args, **kwargs)
         calls["count"] += 1
         if calls["count"] == 2:
             return EgressDecision(allowed=False, block_code="residual_secret")
@@ -337,7 +342,7 @@ def test_a_request_the_guard_blocks_is_ledgered_and_the_scan_goes_on(
 
     monkeypatch.setattr(EgressGuard, "evaluate", block_second)
     run = run_and_capture(root, home="home-block")
-    records = run.ledger
+    records = [record for record in run.ledger if record.task == "triage"]
     outcomes = Counter(record.outcome for record in records)
     total = len(run.payloads)
     assert outcomes[EgressOutcome.BLOCKED] == 1
