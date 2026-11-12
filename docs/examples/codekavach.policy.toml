@@ -1,0 +1,48 @@
+# codekavach.policy.toml: a commented project privacy policy that exercises every axis.
+#
+# Copy it to the root of the scanned project. A project policy can only tighten what the settings
+# and the organisation policy allow: a level weaker than privacy.min_level is refused with
+# [CK-POL-006], never clamped. Strictness order: L1 < L2 < L3 < L4 < L0.
+# tests/unit/privacy/policy/test_engine.py::test_commented_example_matches_its_expectations
+# loads this file and checks every "expect" line below (settings: level L3, min_level L3).
+policy_version = 1
+
+# Path axis: a glob with a level, or never_send. "**" spans directories, "*" stays in one segment.
+# expect: src/engine/fees/calc.py -> L4 (path_rule)
+[[path]]
+pattern = "src/engine/fees/**"
+level = "L4"
+
+# expect: config/keys/prod.txt -> never sent, whatever the provider
+[[path]]
+pattern = "config/keys/**"
+never_send = true
+
+# Language axis: every file of one language. A file of unknown language contributes nothing.
+# expect: db/schema.sql (sql) -> L4 (language)
+[[language]]
+language = "sql"
+level = "L4"
+
+# Rule axis: a glob over rule ids and CWE ids. It is one more candidate level, never a ceiling.
+# expect: app/views.py with CWE-89 at L3 settings -> L3
+[[rule]]
+match = "CWE-89"
+level = "L3"
+
+# Classification axis: a tag attached to paths, with the level it demands. Tags accumulate.
+# expect: src/payments/ledger.py -> L4, classifications ("pci", "crown-jewel")
+[[classification]]
+tag = "pci"
+patterns = ["src/payments/**"]
+level = "L3"
+
+[[classification]]
+tag = "crown-jewel"
+patterns = ["src/payments/**"]
+level = "L4"
+
+# Provider tier axis: a minimum level per trust tier, on top of privacy.provider_tier_levels.
+# expect: app/views.py to a public-tier provider -> L4 (provider_tier)
+[provider_tiers]
+public = "L4"

@@ -61,6 +61,16 @@ def test_raw_names() -> None:
     assert not {"SanitisedPayload", "LLMVerdict", "KavachModel", "VersionedModel"} & raw
 
 
+def test_policy_decision_is_raw_and_forbidden_in_llm() -> None:
+    from codekavach.core.models.base import DataClassification  # noqa: PLC0415
+    from codekavach.privacy.policy.decision import PolicyDecision  # noqa: PLC0415
+    from codekavach.privacy.policy.model import PolicyDocument  # noqa: PLC0415
+
+    assert PolicyDecision.DATA_CLASSIFICATION is DataClassification.RAW
+    assert PolicyDocument.DATA_CLASSIFICATION is DataClassification.RAW
+    assert {"PolicyDecision", "PolicyDocument"} <= raw_names()
+
+
 def test_unclassified_model_is_forbidden_and_raw() -> None:
     class Unclassified(KavachModel):
         value: int
@@ -198,7 +208,7 @@ def test_the_io_and_expose_allowlists_are_small_justified_and_exist() -> None:
         for path, reason in allowlist.items():
             assert reason.strip(), path
             assert (REPO_ROOT / path).is_file(), path
-    assert set(LLM_EXPOSE_ALLOWLIST) == {"src/codekavach/llm/tasks/triage.py"}
+    assert set(LLM_EXPOSE_ALLOWLIST) == {"src/codekavach/llm/tasks/templated.py"}
 
 
 def test_expose_in_an_llm_file_outside_the_allowlist_is_still_a_violation() -> None:
@@ -206,5 +216,6 @@ def test_expose_in_an_llm_file_outside_the_allowlist_is_still_a_violation() -> N
     other = "src/codekavach/llm/providers/other.py"
     found = find_i2_violations(source, other, zone=Zone.LLM)
     assert [violation.rule for violation in found] == ["R3"]
-    allowed = find_i2_violations(source, "src/codekavach/llm/tasks/triage.py", zone=Zone.LLM)
+    allowed = find_i2_violations(source, "src/codekavach/llm/tasks/templated.py", zone=Zone.LLM)
+    assert find_i2_violations(source, "src/codekavach/llm/tasks/triage.py", zone=Zone.LLM)
     assert allowed == []

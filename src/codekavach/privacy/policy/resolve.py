@@ -1,7 +1,9 @@
 """The privacy policy resolver: which level applies to a path, and whether it may be sent at all.
 
-Owning epic: E13. MVP; extended by E25, which adds policy-as-code files, per-repository overrides
-and the policy explanation shown by ``privacy inspect``.
+Owning epic: E13. The settings-only axes of the policy. ``codekavach.privacy.policy.engine`` (E25)
+builds on this resolver and adds the project policy file, the language, rule and classification
+axes and the explanation; the scan resolves through the engine, and this module stays the entry
+point for callers that only need ``privacy.paths`` and ``privacy.never_send``.
 
 **Precedence** (decision D-A, strictness order ``L1 < L2 < L3 < L4 < L0``):
 
@@ -22,12 +24,15 @@ and a pattern that matches a directory also matches everything below it.
 """
 
 import fnmatch
+import re
 from dataclasses import dataclass
 from typing import Final
 
 from codekavach.config import Settings
 from codekavach.core.models import PrivacyLevel, RepoPath
 from codekavach.core.models.enums import TrustTier
+from codekavach.privacy.policy.errors import PolicyError
+from codekavach.privacy.policy.globs import compile_pattern
 
 _WILDCARDS: Final = frozenset("*?[")
 
@@ -49,13 +54,22 @@ class _Compiled:
 
     segments: tuple[str, ...]
     anchored: bool
+    regex: "re.Pattern[str] | None" = None
 
     @classmethod
     def of(cls, pattern: str) -> "_Compiled":
         trimmed = pattern.strip("/")
-        return cls(tuple(trimmed.split("/")), "/" in trimmed)
+        regex: re.Pattern[str] | None = None
+        if "[" not in pattern:  # fnmatch character classes keep the segment matcher below
+            try:
+                regex = compile_pattern(pattern)
+            except PolicyError:
+                regex = None
+        return cls(tuple(trimmed.split("/")), "/" in trimmed, regex)
 
     def matches(self, path: str) -> bool:
+        if self.regex is not None:  # linear in the path length (CWE-1333)
+            return self.regex.match(path.strip("/")) is not None
         parts = path.split("/")
         pattern = list(self.segments)
         starts = [0] if self.anchored else range(len(parts))

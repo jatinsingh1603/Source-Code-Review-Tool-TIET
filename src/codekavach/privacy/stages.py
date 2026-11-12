@@ -248,7 +248,7 @@ class PrivacyPrepareStage:
             if ctx.artefacts.has(keys.CALL_GRAPH)
             else None
         )
-        policy = PolicyEngine.discover(ctx.config, ctx.source_root)
+        policy = PolicyEngine.for_scan(ctx.config, project_root=ctx.source_root)
         decisions: list[PolicyDecisionRow] = []
         _, provider = ctx.config.llm.selected_provider()
         tier = provider.effective_trust_tier
@@ -287,9 +287,8 @@ class PrivacyPrepareStage:
         ) as vault:
             for done, candidate in enumerate(candidates, start=1):
                 ctx.check_cancelled()
-                path = candidate.locations[0].path
-                decision = policy.resolve(
-                    path,
+                decision = policy.resolve_candidate(
+                    [location.path for location in candidate.locations],
                     tier,
                     language=candidate.language.value,
                     rule_id=candidate.rule_id,

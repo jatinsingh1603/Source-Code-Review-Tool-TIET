@@ -62,6 +62,7 @@ LLM_NEUTRAL_ALLOWLIST: Mapping[str, str] = {
     "ScanIdField": "identifier field type",
     "find_placeholders": "reads placeholder tokens in sanitised text",
     "PLACEHOLDER_PATTERN": "placeholder token syntax",
+    "UntrustedText": "a str type that cleans provider answers; it carries no client input",
 }
 # Files under src/codekavach/llm/ allowed to read files, with the written justification for each.
 # Paths are relative to the repository root. Neither reads client data: one reads a template that
@@ -75,9 +76,13 @@ LLM_FILE_IO_ALLOWLIST: Mapping[str, str] = {
 # contain the payload, so exactly one place does it: the task that assembles the prompt. The
 # provider adapters receive the finished prompt and never expose text themselves.
 LLM_EXPOSE_ALLOWLIST: Mapping[str, str] = {
-    "src/codekavach/llm/tasks/triage.py": "assembles the prompt around the payload text (E13-02)",
+    "src/codekavach/llm/tasks/templated.py": (
+        "assembles every task prompt around the payload text (E13-02, E23-02); moved from triage"
+    ),
 }
-RAW_EXTRA_NAMES = frozenset({"RawCode"})
+# Raw-classified types that live outside ``codekavach.core.models``: a policy decision and a policy
+# document carry client paths and patterns (E25-01), so codekavach.llm must not name them.
+RAW_EXTRA_NAMES = frozenset({"RawCode", "PolicyDecision", "PolicyDocument", "PolicyEngine"})
 
 
 class Zone(enum.Enum):
