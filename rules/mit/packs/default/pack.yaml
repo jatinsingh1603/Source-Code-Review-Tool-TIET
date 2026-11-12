@@ -2,4 +2,4 @@ id: default
 version: 1.0.0
 licence: MIT
 description: CodeKavach's own rules for the OWASP Top 10 and CWE Top 25 classes it can find without data flow.
-languages: [python, javascript, c, cpp]
+languages: [python, javascript, c, cpp, php, ruby, csharp, kotlin]

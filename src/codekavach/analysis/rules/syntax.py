@@ -23,14 +23,39 @@ FUNCTION_TYPES: Final = frozenset(
         "generator_function",
         "arrow_function",
         "method_definition",
+        "method_declaration",
+        "method",
+        "singleton_method",
+        "local_function_statement",
+        "anonymous_function",
     }
 )
-CALL_TYPES: Final = frozenset({"call", "call_expression"})
+CALL_TYPES: Final = frozenset(
+    {
+        "call",
+        "call_expression",
+        "function_call_expression",
+        "member_call_expression",
+        "invocation_expression",
+    }
+)
 ASSIGNMENT_TYPES: Final = frozenset({"assignment", "variable_declarator", "assignment_expression"})
 IDENTIFIER_TYPES: Final = frozenset(
-    {"identifier", "property_identifier", "shorthand_property_identifier"}
+    {
+        "identifier",
+        "property_identifier",
+        "shorthand_property_identifier",
+        "name",
+        "simple_identifier",
+    }
 )
-REQUEST_ROOTS: Final = frozenset({"request", "req", "flask", "ctx", "event"})
+REQUEST_ROOTS: Final = frozenset(
+    {
+        "request", "req", "flask", "ctx", "event",
+        "_GET", "_POST", "_REQUEST", "_COOKIE", "_FILES",
+        "params", "cookies", "Request", "HttpContext",
+    }
+)  # fmt: skip
 # Parameters that are never user input: the receiver, the response and the database handles.
 NON_INPUT_PARAMETERS: Final = frozenset(
     {
@@ -39,6 +64,23 @@ NON_INPUT_PARAMETERS: Final = frozenset(
     }
 )  # fmt: skip
 MAX_RESOLVE_DEPTH: Final = 4
+STRING_KINDS: Final = frozenset(
+    {
+        "string",
+        "template_string",
+        "concatenated_string",
+        "encapsed_string",
+        "interpolated_string_expression",
+        "string_literal",
+    }
+)
+INTERPOLATION_TYPES: Final = frozenset(
+    {"interpolation", "template_substitution", "interpolated_expression"}
+)
+BINARY_KINDS: Final = frozenset(
+    {"binary_operator", "binary_expression", "binary", "additive_expression"}
+)
+CONCAT_OPERATORS: Final = frozenset({"+", "%", "."})
 ESCAPE_NAMES: Final = frozenset(
     {
         "escape", "escape_html", "escapehtml", "html_escape", "htmlescape", "sanitize",
@@ -149,6 +191,10 @@ def function_name(function: Node) -> str | None:
 def function_parameters(function: Node) -> set[str]:
     """The parameter names of ``function`` that can carry caller input."""
     holder = function.child_by_field_name("parameters") or function.child_by_field_name("parameter")
+    if holder is None:  # Kotlin's grammar has no field names
+        holder = next(
+            (c for c in function.named_children if c.type == "function_value_parameters"), None
+        )
     if holder is None:
         return set()
     if holder.type in IDENTIFIER_TYPES:
@@ -164,6 +210,13 @@ def function_parameters(function: Node) -> set[str]:
             target = child.child_by_field_name("left") or (
                 child.named_children[0] if child.named_children else child
             )
+        elif child.type in {"simple_parameter", "property_promotion_parameter", "parameter"}:
+            target = child.child_by_field_name("name") or next(
+                (n for n in child.named_children if n.type in IDENTIFIER_TYPES | {"variable_name"}),
+                child,
+            )
+            if target.type == "variable_name":
+                target = next((n for n in target.named_children if n.type == "name"), target)
         elif child.type in {"list_splat_pattern", "dictionary_splat_pattern"}:
             target = child.named_children[0] if child.named_children else child
         if target.type in IDENTIFIER_TYPES:
@@ -199,8 +252,16 @@ def _statement_nodes(statement: Node) -> Iterator[Node]:
 
 def is_static_string(node: Node) -> bool:
     """A string with no interpolation: a plain literal, adjacent literals, a plain template."""
-    if node.type == "string":
-        return all(child.type != "interpolation" for child in node.named_children)
+    if node.type in {
+        "string",
+        "encapsed_string",
+        "interpolated_string_expression",
+        "string_literal",
+    }:
+        return all(
+            child.type not in INTERPOLATION_TYPES | {"variable_name", "interpolated_identifier"}
+            for child in node.named_children
+        )
     if node.type == "template_string":
         return all(child.type != "template_substitution" for child in node.named_children)
     if node.type == "concatenated_string":
@@ -221,6 +282,8 @@ def is_literal(node: Node) -> bool:
 
 def _operator(node: Node) -> str:
     operator = node.child_by_field_name("operator")
+    if operator is None:  # Kotlin's additive_expression has the operator as an unnamed child
+        operator = next((c for c in node.children if not c.is_named and not c.is_extra), None)
     return text_of(operator) if operator is not None else ""
 
 
@@ -233,10 +296,12 @@ def string_parts(node: Node) -> list[Node] | None:
     building forms.
     """
     kind = node.type
-    if kind in {"string", "template_string", "concatenated_string"}:
+    if kind in STRING_KINDS:
         parts: list[Node] = []
         for child in node.named_children:
-            if child.type in {"interpolation", "template_substitution"}:
+            if child.type in {"variable_name", "interpolated_identifier"}:
+                parts.append(child)  # PHP "x$v" and Kotlin "x$v": the variable is the child
+            elif child.type in INTERPOLATION_TYPES:
                 inner = child.child_by_field_name("expression") or (
                     child.named_children[0] if child.named_children else None
                 )
@@ -247,7 +312,7 @@ def string_parts(node: Node) -> list[Node] | None:
         return parts
     if kind == "parenthesized_expression" and node.named_children:
         return string_parts(node.named_children[0])
-    if kind in {"binary_operator", "binary_expression"} and _operator(node) in {"+", "%"}:
+    if kind in BINARY_KINDS and _operator(node) in CONCAT_OPERATORS:
         return _chain_parts(node)
     if kind in CALL_TYPES:
         function = node.child_by_field_name("function")
@@ -268,10 +333,7 @@ def _chain_parts(node: Node) -> list[Node] | None:
     stack = [node]
     while stack:
         current = stack.pop()
-        if current.type in {"binary_operator", "binary_expression"} and _operator(current) in {
-            "+",
-            "%",
-        }:
+        if current.type in BINARY_KINDS and _operator(current) in CONCAT_OPERATORS:
             left, right = current.child_by_field_name("left"), current.child_by_field_name("right")
             stack.extend(item for item in (right, left) if item is not None)
         else:
@@ -329,8 +391,10 @@ def is_request_derived(expression: Node, function: Node | None, root: Node, dept
     for item in walk(expression):
         if item.type not in IDENTIFIER_TYPES or item.parent is None:
             continue
-        if item.parent.type in {"attribute", "member_expression"}:
-            owner = item.parent.child_by_field_name("object")
+        if item.parent.type in {"attribute", "member_expression", "member_access_expression"}:
+            owner = item.parent.child_by_field_name("object") or item.parent.child_by_field_name(
+                "expression"
+            )
             if owner is not None and owner.id != item.id:
                 continue  # an attribute name, not a variable
         name = text_of(item)

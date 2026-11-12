@@ -1,0 +1,27 @@
+id: kotlin.deser.object-input-stream
+languages:
+- kotlin
+message: Java serialisation used to read data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 502
+  owasp:
+  - A08:2021
+  capec:
+  - 586
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use a data-only format such as JSON with a fixed schema, or an ObjectInputFilter allow-list.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: ObjectInputStream($X)
+    where:
+    - metavariable: $X
+      is_constant: false
+  - pattern: $O.readObject()
+    where:
+    - metavariable: $O
+      regex: ObjectInputStream

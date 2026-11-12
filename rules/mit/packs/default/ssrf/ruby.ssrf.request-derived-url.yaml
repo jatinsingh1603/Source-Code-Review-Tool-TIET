@@ -1,0 +1,39 @@
+id: ruby.ssrf.request-derived-url
+languages:
+- ruby
+message: Outbound request to a URL taken from request data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 918
+  owasp:
+  - A10:2021
+  capec:
+  - 664
+  licence: MIT
+  source: CodeKavach original
+  remediation: Parse the URL, allow-list the host and block private address ranges before fetching.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: URI.open($X, ...)
+    where:
+    - metavariable: $X
+      kind: request_derived
+  - pattern: Net::HTTP.get($X, ...)
+    where:
+    - metavariable: $X
+      kind: request_derived
+  - pattern: Net::HTTP.get_response($X, ...)
+    where:
+    - metavariable: $X
+      kind: request_derived
+  - pattern: HTTParty.get($X, ...)
+    where:
+    - metavariable: $X
+      kind: request_derived
+  - pattern: URI.parse($X)
+    where:
+    - metavariable: $X
+      regex: ^params

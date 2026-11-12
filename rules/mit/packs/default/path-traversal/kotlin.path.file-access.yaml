@@ -1,0 +1,63 @@
+id: kotlin.path.file-access
+languages:
+- kotlin
+message: File path built from request data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 22
+  owasp:
+  - A01:2021
+  capec:
+  - 126
+  licence: MIT
+  source: CodeKavach original
+  remediation: Resolve with File.canonicalPath and check it stays under the base directory, or map input to a fixed list.
+  added_in: 1.0.0
+match:
+  any:
+          - pattern: "File($X)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File($X)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "File($B, $X)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File($B, $X)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "Paths.get($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "Paths.get($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "FileInputStream($X)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "FileInputStream($X)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "FileOutputStream($X)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "FileOutputStream($X)"
+            where:
+            - metavariable: $X
+              kind: request_derived

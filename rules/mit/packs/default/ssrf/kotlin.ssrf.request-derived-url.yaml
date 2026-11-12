@@ -1,0 +1,31 @@
+id: kotlin.ssrf.request-derived-url
+languages:
+- kotlin
+message: Outbound request to a URL taken from request data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 918
+  owasp:
+  - A10:2021
+  capec:
+  - 664
+  licence: MIT
+  source: CodeKavach original
+  remediation: Parse the URL, allow-list the host and block private address ranges before fetching.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: URL($X)
+    where:
+    - metavariable: $X
+      kind: request_derived
+  - pattern: URI($X)
+    where:
+    - metavariable: $X
+      kind: request_derived
+  - pattern: URI.create($X)
+    where:
+    - metavariable: $X
+      kind: request_derived

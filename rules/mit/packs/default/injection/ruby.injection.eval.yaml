@@ -1,0 +1,31 @@
+id: ruby.injection.eval
+languages:
+- ruby
+message: Code evaluated from data that is not a constant
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 95
+  owasp:
+  - A03:2021
+  capec:
+  - 242
+  licence: MIT
+  source: CodeKavach original
+  remediation: Remove eval; dispatch on an allow-list of operations instead.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: eval($X, ...)
+    where:
+    - metavariable: $X
+      is_constant: false
+  - pattern: $O.instance_eval($X, ...)
+    where:
+    - metavariable: $X
+      is_constant: false
+  - pattern: $O.class_eval($X, ...)
+    where:
+    - metavariable: $X
+      is_constant: false

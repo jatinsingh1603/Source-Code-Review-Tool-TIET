@@ -78,7 +78,7 @@ ABSENT_NOTES: Final = {
 }
 MEMORY_CWES: Final = frozenset({787, 416, 125, 476, 120, 121, 122})
 MEMORY_UNSAFE: Final = frozenset({"c", "cpp"})
-LANGUAGE_ORDER: Final = ("python", "javascript", "c", "cpp")
+LANGUAGE_ORDER: Final = ("python", "javascript", "c", "cpp", "php", "ruby", "csharp", "kotlin")
 
 
 def _rules_for(rules: Sequence[RuleDef], language: str) -> list[RuleDef]:

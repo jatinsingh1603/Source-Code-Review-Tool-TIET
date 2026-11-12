@@ -1,0 +1,20 @@
+id: ruby.xxe.nokogiri-noent
+languages:
+- ruby
+message: XML parsed with external entity substitution or network access enabled
+severity: high
+confidence: high
+metadata:
+  cwe:
+  - 611
+  owasp:
+  - A05:2021
+  capec:
+  - 201
+  licence: MIT
+  source: CodeKavach original
+  remediation: Do not enable NOENT or DTDLOAD; keep Nokogiri's default, safe parse options.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern_regex: \bNOENT\b|\.noent\b|\bDTDLOAD\b

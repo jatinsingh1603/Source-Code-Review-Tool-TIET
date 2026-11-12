@@ -1,0 +1,20 @@
+id: csharp.deser.type-name-handling
+languages:
+- csharp
+message: Json.NET type-name handling enabled
+severity: high
+confidence: high
+metadata:
+  cwe:
+  - 502
+  owasp:
+  - A08:2021
+  capec:
+  - 586
+  licence: MIT
+  source: CodeKavach original
+  remediation: Leave TypeNameHandling at None, or bind it to a SerializationBinder that allows a fixed list of types.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern_regex: TypeNameHandling\.(All|Auto|Objects|Arrays)

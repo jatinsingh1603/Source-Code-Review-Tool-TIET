@@ -1,0 +1,23 @@
+id: kotlin.xxe.parser-features
+languages:
+- kotlin
+message: XML parser configured to resolve external entities or DTDs
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 611
+  owasp:
+  - A05:2021
+  capec:
+  - 201
+  licence: MIT
+  source: CodeKavach original
+  remediation: Enable disallow-doctype-decl, or disable external-general-entities and external-parameter-entities.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F.setFeature("http://xml.org/sax/features/external-general-entities", true)
+  - pattern: $F.setFeature("http://xml.org/sax/features/external-parameter-entities", true)
+  - pattern: $F.setExpandEntityReferences(true)
+  - pattern: $F.setAttribute("http://javax.xml.XMLConstants/property/accessExternalDTD", "all")

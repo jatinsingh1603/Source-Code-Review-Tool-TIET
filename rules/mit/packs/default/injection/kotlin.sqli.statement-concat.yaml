@@ -1,0 +1,72 @@
+id: kotlin.sqli.statement-concat
+languages:
+- kotlin
+message: SQL statement built by concatenation or string template
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 89
+  owasp:
+  - A03:2021
+  capec:
+  - 66
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use PreparedStatement with ? placeholders and bind the values.
+  added_in: 1.0.0
+match:
+  any:
+          - pattern: "$S.executeQuery($X)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "$S.executeQuery($X)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "$S.executeUpdate($X)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "$S.executeUpdate($X)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "$S.execute($X)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "$S.execute($X)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "$C.createQuery($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "$C.createQuery($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "$C.createNativeQuery($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "$C.createNativeQuery($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "$C.prepareStatement($X)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "$C.prepareStatement($X)"
+            where:
+            - metavariable: $X
+              kind: request_derived

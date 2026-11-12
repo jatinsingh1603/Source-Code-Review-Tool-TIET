@@ -1,0 +1,31 @@
+id: php.path.include-request-derived
+languages:
+- php
+message: File path or include target taken from request data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 22
+  owasp:
+  - A01:2021
+  capec:
+  - 126
+  licence: MIT
+  source: CodeKavach original
+  remediation: Map request values to a fixed list of files, or resolve with realpath and check the base directory.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: $F($X, ...)
+    where:
+    - metavariable: $F
+      catalogue: php.sink.path.*
+    - metavariable: $X
+      kind: request_derived
+  - pattern: $F($X, ...)
+    where:
+    - metavariable: $F
+      catalogue: php.sink.path.*
+    - metavariable: $X
+      kind: dynamic_string

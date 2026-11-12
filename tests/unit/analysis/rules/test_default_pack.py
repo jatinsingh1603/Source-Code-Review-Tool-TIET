@@ -34,7 +34,16 @@ def test_the_pack_loads_clean_and_stays_small(pack: RulePack) -> None:
     assert scan.pack is not None
     assert pack.version == "1.0.0"
     assert pack.licence == "MIT"
-    assert set(pack.languages) == {"python", "javascript", "c", "cpp"}
+    assert set(pack.languages) == {
+        "python",
+        "javascript",
+        "c",
+        "cpp",
+        "php",
+        "ruby",
+        "csharp",
+        "kotlin",
+    }
     assert 50 <= len(pack.rules) <= 250
 
 
@@ -58,7 +67,16 @@ def test_every_rule_passes_its_own_fixtures(pack: RulePack) -> None:
 def test_every_rule_has_a_positive_and_a_negative_fixture(pack: RulePack) -> None:
     for rule in pack.rules:
         for language in rule.languages:
-            suffix = {"python": "py", "javascript": "js", "c": "c", "cpp": "cpp"}[language]
+            suffix = {
+                "python": "py",
+                "javascript": "js",
+                "c": "c",
+                "cpp": "cpp",
+                "php": "php",
+                "ruby": "rb",
+                "csharp": "cs",
+                "kotlin": "kt",
+            }[language]
             text = (FIXTURES / language / f"{rule.id}.{suffix}").read_text(encoding="utf-8")
             assert f"ruleid: {rule.id}" in text, rule.id
             assert f"ok: {rule.id}" in text, rule.id
@@ -78,8 +96,25 @@ def test_every_rule_carries_cwe_owasp_and_remediation(pack: RulePack) -> None:
 
 def test_the_rule_ids_name_their_language_and_class(pack: RulePack) -> None:
     for rule in pack.rules:
-        assert rule.id.split(".")[0] in {"python", "javascript", "c"}, rule.id
-        assert set(rule.languages) <= {"python", "javascript", "c", "cpp"}
+        assert rule.id.split(".")[0] in {
+            "python",
+            "javascript",
+            "c",
+            "php",
+            "ruby",
+            "csharp",
+            "kotlin",
+        }, rule.id
+        assert set(rule.languages) <= {
+            "python",
+            "javascript",
+            "c",
+            "cpp",
+            "php",
+            "ruby",
+            "csharp",
+            "kotlin",
+        }
         directory = next(PACK_DIR.rglob(f"{rule.id}.yaml")).parent.name
         assert directory != "default", rule.id
 

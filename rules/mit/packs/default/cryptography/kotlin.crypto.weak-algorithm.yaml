@@ -1,0 +1,25 @@
+id: kotlin.crypto.weak-algorithm
+languages:
+- kotlin
+message: Broken hash, cipher or cipher mode
+severity: medium
+confidence: medium
+metadata:
+  cwe:
+  - 327
+  - 328
+  owasp:
+  - A02:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use SHA-256 or better and AES-GCM; for passwords use bcrypt or Argon2.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: MessageDigest.getInstance("MD5")
+  - pattern: MessageDigest.getInstance("SHA-1")
+  - pattern: MessageDigest.getInstance("SHA1")
+  - pattern: Cipher.getInstance($A)
+    where:
+    - metavariable: $A
+      regex: ^"(DES|DESede|RC2|RC4|AES|Blowfish)(/ECB/[A-Za-z0-9]+)?"$|/ECB/

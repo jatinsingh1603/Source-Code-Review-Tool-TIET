@@ -34,7 +34,9 @@ JS_GLOBALS: Final = ("globalThis", "global", "window")
 _CHAIN_TYPES: Final = frozenset(
     {"attribute", "member_expression", "field_expression", "selector_expression"}
 )
-_NAME_TYPES: Final = frozenset({"identifier", "property_identifier", "field_identifier"})
+_NAME_TYPES: Final = frozenset(
+    {"identifier", "property_identifier", "field_identifier", "name", "simple_identifier"}
+)
 
 
 def _text(node: Node) -> str:
@@ -206,6 +208,8 @@ def symbol_match(  # noqa: PLR0911 - one exit per way a name can resolve
         return "partial" if resolved[: len(wanted) - 2] == wanted[:-2] else None
     if len(parts) == 1 and _is_builtin(wanted, parts[0], language):
         return "exact"
+    if len(wanted) == 1 and parts == wanted:
+        return "exact"  # a bare global function: PHP system(), Ruby system
     if len(parts) >= 2 and parts[0] in JS_GLOBALS and language is not Language.PYTHON:
         return "exact" if parts[1:] == wanted[1:] and wanted[0] in JS_GLOBALS else None
     return _partial(wanted, parts)

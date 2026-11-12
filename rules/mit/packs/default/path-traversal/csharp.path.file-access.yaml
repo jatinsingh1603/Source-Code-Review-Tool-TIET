@@ -1,0 +1,81 @@
+id: csharp.path.file-access
+languages:
+- csharp
+message: File path built from request data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 22
+  owasp:
+  - A01:2021
+  capec:
+  - 126
+  licence: MIT
+  source: CodeKavach original
+  remediation: Resolve with Path.GetFullPath and check the result starts with the base directory, or map input to a fixed list.
+  added_in: 1.0.0
+match:
+  any:
+          - pattern: "File.ReadAllText($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File.ReadAllText($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "File.ReadAllBytes($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File.ReadAllBytes($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "File.OpenRead($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File.OpenRead($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "File.Delete($X)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File.Delete($X)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "File.WriteAllText($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File.WriteAllText($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "new FileStream($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "new FileStream($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "File.Open($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File.Open($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived

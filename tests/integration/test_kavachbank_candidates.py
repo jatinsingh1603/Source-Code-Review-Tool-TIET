@@ -158,8 +158,10 @@ def test_nothing_else_is_reported(candidates: list[Candidate]) -> None:
     # The default pack adds an observation where a planted flaw has a second reading: the close
     # handler takes an account id and checks no owner (a hotspot, never asserted as a finding).
     extra = [c for c in candidates if c.kind is CandidateKind.HOTSPOT]
+    # The premium-account handler (an object reference with no owner check) reads the same way.
     assert [(c.primary_location.path, c.rule_id) for c in extra] == [
-        ("services/api/handlers.py", "python.authz.object-reference-unscoped")
+        ("services/api/handlers.py", "python.authz.object-reference-unscoped"),
+        ("services/api/handlers.py", "python.authz.object-reference-unscoped"),
     ]
 
 

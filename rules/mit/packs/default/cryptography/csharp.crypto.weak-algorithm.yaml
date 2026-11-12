@@ -1,0 +1,27 @@
+id: csharp.crypto.weak-algorithm
+languages:
+- csharp
+message: Broken hash or cipher
+severity: medium
+confidence: medium
+metadata:
+  cwe:
+  - 327
+  - 328
+  owasp:
+  - A02:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use SHA-256 or better, AES-GCM, and for passwords Rfc2898DeriveBytes with a high iteration count or Argon2.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: MD5.Create()
+  - pattern: SHA1.Create()
+  - pattern: DES.Create()
+  - pattern: TripleDES.Create()
+  - pattern: RC2.Create()
+  - pattern: new MD5CryptoServiceProvider()
+  - pattern: new SHA1CryptoServiceProvider()
+  - pattern: new DESCryptoServiceProvider()
+  - pattern: new TripleDESCryptoServiceProvider()

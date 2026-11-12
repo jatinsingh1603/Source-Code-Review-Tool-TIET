@@ -1,0 +1,31 @@
+id: php.sqli.query-concat
+languages:
+- php
+message: SQL query built by string concatenation or interpolation
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 89
+  owasp:
+  - A03:2021
+  capec:
+  - 66
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use prepared statements with bound parameters.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: mysqli_query($C, $Q, ...)
+    where:
+    - metavariable: $Q
+      kind: dynamic_string
+  - pattern: $DB->query($Q, ...)
+    where:
+    - metavariable: $Q
+      kind: dynamic_string
+  - pattern: $DB->exec($Q, ...)
+    where:
+    - metavariable: $Q
+      kind: dynamic_string

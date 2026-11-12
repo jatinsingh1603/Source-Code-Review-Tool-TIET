@@ -1,0 +1,31 @@
+id: ruby.deser.unsafe-load
+languages:
+- ruby
+message: Object deserialised from data that is not a constant
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 502
+  owasp:
+  - A08:2021
+  capec:
+  - 586
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use JSON.parse, or YAML.safe_load with permitted classes; never Marshal.load on outside data.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: Marshal.load($X, ...)
+    where:
+    - metavariable: $X
+      is_constant: false
+  - pattern: YAML.load($X, ...)
+    where:
+    - metavariable: $X
+      is_constant: false
+  - pattern: YAML.unsafe_load($X, ...)
+    where:
+    - metavariable: $X
+      is_constant: false

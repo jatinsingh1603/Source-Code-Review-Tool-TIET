@@ -1,0 +1,29 @@
+id: php.deser.unserialize
+languages:
+- php
+message: Object deserialised from data that is not a constant
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 502
+  owasp:
+  - A08:2021
+  capec:
+  - 586
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use json_decode and validate the result; if unserialize is unavoidable pass allowed_classes => false.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: unserialize($X)
+    where:
+    - metavariable: $X
+      is_constant: false
+  - pattern: unserialize($X, ...)
+    where:
+    - metavariable: $X
+      kind: request_derived
+  none:
+  - pattern: unserialize($X, ['allowed_classes' => false])

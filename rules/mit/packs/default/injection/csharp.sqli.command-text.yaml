@@ -1,0 +1,72 @@
+id: csharp.sqli.command-text
+languages:
+- csharp
+message: SQL command text built by concatenation or interpolation
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 89
+  owasp:
+  - A03:2021
+  capec:
+  - 66
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use parameters (SqlParameter, Dapper anonymous objects) instead of building the text.
+  added_in: 1.0.0
+match:
+  any:
+          - pattern: "new SqlCommand($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "new SqlCommand($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "new SqlDataAdapter($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "new SqlDataAdapter($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "$S.FromSqlRaw($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "$S.FromSqlRaw($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "$S.ExecuteSqlRaw($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "$S.ExecuteSqlRaw($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "$C.Execute($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "$C.Execute($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "$C.Query($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "$C.Query($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived

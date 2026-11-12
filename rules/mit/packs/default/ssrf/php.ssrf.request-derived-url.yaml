@@ -1,0 +1,31 @@
+id: php.ssrf.request-derived-url
+languages:
+- php
+message: Outbound request to a URL taken from request data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 918
+  owasp:
+  - A10:2021
+  capec:
+  - 664
+  licence: MIT
+  source: CodeKavach original
+  remediation: Resolve and check the destination against an allow-list of hosts, and block private address ranges.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: curl_init($X)
+    where:
+    - metavariable: $X
+      kind: request_derived
+  - pattern: file_get_contents($X, ...)
+    where:
+    - metavariable: $X
+      regex: ^\$_(GET|POST|REQUEST)
+  - pattern: curl_setopt($H, CURLOPT_URL, $X)
+    where:
+    - metavariable: $X
+      kind: request_derived

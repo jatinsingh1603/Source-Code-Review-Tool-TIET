@@ -1,0 +1,19 @@
+id: csharp.crypto.insecure-random
+languages:
+- csharp
+message: Predictable random number generator
+severity: medium
+confidence: medium
+metadata:
+  cwe:
+  - 338
+  owasp:
+  - A02:2021
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use RandomNumberGenerator.GetBytes or GetInt32 for tokens, identifiers and keys.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: new Random()
+  - pattern: new Random($S)

@@ -48,6 +48,8 @@ STRING_TYPES: Final = frozenset(
         "interpreted_string_literal",
         "raw_string_literal",
         "template_string",
+        "encapsed_string",
+        "interpolated_string_expression",
     }
 )
 NUMBER_TYPES: Final = frozenset(
@@ -68,8 +70,12 @@ NUMBER_TYPES: Final = frozenset(
         "boolean",
     }
 )
-BINARY_TYPES: Final = frozenset({"binary_operator", "binary_expression"})
-SUBSTITUTION_TYPES: Final = frozenset({"interpolation", "template_substitution"})
+BINARY_TYPES: Final = frozenset(
+    {"binary_operator", "binary_expression", "binary", "additive_expression"}
+)
+SUBSTITUTION_TYPES: Final = frozenset(
+    {"interpolation", "template_substitution", "interpolated_expression", "interpolated_identifier"}
+)
 ARGUMENT_PARENTS: Final = frozenset({"argument_list", "arguments"})
 PARENTHESES: Final = frozenset({"parenthesized_expression"})
 
@@ -83,6 +89,8 @@ def normalised(node: Node) -> str:
 
 def _operator(node: Node) -> bytes:
     operator = node.child_by_field_name("operator")
+    if operator is None:
+        operator = next((c for c in node.children if not c.is_named and not c.is_extra), None)
     return (operator.text or b"") if operator is not None else b""
 
 
@@ -90,7 +98,9 @@ def _has_substitution(node: Node) -> bool:
     stack = [node]
     while stack:
         current = stack.pop()
-        if current.type in SUBSTITUTION_TYPES:
+        if current.type in SUBSTITUTION_TYPES or (
+            current.type == "variable_name" and node.type == "encapsed_string"
+        ):
             return True
         stack.extend(current.children)
     return False
@@ -98,7 +108,7 @@ def _has_substitution(node: Node) -> bool:
 
 def is_concatenation(node: Node) -> bool:
     """``a + b`` in a language that has a binary plus."""
-    return node.type in BINARY_TYPES and _operator(node) == b"+"
+    return node.type in BINARY_TYPES and _operator(node) in {b"+", b"."}
 
 
 def is_interpolation(node: Node) -> bool:

@@ -1,0 +1,48 @@
+id: ruby.sqli.query-interpolation
+languages:
+- ruby
+message: SQL query built by string interpolation or concatenation
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 89
+  owasp:
+  - A03:2021
+  capec:
+  - 66
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use placeholders such as where('id = ?', id), or a hash condition.
+  added_in: 1.0.0
+match:
+  any:
+          - pattern: "$M.where($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+
+          - pattern: "$M.find_by_sql($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+
+          - pattern: "find_by_sql($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+
+          - pattern: "$C.execute($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+
+          - pattern: "$M.order($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+
+          - pattern: "$M.exists?($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string

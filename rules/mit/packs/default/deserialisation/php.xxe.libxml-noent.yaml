@@ -1,0 +1,27 @@
+id: php.xxe.libxml-noent
+languages:
+- php
+message: XML parsed with external entity substitution enabled
+severity: high
+confidence: high
+metadata:
+  cwe:
+  - 611
+  owasp:
+  - A05:2021
+  capec:
+  - 201
+  licence: MIT
+  source: CodeKavach original
+  remediation: Do not pass LIBXML_NOENT or LIBXML_DTDLOAD; keep external entity loading disabled.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: simplexml_load_string($X, $C, $O, ...)
+    where:
+    - metavariable: $O
+      regex: LIBXML_NOENT|LIBXML_DTDLOAD
+  - pattern: $D->loadXML($X, $O)
+    where:
+    - metavariable: $O
+      regex: LIBXML_NOENT|LIBXML_DTDLOAD

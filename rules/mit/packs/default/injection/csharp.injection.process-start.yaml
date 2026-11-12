@@ -1,0 +1,36 @@
+id: csharp.injection.process-start
+languages:
+- csharp
+message: Operating system command built from variable data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 78
+  owasp:
+  - A03:2021
+  capec:
+  - 88
+  licence: MIT
+  source: CodeKavach original
+  remediation: Start a fixed executable with ArgumentList entries; never build a command line from input.
+  added_in: 1.0.0
+match:
+  any:
+          - pattern: "Process.Start($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "Process.Start($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "System.Diagnostics.Process.Start($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "System.Diagnostics.Process.Start($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived

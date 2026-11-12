@@ -1,0 +1,72 @@
+id: ruby.path.file-access
+languages:
+- ruby
+message: File path or download target taken from request data
+severity: high
+confidence: medium
+metadata:
+  cwe:
+  - 22
+  owasp:
+  - A01:2021
+  capec:
+  - 126
+  licence: MIT
+  source: CodeKavach original
+  remediation: Map input to a fixed list of files, or expand the path and check it stays under the base directory.
+  added_in: 1.0.0
+match:
+  any:
+          - pattern: "File.read($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File.read($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "File.open($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File.open($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "File.delete($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File.delete($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "send_file($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "send_file($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "File.readlines($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "File.readlines($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived
+
+          - pattern: "IO.read($X, ...)"
+            where:
+            - metavariable: $X
+              kind: dynamic_string
+          - pattern: "IO.read($X, ...)"
+            where:
+            - metavariable: $X
+              kind: request_derived

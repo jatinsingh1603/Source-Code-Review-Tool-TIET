@@ -1,0 +1,20 @@
+id: csharp.xxe.dtd-processing
+languages:
+- csharp
+message: XML parser with DTD processing or an external resolver enabled
+severity: high
+confidence: high
+metadata:
+  cwe:
+  - 611
+  owasp:
+  - A05:2021
+  capec:
+  - 201
+  licence: MIT
+  source: CodeKavach original
+  remediation: Set DtdProcessing to Prohibit and XmlResolver to null.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern_regex: DtdProcessing\.Parse|XmlResolver\s*=\s*new\s+XmlUrlResolver

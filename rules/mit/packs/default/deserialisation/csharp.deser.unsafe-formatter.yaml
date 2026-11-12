@@ -1,0 +1,23 @@
+id: csharp.deser.unsafe-formatter
+languages:
+- csharp
+message: Insecure deserialiser or type-name handling enabled
+severity: high
+confidence: high
+metadata:
+  cwe:
+  - 502
+  owasp:
+  - A08:2021
+  capec:
+  - 586
+  licence: MIT
+  source: CodeKavach original
+  remediation: Use System.Text.Json or a data contract serialiser with a fixed type; never BinaryFormatter, and keep TypeNameHandling at None.
+  added_in: 1.0.0
+match:
+  any:
+  - pattern: new BinaryFormatter()
+  - pattern: new NetDataContractSerializer()
+  - pattern: new SoapFormatter()
+  - pattern: new LosFormatter()

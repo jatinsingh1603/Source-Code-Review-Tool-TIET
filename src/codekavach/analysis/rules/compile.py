@@ -45,7 +45,7 @@ _STRINGS: Final = re.compile(r"(\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*')")
 _VARIADIC: Final = re.compile(r"\$\.\.\.([A-Z][A-Z0-9_]*)")
 _SINGLE: Final = re.compile(r"\$([A-Z][A-Z0-9_]*)")
 _BARE_ELLIPSIS: Final = re.compile(r"(?<![\w.$])\.\.\.(?![\w.])")
-_WRAPPERS: Final = frozenset({"expression_statement"})
+_WRAPPERS: Final = frozenset({"expression_statement", "global_statement"})
 _TRIVIA: Final = frozenset({"comment"})
 STRING_KINDS: Final = frozenset(
     {
@@ -54,6 +54,8 @@ STRING_KINDS: Final = frozenset(
         "interpreted_string_literal",
         "raw_string_literal",
         "template_string",
+        "encapsed_string",
+        "interpolated_string_expression",
     }
 )
 
@@ -232,6 +234,8 @@ def is_placeholder(node: Node) -> bool:
 
 
 _STATEMENT_LANGUAGES: Final = frozenset({Language.C, Language.CPP})
+_PHP_HEAD: Final = "<?php" + chr(10)
+_PHP_TAGS: Final = frozenset({"php_tag", "text", "text_interpolation"})
 _WRAP_HEAD: Final = "void __ck_wrapper__(void) {" + chr(10)
 
 
@@ -256,6 +260,11 @@ def _wrap_statements(text: str) -> str:
     return f"{_WRAP_HEAD}{body}{chr(10)}}}{chr(10)}"
 
 
+def _end_statement(text: str) -> str:
+    """A PHP or C# pattern is a statement: end it with a semicolon unless it already is one."""
+    return text if text.endswith((";", "}")) else text + ";"
+
+
 def _wrapped_statements(root: Node) -> list[Node]:
     for child in root.named_children:
         if child.type == "function_definition":
@@ -269,10 +278,18 @@ def _wrapped_statements(root: Node) -> list[Node]:
 def _compile(text: str, language: Language, grammar: str) -> CompiledPattern:
     del grammar  # part of the cache key: a grammar change must recompile
     rewritten, names = rewrite(text)
+    if language is Language.PHP:
+        rewritten = _PHP_HEAD + _end_statement(rewritten.strip())
+    elif language is Language.CSHARP:
+        rewritten = _end_statement(rewritten.strip())
     parsed = _parse(rewritten, language)
     top: list[Node] = []
     if parsed.tree is not None and parsed.error_count == 0:
-        top = significant(parsed.tree.root_node.named_children)
+        top = [
+            node
+            for node in significant(parsed.tree.root_node.named_children)
+            if node.type not in _PHP_TAGS
+        ]
     elif language in _STATEMENT_LANGUAGES:
         wrapped = _wrap_statements(rewritten)
         parsed = _parse(wrapped, language)
