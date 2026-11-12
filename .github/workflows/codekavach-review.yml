@@ -1,0 +1,187 @@
+# CodeKavach security review of the sample bank application, run the way a client would run it in
+# their own pipeline: the repository's own action, privacy level L3, SARIF to code scanning,
+# reports and the ledger verification as an artifact, a job summary and (on pull requests from
+# this repository) one PR comment that is updated in place.
+#
+# The demo uses the offline `mock` provider: it answers on the runner and opens no connection, so
+# no key is stored in this repository. A client switches to a real provider with their own secret
+# named CODEKAVACH_LLM_API_KEY; see docs/demo/github-actions.md.
+name: CodeKavach review
+
+on:
+  workflow_dispatch:
+    inputs:
+      fail-on:
+        description: "Severity that fails the gate (the demo job continues on error)"
+        type: choice
+        options: [critical, high, medium, low, info, none]
+        default: critical
+      privacy-level:
+        description: "Privacy level for the LLM step"
+        type: choice
+        options: [L3, L4]
+        default: L3
+  pull_request:
+    paths:
+      - "fixtures/**"
+      - "src/**"
+      - ".github/workflows/codekavach-review.yml"
+  push:
+    branches: [main]
+    paths:
+      - "fixtures/kavachbank/**"
+      - ".github/workflows/codekavach-review.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codekavach-review-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FIXTURE: fixtures/kavachbank
+  FAIL_ON: ${{ inputs.fail-on || 'critical' }}
+  PRIVACY_LEVEL: ${{ inputs.privacy-level || 'L3' }}
+  DO_NOT_TRACK: "1"
+  PYTHONUTF8: "1"
+
+jobs:
+  review:
+    name: Security review (kavachbank, mock provider, L3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # SARIF upload to code scanning
+      actions: read # code scanning reads the run that uploaded the SARIF
+      pull-requests: write # the single PR comment (same-repository PRs only)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Prepare the scan target and a per-run vault key
+        # The scan runs on a copy of the application without its answer key (ground-truth/) and
+        # the recorded model answers (cassettes/). The copy lives outside the checkout so the
+        # application is its own project root, as it would be in a client's repository.
+        run: |
+          work="$RUNNER_TEMP/ck"
+          mkdir -p "$work/home" "$work/out"
+          cp -R "$FIXTURE" "$work/kavachbank"
+          rm -rf "$work/kavachbank/ground-truth" "$work/kavachbank/cassettes"
+          cp "$FIXTURE/ground-truth/terms.txt" "$work/terms.txt"
+          passphrase="$(openssl rand -hex 32)"
+          echo "::add-mask::$passphrase"
+          {
+            echo "CK_WORK=$work"
+            echo "CK_OUT=$work/out"
+            echo "CODEKAVACH_HOME=$work/home"
+            echo "CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE=passphrase"
+            echo "CODEKAVACH_PRIVACY__VAULT__PASSPHRASE=env:CK_VAULT_PASSPHRASE"
+            echo "CK_VAULT_PASSPHRASE=$passphrase"
+          } >> "$GITHUB_ENV"
+
+      - name: CodeKavach scan (repository action)
+        id: ck
+        uses: ./action
+        # The gate fails at `fail-on`; the demo keeps the run green and reports the verdict.
+        continue-on-error: true
+        with:
+          target: ${{ runner.temp }}/ck/kavachbank
+          provider: mock
+          privacy-level: ${{ env.PRIVACY_LEVEL }}
+          fail-on: ${{ env.FAIL_ON }}
+          upload-sarif: "false" # uploaded below with a pinned action and repository paths
+
+      - name: Install the report extras
+        run: |
+          sudo apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 >/dev/null
+          python -m pip install --quiet ".[reports]"
+
+      - name: Render the HTML and PDF reports
+        run: |
+          codekavach --no-input report "$CK_WORK/kavachbank" --format html,pdf --output-dir "$CK_OUT" \
+            || echo "::warning::report rendering failed; the SARIF and the summary stand"
+
+      - name: Verify the egress ledger (chain, payload hashes, zero-leak)
+        id: verify
+        run: |
+          set +e
+          args=(privacy ledger verify "$CK_WORK/kavachbank" --check-terms "$CK_WORK/terms.txt" --include-blocked --require-payloads)
+          codekavach --no-input "${args[@]}" | tee "$CK_OUT/verification.txt"
+          codekavach --no-input --json "${args[@]}" > "$CK_OUT/verification.json"
+          status=$?
+          echo "exit-code=$status" >> "$GITHUB_OUTPUT"
+          if [ $status -ne 0 ]; then
+            echo "::error::The ledger verification failed (exit $status); see verification.txt."
+          fi
+          exit $status
+
+      - name: Make SARIF paths repository-relative
+        # The CLI writes paths relative to the scanned project; code scanning needs them relative
+        # to the repository root to place each alert on its file.
+        run: |
+          cp "$RUNNER_TEMP/codekavach/codekavach.sarif" "$RUNNER_TEMP/codekavach/scan.json" \
+            "$RUNNER_TEMP/codekavach/findings.json" "$CK_OUT/"
+          python .github/scripts/codekavach_summary.py sarif-prefix "$CK_OUT/codekavach.sarif" "$FIXTURE"
+
+      - name: Upload SARIF to code scanning
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: ${{ env.CK_OUT }}/codekavach.sarif
+          category: codekavach
+
+      - name: Job summary
+        if: always()
+        env:
+          CK_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python .github/scripts/codekavach_summary.py summary \
+            --scan "$CK_OUT/scan.json" --findings "$CK_OUT/findings.json" \
+            --verify "$CK_OUT/verification.json" --fail-on "$FAIL_ON" --prefix "$FIXTURE" \
+            > "$CK_OUT/summary.md"
+          cat "$CK_OUT/summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload reports and ledger verification
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: codekavach-reports
+          path: |
+            ${{ env.CK_OUT }}/report.html
+            ${{ env.CK_OUT }}/report.pdf
+            ${{ env.CK_OUT }}/codekavach.sarif
+            ${{ env.CK_OUT }}/verification.txt
+            ${{ env.CK_OUT }}/verification.json
+            ${{ env.CK_OUT }}/summary.md
+            ${{ env.CK_OUT }}/scan.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Post or update the pull-request comment
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          marker='<!-- codekavach-review -->'
+          body=$(jq -Rs '{body: .}' < "$CK_OUT/summary.md")
+          existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | head -1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" --input - <<< "$body" >/dev/null
+            echo "Updated comment $existing"
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --input - <<< "$body" >/dev/null
+            echo "Posted a new comment"
+          fi
+
+      - name: Gate verdict
+        if: always()
+        env:
+          OUTCOME: ${{ steps.ck.outputs.outcome || 'unknown' }}
+        run: |
+          echo "CodeKavach gate (fail-on: $FAIL_ON): $OUTCOME"
+          echo "In a client pipeline without continue-on-error this run would stop here when the outcome is 'failed'."
