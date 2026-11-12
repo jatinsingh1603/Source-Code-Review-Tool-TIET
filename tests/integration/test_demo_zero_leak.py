@@ -14,7 +14,7 @@ from codekavach.cli.term_check import load_terms
 from codekavach.config import load_settings
 from codekavach.core.store.layout import StateLayout
 from codekavach.privacy.egress.ledger import open_reader
-from tests.support.kavachbank import FIXTURE_ROOT, TERMS_PATH
+from tests.support.kavachbank import FIXTURE_ROOT, TERMS_PATH, load_manifest, resolve_value_ref
 from tests.support.ledger_terms import assert_no_terms_in_ledger
 
 
@@ -86,8 +86,24 @@ def test_the_demo_writes_the_inspection_page_the_report_and_the_verification(
     page = (out / "report.html").read_text(encoding="utf-8")
     assert "listed terms searched in every ledger payload: no occurrence" in page
     assert any(item.startswith("html report") for item in report.files)
+    # The report is the client's own document and quotes its code: IaC and dependency findings
+    # cite configuration files that name the organisation. What must never be printed anywhere is
+    # a planted secret or personal data, or a domain term other than the organisation's name. The
+    # zero-leak claim itself is about the ledger payloads, checked above.
+    manifest = load_manifest()
+    secret_lines = {
+        line
+        for secret in manifest.planted_secrets
+        for line in resolve_value_ref(secret.value_ref).split("\n")
+    }
+    for line in secret_lines:
+        assert line not in page
+    for pii in manifest.planted_pii:
+        assert resolve_value_ref(pii.value_ref) not in page, pii.id
+    organisation = manifest.application.name.lower()
     for term in load_terms(TERMS_PATH).terms:
-        assert term.text not in page  # the report names no sensitive value
+        if term.text.lower() != organisation:
+            assert term.text not in page
     assert "inspect.html" not in page and "Original code" not in page  # client code stays out
 
 
