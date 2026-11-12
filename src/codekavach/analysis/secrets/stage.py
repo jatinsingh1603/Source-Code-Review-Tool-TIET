@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
+from codekavach.config.keys import is_secret_ref
 from codekavach.config.models.root import Settings
 from codekavach.core.log import get_logger
 from codekavach.core.models import Candidate, Confidence, Language, Location, RawCode, Severity
@@ -101,6 +102,10 @@ def hits_in(
         if span.kind.value != "SECRET":
             continue
         value = data[span.start_byte : span.end_byte].decode("utf-8", errors="replace")
+        if is_secret_ref(value):
+            # ``env:NAME``, ``keyring:...`` or ``file:/path`` names where a key is kept (the
+            # configuration's own reference syntax, as in the starter file); it is not a key.
+            continue
         line = data.count(b"\n", 0, span.start_byte) + 1
         line_start = data.rfind(b"\n", 0, span.start_byte) + 1
         line_end = data.find(b"\n", span.end_byte)

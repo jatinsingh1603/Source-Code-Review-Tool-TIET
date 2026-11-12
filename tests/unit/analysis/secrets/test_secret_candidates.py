@@ -45,3 +45,14 @@ def test_masking_keeps_line_count_and_hides_values() -> None:
     assert masked.count("\n") == TEXT.count("\n")
     assert AWS_EXAMPLE_ACCESS_KEY_ID not in masked
     assert "<SECRET:" in masked
+
+
+def test_a_secret_reference_is_not_a_hard_coded_credential() -> None:
+    # The starter codekavach.toml names keys by reference; a scan of it must stay clean.
+    text = (
+        'api_key = "env:ANTHROPIC_API_KEY"\n'
+        'token = "env:CK_SYNC_TOKEN"\n'
+        'passphrase = "keyring:codekavach/vault"\n'
+    )
+    hits = hits_in(text, "codekavach.toml", Language.TOML, Settings(), secret_registry())
+    assert hits == []
