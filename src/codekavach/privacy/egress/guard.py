@@ -285,6 +285,43 @@ def mask_static(body: bytes, static_text: Sequence[str]) -> bytes | None:
     return masked
 
 
+def _keys_of(value: object, into: set[str]) -> None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            into.add(key)
+            _keys_of(item, into)
+    elif isinstance(value, list):
+        for item in value:
+            _keys_of(item, into)
+
+
+def mask_envelope_keys(body: bytes) -> bytes | None:
+    """``body`` with every JSON object key replaced by ``"null"``, or ``None`` when there is none.
+
+    The keys of a request body are the provider envelope that the adapter writes (``messages``,
+    ``content``, ``max_tokens``, ...), never client data: the payload is always a string value.
+    Without this, a client identifier such as ``content`` or ``tokens`` that the vault holds as an
+    original would block every request on the envelope's own keys. Only an unescaped
+    ``"key":`` sequence is replaced, which inside JSON text can only be a key: a quote inside a
+    string value is escaped, so client text in a value can never be masked by this.
+    """
+    try:
+        document = json.loads(body)
+    except (ValueError, UnicodeDecodeError):
+        return None
+    keys: set[str] = set()
+    _keys_of(document, keys)
+    if not keys:
+        return None
+    masked = body
+    for key in sorted(keys, key=len, reverse=True):
+        for ensure_ascii in (False, True):
+            quoted = json.dumps(key, ensure_ascii=ensure_ascii).encode("utf-8")
+            for colon in (b":", b": "):
+                masked = masked.replace(quoted + colon, b'"null"' + colon)
+    return masked
+
+
 def payload_in_body(body: bytes, meta: EgressMeta, payload_text: str | None) -> bool:
     """True when the body really contains the payload that ``meta.payload_hash`` names.
 
@@ -340,8 +377,9 @@ class EgressGuard:
         do not look at it, because a client identifier such as ``name`` or ``config`` is also an
         ordinary word of the rubric and would otherwise block every request. It must come from the
         task, never from a provider; a part shorter than ``MIN_STATIC_CHARS`` is ignored, so it
-        cannot be used to hide an identifier. The size and aggregation scanners still see the whole
-        body, and the payload check uses the whole body.
+        cannot be used to hide an identifier. The keys of a JSON body (the provider envelope) are
+        masked the same way (``mask_envelope_keys``). The size and aggregation scanners still see
+        the whole body, and the payload check uses the whole body.
         """
         scanned: tuple[str, ...] = ()
         hits: tuple[LeakHit, ...] = ()
@@ -349,9 +387,9 @@ class EgressGuard:
             code = self._preconditions(body, meta, settings, consent, payload_text)
             if code is None:
                 scanned = self.registry.ids
-                hits, errored = self._scan(
-                    body, meta, settings, vault, mask_static(body, static_text)
-                )
+                content = mask_static(body, static_text)
+                content = mask_envelope_keys(body if content is None else content) or content
+                hits, errored = self._scan(body, meta, settings, vault, content)
                 code = self._block_code(hits, errored or not scanned)
             decision = self._decide(meta, settings, code, hits)
         except Exception:  # noqa: BLE001 - nothing may turn an internal failure into a pass

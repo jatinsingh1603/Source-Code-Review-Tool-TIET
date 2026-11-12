@@ -833,3 +833,37 @@ def test_unregister_removes_a_scanner_and_tolerates_a_missing_one() -> None:
     registry.unregister("alpha")
     registry.unregister("alpha")
     assert len(registry) == 0
+
+
+# --- the provider envelope's keys are not client data (E25-02) ---------------------------------
+
+
+def _says(word: bytes) -> Scripted:
+    """A content scanner that hits whenever ``word`` occurs in what it is shown."""
+    return Scripted("vault_original", lambda body, _meta: [hit("vault_original")] * (word in body))
+
+
+def test_an_original_that_is_only_an_envelope_key_does_not_block() -> None:
+    body = json.dumps({"content": PAYLOAD, "max_tokens": 10}).encode("utf-8")
+    decision = evaluate(make_guard(_says(b"content")), body=body)
+    assert decision.allowed
+
+
+def test_the_same_word_in_a_value_still_blocks() -> None:
+    payload = "def fn_1(content):\n    return content\n"
+    body = json.dumps({"content": payload}).encode("utf-8")
+    request = EgressMeta(
+        provider="mock", model="m", level=PrivacyLevel.L3, payload_hash=sha256_hex(payload)
+    )
+    decision = evaluate(make_guard(_says(b"content")), request, body=body, payload_text=payload)
+    assert not decision.allowed
+    assert decision.block_code == "residual_secret"
+
+
+@given(st.text(min_size=1, max_size=40))
+def test_masking_keys_never_removes_text_from_a_value(value: str) -> None:
+    body = json.dumps({"messages": [{"role": "user", "content": value}]}).encode("utf-8")
+    masked = guard_module.mask_envelope_keys(body)
+    assert masked is not None
+    assert json.loads(masked)["null"][0]["null"] == value
+    assert guard_module.mask_envelope_keys(b"not json") is None
