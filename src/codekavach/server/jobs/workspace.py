@@ -14,6 +14,7 @@ git without submodules, hooks, symlinks or interactive prompts.
 
 import ipaddress
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -275,6 +276,18 @@ def assert_safe_clone_url(
     return url
 
 
+def _git_reason(stderr: bytes | str | None) -> str:
+    """Git's own ``fatal:`` line, without a URL (which could carry a token), cut to 160 chars."""
+    text = stderr.decode("utf-8", "replace") if isinstance(stderr, bytes) else stderr or ""
+    for line in text.splitlines():
+        if line.startswith("fatal:") and "could not read Username" in line:
+            return "the repository is private or does not exist (no credentials are sent)"
+        if line.startswith("fatal:"):
+            reason = re.sub(r"\s*(?:'[^']*'|\S+://\S+)", "", line[6:].strip())
+            return reason[:160]
+    return ""
+
+
 def clone_git(url: str, destination: Path, *, ref: str | None = None) -> Path:
     """Shallow-clone ``url`` (already checked) into ``destination`` with hardened options."""
     git = shutil.which("git")
@@ -309,9 +322,11 @@ def clone_git(url: str, destination: Path, *, ref: str | None = None) -> Path:
     except subprocess.TimeoutExpired:
         shutil.rmtree(destination, ignore_errors=True)
         raise IntakeError("git_timeout", "the git clone took too long") from None
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as error:
         shutil.rmtree(destination, ignore_errors=True)
-        raise IntakeError("git_clone_failed", "the git clone failed") from None
+        reason = _git_reason(error.stderr)
+        message = f"the git clone failed: {reason}" if reason else "the git clone failed"
+        raise IntakeError("git_clone_failed", message) from None
     shutil.rmtree(destination / ".git", ignore_errors=True)
     for path in destination.rglob("*"):
         if path.is_symlink():

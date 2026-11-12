@@ -123,3 +123,14 @@ def test_unsafe_clone_urls_are_refused(url: str, addresses: tuple[str, ...], cod
 def test_a_public_allow_listed_url_passes() -> None:
     url = "https://github.com/OWASP/NodeGoat.git"
     assert assert_safe_clone_url(url, ALLOWED, _resolver("140.82.112.3")) == url
+
+
+def test_git_reason_keeps_gits_fatal_line_without_urls() -> None:
+    from codekavach.server.jobs.workspace import _git_reason  # noqa: PLC0415
+
+    missing = b"Cloning into 'src'...\nfatal: Remote branch main not found in upstream origin\n"
+    assert _git_reason(missing) == "Remote branch main not found in upstream origin"
+    hidden = b"fatal: unable to access 'https://token@example.com/r.git/': Could not resolve host"
+    assert "token" not in _git_reason(hidden)
+    assert "private" in _git_reason(b"fatal: could not read Username for 'https://x': no")
+    assert _git_reason(b"warning: nothing fatal") == ""
