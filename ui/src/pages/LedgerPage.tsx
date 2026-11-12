@@ -169,7 +169,9 @@ export default function LedgerPage() {
             <div className="sm" style={{ fontWeight: 600 }}>
               {chainOk === false
                 ? `Chain broken${result?.first_bad_seq ? ` at record ${fmtSeq(result.first_bad_seq)}` : ""}`
-                : `Chain verified · ${fmtInt(result?.entries ?? privacy.chain_entries ?? entries.length)} records · ${fmtInt(result?.terms_found ?? z?.occurrences)} listed terms found`}
+                : `Chain verified · ${fmtInt(result?.entries ?? privacy.chain_entries ?? entries.length)} records · ${
+                    (result?.terms_checked ?? z?.checked) ? `${fmtInt(result?.terms_found ?? z?.occurrences)} listed terms found` : "no listed terms to check"
+                  }`}
             </div>
             <div className="xs faint" style={{ marginTop: 2 }}>
               {result?.verified_at ? `Verified offline at ${fmtTime(result.verified_at)} IST` : "Checked when the scan finished"}
@@ -202,7 +204,9 @@ export default function LedgerPage() {
       )}
       {mock && (
         <div className="banner warn sm">
-          {scan?.provider === "mock" ? "Mock provider" : "Dry run"}: the ledger shows what <i>would</i> have been sent. Nothing left this laptop.
+          <span>
+            <b>{scan?.provider === "mock" ? "Mock provider" : "Dry run"}:</b> the ledger shows what <i>would</i> have been sent. Nothing left this laptop.
+          </span>
         </div>
       )}
 

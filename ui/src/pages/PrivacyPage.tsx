@@ -35,6 +35,12 @@ const PART_LABEL: Record<string, string> = {
   naming_channel: "Naming channel",
 };
 
+/** "ledger_integrity" -> "Ledger integrity", for a component the table above does not name. */
+function humanise(name: string): string {
+  const words = name.replace(/[_-]+/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 export const INVARIANTS_LONG: [string, string][] = [
   ["I1", "One transport module opens LLM connections"],
   ["I2", "LLM layer accepts sanitised payloads only"],
@@ -129,9 +135,7 @@ export default function PrivacyPage() {
                       <div key={c.name} title={c.basis}>
                         <div className="row between sm">
                           <span className="muted">
-                            {p.score_parts?.find((x) => x.label && x.label.toLowerCase().includes((PART_LABEL[c.name] ?? c.name).toLowerCase().split(" ")[0]!))?.label ??
-                              PART_LABEL[c.name] ??
-                              c.name}
+                            {PART_LABEL[c.name] ?? humanise(c.name)}
                             {c.raw ? ` · ${c.raw}` : ""}
                           </span>
                           <span className="mono">{c.value === null ? <span className="faint">n/a</span> : Math.round(c.value)}</span>
@@ -334,7 +338,14 @@ export default function PrivacyPage() {
                 </div>
               </div>
               {evaluation?.frontier?.length ? (
-                <Frontier points={evaluation.frontier} />
+                <>
+                  <Frontier points={evaluation.frontier} />
+                  {new Set(evaluation.frontier.map((f) => f.f1.toFixed(2))).size === 1 && evaluation.frontier.length > 1 && (
+                    <p className="xs faint" style={{ marginTop: 8 }}>
+                      Same F1 at every level: the leakage runs use the Mock provider, which does not change verdicts.
+                    </p>
+                  )}
+                </>
               ) : (
                 <Empty title="No frontier yet" action="Open Evaluation" to="/evaluation">
                   It is drawn from benchmark runs at each level.

@@ -29,7 +29,7 @@ interface DetectionFile {
   dataset: { name: string; vulnerabilities?: number };
   arms: Arm[];
 }
-interface LevelLeak {
+export interface LevelLeak {
   detection_f1?: number;
   identifier?: { exact_rate?: number; defined?: number };
   inference?: { evidence_share?: number };
@@ -58,26 +58,12 @@ function bench(file: DetectionFile, label: string) {
     }));
 }
 
-export function sampleEvaluation(): EvaluationData {
-  const m = mockResults as unknown as DetectionFile;
-  const r = routerResults as unknown as DetectionFile;
-  const levels = (leakage as unknown as { levels: Record<string, LevelLeak> }).levels;
-  const n = m.dataset.vulnerabilities ?? 0;
-  const benchmarks = [
-    ...bench(r, `${r.dataset.name} · ${n} planted`),
-    ...bench(m, `${m.dataset.name} · ${n} planted`).filter((b) => b.arm !== "SAST only"),
-  ];
-  const engines = m.arms.find((a) => a.arm === "engines-only");
-  const frontier = [
-    ...(engines?.overall.f1 !== undefined ? [{ arm: "SAST only", f1: engines.overall.f1, recovery: 0 }] : []),
-    ...Object.entries(levels).map(([lvl, v]) => ({ arm: lvl, f1: v.detection_f1 ?? 0, recovery: v.identifier?.exact_rate ?? 0 })),
-  ];
+/** Frontier points, leakage bars and attacker rows from a leakage run's per-level results. */
+export function levelViews(levels: Record<string, LevelLeak>): Pick<EvaluationData, "frontier" | "leakage" | "attacks"> {
   const by = (f: (v: LevelLeak) => number | undefined) =>
     Object.fromEntries(Object.entries(levels).map(([l, v]) => [l, f(v) ?? null])) as Record<string, number | null>;
   return {
-    sample: true,
-    benchmarks,
-    frontier,
+    frontier: Object.entries(levels).map(([lvl, v]) => ({ arm: lvl, f1: v.detection_f1 ?? 0, recovery: v.identifier?.exact_rate ?? 0 })),
     leakage: Object.entries(levels).map(([level, v]) => ({
       level,
       recovery: v.identifier?.exact_rate ?? 0,
@@ -112,6 +98,27 @@ export function sampleEvaluation(): EvaluationData {
         reading: "Planted secrets found verbatim",
       },
     ],
+  };
+}
+
+export function sampleEvaluation(): EvaluationData {
+  const m = mockResults as unknown as DetectionFile;
+  const r = routerResults as unknown as DetectionFile;
+  const levels = (leakage as unknown as { levels: Record<string, LevelLeak> }).levels;
+  const n = m.dataset.vulnerabilities ?? 0;
+  const benchmarks = [
+    // Two separate runs, each with its own engines-only baseline: label them apart so a reader
+    // never compares the model arm of one run with the baseline of the other.
+    ...bench(r, `${r.dataset.name} · ${n} planted · AgentRouter run`),
+    ...bench(m, `${m.dataset.name} · ${n} planted · Mock run`),
+  ];
+  const engines = m.arms.find((a) => a.arm === "engines-only");
+  const views = levelViews(levels);
+  return {
+    sample: true,
+    benchmarks,
+    ...views,
+    frontier: [...(engines?.overall.f1 !== undefined ? [{ arm: "SAST only", f1: engines.overall.f1, recovery: 0 }] : []), ...(views.frontier ?? [])],
     note: `${m.dataset.name} (synthetic), ${n} planted vulnerabilities; ${Object.values(levels)[0]?.identifier?.defined ?? "—"} identifiers; mock provider for the leakage runs.`,
   };
 }

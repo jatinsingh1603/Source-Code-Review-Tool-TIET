@@ -1,3 +1,5 @@
+import { levelViews, type LevelLeak } from "@/lib/sampleEval";
+
 /** A point of the privacy-utility frontier: detection F1 against identifier recovery. */
 export interface FrontierPoint {
   arm: string;
@@ -55,8 +57,10 @@ export function Frontier({ points }: { points: FrontierPoint[] }) {
         const def = /L3/.test(p.arm);
         const cx = x(p.recovery);
         const cy = y(p.f1);
-        // Points at the same place get their labels stacked.
-        const dup = sorted.slice(0, i).filter((q) => Math.abs(x(q.recovery) - cx) < 6 && Math.abs(y(q.f1) - cy) < 6).length;
+        // Points whose labels would collide (close in x, same height) get their labels stacked.
+        const dup = sorted
+          .slice(0, i)
+          .filter((q) => !/sast only/i.test(q.arm) && Math.abs(x(q.recovery) - cx) < 110 && Math.abs(y(q.f1) - cy) < 14).length;
         return (
           <g key={p.arm}>
             <circle
@@ -100,9 +104,10 @@ interface ServerEvaluation {
   available?: boolean;
   sample?: boolean;
   benchmarks?: { dataset: string; arm: string; level?: string | null; provider?: string | null; precision?: number | null; recall?: number | null; f1?: number | null; f1_ci?: [number, number] | null; skipped_reason?: string | null }[];
-  attacks?: { experiment: string; description?: string; by_level?: Record<string, number | null>; reading?: string }[];
-  leakage?: { levels?: Record<string, { detection_f1?: number; identifier?: { exact_rate?: number } }> } | null;
+  leakage?: { dataset?: { name?: string }; results?: { levels?: Record<string, LevelLeak> } } | null;
 }
+
+const PROVIDER_NAME: Record<string, string> = { mock: "Mock", replay: "Replay", agentrouter: "AgentRouter" };
 
 /** The server's `GET /evaluation`, or null when it has no results yet (`available: false`). */
 export function asEvaluation(d: unknown): EvaluationData | null {
@@ -112,21 +117,29 @@ export function asEvaluation(d: unknown): EvaluationData | null {
   const benchmarks = (s.benchmarks ?? [])
     .filter((b) => typeof b.f1 === "number")
     .map((b) => ({
-      dataset: b.dataset,
-      arm: b.arm === "engines-only" ? "SAST only" : b.level ? `SAST + LLM · ${b.level}${b.provider ? ` (${b.provider})` : ""}` : b.arm,
+      dataset: `${b.dataset} · this server's run`,
+      arm:
+        b.arm === "engines-only"
+          ? "SAST only"
+          : b.level
+            ? `SAST + LLM · ${b.level}${b.provider ? ` (${PROVIDER_NAME[b.provider] ?? b.provider})` : ""}`
+            : b.arm,
       precision: b.precision ?? 0,
       recall: b.recall ?? 0,
       f1: b.f1 ?? 0,
       f1_ci: b.f1_ci ?? undefined,
     }));
-  const levels = s.leakage?.levels ?? {};
-  const frontier = Object.entries(levels).map(([lvl, v]) => ({ arm: lvl, f1: v.detection_f1 ?? 0, recovery: v.identifier?.exact_rate ?? 0 }));
+  const levels = s.leakage?.results?.levels ?? {};
+  const views = levelViews(levels);
   const base = benchmarks.find((b) => b.arm === "SAST only");
+  const defined = Object.values(levels)[0]?.identifier?.defined;
   return {
     sample: s.sample ?? false,
     benchmarks,
-    frontier: base ? [{ arm: "SAST only", f1: base.f1, recovery: 0 }, ...frontier] : frontier,
-    attacks: s.attacks ?? [],
-    leakage: Object.entries(levels).map(([level, v]) => ({ level, recovery: v.identifier?.exact_rate ?? 0 })),
+    ...views,
+    frontier: [...(base ? [{ arm: "SAST only", f1: base.f1, recovery: 0 }] : []), ...(views.frontier ?? [])],
+    note: s.leakage
+      ? `${s.leakage.dataset?.name ?? "KavachBank"} (synthetic)${defined ? `; ${defined} identifiers` : ""}; Mock provider; run on this server.`
+      : undefined,
   };
 }
