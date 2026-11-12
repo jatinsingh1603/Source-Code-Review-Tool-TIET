@@ -97,12 +97,12 @@
   --ck-chart-grid: 228 231 240;
   --ck-chart-axis: 110 120 140;
 
-  /* Privacy levels L0 (nothing leaves) .. L4 (most context leaves) */
+  /* Privacy levels by strictness: L0 (nothing leaves), L4 (no code), L3, L2, L1 (most code leaves) */
   --ck-lvl-0: 21 128 61;
-  --ck-lvl-1: 13 148 136;
-  --ck-lvl-2: 37 99 235;
-  --ck-lvl-3: 124 58 237;
-  --ck-lvl-4: 194 65 12;
+  --ck-lvl-4: 13 148 136;
+  --ck-lvl-3: 37 99 235;
+  --ck-lvl-2: 124 58 237;
+  --ck-lvl-1: 194 65 12;
 
   /* Redaction markup in the privacy viewer */
   --ck-mark-secret: 220 38 38;
@@ -181,10 +181,10 @@
   --ck-chart-axis: 128 136 165;
 
   --ck-lvl-0: 74 222 128;
-  --ck-lvl-1: 45 212 191;
-  --ck-lvl-2: 96 165 250;
-  --ck-lvl-3: 167 139 250;
-  --ck-lvl-4: 251 146 60;
+  --ck-lvl-4: 45 212 191;
+  --ck-lvl-3: 96 165 250;
+  --ck-lvl-2: 167 139 250;
+  --ck-lvl-1: 251 146 60;
 
   --ck-mark-secret: 248 113 113;
   --ck-mark-pii: 251 176 64;

@@ -1,29 +1,29 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Cloud, Cpu, FileCode2, PlugZap, Save, Settings2, SlidersHorizontal, XCircle } from "lucide-react";
 import { usePolicy, useProviders, useSavePolicy, useSaveSettings, useSettings, useTestProvider } from "@/api/queries";
-import { PRIVACY_LEVELS, type PrivacyLevel, type ProviderInfo, type ProviderTestResult, type Settings } from "@/api/types";
+import { type PrivacyLevel, type ProviderInfo, type ProviderTestResult, type Settings } from "@/api/types";
 import { ApiError } from "@/api/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge, Button, Callout, Card, CardBody, CardHeader, ErrorState, Field, Input, Select, Skeleton, Tabs, useToast } from "@/components/ui";
 import { useSession } from "@/app/session";
-import { cn, LEVEL_INFO } from "@/lib/format";
+import { cn, LEVEL_INFO, LEVELS_BY_STRICTNESS } from "@/lib/format";
 
 function capabilityList(c: ProviderInfo["capabilities"]): string[] {
   if (!c) return [];
   if (Array.isArray(c)) return c;
   return Object.entries(c)
-    .filter(([, v]) => v)
+    .filter(([, v]) => v === true)
     .map(([k]) => k);
 }
 
 function ProviderCard({ p }: { p: ProviderInfo }) {
   const test = useTestProvider();
-  const [model, setModel] = useState(p.default_model);
+  const [model, setModel] = useState(p.default_model ?? p.models[0] ?? "");
   const [result, setResult] = useState<ProviderTestResult | null>(null);
   const run = async () => {
     setResult(null);
     try {
-      setResult(await test.mutateAsync({ id: p.id, model }));
+      setResult(await test.mutateAsync({ id: p.id, model: model || undefined }));
     } catch (e) {
       setResult({ ok: false, latency_ms: 0, model, message: e instanceof Error ? e.message : "Test failed" });
     }
@@ -41,7 +41,15 @@ function ProviderCard({ p }: { p: ProviderInfo }) {
           </div>
           <p className="font-mono text-xs text-fg-subtle">
             {p.id} · {p.kind}
+            {p.host ? ` · ${p.host}` : ""}
           </p>
+          {(p.trust_tier || p.min_level) && (
+            <p className="mt-0.5 text-xs text-fg-muted">
+              {p.trust_tier ? `Trust tier: ${p.trust_tier}` : ""}
+              {p.trust_tier && p.min_level ? " · " : ""}
+              {p.min_level ? `Privacy floor: ${p.min_level}` : ""}
+            </p>
+          )}
         </div>
         {p.configured ? (
           <Badge tone="success" icon={<CheckCircle2 className="h-3 w-3" />}>
@@ -64,9 +72,9 @@ function ProviderCard({ p }: { p: ProviderInfo }) {
         <Field label="Model">
           {(id) => (
             <Select id={id} value={model} onChange={(e) => setModel(e.target.value)}>
-              {(p.models.length ? p.models : [p.default_model]).map((m) => (
+              {(p.models.length ? p.models : [p.default_model ?? ""]).map((m) => (
                 <option key={m} value={m}>
-                  {m}
+                  {m || "Provider default"}
                 </option>
               ))}
             </Select>
@@ -134,7 +142,7 @@ function DefaultsForm() {
                 value={form.default_provider}
                 onChange={(e) => {
                   const p = providers.data?.find((x) => x.id === e.target.value);
-                  setForm({ ...form, default_provider: e.target.value, default_model: p?.default_model ?? form.default_model });
+                  setForm({ ...form, default_provider: e.target.value, default_model: p?.default_model ?? null });
                 }}
               >
                 {(providers.data ?? []).map((p) => (
@@ -148,9 +156,9 @@ function DefaultsForm() {
           <Field label="Default model">
             {(id) => (
               <Select id={id} disabled={disabled} value={form.default_model ?? ""} onChange={(e) => setForm({ ...form, default_model: e.target.value })}>
-                {(prov?.models ?? [form.default_model ?? ""]).map((m) => (
+                {(prov?.models.length ? prov.models : [form.default_model ?? ""]).map((m) => (
                   <option key={m} value={m}>
-                    {m}
+                    {m || "Provider default"}
                   </option>
                 ))}
               </Select>
@@ -159,7 +167,7 @@ function DefaultsForm() {
           <Field label="Default privacy level" help={LEVEL_INFO[form.default_privacy_level]?.short}>
             {(id, d) => (
               <Select id={id} aria-describedby={d} disabled={disabled} value={form.default_privacy_level} onChange={(e) => setForm({ ...form, default_privacy_level: e.target.value as PrivacyLevel })}>
-                {PRIVACY_LEVELS.map((l) => (
+                {LEVELS_BY_STRICTNESS.map((l) => (
                   <option key={l} value={l}>
                     {l} · {LEVEL_INFO[l].name}
                   </option>

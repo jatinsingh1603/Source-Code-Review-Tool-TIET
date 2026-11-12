@@ -310,8 +310,13 @@ export interface ProviderInfo {
   models: string[];
   local: boolean;
   configured: boolean;
-  default_model: string;
+  default_model: string | null;
   capabilities?: string[] | Record<string, unknown>;
+  /** Strictest-of floor for this provider's trust tier (L1 < L2 < L3 < L4 < L0). */
+  min_level?: PrivacyLevel | null;
+  trust_tier?: string | null;
+  host?: string | null;
+  key_refs?: string[];
 }
 
 export interface ProviderTestResult {

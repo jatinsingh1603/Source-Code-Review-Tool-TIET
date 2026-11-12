@@ -58,6 +58,9 @@ const PROVIDERS: ProviderInfo[] = [
     configured: true,
     default_model: "gpt-5.6-sol",
     capabilities: ["structured_output", "json_schema"],
+    trust_tier: "public",
+    min_level: "L3",
+    host: "agentrouter.org",
   },
   {
     id: "ollama",
@@ -297,7 +300,7 @@ function privacy(scanId: string) {
     tokens_sent: ledger.filter((e) => !e.outcome?.startsWith("blocked")).reduce((a, e) => a + e.tokens, 0),
     chain_ok: true,
     zero_leak: { checked: ledger.length ? 18 : 0, occurrences: 0, passed: true },
-    privacy_score: level === "L0" ? 100 : level === "L1" ? 96 : level === "L2" ? 92 : level === "L3" ? 87 : 78,
+    privacy_score: level === "L0" ? 100 : level === "L4" ? 95 : level === "L3" ? 87 : level === "L2" ? 76 : 60,
     provider: scan.provider,
     model: scan.model,
     attestation_text:

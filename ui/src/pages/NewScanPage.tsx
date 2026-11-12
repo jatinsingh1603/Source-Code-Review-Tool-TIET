@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle2, Cloud, Cpu, Loader2, Play, PlugZap, XCircle } from "lucide-react";
 import { useProject, useProviders, useSettings, useStartScan, useTestProvider } from "@/api/queries";
-import { PRIVACY_LEVELS, type PrivacyLevel, type ProviderTestResult } from "@/api/types";
+import { type PrivacyLevel, type ProviderTestResult } from "@/api/types";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge, Button, Card, CardBody, CardHeader, Field, Input, PrivacyLevelBadge, Select, Skeleton, Toggle, useToast } from "@/components/ui";
 import { EgressPreview } from "@/components/EgressPreview";
-import { cn, LEVEL_INFO } from "@/lib/format";
+import { atLeastAsStrict, cn, LEVEL_INFO, LEVELS_BY_STRICTNESS } from "@/lib/format";
 import { sourceText } from "./ProjectsPage";
 
 const lvlBar: Record<PrivacyLevel, string> = {
@@ -60,7 +60,7 @@ export default function NewScanPage() {
     const s = settings.data;
     const def = list.find((p) => p.id === s?.default_provider) ?? list.find((p) => p.configured) ?? list[0]!;
     setProviderId(def.id);
-    setModel(s?.default_provider === def.id && s?.default_model ? s.default_model : def.default_model);
+    setModel(s?.default_provider === def.id && s?.default_model ? s.default_model : (def.default_model ?? def.models[0] ?? ""));
     if (s?.default_privacy_level) setLevel(s.default_privacy_level);
     setDefaultsApplied(true);
   }, [list, settings.data, settings.isLoading, defaultsApplied]);
@@ -68,14 +68,14 @@ export default function NewScanPage() {
   const chooseProvider = (pid: string) => {
     const p = list.find((x) => x.id === pid);
     setProviderId(pid);
-    setModel(p?.default_model ?? "");
+    setModel(p?.default_model ?? p?.models[0] ?? "");
     setTestResult(null);
   };
 
   const runTest = async () => {
     setTestResult(null);
     try {
-      const r = await test.mutateAsync({ id: providerId, model });
+      const r = await test.mutateAsync({ id: providerId, model: model || undefined });
       setTestResult(r);
     } catch (e) {
       setTestResult({ ok: false, latency_ms: 0, model, message: e instanceof Error ? e.message : "Test failed" });
@@ -131,7 +131,7 @@ export default function NewScanPage() {
 
           <Step n={2} title="Privacy level" description="Decides what, if anything, is sent to a model provider">
             <div role="radiogroup" aria-label="Privacy level" className="grid gap-2 sm:grid-cols-5">
-              {PRIVACY_LEVELS.map((l) => (
+              {LEVELS_BY_STRICTNESS.map((l) => (
                 <button
                   key={l}
                   type="button"
@@ -155,12 +155,13 @@ export default function NewScanPage() {
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs text-fg-subtle">
               <span>Less disclosed</span>
-              <span className="h-1.5 flex-1 rounded-full bg-gradient-to-r from-[rgb(var(--ck-lvl-0))] via-[rgb(var(--ck-lvl-2))] to-[rgb(var(--ck-lvl-4))]" aria-hidden />
+              <span className="h-1.5 flex-1 rounded-full bg-gradient-to-r from-[rgb(var(--ck-lvl-0))] via-[rgb(var(--ck-lvl-3))] to-[rgb(var(--ck-lvl-1))]" aria-hidden />
               <span>More context for the model</span>
             </div>
             <div className="mt-4 rounded-lg bg-surface-2 p-4">
               <p className="text-sm font-semibold text-fg">What leaves this machine at {level}</p>
               <p className="mt-1 text-sm text-fg-muted">{LEVEL_INFO[level].leaves}</p>
+              <p className="mt-1 text-xs text-fg-subtle">Typical use: {LEVEL_INFO[level].use}</p>
               <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-fg-muted">
                 {LEVEL_INFO[level].detail.map((d) => (
                   <li key={d}>{d}</li>
@@ -196,7 +197,9 @@ export default function NewScanPage() {
                           {!pr.configured && <Badge tone="warning">not configured</Badge>}
                         </div>
                         <p className="mt-0.5 truncate text-xs text-fg-muted">
-                          {pr.kind} · {pr.default_model}
+                          {pr.kind}
+                          {pr.default_model ? ` · ${pr.default_model}` : ""}
+                          {pr.min_level ? ` · floor ${pr.min_level}` : ""}
                         </p>
                       </div>
                     </button>
@@ -283,6 +286,11 @@ export default function NewScanPage() {
               <Button size="lg" className="w-full" icon={<Play className="h-4 w-4" />} loading={start.isPending} onClick={submit} disabled={!p || (level !== "L0" && !providerId)}>
                 Start scan
               </Button>
+              {provider?.min_level && level !== "L0" && !atLeastAsStrict(level, provider.min_level) && (
+                <p className="text-xs text-warning">
+                  {provider.name} has a privacy floor of {provider.min_level}. The stricter level wins, so payloads will be prepared at {provider.min_level}, not {level}.
+                </p>
+              )}
               {provider && !provider.configured && level !== "L0" && send && (
                 <p className="text-xs text-warning">This provider is not configured on the server; the model review step will fail closed.</p>
               )}
