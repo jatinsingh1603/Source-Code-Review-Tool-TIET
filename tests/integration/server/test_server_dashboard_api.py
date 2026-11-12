@@ -379,6 +379,26 @@ def test_stats_extras(
     client.patch(f"{API}/findings/{item['id']}", json={"status": "open"}, headers=admin)
 
 
+def test_stats_scoped_to_one_project(
+    server: tuple[TestClient, Any], admin: dict[str, str], scan: dict[str, Any]
+) -> None:
+    client = server[0]
+    item = _reviewed(client, admin)
+    client.patch(f"{API}/findings/{item['id']}", json={"status": "fixed"}, headers=admin)
+    body = {"name": "Stats other", "source": {"type": "sample"}}
+    other = client.post(f"{API}/projects", json=body, headers=admin).json()
+    mine = client.get(f"{API}/stats", params={"project_id": scan["project_id"]},
+                      headers=admin).json()  # fmt: skip
+    empty = client.get(f"{API}/stats", params={"project_id": other["id"]}, headers=admin).json()
+    assert mine["mttr_samples"] == 1 and mine["scans"] >= 1
+    assert all(point["project_id"] == scan["project_id"] for point in mine["trend"])
+    assert empty["mttr_samples"] == 0 and empty["scans"] == 0 and empty["trend"] == []
+    assert empty["open_findings"] == 0 and empty["last_scan"] is None
+    missing = client.get(f"{API}/stats", params={"project_id": "prj_missing"}, headers=admin)
+    assert missing.status_code == 404
+    client.patch(f"{API}/findings/{item['id']}", json={"status": "open"}, headers=admin)
+
+
 def test_engines_list_install_status(
     server: tuple[TestClient, Any], users: dict[str, dict[str, str]]
 ) -> None:

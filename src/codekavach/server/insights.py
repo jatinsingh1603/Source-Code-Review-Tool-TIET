@@ -291,8 +291,13 @@ def remediation_example(text: str | None) -> dict[str, str] | None:
 # --- MTTR -----------------------------------------------------------------------------------
 
 
-def remediation_times(session: Session) -> list[tuple[datetime, float]]:
-    """``(fixed_at, days to fix)`` for every finding whose status was changed to fixed."""
+def remediation_times(
+    session: Session, project_id: str | None = None
+) -> list[tuple[datetime, float]]:
+    """``(fixed_at, days to fix)`` for every finding whose status was changed to fixed.
+
+    With ``project_id``, only the findings of that project's scans count.
+    """
     events = session.execute(
         select(FindingEvent.finding_id, FindingEvent.at)
         .where(FindingEvent.to_status == "fixed", FindingEvent.action == "status")
@@ -305,7 +310,12 @@ def remediation_times(session: Session) -> list[tuple[datetime, float]]:
             first_fix.setdefault(str(finding_id), moment)
     if not first_fix:
         return []
-    rows = session.scalars(select(FindingRow).where(FindingRow.id.in_(list(first_fix))))
+    query = select(FindingRow).where(FindingRow.id.in_(list(first_fix)))
+    if project_id is not None:
+        query = query.join(ScanRow, ScanRow.id == FindingRow.scan_id).where(
+            ScanRow.project_id == project_id
+        )
+    rows = session.scalars(query)
     result = []
     for row in rows:
         seen = _parse_time((row.data or {}).get("created_at"))
@@ -315,9 +325,9 @@ def remediation_times(session: Session) -> list[tuple[datetime, float]]:
     return result
 
 
-def mttr(session: Session, window_days: int = 30) -> dict[str, Any]:
+def mttr(session: Session, window_days: int = 30, project_id: str | None = None) -> dict[str, Any]:
     """Mean days to remediate: overall, this window, and the change from the window before."""
-    times = remediation_times(session)
+    times = remediation_times(session, project_id)
     if not times:
         return {"mttr_days": None, "mttr_delta_days": None, "mttr_samples": 0}
     now = utcnow()

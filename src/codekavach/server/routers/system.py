@@ -30,7 +30,7 @@ from codekavach.server.auth.dependencies import (
 )
 from codekavach.server.db.engine import as_utc
 from codekavach.server.db.models import AuditEvent, FindingRow, Project, ScanRow
-from codekavach.server.errors import ApiError
+from codekavach.server.errors import ApiError, not_found
 from codekavach.server.insights import also_reported_by, merged_engines, mttr
 from codekavach.server.providers import list_providers, test_provider
 from codekavach.server.rbac import Permission
@@ -141,15 +141,27 @@ def version() -> dict[str, Any]:
 
 
 @router.get("/stats", dependencies=[ReadDep])
-def stats(session: SessionDep) -> dict[str, Any]:
-    """Figures for the dashboard home page, over the latest completed scan of every project."""
+def stats(session: SessionDep, project_id: str | None = None) -> dict[str, Any]:
+    """Figures for the dashboard home page, over the latest completed scan of every project.
+
+    With ``project_id``, every figure (scans, findings, trend, time to remediate) covers that
+    project only.
+    """
     from codekavach.server.routers.scans import scan_json  # noqa: PLC0415
 
-    projects = session.scalar(select(func.count()).select_from(Project)) or 0
-    scans = session.scalar(select(func.count()).select_from(ScanRow)) or 0
+    scoped = select(ScanRow)
+    if project_id is not None:
+        if session.get(Project, project_id) is None:
+            raise not_found("project")
+        scoped = scoped.where(ScanRow.project_id == project_id)
+    projects = (
+        1 if project_id is not None
+        else session.scalar(select(func.count()).select_from(Project)) or 0
+    )  # fmt: skip
+    scans = session.scalar(select(func.count()).select_from(scoped.subquery())) or 0
     latest: dict[str, ScanRow] = {}
     completed = session.scalars(
-        select(ScanRow).where(ScanRow.status == "completed").order_by(ScanRow.finished_at)
+        scoped.where(ScanRow.status == "completed").order_by(ScanRow.finished_at)
     ).all()
     for row in completed:
         latest[row.project_id] = row
@@ -167,7 +179,7 @@ def stats(session: SessionDep) -> dict[str, Any]:
         by_status[item.status] += 1
         if item.status in {"open", "confirmed"}:
             open_findings += 1
-    last = session.scalars(select(ScanRow).order_by(ScanRow.created_at.desc()).limit(1)).first()
+    last = session.scalars(scoped.order_by(ScanRow.created_at.desc()).limit(1)).first()
     trend = [
         {
             "scan_id": row.id,
@@ -191,7 +203,7 @@ def stats(session: SessionDep) -> dict[str, Any]:
         if last is not None
         else None,
         "trend": trend,
-        **mttr(session),
+        **mttr(session, project_id=project_id),
         "risk_matrix": _risk_matrix(rows),
         "risk_matrix_bands": _risk_bands(rows),
         "owasp_by_engine": _owasp_by_engine(rows, folded),
