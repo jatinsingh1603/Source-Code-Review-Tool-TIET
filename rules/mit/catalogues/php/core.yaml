@@ -1,0 +1,29 @@
+id: php.core
+language: php
+framework: core
+sources:
+  - {id: php.source.get, type: http, symbol: _GET}
+  - {id: php.source.post, type: http, symbol: _POST}
+  - {id: php.source.request, type: http, symbol: _REQUEST}
+  - {id: php.source.cookie, type: http, symbol: _COOKIE}
+  - {id: php.source.argv, type: cli, symbol: argv}
+sinks:
+  - {id: php.sink.shell.system, symbol: system, arg: 0, context: shell}
+  - {id: php.sink.shell.exec, symbol: exec, arg: 0, context: shell}
+  - {id: php.sink.shell.shell-exec, symbol: shell_exec, arg: 0, context: shell}
+  - {id: php.sink.shell.passthru, symbol: passthru, arg: 0, context: shell}
+  - {id: php.sink.shell.popen, symbol: popen, arg: 0, context: shell}
+  - {id: php.sink.code.eval, symbol: eval, arg: 0}
+  - {id: php.sink.deserialise.unserialize, symbol: unserialize, arg: 0, context: deserialisation}
+  - {id: php.sink.path.include, symbol: include, arg: 0, context: path}
+  - {id: php.sink.path.file-get-contents, symbol: file_get_contents, arg: 0, context: path}
+  - {id: php.sink.path.fopen, symbol: fopen, arg: 0, context: path}
+  - {id: php.sink.path.unlink, symbol: unlink, arg: 0, context: path}
+  - {id: php.sink.http.curl-init, symbol: curl_init, arg: 0, context: url}
+  - {id: php.sink.sql.mysqli-query, symbol: mysqli_query, arg: 1, context: sql}
+  - {id: php.sink.sql.pdo-query, symbol: PDO.query, arg: 0, context: sql}
+sanitisers:
+  - {id: php.sanitiser.escapeshellarg, symbol: escapeshellarg, covers: [shell]}
+  - {id: php.sanitiser.htmlspecialchars, symbol: htmlspecialchars, covers: [html, html_attr]}
+  - {id: php.sanitiser.basename, symbol: basename, covers: [path]}
+  - {id: php.sanitiser.intval, symbol: intval, covers: [sql, shell, path]}

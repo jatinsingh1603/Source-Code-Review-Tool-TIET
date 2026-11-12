@@ -1,0 +1,26 @@
+id: ruby.core
+language: ruby
+framework: core
+sources:
+  - {id: ruby.source.params, type: http, symbol: params}
+  - {id: ruby.source.cookies, type: http, symbol: cookies}
+  - {id: ruby.source.argv, type: cli, symbol: ARGV}
+  - {id: ruby.source.env, type: environment, symbol: ENV}
+sinks:
+  - {id: ruby.sink.shell.system, symbol: Kernel.system, arg: 0, context: shell}
+  - {id: ruby.sink.shell.exec, symbol: Kernel.exec, arg: 0, context: shell}
+  - {id: ruby.sink.shell.popen, symbol: IO.popen, arg: 0, context: shell}
+  - {id: ruby.sink.shell.open3, symbol: Open3.capture2, arg: 0, context: shell}
+  - {id: ruby.sink.code.eval, symbol: Kernel.eval, arg: 0}
+  - {id: ruby.sink.code.instance-eval, symbol: instance_eval, arg: 0}
+  - {id: ruby.sink.deserialise.marshal-load, symbol: Marshal.load, arg: 0, context: deserialisation}
+  - {id: ruby.sink.deserialise.yaml-load, symbol: YAML.load, arg: 0, context: deserialisation}
+  - {id: ruby.sink.path.file-read, symbol: File.read, arg: 0, context: path}
+  - {id: ruby.sink.path.file-open, symbol: File.open, arg: 0, context: path}
+  - {id: ruby.sink.path.send-file, symbol: send_file, arg: 0, context: path}
+  - {id: ruby.sink.http.open-uri, symbol: URI.open, arg: 0, context: url}
+  - {id: ruby.sink.sql.find-by-sql, symbol: find_by_sql, arg: 0, context: sql}
+  - {id: ruby.sink.sql.where, symbol: where, arg: 0, context: sql}
+sanitisers:
+  - {id: ruby.sanitiser.shellescape, symbol: Shellwords.escape, covers: [shell]}
+  - {id: ruby.sanitiser.basename, symbol: File.basename, covers: [path]}

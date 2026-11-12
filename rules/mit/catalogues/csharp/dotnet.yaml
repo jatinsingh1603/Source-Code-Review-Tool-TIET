@@ -1,0 +1,20 @@
+id: csharp.dotnet
+language: csharp
+framework: dotnet
+sources:
+  - {id: csharp.source.query, type: http, symbol: HttpRequest.Query}
+  - {id: csharp.source.form, type: http, symbol: HttpRequest.Form}
+  - {id: csharp.source.args, type: cli, symbol: Environment.GetCommandLineArgs}
+  - {id: csharp.source.env, type: environment, symbol: Environment.GetEnvironmentVariable}
+sinks:
+  - {id: csharp.sink.shell.process-start, symbol: System.Diagnostics.Process.Start, arg: 0, context: shell}
+  - {id: csharp.sink.path.file-read, symbol: System.IO.File.ReadAllText, arg: 0, context: path}
+  - {id: csharp.sink.path.file-open, symbol: System.IO.File.OpenRead, arg: 0, context: path}
+  - {id: csharp.sink.path.file-delete, symbol: System.IO.File.Delete, arg: 0, context: path}
+  - {id: csharp.sink.deserialise.binary-formatter, symbol: System.Runtime.Serialization.Formatters.Binary.BinaryFormatter.Deserialize, arg: 0, context: deserialisation}
+  - {id: csharp.sink.http.http-client-get, symbol: System.Net.Http.HttpClient.GetAsync, arg: 0, context: url}
+  - {id: csharp.sink.sql.sql-command, symbol: System.Data.SqlClient.SqlCommand, arg: 0, context: sql}
+  - {id: csharp.sink.xml.xml-document-load, symbol: System.Xml.XmlDocument.LoadXml, arg: 0, context: xml}
+sanitisers:
+  - {id: csharp.sanitiser.html-encode, symbol: System.Net.WebUtility.HtmlEncode, covers: [html, html_attr]}
+  - {id: csharp.sanitiser.get-file-name, symbol: System.IO.Path.GetFileName, covers: [path]}

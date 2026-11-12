@@ -1,0 +1,21 @@
+id: c.libc
+language: c
+framework: libc
+sources:
+  - {id: c.source.argv, type: cli, symbol: argv}
+  - {id: c.source.getenv, type: environment, symbol: getenv}
+  - {id: c.source.scanf, type: stdin, symbol: scanf}
+  - {id: c.source.fgets, type: stdin, symbol: fgets}
+  - {id: c.source.recv, type: network, symbol: recv}
+  - {id: c.source.read, type: stdin, symbol: read}
+sinks:
+  - {id: c.sink.shell.system, symbol: system, arg: 0, context: shell}
+  - {id: c.sink.shell.popen, symbol: popen, arg: 0, context: shell}
+  - {id: c.sink.shell.execl, symbol: execl, arg: 0, context: shell}
+  - {id: c.sink.shell.execlp, symbol: execlp, arg: 0, context: shell}
+  - {id: c.sink.path.fopen, symbol: fopen, arg: 0, context: path}
+  - {id: c.sink.path.open, symbol: open, arg: 0, context: path}
+  - {id: c.sink.path.unlink, symbol: unlink, arg: 0, context: path}
+sanitisers:
+  - {id: c.sanitiser.realpath, symbol: realpath, covers: [path]}
+  - {id: c.sanitiser.basename, symbol: basename, covers: [path]}

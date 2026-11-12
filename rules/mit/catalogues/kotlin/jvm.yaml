@@ -1,0 +1,19 @@
+id: kotlin.jvm
+language: kotlin
+framework: jvm
+sources:
+  - {id: kotlin.source.args, type: cli, symbol: args}
+  - {id: kotlin.source.env, type: environment, symbol: System.getenv}
+  - {id: kotlin.source.param, type: http, symbol: javax.servlet.http.HttpServletRequest.getParameter}
+sinks:
+  - {id: kotlin.sink.shell.runtime-exec, symbol: java.lang.Runtime.exec, arg: 0, context: shell}
+  - {id: kotlin.sink.shell.process-builder, symbol: java.lang.ProcessBuilder, arg: 0, context: shell}
+  - {id: kotlin.sink.path.file, symbol: java.io.File, arg: 0, context: path}
+  - {id: kotlin.sink.path.paths-get, symbol: java.nio.file.Paths.get, arg: 0, context: path}
+  - {id: kotlin.sink.deserialise.read-object, symbol: java.io.ObjectInputStream.readObject, arg: 0, context: deserialisation}
+  - {id: kotlin.sink.http.url, symbol: java.net.URL, arg: 0, context: url}
+  - {id: kotlin.sink.sql.execute-query, symbol: java.sql.Statement.executeQuery, arg: 0, context: sql}
+  - {id: kotlin.sink.sql.execute-update, symbol: java.sql.Statement.executeUpdate, arg: 0, context: sql}
+sanitisers:
+  - {id: kotlin.sanitiser.get-name, symbol: java.io.File.getName, covers: [path]}
+  - {id: kotlin.sanitiser.html-escape, symbol: org.apache.commons.text.StringEscapeUtils.escapeHtml4, covers: [html, html_attr]}
