@@ -321,7 +321,7 @@ def test_vertex_needs_project_and_location() -> None:
 def test_concurrency_setting(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CODEKAVACH_LLM_CONCURRENCY", raising=False)
     preset = ProviderSettings.model_validate({"preset": "agentrouter"})
-    assert concurrency(preset, offline=False) == 6
+    assert concurrency(preset, offline=False) == 3
     assert concurrency(preset, offline=True) == 1
     monkeypatch.setenv("CODEKAVACH_LLM_CONCURRENCY", "99")
     assert concurrency(preset, offline=False) == 16
