@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import Final
 
 from codekavach import __version__
+from codekavach.analysis.secrets.mask import mask_secret_values
+from codekavach.config.models.root import Settings
 from codekavach.core.log import get_logger
 from codekavach.core.models.candidate import Candidate
 from codekavach.core.models.enums import (
@@ -118,7 +120,10 @@ def _totals(ctx: RunContext) -> EgressTotals:
 
 
 def _evidence(
-    candidate: Candidate, root: Path, cache: dict[str, RawCode | None]
+    candidate: Candidate,
+    root: Path,
+    cache: dict[str, RawCode | None],
+    settings: Settings | None = None,
 ) -> tuple[Evidence, ...]:
     """Snippets cut from the original files, so they carry real names and real line numbers."""
     items: list[Evidence] = []
@@ -129,12 +134,16 @@ def _evidence(
             except OSError:
                 cache[location.path] = None
             else:
+                if settings is not None:
+                    # Credential values never reach a report: mask every detected secret.
+                    text = mask_secret_values(text, location.path, candidate.language, settings)
                 cache[location.path] = RawCode(text)
         source = cache[location.path]
         if source is None:
             continue
         try:
-            items.append(Evidence.from_source(source, location, language=candidate.language))
+            item = Evidence.from_source(source, location, language=candidate.language)
+            items.append(item.model_copy(update={"masked": True}) if settings else item)
         except ValueError:
             continue
     return tuple(items)
@@ -188,7 +197,7 @@ def build_finding(
         cwe=cwe,
         owasp=owasp,
         locations=candidate.locations,
-        evidence=_evidence(candidate, ctx.source_root, cache),
+        evidence=_evidence(candidate, ctx.source_root, cache, ctx.config),
         impact=Impact(level=_IMPACT[severity], narrative=(usable.impact if usable else "")[:4000]),
         likelihood=Likelihood(level=_LIKELIHOOD[confidence]),
         remediation=(usable.remediation if usable else "")[:8000],
