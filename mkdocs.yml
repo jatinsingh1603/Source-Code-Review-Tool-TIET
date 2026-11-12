@@ -78,6 +78,7 @@ nav:
       - JSON output: reference/cli-json-output.md
       - Exit codes: reference/exit-codes.md
       - REST API: reference/rest-api.md
+      - REST API additions for the dashboard: reference/api.md
       - Web dashboard: reference/dashboard.md
       - Pipeline: reference/pipeline.md
       - Domain model: reference/domain-model.md

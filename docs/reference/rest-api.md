@@ -70,6 +70,10 @@ hash-chained audit log (`GET /api/v1/audit` reports whether the chain is intact)
 
 ## Endpoints
 
+The routes and fields added for the approved dashboard design (paged findings, saved views,
+baseline, SLA, ledger exports, statistics, engines, invariants, policy explain and validation,
+evaluation, tokens and settings) are listed in [api.md](api.md).
+
 All paths are below `/api/v1`. Errors have the body
 `{"ok": false, "error": {"code", "message", "hint"}, "detail", "request_id"}`.
 
@@ -119,8 +123,9 @@ All paths are below `/api/v1`. Errors have the body
    first download.
 
 The server itself opens no connection to a model: only the pipeline's egress transport does (I1).
-The server code does not open the vault; the original side of a ledger pair is the code slice the
-pipeline stored for that candidate.
+The server code does not unlock the vault; the original side of a ledger pair is the code slice the
+pipeline stored for that candidate, and `GET /vault` reads only each vault's header, row counts and
+file times.
 
 ## Known limits
 
