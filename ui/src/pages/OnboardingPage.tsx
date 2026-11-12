@@ -7,7 +7,7 @@ import { qk, useCreateProject, useOptional, usePolicy, useProject, useProviders,
 import { endpoints, uploadArchive } from "@/api/endpoints";
 import type { PrivacyLevel, Project, ProviderInfo, SourceType } from "@/api/types";
 import { atLeastAsStrict } from "@/lib/format";
-import { fmtInt, LEVEL_BARS, LEVEL_NAME } from "@/lib/display";
+import { fmtInt, languageLabel, LEVEL_BARS, LEVEL_NAME } from "@/lib/display";
 import { ENGINE_GROUPS } from "@/lib/pipeline";
 import { policyDoc } from "@/lib/policy";
 import { validateGitUrl } from "@/lib/validate";
@@ -72,7 +72,7 @@ export default function OnboardingPage() {
   const [name, setName] = useState("");
   const [path, setPath] = useState("");
   const [url, setUrl] = useState("");
-  const [ref, setRef] = useState("main");
+  const [ref, setRef] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -98,7 +98,7 @@ export default function OnboardingPage() {
   /** Step 1 → 2 creates the project (and uploads the archive). */
   const connect = async () => {
     setErr(null);
-    const finalName = name.trim();
+    const finalName = name.trim() || (type === "sample" ? "KavachBank sample" : "");
     if (!finalName) return setErr("Give the project a name.");
     if (type === "git") {
       const g = validateGitUrl(url);
@@ -113,7 +113,8 @@ export default function OnboardingPage() {
     try {
       const p: Project = await create.mutateAsync({
         name: finalName,
-        source: type === "git" ? { type, url: url.trim(), ref: ref.trim() || undefined } : type === "path" ? { type, path: path.trim() } : { type },
+        source:
+          type === "git" ? { type, url: url.trim(), ref: ref.trim() || undefined } : type === "path" ? { type, path: path.trim() } : { type },
       });
       if (type === "upload" && file) {
         setProgress(0);
@@ -227,6 +228,23 @@ export default function OnboardingPage() {
                   </button>
                 ))}
               </div>
+              <p className="sm muted">
+                {type === "sample" ? (
+                  <>
+                    Using the bundled KavachBank sample.{" "}
+                    <button type="button" className="linkbtn" onClick={() => setType("path")}>
+                      Choose another source
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    No repository at hand?{" "}
+                    <button type="button" className="linkbtn" onClick={() => setType("sample")}>
+                      Use the bundled KavachBank sample
+                    </button>
+                  </>
+                )}
+              </p>
               <div className="g g-2">
                 {type === "path" && (
                   <div className="fld">
@@ -238,6 +256,15 @@ export default function OnboardingPage() {
                   <div className="fld">
                     <label htmlFor="ob-url">Repository URL</label>
                     <input id="ob-url" className="inp mono" value={url} placeholder="https://github.com/org/repo.git" onChange={(e) => setUrl(e.target.value)} />
+                  </div>
+                )}
+                {type === "sample" && (
+                  <div className="fld">
+                    <span className="lbl">Bundled sample</span>
+                    <p className="sm muted">
+                      KavachBank, a synthetic banking application with planted vulnerabilities, secrets and personal data. It ships
+                      with CodeKavach; nothing is fetched.
+                    </p>
                   </div>
                 )}
                 {type === "upload" && (
@@ -254,13 +281,19 @@ export default function OnboardingPage() {
                 )}
                 <div className="fld">
                   <label htmlFor="ob-name">Project name</label>
-                  <input id="ob-name" className="inp" value={name} placeholder="kavachbank-core" onChange={(e) => setName(e.target.value)} />
+                  <input
+                    id="ob-name"
+                    className="inp"
+                    value={name}
+                    placeholder={type === "sample" ? "KavachBank sample" : "kavachbank-core"}
+                    onChange={(e) => setName(e.target.value)}
+                  />
                 </div>
               </div>
               {type === "git" && (
                 <div className="fld">
                   <label htmlFor="ob-br">Branch</label>
-                  <input id="ob-br" className="inp mono" value={ref} onChange={(e) => setRef(e.target.value)} />
+                  <input id="ob-br" className="inp mono" value={ref} placeholder="default branch" onChange={(e) => setRef(e.target.value)} />
                 </div>
               )}
               {progress !== null && (
@@ -281,7 +314,7 @@ export default function OnboardingPage() {
               <h2 style={{ fontSize: 16 }}>Languages and inventory</h2>
               <span className="sub">
                 {inventory?.totals?.files
-                  ? `${fmtInt(inventory.totals.files)} files · ${fmtInt(inventory.totals.lines)} lines`
+                  ? `${fmtInt(inventory.totals.files)} files · ${fmtInt(inventory.totals.lines)} lines${inventory.scan_id ? "" : " · counted in place"}`
                   : project?.files
                     ? `${project.files} files`
                     : "Counted on the first scan"}
@@ -303,7 +336,7 @@ export default function OnboardingPage() {
                     const total = inventory?.totals?.lines || 1;
                     return (
                       <tr key={l.language}>
-                        <td>{l.language === "unknown" ? "Other" : l.language.charAt(0).toUpperCase() + l.language.slice(1)}</td>
+                        <td>{languageLabel(l.language)}</td>
                         <td className="num mono">{l.files ? fmtInt(l.files) : "—"}</td>
                         <td className="num mono">{l.lines ? fmtInt(l.lines) : "—"}</td>
                         <td style={{ width: 200 }}>
@@ -320,7 +353,11 @@ export default function OnboardingPage() {
               {!inventory?.languages?.length && langs.length === 0 && (
                 <div className="empty">
                   <b style={{ color: "var(--text)" }}>Inventory appears after the first scan</b>
-                  <span className="sm">Languages, files and lines are counted when the code is ingested.</span>
+                  <span className="sm">
+                    {project?.source.type === "git" || project?.source.type === "upload"
+                      ? "Archives and git repositories are unpacked and counted when the first scan ingests them."
+                      : "Languages, files and lines are counted when the code is ingested."}
+                  </span>
                 </div>
               )}
             </div>
