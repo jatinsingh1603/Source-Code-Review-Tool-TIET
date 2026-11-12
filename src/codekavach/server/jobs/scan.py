@@ -407,6 +407,8 @@ def _store(  # noqa: PLR0917 - the parts of one result
         row = session.get(ScanRow, job.scan_id)
         if row is not None:
             row.privacy = privacy.to_json()
+            if not row.model and privacy.model:
+                row.model = privacy.model
             row.progress = 92
             row.stage = "report"
     log.append(

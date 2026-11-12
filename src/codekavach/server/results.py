@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 from codekavach.core.log import get_logger
+from codekavach.server.db.engine import as_utc
 
 if TYPE_CHECKING:
     from codekavach.config import Settings
@@ -210,7 +211,7 @@ def finding_summary(row: Any) -> dict[str, Any]:
         "cvss4_score": _score(data, "cvss4_score"),
         "cvss31_score": _score(data, "cvss31_score"),
         "llm_reviewed": bool((data.get("provenance") or {}).get("llm_reviews")),
-        "updated_at": row.updated_at,
+        "updated_at": as_utc(row.updated_at),
     }
 
 
