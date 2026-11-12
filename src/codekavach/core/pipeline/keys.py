@@ -21,6 +21,7 @@ Key                    Constant                Produced by                 Notes
 ``payloads.sanitised`` ``PAYLOADS_SANITISED``  privacy-prepare (E25)       sanitised
 ``privacy.disclosure``  ``DISCLOSURE``           privacy-prepare (E13-03)    metadata
 ``payloads.index``      ``PAYLOAD_INDEX``       privacy-prepare (E13-03)    metadata
+``privacy.policy``      ``POLICY_DECISIONS``    privacy-prepare (E25-03)    metadata, path-free
 ``verdicts.raw``       ``VERDICTS_RAW``        llm-review (E23)            pseudonym space
 ``verdicts.restored``  ``VERDICTS_RESTORED``   restore (E10)
 ``findings``           ``FINDINGS``            rate (E29)
@@ -57,6 +58,7 @@ PAYLOADS_SANITISED: Final = "payloads.sanitised"
 VERDICTS_RAW: Final = "verdicts.raw"
 DISCLOSURE: Final = "privacy.disclosure"
 PAYLOAD_INDEX: Final = "payloads.index"
+POLICY_DECISIONS: Final = "privacy.policy"
 VERDICTS_RESTORED: Final = "verdicts.restored"
 FINDINGS: Final = "findings"
 SCAN_SUMMARY: Final = "scan.summary"

@@ -254,7 +254,7 @@ class PolicyEngine:
                 self._cache[key] = hit
         return hit
 
-    def _resolve(
+    def _resolve(  # noqa: PLR0912 - one block per axis
         self,
         path: str,
         tier: TrustTier,

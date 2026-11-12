@@ -62,7 +62,9 @@ from codekavach.privacy.detect.secrets.builtin import register_secret_detectors
 from codekavach.privacy.detect.terms import register_term_detector
 from codekavach.privacy.egress.session import EgressSession
 from codekavach.privacy.errors import PseudonymError, RedactionError
-from codekavach.privacy.policy.resolve import PolicyResolver
+from codekavach.privacy.levels import level_available, plan_for
+from codekavach.privacy.policy.engine import PolicyEngine
+from codekavach.privacy.policy.records import PolicyDecisionRow
 from codekavach.privacy.pseudonymise.engine import Pseudonymiser
 from codekavach.privacy.pseudonymise.generator import PseudonymGenerator
 from codekavach.privacy.redact.numbering import PlaceholderNumbering
@@ -220,14 +222,20 @@ class PrivacyPrepareStage:
     requires = frozenset({keys.CANDIDATES, keys.FILES, keys.SYMBOLS, keys.AST})
     optional_requires = frozenset({keys.CALL_GRAPH})
     provides = frozenset(
-        {keys.PAYLOADS_SANITISED, keys.SLICES, keys.DISCLOSURE, keys.PAYLOAD_INDEX}
+        {
+            keys.PAYLOADS_SANITISED,
+            keys.SLICES,
+            keys.DISCLOSURE,
+            keys.PAYLOAD_INDEX,
+            keys.POLICY_DECISIONS,
+        }
     )
     # Sanitised text is held by the ledger only and never reloaded from an artefact, so the store
     # keeps the payloads in memory; the slices, the index and the figures are written to disk.
     transient_provides = frozenset({keys.PAYLOADS_SANITISED})
     category = StageCategory.PRIVACY
 
-    def run(self, ctx: RunContext) -> None:
+    def run(self, ctx: RunContext) -> None:  # noqa: PLR0915 - one linear sequence of steps
         """Publish one payload and one slice per candidate that succeeded, and fail the rest."""
         candidates = ctx.artefacts.get_list(keys.CANDIDATES, Candidate)
         files = {file.path: file for file in ctx.artefacts.get_list(keys.FILES, SourceFile)}
@@ -238,7 +246,8 @@ class PrivacyPrepareStage:
             if ctx.artefacts.has(keys.CALL_GRAPH)
             else None
         )
-        policy = PolicyResolver(ctx.config)
+        policy = PolicyEngine.discover(ctx.config, ctx.source_root)
+        decisions: list[PolicyDecisionRow] = []
         _, provider = ctx.config.llm.selected_provider()
         tier = provider.effective_trust_tier
         index = ParseIndex(
@@ -269,8 +278,17 @@ class PrivacyPrepareStage:
             for done, candidate in enumerate(candidates, start=1):
                 ctx.check_cancelled()
                 path = candidate.locations[0].path
-                level = policy.effective_level(path, tier)
-                if policy.is_never_send(path) or level is PrivacyLevel.L0:
+                decision = policy.resolve(
+                    path,
+                    tier,
+                    language=candidate.language.value,
+                    rule_id=candidate.rule_id,
+                    cwes=tuple(str(c) for c in candidate.cwe),
+                )
+                level = decision.level
+                skip = decision.never_send or level is PrivacyLevel.L0 or not level_available(level)
+                decisions.append(PolicyDecisionRow.of(candidate.id, decision, withheld=skip))
+                if skip:
                     withheld += 1
                     continue
                 with guard_item(ctx, str(candidate.id), ITEM_EXCEPTION):
@@ -304,6 +322,7 @@ class PrivacyPrepareStage:
         )
         _DISCLOSURES[ctx.scan_id] = disclosure
         ctx.artefacts.put(keys.DISCLOSURE, DisclosureRows(rows=disclosure.as_attestation_rows()))
+        ctx.artefacts.put(keys.POLICY_DECISIONS, decisions)
         ctx.artefacts.put(keys.SLICES, slices)
         ctx.artefacts.put(keys.PAYLOAD_INDEX, [stub_of(payload) for payload in payloads])
         ctx.artefacts.put(keys.PAYLOADS_SANITISED, payloads, persist=False)
@@ -324,6 +343,9 @@ class PrivacyPrepareStage:
     ) -> _Outcome:
         try:
             selector = StrategySelector.from_settings(ctx.config)
+            ceiling = plan_for(level).strategy_ceiling
+            if ceiling is not None:  # L1 and L2 work on the enclosing unit, not the thin slice
+                selector = StrategySelector(ceiling=ceiling)
             slice_ = selector.build(candidate, index, budget=budget)
         except (SlicingError, KeyError):
             raise _FailedError(SLICE_FAILED) from None

@@ -32,6 +32,7 @@ def test_the_prepare_stage_declares_the_documented_keys_and_category() -> None:
         keys.SLICES,
         keys.DISCLOSURE,
         keys.PAYLOAD_INDEX,
+        keys.POLICY_DECISIONS,
     }
     assert info.category is StageCategory.PRIVACY
     assert set(info.transient_provides) == {keys.PAYLOADS_SANITISED}

@@ -199,6 +199,17 @@ def _plan(
     )
 
 
+def _l0_without_local_provider(settings: Settings) -> bool:
+    """True when the level is L0 and the selected provider is not inside the trust boundary."""
+    if not settings.privacy.level.sends_nothing_external:
+        return False
+    try:
+        _, provider = settings.llm.selected_provider()
+    except KeyError:
+        return True
+    return provider.effective_trust_tier.value != "local"
+
+
 def build_plan(
     registry: PluginRegistry,
     settings: Settings,
@@ -214,6 +225,8 @@ def build_plan(
         GraphError: the selected stages cannot be ordered.
     """
     selectors = set(settings.scan.skip_stages) | set(skip)
+    if _l0_without_local_provider(settings):
+        selectors |= {"llm-review"}  # L0: nothing crosses the boundary, so no review stage
     failed = frozenset(
         failure.spec.name for failure in registry.failures() if failure.spec.group == STAGES_GROUP
     )

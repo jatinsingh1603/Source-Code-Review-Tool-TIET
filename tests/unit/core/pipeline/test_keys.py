@@ -35,7 +35,7 @@ def test_default_order_matches_architecture() -> None:
 
 def test_constants_are_valid_and_distinct() -> None:
     assert (
-        len(CONSTANTS) == 22
+        len(CONSTANTS) == 23
     )  # ingest.coverage (E06-03), scan.item_failures (E04-20), slices (E13-02), disclosure
     assert all(is_valid_key(value) for value in CONSTANTS.values())
     assert len(set(CONSTANTS.values())) == len(CONSTANTS)
