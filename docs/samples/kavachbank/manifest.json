@@ -1,58 +1,58 @@
 {
   "schema": "codekavach.report-manifest/v1",
-  "report_id": "CK-RPT-2026-13RKHE0V",
-  "scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V",
+  "report_id": "CK-RPT-2026-CZHQY0WJ",
+  "scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ",
   "project": "KavachBank",
   "classification": "Confidential",
   "codekavach_version": "0.1.0.dev0",
   "config_hash": "5f925e96e668b31760fca6d0a34d1f7958f413bcc58dcc002f346f80dc8b6f66",
-  "ledger_head_hash": "fc5127cbb93a05fb615e7562d0dfd992cacc7fa1f6f3efb9a1be5eb28e6673c1",
-  "generated_at": "2026-11-12T19:27:28.062713+00:00",
+  "ledger_head_hash": "9f10f34c7def11e378c61d4ec5f22ea9b04d4233827870dfda1558f6c9125962",
+  "generated_at": "2026-11-12T22:01:04.366996+00:00",
   "files": [
     {
       "file": "report.compliance.html",
-      "size_bytes": 66881,
-      "sha256": "60b32c18d298bff3758f93c1955b981f2d74666247b2c48fbb0ba09ed9093e9e"
+      "size_bytes": 67199,
+      "sha256": "ddab08ceff58bab9443e4aeb80bcfb77573d0f71cfce4a20b639e0e599f11e2a"
     },
     {
       "file": "report.csv",
-      "size_bytes": 69499,
-      "sha256": "ced8596d534b80bb07ff3ee0ded30e4975b4255e13f8f906e2a358c2819da0cf"
+      "size_bytes": 70602,
+      "sha256": "4d53167ccf97cb93aa8c55300b77111327e4a63384fbc4762508b1ecfa4819e7"
     },
     {
       "file": "report.docx",
-      "size_bytes": 106937,
-      "sha256": "002fd6d6ceb3197fbdcfbff88e87e8bca190f3fabcee257dea0be8224ebdeabf"
+      "size_bytes": 108067,
+      "sha256": "0ca9f3e17bddb451d75240c904544374d0e25309d87325e1ed64bd5f7eb4206a"
     },
     {
       "file": "report.html",
-      "size_bytes": 590548,
-      "sha256": "cbacb511059d6b5e62ed78ac14a2c294566aafc55dfed1579326f8600b1c8e67"
+      "size_bytes": 593269,
+      "sha256": "811474bc7adbcb23207034a2ea80a887a45b1b0d69c7a624394b2723e9626911"
     },
     {
       "file": "report.json",
-      "size_bytes": 629354,
-      "sha256": "c5b1bd0bf51693d40ac45eb77ea68bc36ca8dd5f2e829ed6740528ce8f1da3e7"
+      "size_bytes": 633990,
+      "sha256": "c6495e26af48a5085587c624d16196151456872aa37b1e38cf42562c7529f528"
     },
     {
       "file": "report.md",
-      "size_bytes": 54892,
-      "sha256": "8e3346c6c692b3132bb26931ae4c1782e644d27efe61cbb635b29145c4388445"
+      "size_bytes": 56226,
+      "sha256": "0e76a5ad3a848191493edd43c83100c9b00ae9f785f81bd4b7b049fc47a9f40b"
     },
     {
       "file": "report.pdf",
-      "size_bytes": 1580560,
-      "sha256": "653f6caaa62fe96da71a32027655de0c5031a8f976ae7b445813b6b52e61083b"
+      "size_bytes": 1577951,
+      "sha256": "7a5869167a718e043e41822b1054b1bd1618303e556bd9d82fbf0f6fb3d6c097"
     },
     {
       "file": "report.sarif",
-      "size_bytes": 250212,
-      "sha256": "acd04d6272972f621f424f85276adcb22bc64f318c722480a863d5bd745528d3"
+      "size_bytes": 252118,
+      "sha256": "7eb3e9c4b49ceea7af4ce56790d90c61bf3114a4f37bb989b9f52179d5422e1e"
     },
     {
       "file": "report.xlsx",
-      "size_bytes": 34462,
-      "sha256": "b66d44ac5286963886ba9b591dcd528708378c751b3d4cbcd7141367ba5f1d08"
+      "size_bytes": 34789,
+      "sha256": "a8c67642b48eb296c237a87fea6b0da23e5465e52498665adfd803545e703e54"
     }
   ]
 }

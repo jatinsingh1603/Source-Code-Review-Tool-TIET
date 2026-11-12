@@ -1,22 +1,22 @@
 {
   "schema": "codekavach.report/v1",
   "report": {
-    "id": "CK-RPT-2026-13RKHE0V",
+    "id": "CK-RPT-2026-CZHQY0WJ",
     "version": "1.0",
     "title": "Secure Source Code Review",
     "project": "KavachBank",
     "prepared_by": "CodeKavach Security Review",
     "prepared_for": "Thapar Institute of Engineering and Technology",
     "classification": "Confidential",
-    "generated_at": "2026-11-12T19:25:52.833826+00:00"
+    "generated_at": "2026-11-12T22:00:22.918676+00:00"
   },
   "scan": {
-    "id": "scan_01M78K3BA5K1D80DN813RKHE0V",
-    "started_at": "2026-11-12T19:17:37.331099+00:00",
-    "finished_at": "2026-11-12T19:22:08.125562+00:00",
+    "id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ",
+    "started_at": "2026-11-12T21:50:28.664301+00:00",
+    "finished_at": "2026-11-12T21:56:38.199873+00:00",
     "privacy_level": "L3",
-    "provider": null,
-    "model": null,
+    "provider": "agentrouter",
+    "model": "gpt-5.6-sol",
     "codekavach_version": "0.1.0.dev0",
     "config_hash": "5f925e96e668b31760fca6d0a34d1f7958f413bcc58dcc002f346f80dc8b6f66",
     "git_commit": null
@@ -92,15 +92,14 @@
     "languages": [
       "YAML",
       "Python",
-      "Unknown",
       "JavaScript",
       "Dockerfile",
       "Terraform"
     ],
-    "files_analysed": 30,
-    "lines_analysed": 947,
-    "reviewed_by_model": 13,
-    "confirmed_by_model": 4,
+    "files_analysed": 29,
+    "lines_analysed": 936,
+    "reviewed_by_model": 12,
+    "confirmed_by_model": 5,
     "taint_confirmed": 6,
     "privacy_level": "L3",
     "posture": "Critical"
@@ -110,8 +109,8 @@
       "id": "overview",
       "heading": "Overview",
       "paragraphs": [
-        "Thapar Institute of Engineering and Technology commissioned a secure source code review of KavachBank. The review was performed on 12 November 2026 with CodeKavach, combining deterministic rule and taint analysis with model-assisted triage under a privacy-preserving egress policy. 30 files and 947 lines of YAML, Python, Unknown, JavaScript, Dockerfile, Terraform code were analysed.",
-        "The review identified 59 findings (15 critical, 27 high, 12 medium, 5 low). The overall security posture is rated critical: at least one weakness can be exploited to compromise the application or its data, and immediate action is required. 6 findings are supported by a complete source-to-sink data-flow trace."
+        "Thapar Institute of Engineering and Technology commissioned a secure source code review of KavachBank. The review was performed on 12 November 2026 with CodeKavach, combining deterministic rule and taint analysis with model-assisted triage under a privacy-preserving egress policy. 29 files and 936 lines of YAML, Python, JavaScript, Dockerfile, Terraform code were analysed.",
+        "The review identified 59 findings (15 critical, 27 high, 12 medium, 5 low). The overall security posture is rated critical: at least one weakness can be exploited to compromise the application or its data, and immediate action is required. 6 findings are supported by a complete source-to-sink data-flow trace. 12 findings were independently assessed by the language model gpt-5.6-sol (agentrouter); it judged 5 of them exploitable. Model assessments are advisory and no finding was dismissed by a model."
       ],
       "bullets": [],
       "provenance": "template",
@@ -131,7 +130,7 @@
       "bullets": [
         "CK-2026-001 (Critical): A pull_request_target workflow checks out the pull request head, running untrusted code with repository secrets and a write token. An attacker can run code with the pipeline's secrets and write token, tamper with releases and pivot into the supply chain.",
         "CK-2026-002 (Critical): Container 'api' is privileged. Any other weakness in the component becomes a full host or cluster compromise, because the attacker inherits the excess privileges.",
-        "CK-2026-003 (Critical): Data from a http_param source reaches a sql sink (cur.execute). If account_id is attacker-controlled, an attacker could alter the query predicate and potentially retrieve unauthorized database rows; broader effects depend on the database driver and permissions.",
+        "CK-2026-003 (Critical): Data from a http_param source reaches a sql sink (cur.execute). If account_id is attacker-controlled, an attacker can alter the SELECT query and potentially cause find_premium_account to return unauthorized database rows; broader effects depend on the database driver and account permissions.",
         "CK-2026-004 (Critical): Hard-coded credential of type connection_string (masked preview po****** (51 chars), entropy 4.91 bits/char). Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.",
         "CK-2026-005 (Critical): Hard-coded credential of type aws_access_key (masked preview AK****** (20 chars), entropy 3.68 bits/char). Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment."
       ],
@@ -604,7 +603,7 @@
   "findings": [
     {
       "report_id": "CK-2026-001",
-      "finding_id": "find_01M78KBMEJXY0Q6VFDJRJY1NYM",
+      "finding_id": "find_01M78W6HBTN1BGVXPS9ZV4DJHV",
       "fingerprint": "ckfp1:8dc24fdf747b5d825f4f94d495f26af1",
       "title": "A pull_request_target workflow checks out the pull request head, running untrusted code with repository secrets and a write token.",
       "severity": "critical",
@@ -859,11 +858,11 @@
         "consequence": "An attacker can run code with the pipeline's secrets and write token, tamper with releases and pivot into the supply chain.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-002",
-      "finding_id": "find_01M78KBMHRK2PDR2PBKW3G3EGS",
+      "finding_id": "find_01M78W6HD9V5JPYZHSVCBQDR56",
       "fingerprint": "ckfp1:d6f2ac50983886921a3b8207cfc82cc7",
       "title": "Container 'api' is privileged.",
       "severity": "critical",
@@ -1112,11 +1111,11 @@
         "consequence": "Any other weakness in the component becomes a full host or cluster compromise, because the attacker inherits the excess privileges.",
         "corrective_action": "Ship secure defaults: disable debug mode in production, set Secure, HttpOnly and SameSite on session cookies, expire sessions, verify TLS certificates, and restrict CORS to the origins that need it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-003",
-      "finding_id": "find_01M78KBMJCNKPVCA74FP543X1P",
+      "finding_id": "find_01M78W6HDTE0E7T3F3PYSEH6C0",
       "fingerprint": "ckfp1:f857210f295a9ffb9c2b0792e266d1f5",
       "title": "Data from a http_param source reaches a sql sink (cur.execute)",
       "severity": "critical",
@@ -1348,12 +1347,12 @@
         "level": "L3",
         "is_vulnerable": null,
         "confidence": "medium",
-        "reasoning": "Line 6 inserts account_id directly into a SQL statement using Python string formatting before passing it to cur.execute; this is string construction, not database parameter binding. The data path from account_id to the potential SQL sink is direct and satisfiable, and no escaping, validation, or sink-appropriate sanitizer appears. However, the excerpt does not establish that account_id can be influenced by an attacker, so exploitability cannot be confirmed without a caller of find_premium_account.",
-        "ledger_seq": 5
+        "reasoning": "Line 6 is a security-relevant SQL sink: Python percent-formatting embeds account_id into the statement before cursor.execute receives it, so database parameter binding or escaping is not applied. There are no conditional guards between function entry and the sink, making the path satisfiable whenever cursor creation succeeds. Quoting '%s' is not a sanitizer because input containing a quote can change the SQL structure. However, this slice only establishes account_id as a function argument and does not independently prove that an attacker can control it; the rule name alone is insufficient to establish that source.",
+        "ledger_seq": 1
       },
       "description": "Data from a http_param source reaches a sql sink (cur.execute). A database query is built by concatenating or interpolating data that an external party controls, so that data is parsed as SQL rather than treated as a value.",
-      "impact": "If account_id is attacker-controlled, an attacker could alter the query predicate and potentially retrieve unauthorized database rows; broader effects depend on the database driver and permissions.",
-      "remediation_short_term": "If account_id is attacker-influenced, pass it separately using the database driver's parameterized-query API and its required placeholder syntax rather than formatting it into the SQL string.",
+      "impact": "If account_id is attacker-controlled, an attacker can alter the SELECT query and potentially cause find_premium_account to return unauthorized database rows; broader effects depend on the database driver and account permissions.",
+      "remediation_short_term": "If account_id can be attacker-controlled, use the database driver's parameter-binding API and pass account_id separately from the SQL text, without quoting the placeholder. Optionally enforce the expected identifier type as defense in depth.",
       "remediation_long_term": "Standardise on an ORM or query builder that parameterises by default, restrict the database account to the least privilege required, and add query-construction checks to code review and CI.",
       "remediation_effort": "low",
       "priority": "P1",
@@ -1387,14 +1386,14 @@
         "criteria": "OWASP Top 10 A03:2021 Injection; OWASP ASVS V5.3.4; OWASP ASVS V5.3.5; CWE-89",
         "condition": "Data from a http_param source reaches a sql sink (cur.execute) (services/api/accounts.py:11)",
         "cause": "A database query is built by concatenating or interpolating data that an external party controls, so that data is parsed as SQL rather than treated as a value.",
-        "consequence": "If account_id is attacker-controlled, an attacker could alter the query predicate and potentially retrieve unauthorized database rows; broader effects depend on the database driver and permissions.",
-        "corrective_action": "If account_id is attacker-influenced, pass it separately using the database driver's parameterized-query API and its required placeholder syntax rather than formatting it into the SQL string."
+        "consequence": "If account_id is attacker-controlled, an attacker can alter the SELECT query and potentially cause find_premium_account to return unauthorized database rows; broader effects depend on the database driver and account permissions.",
+        "corrective_action": "If account_id can be attacker-controlled, use the database driver's parameter-binding API and pass account_id separately from the SQL text, without quoting the placeholder. Optionally enforce the expected identifier type as defense in depth."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-004",
-      "finding_id": "find_01M78KBMJQP0GY8W386NK4H943",
+      "finding_id": "find_01M78W6HE12H37DY994QJPR2SJ",
       "fingerprint": "ckfp1:ce88bfd661fa6840e71d2ac1b14fe22d",
       "title": "Hard-coded credential of type connection_string (masked preview po****** (51 chars), entropy 4.91 bits/char).",
       "severity": "critical",
@@ -1674,11 +1673,11 @@
         "consequence": "Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.",
         "corrective_action": "Remove the credential from source code and version history, rotate it immediately, and load secrets at run time from a secrets manager or the environment. Add secret scanning to the pre-commit hooks and CI so a new secret is caught before it is pushed."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-005",
-      "finding_id": "find_01M78KBMK2047MAKD9YHRFP2VF",
+      "finding_id": "find_01M78W6HEAQG9RTH3055MYYB7H",
       "fingerprint": "ckfp1:522ac0d69a6d7101aa18348690cde2ae",
       "title": "Hard-coded credential of type aws_access_key (masked preview AK****** (20 chars), entropy 3.68 bits/char).",
       "severity": "critical",
@@ -1958,11 +1957,11 @@
         "consequence": "Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.",
         "corrective_action": "Remove the credential from source code and version history, rotate it immediately, and load secrets at run time from a secrets manager or the environment. Add secret scanning to the pre-commit hooks and CI so a new secret is caught before it is pushed."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-006",
-      "finding_id": "find_01M78KBMKAQDXEV9RK0F5MBF6D",
+      "finding_id": "find_01M78W6HEGNF7AJZ9X7M4SADZ3",
       "fingerprint": "ckfp1:0e642beba10d7ce23785220b3d35da4d",
       "title": "Hard-coded credential of type private_key_block (masked preview --****** (313 chars), entropy 5.97 bits/char).",
       "severity": "critical",
@@ -2268,11 +2267,11 @@
         "consequence": "Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.",
         "corrective_action": "Remove the credential from source code and version history, rotate it immediately, and load secrets at run time from a secrets manager or the environment. Add secret scanning to the pre-commit hooks and CI so a new secret is caught before it is pushed."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-007",
-      "finding_id": "find_01M78KBMP7NRWTQZ88W3VTAVXD",
+      "finding_id": "find_01M78W6HGKJVZ4JSWNJ3V58MDD",
       "fingerprint": "ckfp1:b0e691dd2528ac4125d272a78bcf6445",
       "title": "Hard-coded credential of type razorpay_key_id (masked preview rz****** (23 chars), entropy 4.26 bits/char).",
       "severity": "critical",
@@ -2518,12 +2517,12 @@
         "level": "L3",
         "is_vulnerable": true,
         "confidence": "high",
-        "reasoning": "This is a credential-exposure issue rather than an attacker-controlled-input sink. `razorpayKeyId` and the associated secret `razorpayKeySecret` are hard-coded string literals and are exported unconditionally through `module.exports`, so the exposure path is satisfiable whenever the source or resulting artifact is accessible. No sanitization, encryption, or runtime secret lookup protects either value; the environment lookup on `exportDir` is unrelated.",
-        "ledger_seq": 28
+        "reasoning": "This is a hardcoded-credential exposure rather than an attacker-input sink. razorpayKeyId contains the hardcoded razorpay key id and razorpayKeySecret contains the corresponding the hardcoded razorpay key secret. Both values are unconditionally placed in module.exports when the module loads, so the path is satisfiable and consumers of the module can access them. No sanitization or indirection protects the credentials; possession of the source or deployed artifact reveals the credential pair.",
+        "ledger_seq": 30
       },
       "description": "Hard-coded credential of type razorpay_key_id (masked preview rz****** (23 chars), entropy 4.26 bits/char). A credential such as a password, API key or token is embedded in the source code.",
-      "impact": "An attacker can impersonate the application to Razorpay and exercise all API capabilities granted to this credential pair. Depending on account scope, this may expose payment and customer metadata and permit transaction-affecting operations, potentially causing unauthorized refunds, financial loss, or corrupted payment state.\n\nAttack scenario: An attacker obtains read access to a source repository, deployment image, backup, or server artifact containing `services/web/config.js`. They extract `razorpayKeyId` and `razorpayKeySecret`, authenticate to the Razorpay API, and use the credentials to retrieve payment-related records or perform permitted state-changing actions, such as issuing refunds, until the credentials are revoked.\n\nAffected: Razorpay merchant account and API-authorized operations; Payment, order, and customer metadata accessible through the credentials; Financial and transaction integrity where the credentials permit refunds or other state-changing operations\n\nPreconditions: The attacker must be able to read the source or a deployment artifact containing the literals. The credential pair must still be valid, and meaningful financial impact requires live-environment credentials with permission for transaction-affecting API operations. If the credentials are test-only, expired, or revoked, the practical impact is substantially lower.",
-      "remediation_short_term": "1. Revoke and rotate the exposed `razorpayKeyId`/`razorpayKeySecret` credential pair immediately.\n2. Store the replacements in a managed secrets service, or inject them as protected deployment environment variables.\n3. Replace both literals with runtime lookups and do not provide hard-coded fallback values.\n4. Validate at startup that both values are present and terminate without printing them if either is missing.\n5. Remove the credentials from repository history, build artifacts, caches, and deployment bundles, then redeploy using the rotated values.\n6. Ensure local secret files are excluded from version control and are not copied into container images.\n\nSecure example:\n```javascript\nrazorpayKeyId: process.env.razorpayKeyId,\n  razorpayKeySecret: process.env.razorpayKeySecret,\n```\n\nDefence in depth:\n- Enable repository and CI secret scanning with push protection for future commits.\n- Restrict secret-store access to the application identity, use separate credentials per environment, and grant only required permissions.\n- Prevent configuration and environment values from appearing in logs, diagnostics, error reports, or support bundles.",
+      "impact": "Exposure of an active production pair can compromise the associated merchant API identity. An attacker may access payment and customer transaction metadata and perform unauthorized payment operations allowed by the account, potentially causing privacy breaches, fraudulent activity, refunds, or financial loss. If the credentials are test-only, expired, or revoked, the practical impact is substantially reduced.\n\nAttack scenario: An attacker gains read access to a source repository, packaged application, container image, backup, or deployed server and extracts `razorpayKeyId` and `razorpayKeySecret`. They then use the pair to authenticate directly to Razorpay, enumerate payment or order records, and invoke authorized operations such as creating payment resources, capturing payments, or issuing refunds, depending on the account's enabled APIs and permissions.\n\nAffected: The Razorpay merchant account associated with the embedded credential pair; Payment, order, refund, and related customer transaction data accessible through the Razorpay API; Integrity of payment operations authorized for the account, including captures or refunds where permitted\n\nPreconditions: The embedded credentials must still be valid and associated with a usable Razorpay account. The attacker must obtain read access to the source or an artifact containing this module and be able to reach the Razorpay API. Financial and production-data impact additionally requires these to be production rather than test credentials and for the relevant API operations to be enabled.",
+      "remediation_short_term": "1. Revoke and rotate the exposed credential pair immediately.\n2. Store the replacement values in the deployment platform's secrets manager; use protected environment variables only if a secrets manager is unavailable.\n3. Replace the hardcoded values in razorpayKeyId and razorpayKeySecret with runtime secret lookups.\n4. Validate both values at startup and fail closed when either is absent; do not add hardcoded fallback values.\n5. Remove the credentials from repository history, build caches, published packages, and deployment artifacts after rotation.\n6. Update each deployment environment with its own replacement credentials and verify authentication succeeds.\n\nSecure example:\n```javascript\nrazorpayKeyId: process.env.razorpayKeyId,\n  razorpayKeySecret: process.env.razorpayKeySecret,\n```\n\nDefence in depth:\n- Enable secret scanning in pre-commit hooks and CI to block future committed credentials.\n- Use separate, least-privileged credentials for each environment and rotate them periodically.\n- Prevent configuration objects and environment contents from being exposed through logs, diagnostics, or error responses.",
       "remediation_long_term": "Adopt a secret manager, add pre-commit and CI secret scanning, and purge the value from version-control history.",
       "remediation_effort": "low",
       "priority": "P1",
@@ -2553,14 +2552,14 @@
         "criteria": "OWASP Top 10 A07:2021 Identification and Authentication Failures; OWASP ASVS V2.10.4; OWASP ASVS V6.4.1; CWE-798",
         "condition": "Hard-coded credential of type razorpay_key_id (masked preview rz****** (23 chars), entropy 4.26 bits/char). (services/web/config.js:10)",
         "cause": "A credential such as a password, API key or token is embedded in the source code.",
-        "consequence": "An attacker can impersonate the application to Razorpay and exercise all API capabilities granted to this credential pair. Depending on account scope, this may expose payment and customer metadata and permit transaction-affecting operations, potentially causing unauthorized refunds, financial loss, or corrupted payment state.\n\nAttack scenario: An attacker obtains read access to a source repository, deployment image, backup, or server artifact containing `services/web/config.js`. They extract `razorpayKeyId` and `razorpayKeySecret`, authenticate to the Razorpay API, and use the credentials to retrieve payment-related records or perform permitted state-changing actions, such as issuing refunds, until the credentials are revoked.\n\nAffected: Razorpay merchant account and API-authorized operations; Payment, order, and customer metadata accessible through the credentials; Financial and transaction integrity where the credentials permit refunds or other state-changing operations\n\nPreconditions: The attacker must be able to read the source or a deployment artifact containing the literals. The credential pair must still be valid, and meaningful financial impact requires live-environment credentials with permission for transaction-affecting API operations. If the credentials are test-only, expired, or revoked, the practical impact is substantially lower.",
-        "corrective_action": "1. Revoke and rotate the exposed `razorpayKeyId`/`razorpayKeySecret` credential pair immediately.\n2. Store the replacements in a managed secrets service, or inject them as protected deployment environment variables.\n3. Replace both literals with runtime lookups and do not provide hard-coded fallback values.\n4. Validate at startup that both values are present and terminate without printing them if either is missing.\n5. Remove the credentials from repository history, build artifacts, caches, and deployment bundles, then redeploy using the rotated values.\n6. Ensure local secret files are excluded from version control and are not copied into container images.\n\nSecure example:\n```javascript\nrazorpayKeyId: process.env.razorpayKeyId,\n  razorpayKeySecret: process.env.razorpayKeySecret,\n```\n\nDefence in depth:\n- Enable repository and CI secret scanning with push protection for future commits.\n- Restrict secret-store access to the application identity, use separate credentials per environment, and grant only required permissions.\n- Prevent configuration and environment values from appearing in logs, diagnostics, error reports, or support bundles."
+        "consequence": "Exposure of an active production pair can compromise the associated merchant API identity. An attacker may access payment and customer transaction metadata and perform unauthorized payment operations allowed by the account, potentially causing privacy breaches, fraudulent activity, refunds, or financial loss. If the credentials are test-only, expired, or revoked, the practical impact is substantially reduced.\n\nAttack scenario: An attacker gains read access to a source repository, packaged application, container image, backup, or deployed server and extracts `razorpayKeyId` and `razorpayKeySecret`. They then use the pair to authenticate directly to Razorpay, enumerate payment or order records, and invoke authorized operations such as creating payment resources, capturing payments, or issuing refunds, depending on the account's enabled APIs and permissions.\n\nAffected: The Razorpay merchant account associated with the embedded credential pair; Payment, order, refund, and related customer transaction data accessible through the Razorpay API; Integrity of payment operations authorized for the account, including captures or refunds where permitted\n\nPreconditions: The embedded credentials must still be valid and associated with a usable Razorpay account. The attacker must obtain read access to the source or an artifact containing this module and be able to reach the Razorpay API. Financial and production-data impact additionally requires these to be production rather than test credentials and for the relevant API operations to be enabled.",
+        "corrective_action": "1. Revoke and rotate the exposed credential pair immediately.\n2. Store the replacement values in the deployment platform's secrets manager; use protected environment variables only if a secrets manager is unavailable.\n3. Replace the hardcoded values in razorpayKeyId and razorpayKeySecret with runtime secret lookups.\n4. Validate both values at startup and fail closed when either is absent; do not add hardcoded fallback values.\n5. Remove the credentials from repository history, build caches, published packages, and deployment artifacts after rotation.\n6. Update each deployment environment with its own replacement credentials and verify authentication succeeds.\n\nSecure example:\n```javascript\nrazorpayKeyId: process.env.razorpayKeyId,\n  razorpayKeySecret: process.env.razorpayKeySecret,\n```\n\nDefence in depth:\n- Enable secret scanning in pre-commit hooks and CI to block future committed credentials.\n- Use separate, least-privileged credentials for each environment and rotate them periodically.\n- Prevent configuration objects and environment contents from being exposed through logs, diagnostics, or error responses."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-008",
-      "finding_id": "find_01M78KBMH42V4DNY6ZC8BGWEX5",
+      "finding_id": "find_01M78W6HCXPAZQ4V9BD3J7DPCM",
       "fingerprint": "ckfp1:18fc0b275da68bf07f6e4fd1ee21684f",
       "title": "Hard-coded credential of type generic_credential (masked preview ad****** (12 chars), entropy 3.08 bits/char).",
       "severity": "critical",
@@ -2840,11 +2839,11 @@
         "consequence": "Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.",
         "corrective_action": "Remove the credential from source code and version history, rotate it immediately, and load secrets at run time from a secrets manager or the environment. Add secret scanning to the pre-commit hooks and CI so a new secret is caught before it is pushed."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-009",
-      "finding_id": "find_01M78KBMK5PDE7V536VN9W76ZG",
+      "finding_id": "find_01M78W6HEC3A0FMQ9RRXF4MY0X",
       "fingerprint": "ckfp1:7ba0b3646c996dfc3ff754e7774f3422",
       "title": "Hard-coded credential of type aws_secret_key (masked preview wJ****** (40 chars), entropy 4.66 bits/char).",
       "severity": "critical",
@@ -3124,11 +3123,11 @@
         "consequence": "Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.",
         "corrective_action": "Remove the credential from source code and version history, rotate it immediately, and load secrets at run time from a secrets manager or the environment. Add secret scanning to the pre-commit hooks and CI so a new secret is caught before it is pushed."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-010",
-      "finding_id": "find_01M78KBMK6YEX11NXK829250YK",
+      "finding_id": "find_01M78W6HEDX0YQMX6R7BGM5TPH",
       "fingerprint": "ckfp1:bfc6d200d406cd01e9c432939bbc3e5c",
       "title": "Hard-coded credential of type razorpay_key_secret (masked preview ab****** (24 chars), entropy 4.58 bits/char).",
       "severity": "critical",
@@ -3408,11 +3407,11 @@
         "consequence": "Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.",
         "corrective_action": "Remove the credential from source code and version history, rotate it immediately, and load secrets at run time from a secrets manager or the environment. Add secret scanning to the pre-commit hooks and CI so a new secret is caught before it is pushed."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-011",
-      "finding_id": "find_01M78KBMK8XBC07SG308H1QVWE",
+      "finding_id": "find_01M78W6HEEZ83NWFF9XTPSJ20Q",
       "fingerprint": "ckfp1:33b2023d79eb4c4e5a1307ac0437b76e",
       "title": "Hard-coded credential of type generic_credential (masked preview hu****** (14 chars), entropy 2.81 bits/char).",
       "severity": "critical",
@@ -3692,11 +3691,11 @@
         "consequence": "Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.",
         "corrective_action": "Remove the credential from source code and version history, rotate it immediately, and load secrets at run time from a secrets manager or the environment. Add secret scanning to the pre-commit hooks and CI so a new secret is caught before it is pushed."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-012",
-      "finding_id": "find_01M78KBMM1R4G3CQQ9EPKB7FFJ",
+      "finding_id": "find_01M78W6HF1C06BNX5CYD12D5FX",
       "fingerprint": "ckfp1:391253747652ecc07e44b2fa64e9d157",
       "title": "A shell command is built from variable parts that are not quoted.",
       "severity": "critical",
@@ -3898,14 +3897,14 @@
         "model": "gpt-5.6-sol",
         "task": "triage",
         "level": "L3",
-        "is_vulnerable": null,
-        "confidence": "medium",
-        "reasoning": "At line 8, archive_name and folder are interpolated unquoted into a command executed with shell=True, so shell metacharacters in either value would be interpreted. The sink is reached unconditionally whenever archive_statements is called, and there is no validation, quoting, or other sanitizer on this path. However, the provided code does not establish whether either parameter can be influenced by an attacker, so exploitability cannot be decided without caller context.",
-        "ledger_seq": 6
+        "is_vulnerable": true,
+        "confidence": "high",
+        "reasoning": "At line 7, archive_name and folder are interpolated directly into a command string passed to subprocess.run with shell=True. The path from the function parameters to the sink is direct and unconditional, so shell metacharacters supplied in either value can reach the shell. No validation, quoting, or other sink-appropriate sanitization occurs.",
+        "ledger_seq": 16
       },
       "description": "A shell command is built from variable parts that are not quoted. The application builds an operating-system command from data that an external party can influence and runs it through a shell. Shell metacharacters in that data change the command that is executed.",
-      "impact": "If archive_name or folder is attacker-controlled, the attacker can execute arbitrary operating-system commands with the process's privileges.",
-      "remediation_short_term": "If either parameter can be untrusted, avoid the shell and pass separate arguments, for example subprocess.run([\"zip\", \"-x\", archive_name, folder], check=True), while also handling option-like values according to the zip CLI's argument rules.",
+      "impact": "An attacker can execute arbitrary operating-system commands as the application account. This can expose readable data and credentials, modify or delete accessible files, compromise application integrity, and interrupt service. Broader host or connected-system compromise is possible if the process has elevated privileges or valuable credentials.\n\nAttack scenario: An attacker supplies a crafted value for `archive_name` containing a command separator followed by an operating-system command. When the application calls `archive_statements`, the shell interprets the injected text as an additional command rather than as a literal `zip` argument. The injected command can then read files, alter application data, or disrupt the host within the process account's permissions.\n\nAffected: Files and data accessible to the application process; Application host integrity and availability; Secrets and credentials available to the process\n\nPreconditions: An attacker must be able to influence `archive_name` or `folder` and cause `archive_statements` to run. A command shell must be available, as expected by `shell=True`. The resulting access is limited by the operating-system privileges, filesystem access, credentials, and network reachability of the application process.",
+      "remediation_short_term": "1. Replace the formatted command string with an argument list.\n2. Remove `shell=True`; `subprocess.run` then invokes the program without shell interpretation.\n3. Validate `archive_name` and `folder` against the narrow syntax required by the application, especially to prevent command-line option injection.\n4. Keep `check=True` so execution failures are not silently ignored.\n\nSecure example:\n```python\nsubprocess.run([\"zip\", \"-x\", archive_name, folder], check=True)\n```\n\nDefence in depth:\n- Allow-list each parameter according to its expected filename or pattern grammar, including rejecting unexpected option-like values such as those beginning with `-`.\n- Run the process with minimal filesystem permissions and access only to the required files.\n- Use a trusted executable path or tightly controlled `PATH`, and consider a timeout to constrain subprocess execution.",
       "remediation_long_term": "Replace shell invocations with native library calls where possible, run the service with least privilege, and add a static-analysis gate that blocks shell=True and string-built commands.",
       "remediation_effort": "low",
       "priority": "P1",
@@ -3939,14 +3938,14 @@
         "criteria": "OWASP Top 10 A03:2021 Injection; OWASP ASVS V5.3.8; CWE-78",
         "condition": "A shell command is built from variable parts that are not quoted. (services/api/reports.py:9)",
         "cause": "The application builds an operating-system command from data that an external party can influence and runs it through a shell. Shell metacharacters in that data change the command that is executed.",
-        "consequence": "If archive_name or folder is attacker-controlled, the attacker can execute arbitrary operating-system commands with the process's privileges.",
-        "corrective_action": "If either parameter can be untrusted, avoid the shell and pass separate arguments, for example subprocess.run([\"zip\", \"-x\", archive_name, folder], check=True), while also handling option-like values according to the zip CLI's argument rules."
+        "consequence": "An attacker can execute arbitrary operating-system commands as the application account. This can expose readable data and credentials, modify or delete accessible files, compromise application integrity, and interrupt service. Broader host or connected-system compromise is possible if the process has elevated privileges or valuable credentials.\n\nAttack scenario: An attacker supplies a crafted value for `archive_name` containing a command separator followed by an operating-system command. When the application calls `archive_statements`, the shell interprets the injected text as an additional command rather than as a literal `zip` argument. The injected command can then read files, alter application data, or disrupt the host within the process account's permissions.\n\nAffected: Files and data accessible to the application process; Application host integrity and availability; Secrets and credentials available to the process\n\nPreconditions: An attacker must be able to influence `archive_name` or `folder` and cause `archive_statements` to run. A command shell must be available, as expected by `shell=True`. The resulting access is limited by the operating-system privileges, filesystem access, credentials, and network reachability of the application process.",
+        "corrective_action": "1. Replace the formatted command string with an argument list.\n2. Remove `shell=True`; `subprocess.run` then invokes the program without shell interpretation.\n3. Validate `archive_name` and `folder` against the narrow syntax required by the application, especially to prevent command-line option injection.\n4. Keep `check=True` so execution failures are not silently ignored.\n\nSecure example:\n```python\nsubprocess.run([\"zip\", \"-x\", archive_name, folder], check=True)\n```\n\nDefence in depth:\n- Allow-list each parameter according to its expected filename or pattern grammar, including rejecting unexpected option-like values such as those beginning with `-`.\n- Run the process with minimal filesystem permissions and access only to the required files.\n- Use a trusted executable path or tightly controlled `PATH`, and consider a timeout to constrain subprocess execution."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-013",
-      "finding_id": "find_01M78KBMNG512SGBQ6N38S219E",
+      "finding_id": "find_01M78W6HG467RVYPD6HWV35P8D",
       "fingerprint": "ckfp1:3d0bd0d24106e265c2408010a236fac2",
       "title": "Data is deserialised with a loader that can construct arbitrary objects.",
       "severity": "critical",
@@ -4177,13 +4176,13 @@
         "task": "triage",
         "level": "L3",
         "is_vulnerable": null,
-        "confidence": "medium",
-        "reasoning": "pickle.loads is a security-relevant deserialization sink because a crafted pickle can invoke arbitrary object-reconstruction behavior, including code execution. Within load_cached_profile, the path is direct and satisfiable: blob is passed unchanged to the sink with no branch, validation, signature check, or restricted unpickler. Thus there is no effective sanitizer on the shown path. However, the slice does not show where blob originates, so attacker influence—and therefore actual exploitability—cannot be established without callers of load_cached_profile.",
-        "ledger_seq": 10
+        "confidence": "high",
+        "reasoning": "pickle.loads at line 7 is a security-relevant deserialization sink because crafted pickle data can invoke attacker-selected callables during loading. The path from blob to the sink is direct and satisfiable for a bytes-like pickle payload, with no sanitizer or integrity check shown. However, the excerpt does not establish whether blob is attacker-influenced or exclusively receives trusted data, so exploitability cannot be decided without the callers of load_cached_profile.",
+        "ledger_seq": 12
       },
       "description": "Data is deserialised with a loader that can construct arbitrary objects. Data from outside the trust boundary is deserialised with a loader that can instantiate arbitrary types or invoke code during loading.",
-      "impact": "If attacker-controlled pickle data can reach blob, deserialization can execute attacker-selected code with the process's privileges.",
-      "remediation_short_term": "If blob can be attacker-influenced, replace pickle with a non-executable format such as JSON plus strict schema validation. If pickle is unavoidable, accept only authenticated data from a trusted source before deserialization; type checks alone are insufficient.",
+      "impact": "If an attacker can control blob, a crafted pickle could execute arbitrary Python code with the application's privileges during deserialization.",
+      "remediation_short_term": "If blob can be untrusted, replace pickle with a non-executable format such as JSON plus strict schema validation. If pickle is unavoidable, accept it only from a trusted source and verify a cryptographic signature before calling pickle.loads.",
       "remediation_long_term": "Adopt data-only formats with schema validation at trust boundaries, and sign serialised objects that must round-trip through clients.",
       "remediation_effort": "low",
       "priority": "P1",
@@ -4213,14 +4212,14 @@
         "criteria": "OWASP Top 10 A08:2021 Software and Data Integrity Failures; OWASP ASVS V5.5.1; OWASP ASVS V5.5.3; CWE-502",
         "condition": "Data is deserialised with a loader that can construct arbitrary objects. (services/api/serialisation.py:14)",
         "cause": "Data from outside the trust boundary is deserialised with a loader that can instantiate arbitrary types or invoke code during loading.",
-        "consequence": "If attacker-controlled pickle data can reach blob, deserialization can execute attacker-selected code with the process's privileges.",
-        "corrective_action": "If blob can be attacker-influenced, replace pickle with a non-executable format such as JSON plus strict schema validation. If pickle is unavoidable, accept only authenticated data from a trusted source before deserialization; type checks alone are insufficient."
+        "consequence": "If an attacker can control blob, a crafted pickle could execute arbitrary Python code with the application's privileges during deserialization.",
+        "corrective_action": "If blob can be untrusted, replace pickle with a non-executable format such as JSON plus strict schema validation. If pickle is unavoidable, accept it only from a trusted source and verify a cryptographic signature before calling pickle.loads."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-014",
-      "finding_id": "find_01M78KBMPG2CZQKARDH6T55MRD",
+      "finding_id": "find_01M78W6HGSSWY83B0YWBDM6DTZ",
       "fingerprint": "ckfp1:9385f205a086ca306373f320f3475c6b",
       "title": "Hard-coded credential of type razorpay_key_secret (masked preview ab****** (24 chars), entropy 4.58 bits/char).",
       "severity": "critical",
@@ -4461,12 +4460,12 @@
         "level": "L3",
         "is_vulnerable": true,
         "confidence": "high",
-        "reasoning": "The typed placeholder on line 13 establishes that razorpayKeySecret contains a Razorpay key secret directly in source and exports it through module.exports. This is not an injection finding, so attacker-controlled input is unnecessary; disclosure of the embedded credential is itself security-relevant. The path is unconditional whenever the module is loaded, and no transformation or secret-management boundary sanitizes or protects the value before export.",
+        "reasoning": "This is a credential-exposure finding rather than an attacker-input sink: the hardcoded razorpay key secret is embedded directly in the module and exported through `module.exports`. The exposure path is satisfiable whenever the source, package, artifact, or loaded module is accessible. No environment lookup, encryption, redaction, or other effective protection is applied to `razorpayKeySecret`; the environment fallback on line 9 applies only to `exportDir`.",
         "ledger_seq": 34
       },
       "description": "Hard-coded credential of type razorpay_key_secret (masked preview ab****** (24 chars), entropy 4.58 bits/char). A credential such as a password, API key or token is embedded in the source code.",
-      "impact": "Disclosure permits impersonation of the application to Razorpay within the credential's privileges. This can expose payment and customer metadata and may permit unauthorized financial actions that affect transaction integrity or merchant funds. It does not by itself demonstrate access to the Razorpay dashboard or unrestricted account control.\n\nAttack scenario: An attacker obtains a copy of the source repository or a deployed application artifact, extracts `razorpayKeyId` and `razorpayKeySecret`, and uses the pair to authenticate directly to Razorpay's API. The attacker then retrieves payment or customer records and, where authorized for that key, performs operations such as creating transactions or issuing unauthorized refunds until the credential is revoked.\n\nAffected: Confidentiality of the hardcoded razorpay key secret and its companion key ID; Razorpay transaction, payment, order, and customer data accessible to the credential; Integrity of payment operations and merchant funds exposed through permitted Razorpay API actions\n\nPreconditions: The attacker must gain read access to the source, build/deployment artifact, or exported configuration at runtime. The embedded credential must still be valid, and consequential actions require a live Razorpay account and sufficient API permissions. The shown code does not establish that this module is publicly downloadable.",
-      "remediation_short_term": "1. Revoke and rotate the exposed Razorpay key secret immediately.\n2. Store the replacement in a managed secrets service or a protected deployment environment variable.\n3. Replace the hard-coded `razorpayKeySecret` value with runtime retrieval and do not provide a source-code fallback.\n4. Validate during startup that the secret is present, and fail closed if it is missing.\n5. Remove the credential from repository history, build artifacts, caches, and deployment bundles; do this in addition to rotation.\n6. Redeploy with the rotated credential and verify that the old credential no longer works.\n\nSecure example:\n```javascript\nrazorpayKeySecret: process.env.razorpayKeySecret,\n```\n\nDefence in depth:\n- Add pre-commit and CI secret scanning that blocks Razorpay credentials from entering source or artifacts.\n- Use separate, least-privilege credentials per environment and rotate them on a defined schedule.\n- Prevent configuration objects and environment variables from being written to application, CI, or deployment logs.",
+      "impact": "An attacker can impersonate the application to Razorpay within the credential's permissions. This can expose merchant and transaction data and enable unauthorized changes to payment-related resources, potentially including financially consequential operations. The precise financial impact depends on whether the key is live and which Razorpay APIs it can access.\n\nAttack scenario: An attacker obtains a published package, leaked repository, container image, backup, or deployed file containing `services/web/config.js`. They extract `razorpayKeyId` and `razorpayKeySecret`, use the pair to authenticate to Razorpay's API, and then retrieve transaction data or perform payment-related operations such as creating or modifying resources or issuing refunds where the credential's permissions allow it.\n\nAffected: The Razorpay merchant API credential pair in `razorpayKeyId` and `razorpayKeySecret`; Payment, order, customer, and transaction data accessible to that credential; Integrity of payment-related resources and financial operations permitted by the credential\n\nPreconditions: The attacker must gain read access to the source or an artifact containing this module. The embedded Razorpay credential must still be active, correspond to a usable environment rather than an inert test account, and have permissions for the attempted API operations.",
+      "remediation_short_term": "1. Revoke and rotate the hardcoded razorpay key secret immediately; rotate the associated credential pair if required by the provider.\n2. Store the replacement secret in the deployment platform's secrets manager or protected environment configuration.\n3. Replace the hard-coded values in `razorpayKeySecret` and `razorpayKeyId` with runtime lookups and provide no literal fallback.\n4. Validate required configuration during startup and terminate safely if it is absent.\n5. Remove the embedded credentials from repository history, build artifacts, packages, caches, and deployment bundles.\n6. Redeploy using the rotated credential and verify that the revoked credential no longer works.\n\nSecure example:\n```javascript\nrazorpayKeyId: process.env.razorpayKeyId,\nrazorpayKeySecret: process.env.razorpayKeySecret,\n```\n\nDefence in depth:\n- Restrict the runtime identity so it can read only the required secret, and audit secret-access events.\n- Enable secret scanning in pre-commit hooks and CI to block future credential commits.\n- Prevent configuration objects and environment variables from being written to logs or error reports.",
       "remediation_long_term": "Adopt a secret manager, add pre-commit and CI secret scanning, and purge the value from version-control history.",
       "remediation_effort": "low",
       "priority": "P1",
@@ -4496,14 +4495,14 @@
         "criteria": "OWASP Top 10 A07:2021 Identification and Authentication Failures; OWASP ASVS V2.10.4; OWASP ASVS V6.4.1; CWE-798",
         "condition": "Hard-coded credential of type razorpay_key_secret (masked preview ab****** (24 chars), entropy 4.58 bits/char). (services/web/config.js:11)",
         "cause": "A credential such as a password, API key or token is embedded in the source code.",
-        "consequence": "Disclosure permits impersonation of the application to Razorpay within the credential's privileges. This can expose payment and customer metadata and may permit unauthorized financial actions that affect transaction integrity or merchant funds. It does not by itself demonstrate access to the Razorpay dashboard or unrestricted account control.\n\nAttack scenario: An attacker obtains a copy of the source repository or a deployed application artifact, extracts `razorpayKeyId` and `razorpayKeySecret`, and uses the pair to authenticate directly to Razorpay's API. The attacker then retrieves payment or customer records and, where authorized for that key, performs operations such as creating transactions or issuing unauthorized refunds until the credential is revoked.\n\nAffected: Confidentiality of the hardcoded razorpay key secret and its companion key ID; Razorpay transaction, payment, order, and customer data accessible to the credential; Integrity of payment operations and merchant funds exposed through permitted Razorpay API actions\n\nPreconditions: The attacker must gain read access to the source, build/deployment artifact, or exported configuration at runtime. The embedded credential must still be valid, and consequential actions require a live Razorpay account and sufficient API permissions. The shown code does not establish that this module is publicly downloadable.",
-        "corrective_action": "1. Revoke and rotate the exposed Razorpay key secret immediately.\n2. Store the replacement in a managed secrets service or a protected deployment environment variable.\n3. Replace the hard-coded `razorpayKeySecret` value with runtime retrieval and do not provide a source-code fallback.\n4. Validate during startup that the secret is present, and fail closed if it is missing.\n5. Remove the credential from repository history, build artifacts, caches, and deployment bundles; do this in addition to rotation.\n6. Redeploy with the rotated credential and verify that the old credential no longer works.\n\nSecure example:\n```javascript\nrazorpayKeySecret: process.env.razorpayKeySecret,\n```\n\nDefence in depth:\n- Add pre-commit and CI secret scanning that blocks Razorpay credentials from entering source or artifacts.\n- Use separate, least-privilege credentials per environment and rotate them on a defined schedule.\n- Prevent configuration objects and environment variables from being written to application, CI, or deployment logs."
+        "consequence": "An attacker can impersonate the application to Razorpay within the credential's permissions. This can expose merchant and transaction data and enable unauthorized changes to payment-related resources, potentially including financially consequential operations. The precise financial impact depends on whether the key is live and which Razorpay APIs it can access.\n\nAttack scenario: An attacker obtains a published package, leaked repository, container image, backup, or deployed file containing `services/web/config.js`. They extract `razorpayKeyId` and `razorpayKeySecret`, use the pair to authenticate to Razorpay's API, and then retrieve transaction data or perform payment-related operations such as creating or modifying resources or issuing refunds where the credential's permissions allow it.\n\nAffected: The Razorpay merchant API credential pair in `razorpayKeyId` and `razorpayKeySecret`; Payment, order, customer, and transaction data accessible to that credential; Integrity of payment-related resources and financial operations permitted by the credential\n\nPreconditions: The attacker must gain read access to the source or an artifact containing this module. The embedded Razorpay credential must still be active, correspond to a usable environment rather than an inert test account, and have permissions for the attempted API operations.",
+        "corrective_action": "1. Revoke and rotate the hardcoded razorpay key secret immediately; rotate the associated credential pair if required by the provider.\n2. Store the replacement secret in the deployment platform's secrets manager or protected environment configuration.\n3. Replace the hard-coded values in `razorpayKeySecret` and `razorpayKeyId` with runtime lookups and provide no literal fallback.\n4. Validate required configuration during startup and terminate safely if it is absent.\n5. Remove the embedded credentials from repository history, build artifacts, packages, caches, and deployment bundles.\n6. Redeploy using the rotated credential and verify that the revoked credential no longer works.\n\nSecure example:\n```javascript\nrazorpayKeyId: process.env.razorpayKeyId,\nrazorpayKeySecret: process.env.razorpayKeySecret,\n```\n\nDefence in depth:\n- Restrict the runtime identity so it can read only the required secret, and audit secret-access events.\n- Enable secret scanning in pre-commit hooks and CI to block future credential commits.\n- Prevent configuration objects and environment variables from being written to logs or error reports."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-015",
-      "finding_id": "find_01M78KBMN1XMKCP80FVTXHEBWJ",
+      "finding_id": "find_01M78W6HFQ6D22TERZHV14WS7T",
       "fingerprint": "ckfp1:b85d48f393aa9d6fb0c6845ed970d22b",
       "title": "Vulnerable dependency: PyYAML 5.3 (CVE-2020-14343)",
       "severity": "critical",
@@ -4764,11 +4763,11 @@
         "consequence": "Attackers can exploit the known vulnerability, for which public exploit code is often available, without finding a flaw in the application's own code.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-016",
-      "finding_id": "find_01M78KBMEMYDAJWCSMETKH2S0Y",
+      "finding_id": "find_01M78W6HBWFDZ678F1APRRME0W",
       "fingerprint": "ckfp1:44fc4a7c19d51b3fcb7a297bd23d17bd",
       "title": "A run step in job 'build' interpolates attacker-controlled event data into a shell script; pass it through an environment variable instead.",
       "severity": "high",
@@ -4998,11 +4997,11 @@
         "consequence": "An attacker can run arbitrary commands with the privileges of the application process, read or alter any data the process can reach, and use the host as a foothold for lateral movement.",
         "corrective_action": "Do not build commands, code or templates from untrusted input. Call the program directly with an argument list (for example subprocess.run([...], shell=False)) instead of a shell string, never pass request data to eval/exec or a template compiler, and validate input against a strict allow-list of expected values before it reaches the sink."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-017",
-      "finding_id": "find_01M78KBMGFA82RDCC03VZZHPF9",
+      "finding_id": "find_01M78W6HCEEHFBBRE43N4AVJ8Y",
       "fingerprint": "ckfp1:adc6c10f9dc51101746f8e554a514787",
       "title": "ENV KB_DB_PASSWORD bakes a credential into the image layers; use a build secret or runtime injection.",
       "severity": "high",
@@ -5285,11 +5284,11 @@
         "consequence": "Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.",
         "corrective_action": "Remove the credential from source code and version history, rotate it immediately, and load secrets at run time from a secrets manager or the environment. Add secret scanning to the pre-commit hooks and CI so a new secret is caught before it is pushed."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-018",
-      "finding_id": "find_01M78KBMGH45D72N292AFXNSJT",
+      "finding_id": "find_01M78W6HCGZ8S7GWFB4ADH3E06",
       "fingerprint": "ckfp1:fbc217c92008eb8e6d8833dd33649b3f",
       "title": "Service 'api' runs privileged, giving it nearly full host access.",
       "severity": "high",
@@ -5538,11 +5537,11 @@
         "consequence": "Any other weakness in the component becomes a full host or cluster compromise, because the attacker inherits the excess privileges.",
         "corrective_action": "Ship secure defaults: disable debug mode in production, set Secure, HttpOnly and SameSite on session cookies, expire sessions, verify TLS certificates, and restrict CORS to the origins that need it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-019",
-      "finding_id": "find_01M78KBMH0X8KA2WSWGVJ3TVPV",
+      "finding_id": "find_01M78W6HCTY847KD4SQQFHSM1W",
       "fingerprint": "ckfp1:52184068ae4ed2f947be1370a08d403a",
       "title": "Service 'api' mounts the Docker socket, which is root on the host.",
       "severity": "high",
@@ -5791,11 +5790,11 @@
         "consequence": "Any other weakness in the component becomes a full host or cluster compromise, because the attacker inherits the excess privileges.",
         "corrective_action": "Ship secure defaults: disable debug mode in production, set Secure, HttpOnly and SameSite on session cookies, expire sessions, verify TLS certificates, and restrict CORS to the origins that need it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-020",
-      "finding_id": "find_01M78KBMH2W2TSZ7VVREFSRGMH",
+      "finding_id": "find_01M78W6HCV8RKVNV0QAXXYDZTS",
       "fingerprint": "ckfp1:3c567d478b836d389ecfa443f28ede06",
       "title": "Service 'api' sets KB_ADMIN_PASSWORD to a literal in the compose file; use an env file or secret store.",
       "severity": "high",
@@ -6078,11 +6077,11 @@
         "consequence": "Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.",
         "corrective_action": "Remove the credential from source code and version history, rotate it immediately, and load secrets at run time from a secrets manager or the environment. Add secret scanning to the pre-commit hooks and CI so a new secret is caught before it is pushed."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-021",
-      "finding_id": "find_01M78KBMH672AFV72TJHEBWNC8",
+      "finding_id": "find_01M78W6HCZ55QCAW1AD86QFEBB",
       "fingerprint": "ckfp1:573a903b88986f34cd7d9f42532dad5d",
       "title": "Pod shares the host network namespace.",
       "severity": "high",
@@ -6331,11 +6330,11 @@
         "consequence": "Any other weakness in the component becomes a full host or cluster compromise, because the attacker inherits the excess privileges.",
         "corrective_action": "Ship secure defaults: disable debug mode in production, set Secure, HttpOnly and SameSite on session cookies, expire sessions, verify TLS certificates, and restrict CORS to the origins that need it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-022",
-      "finding_id": "find_01M78KBMHJ0MP9N9CKW14SGG1A",
+      "finding_id": "find_01M78W6HD5MPAWRSE8FQMSCBT4",
       "fingerprint": "ckfp1:2b4f32a3c8e40b14bed5cb0ec46776fc",
       "title": "Pod mounts a hostPath volume, exposing the node filesystem.",
       "severity": "high",
@@ -6584,11 +6583,11 @@
         "consequence": "Any other weakness in the component becomes a full host or cluster compromise, because the attacker inherits the excess privileges.",
         "corrective_action": "Ship secure defaults: disable debug mode in production, set Secure, HttpOnly and SameSite on session cookies, expire sessions, verify TLS certificates, and restrict CORS to the origins that need it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-023",
-      "finding_id": "find_01M78KBMHWG6CJABBXBC5YS1BW",
+      "finding_id": "find_01M78W6HDDYVD9QGQBFBWCNXMS",
       "fingerprint": "ckfp1:da2025a06fd3180167cc1156e75f08cc",
       "title": "S3 bucket 'statements' uses a public ACL.",
       "severity": "high",
@@ -6841,11 +6840,11 @@
         "consequence": "Unauthorised users can read secrets or alter configuration and code.",
         "corrective_action": "Enforce authorisation on the server for every request: check that the authenticated principal owns or may act on the referenced object (deny by default), derive the owner from the session rather than from request parameters, and centralise the check in a decorator or policy layer so no handler can skip it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-024",
-      "finding_id": "find_01M78KBMJ6E4TJ6TSWZDFZ72Z2",
+      "finding_id": "find_01M78W6HDNHG2JTQ7F37F4078X",
       "fingerprint": "ckfp1:f5e2e2ef5704cd2a35034c534fe80980",
       "title": "Security group 'admin' allows ingress from the whole internet on an administrative or database port.",
       "severity": "high",
@@ -7100,11 +7099,11 @@
         "consequence": "Unauthorised actors can read or modify protected data or invoke protected functions.",
         "corrective_action": "Enforce authorisation on the server for every request: check that the authenticated principal owns or may act on the referenced object (deny by default), derive the owner from the session rather than from request parameters, and centralise the check in a decorator or policy layer so no handler can skip it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-025",
-      "finding_id": "find_01M78KBMJASR14J6072P426XG4",
+      "finding_id": "find_01M78W6HDR0SC0BFWWMJ6GNM4V",
       "fingerprint": "ckfp1:a3ba5ded6070685ae6f8ae47062c087a",
       "title": "Database 'ledger' is publicly accessible.",
       "severity": "high",
@@ -7390,11 +7389,11 @@
         "consequence": "Attackers outside the intended sphere can reach and abuse the resource.",
         "corrective_action": "Do not write secrets, credentials, tokens or personal data to logs, error messages or URLs. Mask or omit sensitive fields at the logging boundary, return generic error messages to clients, and keep detailed diagnostics server-side."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-026",
-      "finding_id": "find_01M78KBMME9HBS40FZWBKFC268",
+      "finding_id": "find_01M78W6HFAQK8HRBVYTFDQSGZG",
       "fingerprint": "ckfp1:02cd05415aeebbaef4d774ec144b826f",
       "title": "Vulnerable dependency: Flask 2.2.3 (CVE-2023-30861)",
       "severity": "high",
@@ -7605,7 +7604,7 @@
       ],
       "flow": [],
       "verdict": null,
-      "description": "Vulnerable dependency: Flask 2.2.3 (CVE-2023-30861)\n- GHSA-m2qf-hxjv-5gpq (CVE-2023-30861), high: Flask may cache a response with a session cookie behind a caching proxy. Fixed in 2.2.5, 2.3.2.\nRemediation: upgrade Flask to 2.2.5 or later (resolves all listed advisories).\nReachability: the package is imported (services/api/handlers.py:5).\nExploitation data: no KEV or EPSS snapshot installed (run `codekavach sca update`).",
+      "description": "Vulnerable dependency: Flask 2.2.3 (CVE-2023-30861)\n- GHSA-m2qf-hxjv-5gpq (CVE-2023-30861), high: Flask may cache a response with a session cookie behind a caching proxy. Fixed in 2.2.5, 2.3.2.\nRemediation: upgrade Flask to 2.2.5 or later (resolves all listed advisories).\nReachability: the package is imported (services/api/handlers.py:5); basis: module-level import (the advisory names no symbols).\nExploitation data: no KEV or EPSS snapshot installed (run `codekavach sca update`).",
       "impact": "Attackers can exploit the known vulnerability, for which public exploit code is often available, without finding a flaw in the application's own code.",
       "remediation_short_term": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations.",
       "remediation_long_term": "Run software composition analysis in CI, keep an SBOM, and automate dependency updates.",
@@ -7656,11 +7655,11 @@
         "consequence": "Attackers can exploit the known vulnerability, for which public exploit code is often available, without finding a flaw in the application's own code.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-027",
-      "finding_id": "find_01M78KBMMZEA4T2WGA1JNT23WS",
+      "finding_id": "find_01M78W6HFPADJ8J55NTJM97KKR",
       "fingerprint": "ckfp1:1149473b11ba45fd0f415f0c05f27df2",
       "title": "Vulnerable dependency: requests 2.19.1 (CVE-2018-18074, CVE-2023-32681)",
       "severity": "high",
@@ -7888,7 +7887,7 @@
       ],
       "flow": [],
       "verdict": null,
-      "description": "Vulnerable dependency: requests 2.19.1 (CVE-2018-18074, CVE-2023-32681)\n- GHSA-x84v-xcm2-53pg (CVE-2018-18074), high: Requests sends the Authorization header to a different host after a redirect. Fixed in 2.20.0.\n- GHSA-j8r2-6x86-q33q (CVE-2023-32681), medium: Requests leaks Proxy-Authorization headers to destination servers. Fixed in 2.31.0.\nRemediation: upgrade requests to 2.31.0 or later (resolves all listed advisories).\nReachability: the package is imported (services/api/webhooks.py:5).\nExploitation data: no KEV or EPSS snapshot installed (run `codekavach sca update`).",
+      "description": "Vulnerable dependency: requests 2.19.1 (CVE-2018-18074, CVE-2023-32681)\n- GHSA-x84v-xcm2-53pg (CVE-2018-18074), high: Requests sends the Authorization header to a different host after a redirect. Fixed in 2.20.0.\n- GHSA-j8r2-6x86-q33q (CVE-2023-32681), medium: Requests leaks Proxy-Authorization headers to destination servers. Fixed in 2.31.0.\nRemediation: upgrade requests to 2.31.0 or later (resolves all listed advisories).\nReachability: the package is imported (services/api/webhooks.py:5); basis: module-level import (the advisory names no symbols).\nExploitation data: no KEV or EPSS snapshot installed (run `codekavach sca update`).",
       "impact": "Attackers can exploit the known vulnerability, for which public exploit code is often available, without finding a flaw in the application's own code.",
       "remediation_short_term": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations.",
       "remediation_long_term": "Run software composition analysis in CI, keep an SBOM, and automate dependency updates.",
@@ -7947,11 +7946,11 @@
         "consequence": "Attackers can exploit the known vulnerability, for which public exploit code is often available, without finding a flaw in the application's own code.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-028",
-      "finding_id": "find_01M78KBMP478NEPYBJZCWNCC5N",
+      "finding_id": "find_01M78W6HGHQ8HM4EEAHEWB7YTX",
       "fingerprint": "ckfp1:f48b19b6ae26b6afaa8146854453db29",
       "title": "TLS certificate verification is disabled, enabling man-in-the-middle attacks.",
       "severity": "high",
@@ -8195,11 +8194,11 @@
         "consequence": "A network attacker can intercept and modify traffic.",
         "corrective_action": "Use current, vetted primitives from a maintained library: AES-GCM or ChaCha20-Poly1305 for encryption with a fresh random nonce per message, SHA-256 or better for integrity, a password hashing function (Argon2id, scrypt, bcrypt) for passwords, and the operating system CSPRNG (Python secrets / os.urandom) for keys, tokens and IVs."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-029",
-      "finding_id": "find_01M78KBMP6HZXBFEDN1VA7FFDE",
+      "finding_id": "find_01M78W6HGJGDMPRNBQKKJXZ7KC",
       "fingerprint": "ckfp1:8fcccc0180ae0b79338149e8c305c097",
       "title": "A deprecated protocol version (SSLv2/3, TLS 1.0 or 1.1) is allowed.",
       "severity": "high",
@@ -8434,11 +8433,11 @@
         "consequence": "Protected data can be decrypted by an attacker with moderate resources.",
         "corrective_action": "Use current, vetted primitives from a maintained library: AES-GCM or ChaCha20-Poly1305 for encryption with a fresh random nonce per message, SHA-256 or better for integrity, a password hashing function (Argon2id, scrypt, bcrypt) for passwords, and the operating system CSPRNG (Python secrets / os.urandom) for keys, tokens and IVs."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-030",
-      "finding_id": "find_01M78KBMPK4492ZFFXPPM2TJMZ",
+      "finding_id": "find_01M78W6HGVHKM5XX1AV1DMBQ0X",
       "fingerprint": "ckfp1:8de48653d65d3e5631c019cbd733ba1b",
       "title": "Data from a http_param source reaches a path sink (fs.createReadStream)",
       "severity": "high",
@@ -8694,12 +8693,12 @@
         "level": "L3",
         "is_vulnerable": true,
         "confidence": "high",
-        "reasoning": "req.query.file is used directly as a path component on line 8 and the resulting file reaches fs.createReadStream on line 9. The path is satisfiable because there are no intervening conditions, and an attacker can provide a string containing ../ segments. path.join only normalizes the path; it does not enforce that the result remains beneath config.exportDir, so it is not an effective sanitizer.",
-        "ledger_seq": 47
+        "reasoning": "The request-derived req.query.file flows directly into path.join and then to the security-relevant fs.createReadStream sink. The path is unconditional, and an input containing sufficient ../ components can normalize outside config.exportDir. path.join only normalizes the path; it does not validate that the result remains under config.exportDir. No effective allowlist, canonical containment check, or other path-traversal defense is present.",
+        "ledger_seq": 52
       },
       "description": "Data from a http_param source reaches a path sink (fs.createReadStream). A file-system path is built from data an external party controls without checking that the resolved path stays inside the intended directory.",
-      "impact": "An attacker can select and read files outside the intended directory, up to the permissions of the server process. This can disclose application secrets, configuration, source code, private data, or credentials that enable further compromise. The shown code does not provide file modification or code execution directly.\n\nAttack scenario: An attacker requests the affected endpoint with `req.query.file` set to a traversal path such as `../../../../path/to/a/sensitive/file`, potentially URL-encoded. After query decoding, `path.join` resolves the path outside the intended directory, and `fs.createReadStream` reads the selected file. If `pipe(res)` returns the stream through the response, the attacker receives its contents.\n\nAffected: Files readable by the server process outside the directory identified by `config.exportDir`; Application source code, configuration, credentials, tokens, or other sensitive local data; Accounts or external services whose credentials are stored in readable files\n\nPreconditions: The HTTP handler must be reachable, the attacker must control `req.query.file`, traversal components must survive request parsing, and the target file must be readable by the server process. Actual remote disclosure also depends on `pipe(res)` exposing the created stream to the requester; its behavior is not shown.",
-      "remediation_short_term": "Resolve the candidate against a canonical base directory and reject it unless path.relative confirms it remains beneath that base. Prefer an allowlist of permitted filenames, and account for symlink escapes when untrusted users can affect filesystem entries.",
+      "impact": "An attacker can make the application read files outside the intended directory and, where the stream is returned to the requester, obtain any such file readable by the service account. This can disclose application secrets, credentials, source code, or host/container configuration and enable follow-on compromise of associated systems.\n\nAttack scenario: An attacker requests the handler with `file` set to a traversal value such as `../../../../etc/passwd` or a path targeting an application configuration file. After query decoding and path normalization, `fs.createReadStream` opens the file outside `config.exportDir`, and the handler streams its contents through `pipe(res)`, potentially revealing credentials or other sensitive data.\n\nAffected: Files readable by the server process outside `config.exportDir`, including configuration, source code, credentials, and other sensitive local data; Accounts or downstream services whose credentials are stored in readable files\n\nPreconditions: The attacker must be able to invoke `exportStatement` and control `req.query.file`; traversal sequences must reach the handler without effective upstream validation; and the target file must exist and be readable by the server process. Direct disclosure also requires `pipe(res)` to expose the stream to the requester, as is typical for a file-serving response path.",
+      "remediation_short_term": "Prefer mapping an allowlisted identifier to a server-controlled filename. Otherwise, canonicalize both config.exportDir and the requested file, reject absolute or traversal paths, verify the canonical result remains beneath the canonical base directory, and account for symlink escapes.",
       "remediation_long_term": "Centralise file access behind a storage service that enforces containment, and run the process with a file-system view restricted to the data it needs.",
       "remediation_effort": "low",
       "priority": "P2",
@@ -8733,14 +8732,14 @@
         "criteria": "OWASP Top 10 A01:2021 Broken Access Control; OWASP ASVS V12.3.1; OWASP ASVS V12.3.2; CWE-22",
         "condition": "Data from a http_param source reaches a path sink (fs.createReadStream) (services/web/exporter.js:9)",
         "cause": "A file-system path is built from data an external party controls without checking that the resolved path stays inside the intended directory.",
-        "consequence": "An attacker can select and read files outside the intended directory, up to the permissions of the server process. This can disclose application secrets, configuration, source code, private data, or credentials that enable further compromise. The shown code does not provide file modification or code execution directly.\n\nAttack scenario: An attacker requests the affected endpoint with `req.query.file` set to a traversal path such as `../../../../path/to/a/sensitive/file`, potentially URL-encoded. After query decoding, `path.join` resolves the path outside the intended directory, and `fs.createReadStream` reads the selected file. If `pipe(res)` returns the stream through the response, the attacker receives its contents.\n\nAffected: Files readable by the server process outside the directory identified by `config.exportDir`; Application source code, configuration, credentials, tokens, or other sensitive local data; Accounts or external services whose credentials are stored in readable files\n\nPreconditions: The HTTP handler must be reachable, the attacker must control `req.query.file`, traversal components must survive request parsing, and the target file must be readable by the server process. Actual remote disclosure also depends on `pipe(res)` exposing the created stream to the requester; its behavior is not shown.",
-        "corrective_action": "Resolve the candidate against a canonical base directory and reject it unless path.relative confirms it remains beneath that base. Prefer an allowlist of permitted filenames, and account for symlink escapes when untrusted users can affect filesystem entries."
+        "consequence": "An attacker can make the application read files outside the intended directory and, where the stream is returned to the requester, obtain any such file readable by the service account. This can disclose application secrets, credentials, source code, or host/container configuration and enable follow-on compromise of associated systems.\n\nAttack scenario: An attacker requests the handler with `file` set to a traversal value such as `../../../../etc/passwd` or a path targeting an application configuration file. After query decoding and path normalization, `fs.createReadStream` opens the file outside `config.exportDir`, and the handler streams its contents through `pipe(res)`, potentially revealing credentials or other sensitive data.\n\nAffected: Files readable by the server process outside `config.exportDir`, including configuration, source code, credentials, and other sensitive local data; Accounts or downstream services whose credentials are stored in readable files\n\nPreconditions: The attacker must be able to invoke `exportStatement` and control `req.query.file`; traversal sequences must reach the handler without effective upstream validation; and the target file must exist and be readable by the server process. Direct disclosure also requires `pipe(res)` to expose the stream to the requester, as is typical for a file-serving response path.",
+        "corrective_action": "Prefer mapping an allowlisted identifier to a server-controlled filename. Otherwise, canonicalize both config.exportDir and the requested file, reject absolute or traversal paths, verify the canonical result remains beneath the canonical base directory, and account for symlink escapes."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-031",
-      "finding_id": "find_01M78KBMQC7HRNHQD7N7KXT3QX",
+      "finding_id": "find_01M78W6HHGHFN4K1T8ZY1R4XF0",
       "fingerprint": "ckfp1:7fc708fccd8cf3d7f7f964dbb503e63a",
       "title": "Data from a http_param source reaches a http sink (fetch)",
       "severity": "high",
@@ -8985,12 +8984,12 @@
         "level": "L3",
         "is_vulnerable": null,
         "confidence": "medium",
-        "reasoning": "fetch(callbackUrl) is a security-relevant outbound-request sink if fetchSettlementStatus runs server-side and callbackUrl is attacker-influenced. The path is satisfiable because the call is unconditional, and no validation, URL allowlist, or other SSRF-specific sanitization occurs before fetch. However, this slice does not show where callbackUrl originates or whether callers validate it, so attacker influence and the relevant trust boundary cannot be confirmed.",
-        "ledger_seq": 24
+        "reasoning": "fetch uses callbackUrl directly as its request target, so this is a security-relevant SSRF sink if callbackUrl is attacker-controlled and fetchSettlementStatus runs server-side. The path is unconditional and contains no URL validation, allowlist, or other sink-appropriate sanitiser. However, the shown function does not establish the origin of callbackUrl or the execution environment, so exploitability cannot be decided from this slice alone.",
+        "ledger_seq": 28
       },
       "description": "Data from a http_param source reaches a http sink (fetch). The server issues an outbound request to a URL that the caller chooses, without restricting the destination.",
-      "impact": "If callbackUrl is attacker-controlled in a server-side caller, an attacker could make the server request attacker-chosen or internal URLs; the parsed JSON response may also be propagated to the caller.",
-      "remediation_short_term": "If callers can supply attacker-influenced values, parse callbackUrl and restrict it to an explicit allowlist of schemes, hosts, and ports; reject credentials and private, loopback, link-local, and reserved destinations, including after DNS resolution and redirects.",
+      "impact": "An attacker can make the server reach internal services, cloud metadata endpoints and administrative interfaces that are not exposed to the internet, leading to credential theft and internal reconnaissance.",
+      "remediation_short_term": "Do not fetch URLs taken from requests. Where the feature needs it, allow-list the scheme, host and port, resolve the host and refuse private, loopback and link-local addresses (including cloud metadata endpoints), disable redirects, and send outbound requests through an egress proxy.",
       "remediation_long_term": "Route outbound calls through an egress proxy with an allow-list, and enforce IMDSv2 or the equivalent metadata protection on cloud hosts.",
       "remediation_effort": "medium",
       "priority": "P2",
@@ -9024,14 +9023,14 @@
         "criteria": "OWASP Top 10 A10:2021 Server-Side Request Forgery (SSRF); OWASP ASVS V5.2.6; OWASP ASVS V12.6.1; CWE-918",
         "condition": "Data from a http_param source reaches a http sink (fetch) (services/web/payments.js:18)",
         "cause": "The server issues an outbound request to a URL that the caller chooses, without restricting the destination.",
-        "consequence": "If callbackUrl is attacker-controlled in a server-side caller, an attacker could make the server request attacker-chosen or internal URLs; the parsed JSON response may also be propagated to the caller.",
-        "corrective_action": "If callers can supply attacker-influenced values, parse callbackUrl and restrict it to an explicit allowlist of schemes, hosts, and ports; reject credentials and private, loopback, link-local, and reserved destinations, including after DNS resolution and redirects."
+        "consequence": "An attacker can make the server reach internal services, cloud metadata endpoints and administrative interfaces that are not exposed to the internet, leading to credential theft and internal reconnaissance.",
+        "corrective_action": "Do not fetch URLs taken from requests. Where the feature needs it, allow-list the scheme, host and port, resolve the host and refuse private, loopback and link-local addresses (including cloud metadata endpoints), disable redirects, and send outbound requests through an egress proxy."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-032",
-      "finding_id": "find_01M78KBMKCCFMKE2C49608GPAZ",
+      "finding_id": "find_01M78W6HEJVNQ5W0B6P4B081Z2",
       "fingerprint": "ckfp1:446bf2a3502fa2d5a16e0f251255c726",
       "title": "A record is fetched by an identifier from the caller with no ownership check.",
       "severity": "high",
@@ -9284,11 +9283,11 @@
         "consequence": "Any authenticated user can read or change other customers' records by changing the identifier in the request, a direct breach of confidentiality and integrity.",
         "corrective_action": "Enforce authorisation on the server for every request: check that the authenticated principal owns or may act on the referenced object (deny by default), derive the owner from the session rather than from request parameters, and centralise the check in a decorator or policy layer so no handler can skip it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-033",
-      "finding_id": "find_01M78KBMKVZKGNEPPBANN1ZZP5",
+      "finding_id": "find_01M78W6HEWZW3G4RHJCQMTMADW",
       "fingerprint": "ckfp1:2c32cde1bf68653ba18f2c275ece8943",
       "title": "An account-scoped route has no authentication or authorisation check.",
       "severity": "high",
@@ -9557,11 +9556,11 @@
         "consequence": "Unauthenticated or under-privileged callers can invoke the operation directly, bypassing the access-control model.",
         "corrective_action": "Enforce authorisation on the server for every request: check that the authenticated principal owns or may act on the referenced object (deny by default), derive the owner from the session rather than from request parameters, and centralise the check in a decorator or policy layer so no handler can skip it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-034",
-      "finding_id": "find_01M78KBMN38K5XJXC7RJXG366S",
+      "finding_id": "find_01M78W6HFS1Z1D1CF5F0Z297X1",
       "fingerprint": "ckfp1:6a036d587e50ac65269e6f4ee3cbad58",
       "title": "A password is hashed with an algorithm that is broken or far too fast.",
       "severity": "high",
@@ -9779,13 +9778,13 @@
         "task": "triage",
         "level": "L3",
         "is_vulnerable": null,
-        "confidence": "medium",
-        "reasoning": "password flows directly through encode() into hashlib.md5() on line 7, and the unconstrained path is satisfiable for a string value. encode() only converts the value to bytes and does not make MD5 suitable for password storage. However, MD5 is not inherently a vulnerability when used for a non-security checksum, and this slice does not show that password is attacker-influenced, contains a password, or that the digest is used in a security-sensitive comparison. The callers of hash_password are therefore required to determine whether this is exploitable weak password hashing.",
-        "ledger_seq": 7
+        "confidence": "high",
+        "reasoning": "At line 7, password flows directly through encode() into hashlib.md5() and the resulting digest is returned. This path is unconditional and therefore satisfiable, and encode() is only a representation conversion—not a sanitizer; there is also no salt or password-specific work factor. However, MD5 is not necessarily security-relevant when used for a non-adversarial checksum or similar non-security purpose. The shown function does not establish that password is a password, that it is attacker-influenced, or that the digest protects authentication or another security property, so exploitability cannot be decided without callers.",
+        "ledger_seq": 3
       },
       "description": "A password is hashed with an algorithm that is broken or far too fast. The code relies on a cryptographic algorithm that is broken or unsuitable for its purpose, such as MD5 or SHA-1 for password storage.",
       "impact": "Protected data such as password hashes can be reversed or forged at low cost, exposing customer credentials after any database disclosure.",
-      "remediation_short_term": "If hash_password hashes passwords, replace MD5 with a password-hashing API using Argon2id, scrypt, bcrypt, or PBKDF2 with a unique salt and an appropriate work factor; otherwise document and constrain the function to its non-security checksum use.",
+      "remediation_short_term": "Use current, vetted primitives from a maintained library: AES-GCM or ChaCha20-Poly1305 for encryption with a fresh random nonce per message, SHA-256 or better for integrity, a password hashing function (Argon2id, scrypt, bcrypt) for passwords, and the operating system CSPRNG (Python secrets / os.urandom) for keys, tokens and IVs.",
       "remediation_long_term": "Maintain an approved-algorithms list, wrap cryptography in a small vetted internal library, and add a CI check that rejects deprecated primitives.",
       "remediation_effort": "medium",
       "priority": "P2",
@@ -9820,13 +9819,13 @@
         "condition": "A password is hashed with an algorithm that is broken or far too fast. (services/api/security.py:15)",
         "cause": "The code relies on a cryptographic algorithm that is broken or unsuitable for its purpose, such as MD5 or SHA-1 for password storage.",
         "consequence": "Protected data such as password hashes can be reversed or forged at low cost, exposing customer credentials after any database disclosure.",
-        "corrective_action": "If hash_password hashes passwords, replace MD5 with a password-hashing API using Argon2id, scrypt, bcrypt, or PBKDF2 with a unique salt and an appropriate work factor; otherwise document and constrain the function to its non-security checksum use."
+        "corrective_action": "Use current, vetted primitives from a maintained library: AES-GCM or ChaCha20-Poly1305 for encryption with a fresh random nonce per message, SHA-256 or better for integrity, a password hashing function (Argon2id, scrypt, bcrypt) for passwords, and the operating system CSPRNG (Python secrets / os.urandom) for keys, tokens and IVs."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-035",
-      "finding_id": "find_01M78KBMNET982T31Z37QT8JDH",
+      "finding_id": "find_01M78W6HG3DWMF60E2MH3196NQ",
       "fingerprint": "ckfp1:56cd7660b268b5af6f3fbd402ac9e81a",
       "title": "A block cipher is given a fixed initialisation vector instead of a random one.",
       "severity": "high",
@@ -10039,12 +10038,12 @@
         "level": "L3",
         "is_vulnerable": null,
         "confidence": "medium",
-        "reasoning": "Line 7 passes STATIC_IV directly as the AES-CBC IV, so the sink is security-relevant: CBC requires an unpredictable, fresh IV for each encryption under a key. The path to encrypt on line 8 is feasible when the key, IV, and encoded result have valid AES lengths. No visible operation refreshes or validates STATIC_IV; ljust and encode only transform the plaintext based on the shown code. However, the initialization and lifecycle of STATIC_IV were elided. If it is a constant or is reused between calls, repeated encryptions can reveal equality and relationships among plaintext prefixes, satisfying CWE-329. If it is freshly generated using a cryptographically secure source for every call, the finding is false. Caller and ljust context would also establish attacker influence and whether any randomized preprocessing changes the analysis.",
-        "ledger_seq": 8
+        "reasoning": "AES.new receives STATIC_IV as the CBC IV on line 7, and plaintext is transformed and passed to encrypt on line 8. The path has no branch and is satisfiable for a valid AES key, a valid 16-byte IV, and input that produces block-aligned encoded data. The ljust transformation appears on the plaintext path and does not make a reused or predictable CBC IV safe. However, STATIC_IV is not defined in the supplied code, so it could be a constant/reused value or a freshly generated unpredictable value supplied through mutable external state. The callers are also absent, leaving attacker influence and ciphertext observability unknown. Therefore the reported static-IV weakness cannot be confirmed from this slice.",
+        "ledger_seq": 6
       },
       "description": "A block cipher is given a fixed initialisation vector instead of a random one. A block cipher in a chaining mode is used with a fixed or predictable initialisation vector.",
-      "impact": "Identical plaintexts produce identical ciphertexts and, in some modes, an attacker can recover or manipulate plaintext.",
-      "remediation_short_term": "If STATIC_IV is reused, generate a fresh unpredictable IV for every encryption and transmit it with the ciphertext; preferably use an authenticated-encryption mode such as AES-GCM.",
+      "impact": "If STATIC_IV is reused or predictable and ciphertexts are observable, an attacker may detect repeated plaintext prefixes and learn relationships between encrypted messages.",
+      "remediation_short_term": "If STATIC_IV is reused or predictable, generate a fresh cryptographically random 16-byte IV for every encryption and store or transmit it with the ciphertext; preferably use an authenticated-encryption mode such as AES-GCM with correct nonce uniqueness.",
       "remediation_long_term": "Move to an authenticated encryption mode such as AES-GCM through a vetted library that manages nonces for you.",
       "remediation_effort": "low",
       "priority": "P2",
@@ -10078,14 +10077,14 @@
         "criteria": "OWASP Top 10 A02:2021 Cryptographic Failures; OWASP ASVS V6.2.6; CWE-329",
         "condition": "A block cipher is given a fixed initialisation vector instead of a random one. (services/api/security.py:27)",
         "cause": "A block cipher in a chaining mode is used with a fixed or predictable initialisation vector.",
-        "consequence": "Identical plaintexts produce identical ciphertexts and, in some modes, an attacker can recover or manipulate plaintext.",
-        "corrective_action": "If STATIC_IV is reused, generate a fresh unpredictable IV for every encryption and transmit it with the ciphertext; preferably use an authenticated-encryption mode such as AES-GCM."
+        "consequence": "If STATIC_IV is reused or predictable and ciphertexts are observable, an attacker may detect repeated plaintext prefixes and learn relationships between encrypted messages.",
+        "corrective_action": "If STATIC_IV is reused or predictable, generate a fresh cryptographically random 16-byte IV for every encryption and store or transmit it with the ciphertext; preferably use an authenticated-encryption mode such as AES-GCM with correct nonce uniqueness."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-036",
-      "finding_id": "find_01M78KBMKYS3RW2FMA4PWAFR7E",
+      "finding_id": "find_01M78W6HEY5KWCKG8MBZ58D112",
       "fingerprint": "ckfp1:47f68d5285c26da3d2cccef843a52b44",
       "title": "Handler takes an object id from the path: worth checking the caller owns it",
       "severity": "high",
@@ -10316,16 +10315,7 @@
         }
       ],
       "flow": [],
-      "verdict": {
-        "provider": "agentrouter",
-        "model": "gpt-5.6-sol",
-        "task": "triage",
-        "level": "L3",
-        "is_vulnerable": null,
-        "confidence": "medium",
-        "reasoning": "At line 11, account_id is passed directly to the custom operation accounts.close with conn. This could be a security-relevant object operation if account_id is attacker-selected, but the callee's behavior is unavailable. The visible HTTP path is also questionable: the route at line 8 declares no Flask path variable, while close_account requires account_id at line 9; ordinary Flask dispatch would therefore fail before reaching line 11. No authorization or sink-specific sanitization is visible in close_account, but accounts.close or a user/tenant-scoped connection returned by db.connect could enforce it. Consequently, attacker influence, path satisfiability, and absence of an effective authorization check cannot be established from this slice.",
-        "ledger_seq": 4
-      },
+      "verdict": null,
       "description": "Handler takes an object id from the path: worth checking the caller owns it. A record is retrieved by an identifier supplied by the caller without verifying that the caller is entitled to that record.",
       "impact": "Any authenticated user can read or change other customers' records by changing the identifier in the request, a direct breach of confidentiality and integrity.",
       "remediation_short_term": "Enforce authorisation on the server for every request: check that the authenticated principal owns or may act on the referenced object (deny by default), derive the owner from the session rather than from request parameters, and centralise the check in a decorator or policy layer so no handler can skip it.",
@@ -10369,11 +10359,11 @@
         "consequence": "Any authenticated user can read or change other customers' records by changing the identifier in the request, a direct breach of confidentiality and integrity.",
         "corrective_action": "Enforce authorisation on the server for every request: check that the authenticated principal owns or may act on the referenced object (deny by default), derive the owner from the session rather than from request parameters, and centralise the check in a decorator or policy layer so no handler can skip it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-037",
-      "finding_id": "find_01M78KBMKZ6Y1KYEFCZX0CE9AB",
+      "finding_id": "find_01M78W6HF0Z520MP5RKKFND7AG",
       "fingerprint": "ckfp1:b938aa11544e70ab5a2ba96c10f95908",
       "title": "Handler takes an object id from the path: worth checking the caller owns it",
       "severity": "high",
@@ -10643,11 +10633,11 @@
         "consequence": "Any authenticated user can read or change other customers' records by changing the identifier in the request, a direct breach of confidentiality and integrity.",
         "corrective_action": "Enforce authorisation on the server for every request: check that the authenticated principal owns or may act on the referenced object (deny by default), derive the owner from the session rather than from request parameters, and centralise the check in a decorator or policy layer so no handler can skip it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-038",
-      "finding_id": "find_01M78KBMMX03S0F6YPXA9498VD",
+      "finding_id": "find_01M78W6HFK0WRFCV3ZYNZH3XME",
       "fingerprint": "ckfp1:174a6a11b345d9447a5669d2c9433914",
       "title": "Vulnerable dependency: Jinja2 2.10 (CVE-2019-10906, CVE-2020-28493, CVE-2024-22195)",
       "severity": "high",
@@ -10925,11 +10915,11 @@
         "consequence": "Attackers can exploit the known vulnerability, for which public exploit code is often available, without finding a flaw in the application's own code.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-039",
-      "finding_id": "find_01M78KBMPWC5DDR6K8XWGC8N98",
+      "finding_id": "find_01M78W6HH2RA50NBJMAVPBFB2S",
       "fingerprint": "ckfp1:210d827711a2e16419317c0729e63571",
       "title": "Data from a http_param source reaches a path sink (fs.createReadStream)",
       "severity": "high",
@@ -11185,8 +11175,8 @@
         "level": "L3",
         "is_vulnerable": false,
         "confidence": "high",
-        "reasoning": "The sink at line 14 is security-relevant because req.query.file influences the file opened by fs.createReadStream. However, path.resolve at line 9 normalizes absolute paths and parent-directory components, and the check at line 10 permits the sink only when the resulting path begins with the resolved base directory plus path.sep. The separator prevents sibling-prefix bypasses, while rejected paths return at line 12. Thus ordinary absolute-path and `..` traversal cannot reach the sink. This does not address pre-existing symbolic links inside root, but the shown request input cannot create such links and there is no evidence that an attacker controls the filesystem namespace.",
-        "ledger_seq": 45
+        "reasoning": "The HTTP-controlled value `req.query.file` reaches the filesystem path used by `fs.createReadStream`, so the sink is security-relevant. However, `path.resolve(root, req.query.file)` normalizes absolute paths and `..` components, and the subsequent separator-aware prefix check permits the sink only when the normalized path is strictly beneath `root`. Attempts to resolve outside the base, including sibling-prefix paths, take the rejecting branch and return. Thus the path to the sink is satisfiable only for contained paths, and the validation is effective against direct path traversal. This check would not prevent traversal through an attacker-controlled symbolic link already beneath `root`, but no ability to create or control such a link is shown.",
+        "ledger_seq": 26
       },
       "description": "Data from a http_param source reaches a path sink (fs.createReadStream). A file-system path is built from data an external party controls without checking that the resolved path stays inside the intended directory.",
       "impact": "An attacker can read or overwrite files outside the intended directory, including configuration files, credentials and other customers' documents.",
@@ -11227,11 +11217,11 @@
         "consequence": "An attacker can read or overwrite files outside the intended directory, including configuration files, credentials and other customers' documents.",
         "corrective_action": "Do not use request data as a file path. Map user input to an identifier in an allow-list, or resolve the joined path (os.path.realpath / Path.resolve) and reject it unless it stays inside the intended base directory; use werkzeug.utils.safe_join or an equivalent helper."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-040",
-      "finding_id": "find_01M78KBMQ7QSC3S70Z779BM1KJ",
+      "finding_id": "find_01M78W6HHBDCF6VQ0HQQ49E6NG",
       "fingerprint": "ckfp1:186259c047deb5c6314ee9e48eb10ea8",
       "title": "Vulnerable dependency: lodash 4.17.15 (CVE-2021-23337, CVE-2020-8203, CVE-2020-28500)",
       "severity": "high",
@@ -11540,11 +11530,11 @@
         "consequence": "Attackers can exploit the known vulnerability, for which public exploit code is often available, without finding a flaw in the application's own code.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-041",
-      "finding_id": "find_01M78KBMQ979A2JE0BHTGN83Z3",
+      "finding_id": "find_01M78W6HHCYFGC7E4V2QSX3YXB",
       "fingerprint": "ckfp1:ad350edf5d639b5d02c7154c39d4da0b",
       "title": "Vulnerable dependency: axios 0.21.0 (CVE-2021-3749, CVE-2020-28168)",
       "severity": "high",
@@ -11822,11 +11812,11 @@
         "consequence": "Attackers can exploit the known vulnerability, for which public exploit code is often available, without finding a flaw in the application's own code.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-042",
-      "finding_id": "find_01M78KBMQBMHNA42P8XBV1D41X",
+      "finding_id": "find_01M78W6HHE9BEQ81C08MR7QJMY",
       "fingerprint": "ckfp1:fdffd839b0ff6e99dc32028e0548381e",
       "title": "Vulnerable dependency: jsonwebtoken 8.5.1 (CVE-2022-23529)",
       "severity": "high",
@@ -12093,11 +12083,11 @@
         "consequence": "Attackers can exploit the known vulnerability, for which public exploit code is often available, without finding a flaw in the application's own code.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-043",
-      "finding_id": "find_01M78KBME39H535QF55YE818SR",
+      "finding_id": "find_01M78W6HBGVNZ6E0291FMRDR13",
       "fingerprint": "ckfp1:d2232406253edaae8e1d5f23a20dabd8",
       "title": "The workflow grants write-all permissions to the token.",
       "severity": "medium",
@@ -12346,11 +12336,11 @@
         "consequence": "Any other weakness in the component becomes a full host or cluster compromise, because the attacker inherits the excess privileges.",
         "corrective_action": "Ship secure defaults: disable debug mode in production, set Secure, HttpOnly and SameSite on session cookies, expire sessions, verify TLS certificates, and restrict CORS to the origins that need it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-044",
-      "finding_id": "find_01M78KBMEYYX62BFWNEHZRPWFZ",
+      "finding_id": "find_01M78W6HBYDV4JEQDT8QC1WNDG",
       "fingerprint": "ckfp1:5f995f630df4b6ce444f2ae6584a487a",
       "title": "The container runs as root (no non-root USER in the final stage).",
       "severity": "medium",
@@ -12584,11 +12574,11 @@
         "consequence": "Any other weakness in the component becomes a full host or cluster compromise, because the attacker inherits the excess privileges.",
         "corrective_action": "Ship secure defaults: disable debug mode in production, set Secure, HttpOnly and SameSite on session cookies, expire sessions, verify TLS certificates, and restrict CORS to the origins that need it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-045",
-      "finding_id": "find_01M78KBMGBM6W27PDP9PA6M908",
+      "finding_id": "find_01M78W6HCB0FTFNSQ12AC8GP4E",
       "fingerprint": "ckfp1:29e05f283efec9654afe01024152b151",
       "title": "ADD fetches a remote URL with no integrity check; use COPY plus a verified download.",
       "severity": "medium",
@@ -12835,11 +12825,11 @@
         "consequence": "A network attacker or compromised mirror can substitute malicious code that then runs with build or runtime privileges.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-046",
-      "finding_id": "find_01M78KBMGZVDY7ZXA8ACM33CK6",
+      "finding_id": "find_01M78W6HCS9C2GNRQSKYJE7DEV",
       "fingerprint": "ckfp1:b6206100fa3fd94df2e48e7ea5230286",
       "title": "Service 'api' shares the host network namespace.",
       "severity": "medium",
@@ -13130,11 +13120,11 @@
         "consequence": "Attackers outside the intended sphere can reach and abuse the resource.",
         "corrective_action": "Do not write secrets, credentials, tokens or personal data to logs, error messages or URLs. Mask or omit sensitive fields at the logging boundary, return generic error messages to clients, and keep detailed diagnostics server-side."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-047",
-      "finding_id": "find_01M78KBMHTYMSW1E7ZFD68XJTH",
+      "finding_id": "find_01M78W6HDB1CR92KTN11EG3SQD",
       "fingerprint": "ckfp1:091750117ebc2058b0fbe9403e6a824a",
       "title": "Pod security context runs as UID 0.",
       "severity": "medium",
@@ -13378,11 +13368,11 @@
         "consequence": "Any other weakness in the component becomes a full host or cluster compromise, because the attacker inherits the excess privileges.",
         "corrective_action": "Ship secure defaults: disable debug mode in production, set Secure, HttpOnly and SameSite on session cookies, expire sessions, verify TLS certificates, and restrict CORS to the origins that need it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-048",
-      "finding_id": "find_01M78KBMJ84E3GKHTGE6837KVM",
+      "finding_id": "find_01M78W6HDPHVPXD2M8F2YTHE3Y",
       "fingerprint": "ckfp1:7782d151cb3c4191c3d20b7a709044fc",
       "title": "Database 'ledger' storage is not encrypted.",
       "severity": "medium",
@@ -13637,11 +13627,11 @@
         "consequence": "Anyone who can read the storage or the network traffic obtains the data.",
         "corrective_action": "Use current, vetted primitives from a maintained library: AES-GCM or ChaCha20-Poly1305 for encryption with a fresh random nonce per message, SHA-256 or better for integrity, a password hashing function (Argon2id, scrypt, bcrypt) for passwords, and the operating system CSPRNG (Python secrets / os.urandom) for keys, tokens and IVs."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-049",
-      "finding_id": "find_01M78KBMP23T488HHMA7M1NMEM",
+      "finding_id": "find_01M78W6HGFS6DG23V98F2TWNAK",
       "fingerprint": "ckfp1:349b16c061dc40d8ca003f9ccc851031",
       "title": "CORS allows every origin ('*'); any website can call this API from a user's browser.",
       "severity": "medium",
@@ -13874,11 +13864,11 @@
         "consequence": "Malicious sites can read authenticated responses.",
         "corrective_action": "Ship secure defaults: disable debug mode in production, set Secure, HttpOnly and SameSite on session cookies, expire sessions, verify TLS certificates, and restrict CORS to the origins that need it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-050",
-      "finding_id": "find_01M78KBMPYVT592R7BYQ0NRWV3",
+      "finding_id": "find_01M78W6HH4XGEHBWWESCNNZSNG",
       "fingerprint": "ckfp1:45993c81fb9c250d3750cd2e37ed1e05",
       "title": "Vulnerable dependency: express 4.16.0 (CVE-2024-29041, CVE-2024-43796)",
       "severity": "medium",
@@ -14111,7 +14101,7 @@
       ],
       "flow": [],
       "verdict": null,
-      "description": "Vulnerable dependency: express 4.16.0 (CVE-2024-29041, CVE-2024-43796)\n- GHSA-rv95-896h-c2vc (CVE-2024-29041), medium: Express open redirect in malformed URLs. Fixed in 4.19.2.\n- GHSA-qw6h-vgh9-j6wx (CVE-2024-43796), low: Express XSS via response.redirect(). Fixed in 4.20.0.\nRemediation: upgrade express to 4.20.0 or later (resolves all listed advisories).\nReachability: the package is imported (services/web/routes.js:3).\nExploitation data: no KEV or EPSS snapshot installed (run `codekavach sca update`).",
+      "description": "Vulnerable dependency: express 4.16.0 (CVE-2024-29041, CVE-2024-43796)\n- GHSA-rv95-896h-c2vc (CVE-2024-29041), medium: Express open redirect in malformed URLs. Fixed in 4.19.2.\n- GHSA-qw6h-vgh9-j6wx (CVE-2024-43796), low: Express XSS via response.redirect(). Fixed in 4.20.0.\nRemediation: upgrade express to 4.20.0 or later (resolves all listed advisories).\nReachability: the package is imported (services/web/routes.js:3); basis: module-level import (the advisory names no symbols).\nExploitation data: no KEV or EPSS snapshot installed (run `codekavach sca update`).",
       "impact": "Attackers can exploit the known vulnerability, for which public exploit code is often available, without finding a flaw in the application's own code.",
       "remediation_short_term": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations.",
       "remediation_long_term": "Run software composition analysis in CI, keep an SBOM, and automate dependency updates.",
@@ -14170,11 +14160,11 @@
         "consequence": "Attackers can exploit the known vulnerability, for which public exploit code is often available, without finding a flaw in the application's own code.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-051",
-      "finding_id": "find_01M78KBMQN1NR66KJTD9ZRGFQ7",
+      "finding_id": "find_01M78W6HHQFSNH94KD68V4QBHP",
       "fingerprint": "ckfp1:c61f78565cd3be17d894bac5f10dc4ed",
       "title": "Data from a http_param source reaches a html sink (res.send)",
       "severity": "medium",
@@ -14396,12 +14386,12 @@
         "level": "L3",
         "is_vulnerable": true,
         "confidence": "high",
-        "reasoning": "The sink is security-relevant because res.send constructs an HTML response. Attacker-controlled req.query.name is concatenated directly into an HTML text context. The path is unconditional and therefore satisfiable. No validation, contextual output encoding, or other effective sanitizer appears before the sink, so a value containing closing tags and executable markup can alter the response DOM.",
-        "ledger_seq": 51
+        "reasoning": "At line 4, attacker-influenced data from req.query.name is concatenated directly into an HTML-shaped string passed to res.send. The sink is security-relevant because send commonly emits a string response as HTML. The path is unconditional once renderGreeting is invoked, and no validation, contextual HTML encoding, or other sanitizer occurs before the value reaches the sink. An attacker can therefore supply markup or script through name and have it interpreted by the browser.",
+        "ledger_seq": 45
       },
       "description": "Data from a http_param source reaches a html sink (res.send). Data from the request is written into an HTML response without context-aware output encoding, so a browser may interpret it as markup or script.",
-      "impact": "An attacker can execute JavaScript in another user's browser in the application's security origin. This permits page modification and phishing, access to non-HttpOnly origin data, and authenticated actions using the victim's session. The exact account and data impact depends on the functionality available on that origin.\n\nAttack scenario: An attacker creates a URL to `renderGreeting`'s route with an HTML/JavaScript payload in the `name` query parameter and convinces a signed-in user to open it. The server reflects the payload through `res.send`; the victim's browser renders the response and executes the injected script under the application's origin. The script can read origin-accessible data or issue authenticated requests as the victim.\n\nAffected: Users' browser sessions and any application data accessible to client-side code on the same origin; Integrity of the rendered page and actions performed through the victim's account\n\nPreconditions: The route must be reachable with an attacker-supplied `name` query parameter, the response must be interpreted as HTML, and a victim must open the crafted URL. Effective protections such as a restrictive Content Security Policy must not prevent the chosen payload. Account compromise or data access additionally depends on what authenticated functionality and browser-accessible data exist on the same origin.",
-      "remediation_short_term": "1. Add a maintained HTML-encoding library such as `escape-html` as a direct dependency.\n2. Convert `req.query.name` to a string and encode it immediately before insertion into the HTML text context.\n3. Keep encoding context-specific; use the appropriate encoder if the value is later placed in an attribute, URL, CSS, or JavaScript context.\n4. Prefer an auto-escaping template engine for larger HTML responses.\n\nSecure example:\n```javascript\nres.send(\n  '<xx>xxxxxxx xxxx, ' +\n  require('escape-html')(String(req.query.name ?? '')) +\n  '</xx>'\n);\n```\n\nDefence in depth:\n- Apply a restrictive Content-Security-Policy that disallows inline scripts.\n- Validate the field's type, length, and expected business format before rendering it; validation does not replace output encoding.\n- Add regression tests with HTML metacharacters and executable-markup payloads to verify they are displayed only as text.",
+      "impact": "An attacker can execute JavaScript in another user's browser under the application's origin. This can expose same-origin page data and non-HttpOnly credentials or tokens, alter displayed content, and perform application actions using the victim's authenticated session. The code shown supports reflected rather than persistent exploitation.\n\nAttack scenario: An attacker creates a URL whose `name` query value contains markup that breaks out of the surrounding element and executes JavaScript. The attacker sends the URL to an authenticated user. When the user opens it, `renderGreeting` reflects the payload in the HTML response, and the browser executes it under the application's origin, allowing the payload to read same-origin data and issue authenticated requests as the victim.\n\nAffected: Browser data accessible to scripts under the application's origin; Authenticated user actions and application data available through the victim's session; Integrity of content displayed to the victim\n\nPreconditions: `renderGreeting` must be reachable through an HTTP request; the attacker must control `name`; `res.send` must return the constructed string as browser-rendered HTML; and no downstream sanitizer or effective browser policy such as a restrictive CSP may prevent execution. A victim must load the crafted request.",
+      "remediation_short_term": "1. Use a maintained HTML-encoding library such as `escape-html`.\n2. Convert the query value to a string and encode it immediately before insertion into the HTML response.\n3. Keep the encoded value in HTML text content; use the encoder appropriate to the destination if it is later moved into an attribute, URL, script, or style context.\n4. If markup is not required, remove the HTML wrapper and explicitly send a `text/plain` response instead.\n5. Add regression tests using angle brackets, quotes, entities, and event-handler markup.\n\nSecure example:\n```javascript\nres.send(\n  '<xx>xxxxxxx xxxx, ' +\n  require('escape-html')(String(req.query.name ?? '')) +\n  '</xx>'\n);\n```\n\nDefence in depth:\n- Deploy a restrictive Content Security Policy, preferably without `unsafe-inline`, to reduce impact if another injection path exists.\n- Apply business-specific type and length limits to `req.query.name`; do not treat validation as a substitute for output encoding.\n- Prefer an auto-escaping server-side template engine for responses containing multiple dynamic HTML values.",
       "remediation_long_term": "Adopt auto-escaping templates throughout, deploy a strict Content-Security-Policy, and set HttpOnly on session cookies.",
       "remediation_effort": "low",
       "priority": "P3",
@@ -14431,14 +14421,14 @@
         "criteria": "OWASP Top 10 A03:2021 Injection; OWASP ASVS V5.3.3; OWASP ASVS V5.2.1; CWE-79",
         "condition": "Data from a http_param source reaches a html sink (res.send) (services/web/renderer.js:18)",
         "cause": "Data from the request is written into an HTML response without context-aware output encoding, so a browser may interpret it as markup or script.",
-        "consequence": "An attacker can execute JavaScript in another user's browser in the application's security origin. This permits page modification and phishing, access to non-HttpOnly origin data, and authenticated actions using the victim's session. The exact account and data impact depends on the functionality available on that origin.\n\nAttack scenario: An attacker creates a URL to `renderGreeting`'s route with an HTML/JavaScript payload in the `name` query parameter and convinces a signed-in user to open it. The server reflects the payload through `res.send`; the victim's browser renders the response and executes the injected script under the application's origin. The script can read origin-accessible data or issue authenticated requests as the victim.\n\nAffected: Users' browser sessions and any application data accessible to client-side code on the same origin; Integrity of the rendered page and actions performed through the victim's account\n\nPreconditions: The route must be reachable with an attacker-supplied `name` query parameter, the response must be interpreted as HTML, and a victim must open the crafted URL. Effective protections such as a restrictive Content Security Policy must not prevent the chosen payload. Account compromise or data access additionally depends on what authenticated functionality and browser-accessible data exist on the same origin.",
-        "corrective_action": "1. Add a maintained HTML-encoding library such as `escape-html` as a direct dependency.\n2. Convert `req.query.name` to a string and encode it immediately before insertion into the HTML text context.\n3. Keep encoding context-specific; use the appropriate encoder if the value is later placed in an attribute, URL, CSS, or JavaScript context.\n4. Prefer an auto-escaping template engine for larger HTML responses.\n\nSecure example:\n```javascript\nres.send(\n  '<xx>xxxxxxx xxxx, ' +\n  require('escape-html')(String(req.query.name ?? '')) +\n  '</xx>'\n);\n```\n\nDefence in depth:\n- Apply a restrictive Content-Security-Policy that disallows inline scripts.\n- Validate the field's type, length, and expected business format before rendering it; validation does not replace output encoding.\n- Add regression tests with HTML metacharacters and executable-markup payloads to verify they are displayed only as text."
+        "consequence": "An attacker can execute JavaScript in another user's browser under the application's origin. This can expose same-origin page data and non-HttpOnly credentials or tokens, alter displayed content, and perform application actions using the victim's authenticated session. The code shown supports reflected rather than persistent exploitation.\n\nAttack scenario: An attacker creates a URL whose `name` query value contains markup that breaks out of the surrounding element and executes JavaScript. The attacker sends the URL to an authenticated user. When the user opens it, `renderGreeting` reflects the payload in the HTML response, and the browser executes it under the application's origin, allowing the payload to read same-origin data and issue authenticated requests as the victim.\n\nAffected: Browser data accessible to scripts under the application's origin; Authenticated user actions and application data available through the victim's session; Integrity of content displayed to the victim\n\nPreconditions: `renderGreeting` must be reachable through an HTTP request; the attacker must control `name`; `res.send` must return the constructed string as browser-rendered HTML; and no downstream sanitizer or effective browser policy such as a restrictive CSP may prevent execution. A victim must load the crafted request.",
+        "corrective_action": "1. Use a maintained HTML-encoding library such as `escape-html`.\n2. Convert the query value to a string and encode it immediately before insertion into the HTML response.\n3. Keep the encoded value in HTML text content; use the encoder appropriate to the destination if it is later moved into an attribute, URL, script, or style context.\n4. If markup is not required, remove the HTML wrapper and explicitly send a `text/plain` response instead.\n5. Add regression tests using angle brackets, quotes, entities, and event-handler markup.\n\nSecure example:\n```javascript\nres.send(\n  '<xx>xxxxxxx xxxx, ' +\n  require('escape-html')(String(req.query.name ?? '')) +\n  '</xx>'\n);\n```\n\nDefence in depth:\n- Deploy a restrictive Content Security Policy, preferably without `unsafe-inline`, to reduce impact if another injection path exists.\n- Apply business-specific type and length limits to `req.query.name`; do not treat validation as a substitute for output encoding.\n- Prefer an auto-escaping server-side template engine for responses containing multiple dynamic HTML values."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-052",
-      "finding_id": "find_01M78KBMGDMJHZRMW5NJWXEYK9",
+      "finding_id": "find_01M78W6HCCQMFHAZ56ZTMMDEGS",
       "fingerprint": "ckfp1:951844b75af8c872aaa997f4c395566f",
       "title": "RUN pipes a download straight into a shell without integrity verification.",
       "severity": "medium",
@@ -14690,11 +14680,11 @@
         "consequence": "A network attacker or compromised mirror can substitute malicious code that then runs with build or runtime privileges.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-053",
-      "finding_id": "find_01M78KBMNS6TMK2B5P7EHT7653",
+      "finding_id": "find_01M78W6HGACGVTSBYKATD9981N",
       "fingerprint": "ckfp1:e79e90f6f2f8a2e0415cba5705ba4957",
       "title": "Debug mode is enabled; it exposes stack traces and interactive consoles in production.",
       "severity": "medium",
@@ -14927,11 +14917,11 @@
         "consequence": "Debug endpoints and verbose errors disclose internals and can allow code execution.",
         "corrective_action": "Ship secure defaults: disable debug mode in production, set Secure, HttpOnly and SameSite on session cookies, expire sessions, verify TLS certificates, and restrict CORS to the origins that need it."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-054",
-      "finding_id": "find_01M78KBMQY1KWSGAGMJYSAZE6A",
+      "finding_id": "find_01M78W6HHZWCP8RZCRBM733F22",
       "fingerprint": "ckfp1:3117800ddb64c87c0a0b6cb7c5e8ef2b",
       "title": "Data from a http_param source reaches a html sink (res.send)",
       "severity": "medium",
@@ -15153,8 +15143,8 @@
         "level": "L3",
         "is_vulnerable": false,
         "confidence": "high",
-        "reasoning": "`req.query.name` is attacker-influenced and reaches `res.send`, so the response is a security-relevant HTML sink and the path is satisfiable. However, the value is passed through `escapeHtml` before concatenation. It is inserted into an HTML element's text content rather than an attribute, script, style, or URL context, so HTML escaping is the appropriate sanitizer and prevents markup or script injection.",
-        "ledger_seq": 30
+        "reasoning": "The query value req.query.name is attacker-influenced, the path to res.send is unconditional, and the response is an HTML-relevant sink. However, the value is inserted only into element text between fixed tags and is first passed through escapeHtml. HTML escaping is the appropriate contextual encoding for this placement, and no subsequent decoding or unsafe transformation is shown. Therefore, although the tainted-data path is feasible, it is effectively sanitized before reaching the sink.",
+        "ledger_seq": 36
       },
       "description": "Data from a http_param source reaches a html sink (res.send). Data from the request is written into an HTML response without context-aware output encoding, so a browser may interpret it as markup or script.",
       "impact": "An attacker can execute script in a victim's browser session, steal session tokens, perform actions as the victim and deface or phish from a trusted origin.",
@@ -15191,11 +15181,11 @@
         "consequence": "An attacker can execute script in a victim's browser session, steal session tokens, perform actions as the victim and deface or phish from a trusted origin.",
         "corrective_action": "Encode untrusted data for the output context (HTML body, attribute, JavaScript, URL) using the template engine's auto-escaping, and never mark request data as safe (Markup, |safe, dangerouslySetInnerHTML, innerHTML). Add a restrictive Content-Security-Policy as defence in depth."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-055",
-      "finding_id": "find_01M78KBMFYPAXAXT4TKYTK38VY",
+      "finding_id": "find_01M78W6HC9F1MSZA0A6RMP0EM9",
       "fingerprint": "ckfp1:575e0f3b89fa8f08ae6b8a716f3670ab",
       "title": "Base image uses the floating 'latest' tag or no tag, so builds are not reproducible and may pull an unreviewed image.",
       "severity": "low",
@@ -15433,11 +15423,11 @@
         "consequence": "A compromised or abandoned upstream can introduce vulnerable or malicious code.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-056",
-      "finding_id": "find_01M78KBMHMX5KXC34TMV7YVPGS",
+      "finding_id": "find_01M78W6HD70JP56TYXXQM3B3TY",
       "fingerprint": "ckfp1:e960c94201a74f9a7e68d1b6a7be8353",
       "title": "Container 'api' has no resource limits.",
       "severity": "low",
@@ -15668,11 +15658,11 @@
         "consequence": "An attacker can exhaust the resource and deny service to legitimate users.",
         "corrective_action": "Bound every resource an attacker can drive: limit request and upload sizes, decompressed archive sizes and entry counts, use regular expressions without nested quantifiers (or a linear-time engine) on untrusted input, and set time-outs and rate limits."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-057",
-      "finding_id": "find_01M78KBMHPFYKAF23SN829YDJR",
+      "finding_id": "find_01M78W6HD8ZF1V2YYBRA15E4QB",
       "fingerprint": "ckfp1:0e96cb749c726daec7f638742df172c7",
       "title": "Container 'api' uses a floating image tag.",
       "severity": "low",
@@ -15925,11 +15915,11 @@
         "consequence": "A compromised or abandoned upstream can introduce vulnerable or malicious code.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-058",
-      "finding_id": "find_01M78KBMEF940DGVSTHHDYJS8Q",
+      "finding_id": "find_01M78W6HBRAQ4VRPWQAMYY5NBF",
       "fingerprint": "ckfp1:b18c294516689c1f3f413f4f1f0b0532",
       "title": "Action reference in job 'build' is not pinned to a commit SHA, so a moved tag changes what runs.",
       "severity": "low",
@@ -16184,11 +16174,11 @@
         "consequence": "An attacker can run code with the pipeline's secrets and write token, tamper with releases and pivot into the supply chain.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     },
     {
       "report_id": "CK-2026-059",
-      "finding_id": "find_01M78KBMEWJ2NYFRWBCF68R868",
+      "finding_id": "find_01M78W6HBXW53P2T90GTG6HYM5",
       "fingerprint": "ckfp1:471879da9a1cbe4019240d54d895da30",
       "title": "Action reference in job 'build' is not pinned to a commit SHA, so a moved tag changes what runs.",
       "severity": "low",
@@ -16428,13 +16418,13 @@
         "consequence": "An attacker can run code with the pipeline's secrets and write token, tamper with releases and pivot into the supply chain.",
         "corrective_action": "Bind request data only to an explicit allow-list of fields (DTOs), never merge untrusted objects into prototypes or configuration, and load code and libraries only from fixed, trusted locations."
       },
-      "first_seen_scan_id": "scan_01M78K3BA5K1D80DN813RKHE0V"
+      "first_seen_scan_id": "scan_01M78VV81Y29KGWQC4CZHQY0WJ"
     }
   ],
   "coverage": {
-    "files_discovered": 30,
-    "files_analysed": 30,
-    "lines_analysed": 947,
+    "files_discovered": 29,
+    "files_analysed": 29,
+    "lines_analysed": 936,
     "by_language": [
       [
         "YAML",
@@ -16462,7 +16452,7 @@
       ]
     ],
     "candidates_total": 59,
-    "candidates_reviewed_by_llm": 13,
+    "candidates_reviewed_by_llm": 12,
     "not_reviewed": [
       [
         "egress_blocked",
@@ -16470,6 +16460,10 @@
       ],
       [
         "llm_output_invalid",
+        1
+      ],
+      [
+        "llm_request_failed",
         1
       ],
       [
@@ -16485,7 +16479,6 @@
       ".codekavachignore",
       ".github/workflows/ci.yml",
       "README.md",
-      "codekavach.toml",
       "deploy/Dockerfile",
       "deploy/docker-compose.yml",
       "deploy/k8s/api.yaml",
@@ -16517,9 +16510,9 @@
   "privacy_attestation": {
     "default_level": "L3",
     "levels": [],
-    "provider": null,
-    "model": null,
-    "provider_is_local": true,
+    "provider": "agentrouter",
+    "model": "gpt-5.6-sol",
+    "provider_is_local": false,
     "offline_notice": null,
     "disclosure": [
       [
@@ -16548,7 +16541,7 @@
       ],
       [
         "repository_fraction_pct",
-        "9.08"
+        "9.19"
       ],
       [
         "call_edges",
@@ -16567,8 +16560,8 @@
         "2"
       ]
     ],
-    "ledger_head_hash": "fc5127cbb93a05fb615e7562d0dfd992cacc7fa1f6f3efb9a1be5eb28e6673c1",
-    "ledger_entries": 52,
+    "ledger_head_hash": "9f10f34c7def11e378c61d4ec5f22ea9b04d4233827870dfda1558f6c9125962",
+    "ledger_entries": 56,
     "entries_by_outcome": [
       [
         "blocked",
@@ -16576,31 +16569,31 @@
       ],
       [
         "completed",
-        22
+        23
       ],
       [
         "failed",
-        3
+        4
       ],
       [
         "sent",
-        25
+        27
       ]
     ],
     "zero_leak": {
-      "checked": false,
-      "terms_checked": 0,
+      "checked": true,
+      "terms_checked": 31,
       "occurrences": 0,
-      "passed": false
+      "passed": true
     },
     "retention": "kept until the vault is destroyed",
     "not_covered": "What this attestation does not cover. The zero-leak check is verbatim: it looks for the listed terms as written and does not detect a term that was paraphrased, split or encoded. The structure of the code, its control flow, the libraries it uses and the technology stack are still disclosed to the model whatever the privacy level. Structural leakage, meaning what an observer could infer from that structure, is measured separately by the evaluation harness and is not part of this check.",
     "chain_ok": true,
     "chain_detail": null,
-    "requests_sent": 25,
+    "requests_sent": 27,
     "requests_blocked": 2,
-    "tokens_prompt": 85850,
-    "tokens_completion": 200315,
+    "tokens_prompt": 92314,
+    "tokens_completion": 187292,
     "placeholders_by_type": [
       [
         "secret:razorpay_key_id",
@@ -16636,13 +16629,8 @@
     },
     {
       "id": "L-5",
-      "kind": "model",
-      "statement": "No live language model was used in this run; model verdicts, where shown, come from the offline provider."
-    },
-    {
-      "id": "L-6",
       "kind": "coverage",
-      "statement": "Some candidates were not reviewed by the model: egress_blocked (2), llm_output_invalid (1), privacy_pseudonymise_failed (6), privacy_slice_failed (37). They are still reported with their deterministic rating."
+      "statement": "Some candidates were not reviewed by the model: egress_blocked (2), llm_output_invalid (1), llm_request_failed (1), privacy_pseudonymise_failed (6), privacy_slice_failed (37). They are still reported with their deterministic rating."
     }
   ],
   "tools": [
@@ -16700,6 +16688,14 @@
       "role": "Detection engine",
       "licence": "",
       "distribution_mode": "local",
+      "configuration_digest": null
+    },
+    {
+      "name": "agentrouter / gpt-5.6-sol",
+      "version": "n/a",
+      "role": "Model-assisted triage (advisory)",
+      "licence": "",
+      "distribution_mode": "remote API",
       "configuration_digest": null
     }
   ]

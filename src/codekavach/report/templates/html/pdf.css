@@ -32,7 +32,8 @@ tr { page-break-inside: avoid; }
 .kpi .v { font-size: 20pt; }
 nav.toc ol { columns: 1; }
 nav.toc a::after { content: leader(".") " " target-counter(attr(href), page); color: {{ theme.muted }}; }
-.attest { page-break-inside: avoid; }
+.attest { page-break-inside: auto; }
+#privacy h2, .attest .badges { page-break-after: avoid; }
 .chart-card { page-break-inside: avoid; }
 .kpi { flex: 1 1 15%; padding: 8px 10px; }
 .chart-card .ck-chart { width: 100%; }

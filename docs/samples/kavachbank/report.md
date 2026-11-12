@@ -1,6 +1,6 @@
 # Secure Source Code Review: KavachBank
 
-**Report** CK-RPT-2026-13RKHE0V · **Classification** Confidential · **Generated** 2026-11-12 19:25 UTC
+**Report** CK-RPT-2026-CZHQY0WJ · **Classification** Confidential · **Generated** 2026-11-12 22:00 UTC
 
 **Overall risk: Critical** · 59 findings
 
@@ -10,16 +10,16 @@
 
 ## Executive summary
 
-Thapar Institute of Engineering and Technology commissioned a secure source code review of KavachBank. The review was performed on 12 November 2026 with CodeKavach, combining deterministic rule and taint analysis with model-assisted triage under a privacy-preserving egress policy. 30 files and 947 lines of YAML, Python, Unknown, JavaScript, Dockerfile, Terraform code were analysed.
+Thapar Institute of Engineering and Technology commissioned a secure source code review of KavachBank. The review was performed on 12 November 2026 with CodeKavach, combining deterministic rule and taint analysis with model-assisted triage under a privacy-preserving egress policy. 29 files and 936 lines of YAML, Python, JavaScript, Dockerfile, Terraform code were analysed.
 
-The review identified 59 findings (15 critical, 27 high, 12 medium, 5 low). The overall security posture is rated critical: at least one weakness can be exploited to compromise the application or its data, and immediate action is required. 6 findings are supported by a complete source-to-sink data-flow trace.
+The review identified 59 findings (15 critical, 27 high, 12 medium, 5 low). The overall security posture is rated critical: at least one weakness can be exploited to compromise the application or its data, and immediate action is required. 6 findings are supported by a complete source-to-sink data-flow trace. 12 findings were independently assessed by the language model gpt-5.6-sol (agentrouter); it judged 5 of them exploitable. Model assessments are advisory and no finding was dismissed by a model.
 
 
 ### Most significant findings
 
 - CK-2026-001 (Critical): A pull_request_target workflow checks out the pull request head, running untrusted code with repository secrets and a write token. An attacker can run code with the pipeline's secrets and write token, tamper with releases and pivot into the supply chain.
 - CK-2026-002 (Critical): Container 'api' is privileged. Any other weakness in the component becomes a full host or cluster compromise, because the attacker inherits the excess privileges.
-- CK-2026-003 (Critical): Data from a http_param source reaches a sql sink (cur.execute). If account_id is attacker-controlled, an attacker could alter the query predicate and potentially retrieve unauthorized database rows; broader effects depend on the database driver and permissions.
+- CK-2026-003 (Critical): Data from a http_param source reaches a sql sink (cur.execute). If account_id is attacker-controlled, an attacker can alter the SELECT query and potentially cause find_premium_account to return unauthorized database rows; broader effects depend on the database driver and account permissions.
 - CK-2026-004 (Critical): Hard-coded credential of type connection_string (masked preview po****** (51 chars), entropy 4.91 bits/char). Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.
 - CK-2026-005 (Critical): Hard-coded credential of type aws_access_key (masked preview AK****** (20 chars), entropy 3.68 bits/char). Anyone with access to the repository, a build artefact or a decompiled binary obtains the credential; rotating it requires a code change and redeployment.
 
@@ -163,7 +163,7 @@ The most frequent weakness classes are CWE-798 Use of Hard-coded Credentials (11
 - **Severity:** critical · **Risk:** 25 (critical) · **Confidence:** high
 - **CWE:** CWE-89 · **OWASP:** A03:2021 Injection
 - **Location:** `services/api/accounts.py:11`
-- **Remediation:** If account_id is attacker-influenced, pass it separately using the database driver's parameterized-query API and its required placeholder syntax rather than formatting it into the SQL string.
+- **Remediation:** If account_id can be attacker-controlled, use the database driver's parameter-binding API and pass account_id separately from the SQL text, without quoting the placeholder. Optionally enforce the expected identifier type as defense in depth.
 - **Model assessment:** Undecided (gpt-5.6-sol)
 
 ### CK-2026-004: Hard-coded credential of type connection_string (masked preview po****** (51 chars), entropy 4.91 bits/char).
@@ -192,7 +192,7 @@ The most frequent weakness classes are CWE-798 Use of Hard-coded Credentials (11
 - **Severity:** critical · **Risk:** 20 (critical) · **Confidence:** high
 - **CWE:** CWE-798 · **OWASP:** A07:2021 Identification and Authentication Failures
 - **Location:** `services/web/config.js:10`
-- **Remediation:** 1. Revoke and rotate the exposed 'razorpayKeyId'/'razorpayKeySecret' credential pair immediately. 2. Store the replacements in a managed secrets service, or inject them as protected deployment environment variables. 3. Replace both literals with runtime lookups and do not provide hard-coded fallback values. 4. Validate at startup that both values are present and terminate without printing them if either is missing. 5. Remove the credentials from repository history, build artifacts, caches, and deployment bundles, then redeploy using the rotated values. 6. Ensure local secret files are excluded from version control and are not copied into container images.  Secure example: '''javascript razorpayKeyId: process.env.razorpayKeyId,   razorpayKeySecret: process.env.razorpayKeySecret, '''  Defence in depth: - Enable repository and CI secret scanning with push protection for future commits. - Restrict secret-store access to the application identity, use separate credentials per environment, and grant only required permissions. - Prevent configuration and environment values from appearing in logs, diagnostics, error reports, or support bundles.
+- **Remediation:** 1. Revoke and rotate the exposed credential pair immediately. 2. Store the replacement values in the deployment platform's secrets manager; use protected environment variables only if a secrets manager is unavailable. 3. Replace the hardcoded values in razorpayKeyId and razorpayKeySecret with runtime secret lookups. 4. Validate both values at startup and fail closed when either is absent; do not add hardcoded fallback values. 5. Remove the credentials from repository history, build caches, published packages, and deployment artifacts after rotation. 6. Update each deployment environment with its own replacement credentials and verify authentication succeeds.  Secure example: '''javascript razorpayKeyId: process.env.razorpayKeyId,   razorpayKeySecret: process.env.razorpayKeySecret, '''  Defence in depth: - Enable secret scanning in pre-commit hooks and CI to block future committed credentials. - Use separate, least-privileged credentials for each environment and rotate them periodically. - Prevent configuration objects and environment contents from being exposed through logs, diagnostics, or error responses.
 - **Model assessment:** Confirmed vulnerable (gpt-5.6-sol)
 
 ### CK-2026-008: Hard-coded credential of type generic_credential (masked preview ad****** (12 chars), entropy 3.08 bits/char).
@@ -228,15 +228,15 @@ The most frequent weakness classes are CWE-798 Use of Hard-coded Credentials (11
 - **Severity:** critical · **Risk:** 25 (critical) · **Confidence:** medium
 - **CWE:** CWE-78 · **OWASP:** A03:2021 Injection
 - **Location:** `services/api/reports.py:9`
-- **Remediation:** If either parameter can be untrusted, avoid the shell and pass separate arguments, for example subprocess.run(["zip", "-x", archive_name, folder], check=True), while also handling option-like values according to the zip CLI's argument rules.
-- **Model assessment:** Undecided (gpt-5.6-sol)
+- **Remediation:** 1. Replace the formatted command string with an argument list. 2. Remove 'shell=True'; 'subprocess.run' then invokes the program without shell interpretation. 3. Validate 'archive_name' and 'folder' against the narrow syntax required by the application, especially to prevent command-line option injection. 4. Keep 'check=True' so execution failures are not silently ignored.  Secure example: '''python subprocess.run(["zip", "-x", archive_name, folder], check=True) '''  Defence in depth: - Allow-list each parameter according to its expected filename or pattern grammar, including rejecting unexpected option-like values such as those beginning with '-'. - Run the process with minimal filesystem permissions and access only to the required files. - Use a trusted executable path or tightly controlled 'PATH', and consider a timeout to constrain subprocess execution.
+- **Model assessment:** Confirmed vulnerable (gpt-5.6-sol)
 
 ### CK-2026-013: Data is deserialised with a loader that can construct arbitrary objects.
 
 - **Severity:** critical · **Risk:** 20 (critical) · **Confidence:** medium
 - **CWE:** CWE-502 · **OWASP:** A08:2021 Software and Data Integrity Failures
 - **Location:** `services/api/serialisation.py:14`
-- **Remediation:** If blob can be attacker-influenced, replace pickle with a non-executable format such as JSON plus strict schema validation. If pickle is unavoidable, accept only authenticated data from a trusted source before deserialization; type checks alone are insufficient.
+- **Remediation:** If blob can be untrusted, replace pickle with a non-executable format such as JSON plus strict schema validation. If pickle is unavoidable, accept it only from a trusted source and verify a cryptographic signature before calling pickle.loads.
 - **Model assessment:** Undecided (gpt-5.6-sol)
 
 ### CK-2026-014: Hard-coded credential of type razorpay_key_secret (masked preview ab****** (24 chars), entropy 4.58 bits/char).
@@ -244,7 +244,7 @@ The most frequent weakness classes are CWE-798 Use of Hard-coded Credentials (11
 - **Severity:** critical · **Risk:** 20 (critical) · **Confidence:** medium
 - **CWE:** CWE-798 · **OWASP:** A07:2021 Identification and Authentication Failures
 - **Location:** `services/web/config.js:11`
-- **Remediation:** 1. Revoke and rotate the exposed Razorpay key secret immediately. 2. Store the replacement in a managed secrets service or a protected deployment environment variable. 3. Replace the hard-coded 'razorpayKeySecret' value with runtime retrieval and do not provide a source-code fallback. 4. Validate during startup that the secret is present, and fail closed if it is missing. 5. Remove the credential from repository history, build artifacts, caches, and deployment bundles; do this in addition to rotation. 6. Redeploy with the rotated credential and verify that the old credential no longer works.  Secure example: '''javascript razorpayKeySecret: process.env.razorpayKeySecret, '''  Defence in depth: - Add pre-commit and CI secret scanning that blocks Razorpay credentials from entering source or artifacts. - Use separate, least-privilege credentials per environment and rotate them on a defined schedule. - Prevent configuration objects and environment variables from being written to application, CI, or deployment logs.
+- **Remediation:** 1. Revoke and rotate the hardcoded razorpay key secret immediately; rotate the associated credential pair if required by the provider. 2. Store the replacement secret in the deployment platform's secrets manager or protected environment configuration. 3. Replace the hard-coded values in 'razorpayKeySecret' and 'razorpayKeyId' with runtime lookups and provide no literal fallback. 4. Validate required configuration during startup and terminate safely if it is absent. 5. Remove the embedded credentials from repository history, build artifacts, packages, caches, and deployment bundles. 6. Redeploy using the rotated credential and verify that the revoked credential no longer works.  Secure example: '''javascript razorpayKeyId: process.env.razorpayKeyId, razorpayKeySecret: process.env.razorpayKeySecret, '''  Defence in depth: - Restrict the runtime identity so it can read only the required secret, and audit secret-access events. - Enable secret scanning in pre-commit hooks and CI to block future credential commits. - Prevent configuration objects and environment variables from being written to logs or error reports.
 - **Model assessment:** Confirmed vulnerable (gpt-5.6-sol)
 
 ### CK-2026-015: Vulnerable dependency: PyYAML 5.3 (CVE-2020-14343)
@@ -357,7 +357,7 @@ The most frequent weakness classes are CWE-798 Use of Hard-coded Credentials (11
 - **Severity:** high · **Risk:** 20 (critical) · **Confidence:** high
 - **CWE:** CWE-22 · **OWASP:** A01:2021 Broken Access Control
 - **Location:** `services/web/exporter.js:9`
-- **Remediation:** Resolve the candidate against a canonical base directory and reject it unless path.relative confirms it remains beneath that base. Prefer an allowlist of permitted filenames, and account for symlink escapes when untrusted users can affect filesystem entries.
+- **Remediation:** Prefer mapping an allowlisted identifier to a server-controlled filename. Otherwise, canonicalize both config.exportDir and the requested file, reject absolute or traversal paths, verify the canonical result remains beneath the canonical base directory, and account for symlink escapes.
 - **Model assessment:** Confirmed vulnerable (gpt-5.6-sol)
 
 ### CK-2026-031: Data from a http_param source reaches a http sink (fetch)
@@ -365,7 +365,7 @@ The most frequent weakness classes are CWE-798 Use of Hard-coded Credentials (11
 - **Severity:** high · **Risk:** 16 (high) · **Confidence:** high
 - **CWE:** CWE-918 · **OWASP:** A10:2021 Server-Side Request Forgery (SSRF)
 - **Location:** `services/web/payments.js:18`
-- **Remediation:** If callers can supply attacker-influenced values, parse callbackUrl and restrict it to an explicit allowlist of schemes, hosts, and ports; reject credentials and private, loopback, link-local, and reserved destinations, including after DNS resolution and redirects.
+- **Remediation:** Do not fetch URLs taken from requests. Where the feature needs it, allow-list the scheme, host and port, resolve the host and refuse private, loopback and link-local addresses (including cloud metadata endpoints), disable redirects, and send outbound requests through an egress proxy.
 - **Model assessment:** Undecided (gpt-5.6-sol)
 
 ### CK-2026-032: A record is fetched by an identifier from the caller with no ownership check.
@@ -387,7 +387,7 @@ The most frequent weakness classes are CWE-798 Use of Hard-coded Credentials (11
 - **Severity:** high · **Risk:** 16 (high) · **Confidence:** medium
 - **CWE:** CWE-327 · **OWASP:** A02:2021 Cryptographic Failures
 - **Location:** `services/api/security.py:15`
-- **Remediation:** If hash_password hashes passwords, replace MD5 with a password-hashing API using Argon2id, scrypt, bcrypt, or PBKDF2 with a unique salt and an appropriate work factor; otherwise document and constrain the function to its non-security checksum use.
+- **Remediation:** Use current, vetted primitives from a maintained library: AES-GCM or ChaCha20-Poly1305 for encryption with a fresh random nonce per message, SHA-256 or better for integrity, a password hashing function (Argon2id, scrypt, bcrypt) for passwords, and the operating system CSPRNG (Python secrets / os.urandom) for keys, tokens and IVs.
 - **Model assessment:** Undecided (gpt-5.6-sol)
 
 ### CK-2026-035: A block cipher is given a fixed initialisation vector instead of a random one.
@@ -395,7 +395,7 @@ The most frequent weakness classes are CWE-798 Use of Hard-coded Credentials (11
 - **Severity:** high · **Risk:** 16 (high) · **Confidence:** medium
 - **CWE:** CWE-329 · **OWASP:** A02:2021 Cryptographic Failures
 - **Location:** `services/api/security.py:27`
-- **Remediation:** If STATIC_IV is reused, generate a fresh unpredictable IV for every encryption and transmit it with the ciphertext; preferably use an authenticated-encryption mode such as AES-GCM.
+- **Remediation:** If STATIC_IV is reused or predictable, generate a fresh cryptographically random 16-byte IV for every encryption and store or transmit it with the ciphertext; preferably use an authenticated-encryption mode such as AES-GCM with correct nonce uniqueness.
 - **Model assessment:** Undecided (gpt-5.6-sol)
 
 ### CK-2026-036: Handler takes an object id from the path: worth checking the caller owns it
@@ -404,7 +404,6 @@ The most frequent weakness classes are CWE-798 Use of Hard-coded Credentials (11
 - **CWE:** CWE-639, CWE-863 · **OWASP:** A01:2021 Broken Access Control
 - **Location:** `services/api/handlers.py:39`
 - **Remediation:** Enforce authorisation on the server for every request: check that the authenticated principal owns or may act on the referenced object (deny by default), derive the owner from the session rather than from request parameters, and centralise the check in a decorator or policy layer so no handler can skip it.
-- **Model assessment:** Undecided (gpt-5.6-sol)
 
 ### CK-2026-037: Handler takes an object id from the path: worth checking the caller owns it
 
@@ -510,7 +509,7 @@ The most frequent weakness classes are CWE-798 Use of Hard-coded Credentials (11
 - **Severity:** medium · **Risk:** 15 (high) · **Confidence:** high
 - **CWE:** CWE-79 · **OWASP:** A03:2021 Injection
 - **Location:** `services/web/renderer.js:18`
-- **Remediation:** 1. Add a maintained HTML-encoding library such as 'escape-html' as a direct dependency. 2. Convert 'req.query.name' to a string and encode it immediately before insertion into the HTML text context. 3. Keep encoding context-specific; use the appropriate encoder if the value is later placed in an attribute, URL, CSS, or JavaScript context. 4. Prefer an auto-escaping template engine for larger HTML responses.  Secure example: '''javascript res.send(   '&lt;xx&gt;xxxxxxx xxxx, ' +   require('escape-html')(String(req.query.name ?? '')) +   '&lt;/xx&gt;' ); '''  Defence in depth: - Apply a restrictive Content-Security-Policy that disallows inline scripts. - Validate the field's type, length, and expected business format before rendering it; validation does not replace output encoding. - Add regression tests with HTML metacharacters and executable-markup payloads to verify they are displayed only as text.
+- **Remediation:** 1. Use a maintained HTML-encoding library such as 'escape-html'. 2. Convert the query value to a string and encode it immediately before insertion into the HTML response. 3. Keep the encoded value in HTML text content; use the encoder appropriate to the destination if it is later moved into an attribute, URL, script, or style context. 4. If markup is not required, remove the HTML wrapper and explicitly send a 'text/plain' response instead. 5. Add regression tests using angle brackets, quotes, entities, and event-handler markup.  Secure example: '''javascript res.send(   '&lt;xx&gt;xxxxxxx xxxx, ' +   require('escape-html')(String(req.query.name ?? '')) +   '&lt;/xx&gt;' ); '''  Defence in depth: - Deploy a restrictive Content Security Policy, preferably without 'unsafe-inline', to reduce impact if another injection path exists. - Apply business-specific type and length limits to 'req.query.name'; do not treat validation as a substitute for output encoding. - Prefer an auto-escaping server-side template engine for responses containing multiple dynamic HTML values.
 - **Model assessment:** Confirmed vulnerable (gpt-5.6-sol)
 
 ### CK-2026-052: RUN pipes a download straight into a shell without integrity verification.
@@ -572,8 +571,8 @@ The most frequent weakness classes are CWE-798 Use of Hard-coded Credentials (11
 
 ## Privacy attestation
 
-- Privacy level: L3; provider none / none
-- Ledger entries: 52; sent 25, blocked 2
-- Ledger head: `fc5127cbb93a05fb615e7562d0dfd992cacc7fa1f6f3efb9a1be5eb28e6673c1`; chain verified: every entry links to its predecessor and its hash recomputes
-- Zero-leak check: not checked in this run
+- Privacy level: L3; provider agentrouter / gpt-5.6-sol
+- Ledger entries: 56; sent 27, blocked 2
+- Ledger head: `9f10f34c7def11e378c61d4ec5f22ea9b04d4233827870dfda1558f6c9125962`; chain verified: every entry links to its predecessor and its hash recomputes
+- Zero-leak check: 31 listed terms searched in every ledger payload: no occurrence
 

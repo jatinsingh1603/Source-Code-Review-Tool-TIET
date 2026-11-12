@@ -96,7 +96,7 @@ def test_the_attestation_holds_every_element() -> None:
     assert attestation is not None
     for expected in (
         "a" * 64,
-        "repository fraction pct",
+        "Share of the repository disclosed (%)",
         "12.50",
         "9 listed terms searched in every ledger payload: no occurrence",
         "not_sent_dry_run: 3",
@@ -171,3 +171,11 @@ def test_a_scan_without_a_recorded_provider_takes_it_from_the_ledger() -> None:
     assert (attestation.provider, attestation.model) == ("agentrouter", "gpt-5.6-sol")
     assert not attestation.provider_is_local
     assert all("No live language model" not in item.statement for item in doc.limitations)
+
+
+def test_a_builtin_remote_preset_missing_from_the_settings_is_attested_as_remote() -> None:
+    doc = build_report_document(
+        make_scan(provider="agentrouter", model="gpt-5.6-sol"), (make_finding(),), Settings()
+    )
+    assert doc.privacy_attestation is not None
+    assert not doc.privacy_attestation.provider_is_local

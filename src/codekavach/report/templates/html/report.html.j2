@@ -284,7 +284,7 @@
   <tr><th>Payloads sent / blocked</th><td>{{ att.requests_sent }} / {{ att.requests_blocked }}</td></tr>
   <tr><th>Tokens (prompt / completion)</th><td>{{ '{:,}'.format(att.tokens_prompt) }} / {{ '{:,}'.format(att.tokens_completion) }}</td></tr>
   <tr><th>Placeholders by type</th><td>{% if att.placeholders_counted %}{% for name, count in att.placeholders_by_type %}<span class="chip">{{ name }}: {{ count }}</span>{% else %}none{% endfor %}{% else %}not counted (ledger key not available to the report){% endif %}</td></tr>
-  {% for name, value in att.disclosure %}<tr><th>{{ name|replace('_', ' ') }}</th><td>{{ value }}</td></tr>{% else %}
+  {% for name, value in att.disclosure %}<tr><th>{{ name|disclosure_label }}</th><td>{{ value }}</td></tr>{% else %}
   <tr><th>Disclosure</th><td>not recorded for this scan</td></tr>{% endfor %}
   <tr><th>Ledger head hash</th><td class="hash">{{ att.ledger_head_hash or 'no ledger entries' }}</td></tr>
   <tr><th>Chain verification</th><td>{{ att.chain_text }}</td></tr>

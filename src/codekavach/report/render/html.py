@@ -120,6 +120,26 @@ class ComplianceRow:
     ids: tuple[str, ...]
 
 
+DISCLOSURE_LABELS: Final = {
+    "slices": "Code slices prepared",
+    "files": "Files with disclosed code",
+    "functions": "Functions with disclosed code",
+    "lines_disclosed": "Lines disclosed",
+    "lines_prepared_total": "Lines prepared (incl. placeholders)",
+    "tokens_estimated": "Tokens per payload set (estimated)",
+    "repository_fraction_pct": "Share of the repository disclosed (%)",
+    "call_edges": "Call edges summarised",
+    "context_expansions": "Context expansions",
+    "strategy_enclosing_function": "Slices by enclosing function",
+    "strategy_hotspot": "Slices by hotspot window",
+}
+
+
+def disclosure_label(name: str) -> str:
+    """The reader-facing label of a disclosure figure from the egress ledger."""
+    return DISCLOSURE_LABELS.get(name, name.replace("_", " ").capitalize())
+
+
 def compliance_rows(document: ReportDocument) -> list[ComplianceRow]:
     """The compliance annex: one row per (framework, clause), findings in report order."""
     rows: dict[tuple[str, str], tuple[str | None, list[str]]] = {}
@@ -189,6 +209,7 @@ def report_environment() -> Environment:
     )
     env.globals["snippet_rows"] = token_rows
     env.globals["zip"] = zip
+    env.filters["disclosure_label"] = disclosure_label
     env.globals["likelihood_text"] = LIKELIHOOD_TEXT
     return env
 

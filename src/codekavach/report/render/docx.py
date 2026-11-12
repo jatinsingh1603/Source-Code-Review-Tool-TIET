@@ -16,7 +16,7 @@ from typing import Any, Final
 
 from codekavach.report.model.document import ReportDocument
 from codekavach.report.model.finding_view import FindingView
-from codekavach.report.render.html import compliance_rows
+from codekavach.report.render.html import compliance_rows, disclosure_label
 from codekavach.report.render.snippets import token_rows
 from codekavach.report.render.theme import DEFAULT_THEME, Theme
 
@@ -428,7 +428,7 @@ def build_docx(doc: ReportDocument, out: Path, theme: Theme) -> None:  # noqa: P
                 ("Tokens (prompt / completion)", f"{att.tokens_prompt} / {att.tokens_completion}"),
                 ("Placeholders", ", ".join(f"{k}: {n}" for k, n in att.placeholders_by_type)
                  or ("none" if att.placeholders_counted else "not counted")),
-                *((k.replace("_", " "), v) for k, v in att.disclosure),
+                *((disclosure_label(k), v) for k, v in att.disclosure),
                 ("Ledger head hash", att.ledger_head_hash or "none"),
                 ("Chain verification", att.chain_text),
                 ("Zero-leak check", att.zero_leak.text),

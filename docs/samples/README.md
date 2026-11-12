@@ -28,11 +28,18 @@ Check the files against the manifest with `sha256sum -c SHA256SUMS` in this dire
 ## Regenerating
 
 ```bash
-cp -r fixtures/kavachbank /tmp/kb && cd /tmp/kb
+rsync -a --exclude ground-truth fixtures/kavachbank/ /tmp/KavachBank && cd /tmp/KavachBank
+export CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE=passphrase CODEKAVACH_PRIVACY__VAULT__PASSPHRASE=env:MY_VAULT_PASSPHRASE
 codekavach scan . --provider agentrouter --accept-egress   # or --provider mock, offline
 codekavach report . --format html,pdf,sarif,json,csv,xlsx,docx,markdown,compliance \
+  --terms <repo>/fixtures/kavachbank/ground-truth/terms.txt \
+  --client "Thapar Institute of Engineering and Technology" \
   --output-dir <repo>/docs/samples/kavachbank
 ```
+
+The ground truth is left out of the scanned copy (it lists the planted secrets on purpose) and is
+passed to `--terms` instead, so the attestation's zero-leak check searches every recorded payload
+for each planted term.
 
 `codekavach demo --out <dir>` produces the same set offline with the mock provider.
 `tests/unit/report/test_samples.py` checks the committed files against the manifest and for planted

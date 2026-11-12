@@ -19,6 +19,7 @@ from typing import Any
 
 from codekavach import __version__
 from codekavach.config import Settings
+from codekavach.config.models.llm import ProviderSettings
 from codekavach.core.log import get_logger
 from codekavach.core.models.disclosure import DisclosureRows
 from codekavach.core.models.finding import Finding
@@ -198,6 +199,14 @@ def summarise_ledger(
     )
 
 
+def _preset_is_remote(provider_id: str) -> bool:
+    """Whether the built-in preset ``provider_id`` sends to a remote host (unknown: remote)."""
+    try:
+        return bool(ProviderSettings.model_validate({"preset": provider_id}).is_remote)
+    except Exception:  # noqa: BLE001 - an unknown id is treated as remote, the safe reading
+        return True
+
+
 def _attestation(
     scan: Scan, settings: Settings | None, ledger: LedgerSummary | None
 ) -> PrivacyAttestation:
@@ -223,6 +232,9 @@ def _attestation(
                 notice = OFFLINE_NOTICE.format(kind=provider.kind.value)
         elif scan.provider in {"mock", "replay"}:
             notice = OFFLINE_NOTICE.format(kind=scan.provider)
+        elif scan.provider is not None and _preset_is_remote(scan.provider):
+            # A built-in preset (for example agentrouter) that the settings do not list.
+            local = False
     elif scan.provider in {"mock", "replay"}:
         notice = OFFLINE_NOTICE.format(kind=scan.provider)
     if scan.provider is not None and scan.provider not in {"mock", "replay"} and settings is None:

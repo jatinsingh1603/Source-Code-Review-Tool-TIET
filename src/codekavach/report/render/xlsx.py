@@ -14,7 +14,7 @@ from typing import Any, Final
 
 from codekavach.report.model.document import ReportDocument
 from codekavach.report.render.exports import CSV_COLUMNS, finding_row, safe_cell
-from codekavach.report.render.html import compliance_rows
+from codekavach.report.render.html import compliance_rows, disclosure_label
 from codekavach.report.render.theme import DEFAULT_THEME, Theme
 
 _DUE_DAYS: Final = {"critical": 7, "high": 30, "medium": 90, "low": 180, "info": 365}
@@ -244,7 +244,7 @@ class XlsxRenderer:
                     "Placeholders",
                     ", ".join(f"{k}: {v}" for k, v in att.placeholders_by_type) or "none",
                 ),
-                *((name.replace("_", " "), value) for name, value in att.disclosure),
+                *((disclosure_label(name), value) for name, value in att.disclosure),
                 ("Not covered", att.not_covered),
             ]
             for row, (key, value) in enumerate(facts, start=2):
