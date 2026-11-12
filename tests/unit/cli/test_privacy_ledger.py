@@ -66,7 +66,9 @@ def project(project_dir: Path) -> Path:
 @pytest.fixture
 def reader(monkeypatch: pytest.MonkeyPatch) -> FakeReader:
     fake = golden_reader()
-    fake_backend(monkeypatch, "codekavach.privacy.egress.ledger.open_reader", lambda layout: fake)
+    fake_backend(
+        monkeypatch, "codekavach.privacy.egress.ledger.open_reader", lambda layout, **_: fake
+    )
     return fake
 
 
@@ -115,7 +117,9 @@ def test_chain_failures(  # noqa: PLR0917 - parametrised arguments
     reason: str,
 ) -> None:
     fake = golden_reader(chain)
-    fake_backend(monkeypatch, "codekavach.privacy.egress.ledger.open_reader", lambda layout: fake)
+    fake_backend(
+        monkeypatch, "codekavach.privacy.egress.ledger.open_reader", lambda layout, **_: fake
+    )
     result = ledger(cli, project, "verify", "--json")
     assert result.exit_code == 3
     assert result.json["data"]["chain"] == {"ok": False, "first_bad_seq": seq, "reason": reason}
@@ -141,7 +145,9 @@ def test_ref_seq_invalid(cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatc
         ref_seq=1,
     )
     fake = golden_reader([*chain, follow_up])
-    fake_backend(monkeypatch, "codekavach.privacy.egress.ledger.open_reader", lambda layout: fake)
+    fake_backend(
+        monkeypatch, "codekavach.privacy.egress.ledger.open_reader", lambda layout, **_: fake
+    )
     result = ledger(cli, project, "verify", "--json")
     assert result.json["data"]["chain"]["reason"] == "ref_seq_invalid"
 
@@ -164,6 +170,25 @@ def test_payload_missing_and_unreadable(cli: Cli, project: Path, reader: FakeRea
     assert strict.exit_code == 3
     reader.broken.add(reader.chain[0].payload_hash)
     assert "warning[payload_unreadable]" in ledger(cli, project, "verify").stderr
+
+
+def test_reader_gets_the_settings_that_name_the_payload_key(
+    cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Without the run's settings an encrypted payload store cannot be opened, every payload is
+    # unreadable, and the --check-terms search would pass without having searched anything.
+    fake = golden_reader()
+    seen: list[object] = []
+
+    def opener(layout: object, **kwargs: object) -> FakeReader:
+        seen.append(kwargs.get("settings"))
+        return fake
+
+    fake_backend(monkeypatch, "codekavach.privacy.egress.ledger.open_reader", opener)
+    for command in ("verify", "show"):
+        assert ledger(cli, project, command).exit_code == 0
+    assert len(seen) == 2
+    assert all(type(item).__name__ == "Settings" for item in seen)
 
 
 def test_empty_ledger(cli: Cli, project: Path, reader: FakeReader) -> None:
@@ -195,7 +220,9 @@ def test_a_line_the_reader_cannot_parse_is_a_broken_chain_not_a_crash(
             raise ValueError("malformed ledger line")
 
     fake = Unreadable(make_egress_chain(3))
-    fake_backend(monkeypatch, "codekavach.privacy.egress.ledger.open_reader", lambda layout: fake)
+    fake_backend(
+        monkeypatch, "codekavach.privacy.egress.ledger.open_reader", lambda layout, **_: fake
+    )
     result = ledger(cli, project, "verify", "--json")
     assert result.exit_code != 0
     error = result.json["errors"][0]

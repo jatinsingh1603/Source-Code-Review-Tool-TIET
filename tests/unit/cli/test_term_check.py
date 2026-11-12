@@ -71,7 +71,9 @@ class Reader:
 
 def install(monkeypatch: pytest.MonkeyPatch, texts: list[tuple[str, EgressOutcome]]) -> Reader:
     reader = Reader(chain_for(texts), {sha(text): text for text, _ in texts})
-    fake_backend(monkeypatch, "codekavach.privacy.egress.ledger.open_reader", lambda layout: reader)
+    fake_backend(
+        monkeypatch, "codekavach.privacy.egress.ledger.open_reader", lambda layout, **_: reader
+    )
     return reader
 
 

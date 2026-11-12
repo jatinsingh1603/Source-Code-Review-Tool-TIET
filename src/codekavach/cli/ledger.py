@@ -95,11 +95,12 @@ class StepResult:
 VerifyStep = Callable[[VerifyContext], StepResult]
 
 
-def _open_reader(layout: "StateLayout") -> LedgerReader:
+def _open_reader(ctx: typer.Context, layout: "StateLayout") -> LedgerReader:
+    """The ledger reader, with the run's settings so an encrypted payload store can be opened."""
     opener = load_backend(
         "codekavach.privacy.egress.ledger", "open_reader", feature="egress ledger", epic="E12"
     )
-    reader: LedgerReader = opener(layout)
+    reader: LedgerReader = opener(layout, settings=get_context(ctx).loaded.settings)
     return reader
 
 
@@ -384,7 +385,7 @@ def verify_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     for path in files:
         if not path.is_file():
             raise UsageError(f"terms file cannot be read: {path}", code="terms_file_unreadable")
-    reader = _open_reader(_layout(ctx, target))
+    reader = _open_reader(ctx, _layout(ctx, target))
     context = VerifyContext(
         reader=reader,
         require_payloads=require_payloads,
@@ -480,7 +481,7 @@ def show_command(  # noqa: PLR0917 - Typer maps each parameter to one option
             scan = "all"
     elif scan != "all":
         scan_filter = scan
-    reader = _open_reader(layout)
+    reader = _open_reader(ctx, layout)
     moment = _since(since)
     wanted = {item.value for item in outcome or []}
     records = list(reader.records(scan_filter if scan != "all" else None))
