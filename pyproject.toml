@@ -265,6 +265,7 @@ ignore = [
 "src/codekavach/analysis/sca/**" = ["E501", "PLR0912", "PLR0917", "PLW2901", "PERF401", "SIM105", "SIM108", "D415"]  # parsers and messages: long literals, many format branches
 "src/codekavach/cli/sca.py" = ["E501", "B008"]
 "src/codekavach/cli/**" = ["B008"]   # Typer uses function calls as argument defaults
+"src/codekavach/server/routers/**" = ["B008", "PLR0913", "PLR0917"]  # FastAPI: one parameter per request part, Depends() defaults
 "tests/typing/*" = ["F841", "B018"]  # typing case files hold deliberately unused names and expressions
 "src/codekavach/core/log/**" = ["TID251"]  # the only place that creates loggers (ADR-0005)
 "src/codekavach/privacy/egress/transport.py" = ["TID251"]
