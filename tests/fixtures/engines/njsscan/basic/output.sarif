@@ -50,15 +50,15 @@
               "helpUri": "https://ajinabraham.github.io/nodejsscan/#express_xss"
             }
           ],
-          "version": "0.4.2",
+          "version": "1.0.2",
           "informationUri": "https://github.com/ajinabraham/njsscan",
-          "semanticVersion": "0.4.2"
+          "semanticVersion": "1.0.2"
         }
       },
       "invocations": [
         {
           "executionSuccessful": true,
-          "endTimeUtc": "2026-11-12T21:35:34Z"
+          "endTimeUtc": "2026-11-12T21:52:50Z"
         }
       ],
       "results": [

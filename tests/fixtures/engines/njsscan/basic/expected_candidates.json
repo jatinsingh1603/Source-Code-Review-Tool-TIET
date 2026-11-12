@@ -6,7 +6,7 @@
     "engine": "njsscan",
     "engine_confidence": null,
     "engine_severity": "high",
-    "engine_version": "0.4.2",
+    "engine_version": "1.0.2",
     "fingerprint": "ckfp1:3b7b10c366a6a4b879e9cf8197473dc1",
     "id": "cand-0",
     "kind": "vulnerability",
@@ -29,7 +29,7 @@
       ],
       [
         "engine.run",
-        "nodejsscan@0.4.2"
+        "nodejsscan@1.0.2"
       ]
     ],
     "rule_id": "node_sqli_injection",
@@ -43,7 +43,7 @@
     "engine": "njsscan",
     "engine_confidence": null,
     "engine_severity": "high",
-    "engine_version": "0.4.2",
+    "engine_version": "1.0.2",
     "fingerprint": "ckfp1:75972b514e4dd40557cd54af0a150673",
     "id": "cand-1",
     "kind": "vulnerability",
@@ -66,7 +66,7 @@
       ],
       [
         "engine.run",
-        "nodejsscan@0.4.2"
+        "nodejsscan@1.0.2"
       ]
     ],
     "rule_id": "generic_os_command_exec",
@@ -80,7 +80,7 @@
     "engine": "njsscan",
     "engine_confidence": null,
     "engine_severity": "high",
-    "engine_version": "0.4.2",
+    "engine_version": "1.0.2",
     "fingerprint": "ckfp1:203351f6f5c7396d2e99c7cea04b8960",
     "id": "cand-2",
     "kind": "vulnerability",
@@ -103,7 +103,7 @@
       ],
       [
         "engine.run",
-        "nodejsscan@0.4.2"
+        "nodejsscan@1.0.2"
       ]
     ],
     "rule_id": "eval_nodejs",
@@ -117,7 +117,7 @@
     "engine": "njsscan",
     "engine_confidence": null,
     "engine_severity": "high",
-    "engine_version": "0.4.2",
+    "engine_version": "1.0.2",
     "fingerprint": "ckfp1:2a654f839fdc09a670d1098989eb35c0",
     "id": "cand-3",
     "kind": "vulnerability",
@@ -140,7 +140,7 @@
       ],
       [
         "engine.run",
-        "nodejsscan@0.4.2"
+        "nodejsscan@1.0.2"
       ]
     ],
     "rule_id": "express_xss",

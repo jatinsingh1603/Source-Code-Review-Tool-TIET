@@ -6,7 +6,7 @@
     "engine": "semgrep-ce",
     "engine_confidence": "high",
     "engine_severity": "high",
-    "engine_version": "1.185.0",
+    "engine_version": "1.172.0",
     "fingerprint": "ckfp1:9339b99005508cf15739b2cda186ddf7",
     "id": "cand-0",
     "kind": "vulnerability",
@@ -29,7 +29,7 @@
       ],
       [
         "engine.run",
-        "Semgrep OSS@1.185.0"
+        "Semgrep OSS@1.172.0"
       ]
     ],
     "rule_id": "rules.os-system",
