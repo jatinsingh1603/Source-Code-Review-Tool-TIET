@@ -10,8 +10,8 @@ import { roleLabel } from "@/lib/permissions";
 
 const ROLE_DESC: Record<Role, string> = {
   admin: "Everything, including users, settings and policy",
-  auditor: "Projects, scans, triage, full Privacy Centre, GitHub sync",
-  developer: "Run scans, triage findings, read payloads (not original code)",
+  auditor: "Everything a developer can do, plus original code in the Privacy Centre and the audit trail",
+  developer: "Projects, scans, triage, ledger and payloads (not original code), GitHub sync",
   viewer: "Read findings and download reports",
 };
 

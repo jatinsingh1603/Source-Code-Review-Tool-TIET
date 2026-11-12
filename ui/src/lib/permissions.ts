@@ -15,32 +15,40 @@ export type Permission =
   | "users:admin"
   | "github:sync";
 
+const DEVELOPER: Permission[] = [
+  "projects:write",
+  "scans:run",
+  "findings:triage",
+  "privacy:read",
+  "reports:read",
+  "github:sync",
+];
+
+/** Mirrors codekavach.server.rbac; used when the session carries no permission list. */
 const MAP: Record<Role, Permission[]> = {
-  admin: [
-    "projects:write",
-    "scans:run",
-    "findings:triage",
-    "privacy:read",
-    "privacy:read_original",
-    "reports:read",
-    "settings:write",
-    "users:admin",
-    "github:sync",
-  ],
-  auditor: [
-    "projects:write",
-    "scans:run",
-    "findings:triage",
-    "privacy:read",
-    "privacy:read_original",
-    "reports:read",
-    "github:sync",
-  ],
-  developer: ["scans:run", "findings:triage", "privacy:read", "reports:read"],
+  admin: [...DEVELOPER, "privacy:read_original", "settings:write", "users:admin"],
+  auditor: [...DEVELOPER, "privacy:read_original"],
+  developer: DEVELOPER,
   viewer: ["reports:read"],
 };
 
-export function permissionsFor(role: Role | undefined): Set<Permission> {
+/** Server permission names (codekavach.server.rbac.Permission) to interface permissions. */
+const FROM_SERVER: Record<string, Permission> = {
+  "project:write": "projects:write",
+  "scan:run": "scans:run",
+  "finding:triage": "findings:triage",
+  "privacy:read_ledger": "privacy:read",
+  "privacy:read_original": "privacy:read_original",
+  "report:read": "reports:read",
+  "settings:write": "settings:write",
+  "users:admin": "users:admin",
+  "sync:github": "github:sync",
+};
+
+export function permissionsFor(role: Role | undefined, serverPermissions?: string[] | null): Set<Permission> {
+  if (serverPermissions && serverPermissions.length) {
+    return new Set(serverPermissions.map((p) => FROM_SERVER[p]).filter((p): p is Permission => !!p));
+  }
   return new Set(role ? (MAP[role] ?? []) : []);
 }
 

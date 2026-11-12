@@ -37,6 +37,8 @@ export interface User {
   active?: boolean;
   created_at?: string;
   last_login?: string | null;
+  /** Server permission names, e.g. `privacy:read_original`. */
+  permissions?: string[];
 }
 
 export interface LoginResponse {

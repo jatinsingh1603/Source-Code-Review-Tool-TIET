@@ -80,7 +80,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [navigate, qc]);
 
   const value = useMemo<Session>(() => {
-    const permissions = permissionsFor(user?.role);
+    const permissions = permissionsFor(user?.role, user?.permissions);
     return { user, loading, permissions, can: (p) => permissions.has(p), login, logout };
   }, [user, loading, login, logout]);
 
