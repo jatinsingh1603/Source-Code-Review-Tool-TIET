@@ -84,6 +84,14 @@ class SettingsBody(BaseModel):
     provider_key_refs: dict[str, str] | None = None
 
 
+class ProviderTestBody(BaseModel):
+    """``POST /providers/{id}/test`` (optional)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    model: str | None = Field(default=None, max_length=128)
+
+
 class PolicyBody(_Body):
     """``PUT /policy``."""
 

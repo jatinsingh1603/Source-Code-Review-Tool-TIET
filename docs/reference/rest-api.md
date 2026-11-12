@@ -35,6 +35,17 @@ Environment:
 | `CODEKAVACH_<SECTION>__<KEY>` | Passed to every scan's configuration, as for the CLI (providers, vault key source). |
 | `CODEKAVACH_AGENTROUTER_API_KEY` and other provider key variables | Read by the provider adapters when a scan uses them; the server stores only references. |
 
+To scan with the AgentRouter gateway (OpenAI Responses API, model `gpt-5.6-sol`), either export
+`CODEKAVACH_AGENTROUTER_API_KEY` before starting the server or store a reference in the settings:
+
+```bash
+curl -s -X PUT localhost:8080/api/v1/settings -H "Authorization: Bearer $TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"provider_key_refs": {"agentrouter": "file:/path/to/agentrouter.key"}}'
+```
+
+then start a scan with `{"provider": "agentrouter", "send": true}`.
+
 ## Authentication and roles
 
 `POST /api/v1/auth/login {username, password}` returns `{token, user}`. Send the token as
@@ -79,8 +90,8 @@ All paths are below `/api/v1`. Errors have the body
 | `GET /scans/{id}/privacy` | Level, payloads, blocked, placeholders by type, pseudonyms, tokens sent, chain state, zero-leak check, attestation text. |
 | `GET /scans/{id}/ledger`, `GET /scans/{id}/ledger/{seq}`, `POST /scans/{id}/ledger/verify` | Egress ledger entries; one entry with `payload_text`, `original_text` and change `markup`; chain and payload verification. |
 | `GET /scans/{id}/reports`, `GET /scans/{id}/reports/{fmt}` | Formats of the installed renderers; download (`?inline=1` to view an HTML report in the dashboard). Reports are rendered again after triage changes. |
-| `GET /providers`, `POST /providers/{id}/test` | Configured LLM providers (keys as references only); probe. |
-| `GET/PUT /settings` | Default provider, model and privacy level, `send_by_default`, organisation name, report title and classification. |
+| `GET /providers`, `POST /providers/{id}/test` | Configured LLM providers (keys as references only; the `agentrouter` preset is always listed). The test sends one constant synthetic payload through the egress guard, ledger and transport and returns `{ok, latency_ms, model, message}`. |
+| `GET/PUT /settings` | Default provider, model and privacy level, `send_by_default`, organisation name, report title and classification, `provider_key_refs` (provider id to an `env:`, `file:` or `keyring:` reference; a literal key is refused with `key_not_reference`). |
 | `GET/PUT /policy` | The privacy policy (`codekavach.policy.toml`) applied to every server scan, validated before it is saved. |
 | `GET/POST /users`, `PATCH/DELETE /users/{id}` | User administration. |
 | `GET /audit` | Audit events and chain state. |

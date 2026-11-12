@@ -29,7 +29,7 @@ from codekavach.server.errors import ApiError
 from codekavach.server.providers import list_providers, test_provider
 from codekavach.server.rbac import Permission
 from codekavach.server.results import SEVERITY_ORDER, scan_env
-from codekavach.server.schemas import PolicyBody, SettingsBody
+from codekavach.server.schemas import PolicyBody, ProviderTestBody, SettingsBody
 from codekavach.server.state import ServerState
 
 router = APIRouter(tags=["system"])
@@ -220,11 +220,13 @@ def provider_test(
     request: Request,
     state: StateDep,
     model: str | None = None,
+    body: ProviderTestBody | None = None,
     principal: Any = Depends(require(Permission.provider_test)),
 ) -> dict[str, Any]:
-    """Probe a provider: reachability, latency and model only."""
+    """Probe a provider with a constant synthetic payload: reachability, latency and model."""
     settings = _server_settings(state)
-    result = test_provider(provider_id, settings, model, state.config.home_dir / "probes")
+    chosen = (body.model if body is not None else None) or model
+    result = test_provider(provider_id, settings, chosen, state.config.home_dir / "probes")
     audit.record(state.db, actor=principal.username, action="provider.test",
                  resource=provider_id, client=client_of(request),
                  outcome="allowed" if result["ok"] else "failed")  # fmt: skip
