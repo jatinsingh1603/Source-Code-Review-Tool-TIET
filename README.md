@@ -84,7 +84,7 @@ CodeKavach reduces and measures disclosure; it does not make disclosure impossib
 | `docs/` | Plan, architecture, [decision records](docs/adr/README.md), [domain model reference](docs/reference/domain-model.md), threat model, research notes, status notes, schemas, demo runbooks, sample reports |
 | `src/codekavach/` | Python core; package tree as in `docs/ARCHITECTURE.md` section 3 |
 | `tests/` | Unit, integration, end-to-end and privacy (property-based) tests; how they are organised: [`tests/README.md`](tests/README.md) |
-| `ui/` | Web dashboard |
+| `ui/` | Web dashboard; its approved design is [`ui/design/codekavach-dashboard.html`](ui/design/codekavach-dashboard.html) |
 | `extensions/vscode/` | VS Code extension |
 | `action/` | GitHub Action |
 | `rules/` | Native rule packs (YAML) |
@@ -96,6 +96,10 @@ CodeKavach reduces and measures disclosure; it does not make disclosure impossib
 | `docs/adr/` | Architecture decision records, numbered and indexed: [`docs/adr/README.md`](docs/adr/README.md) |
 | `changelog.d/` | One changelog fragment per user-visible change, assembled by towncrier into `CHANGELOG.md` |
 | `.devcontainer/` | Development container with Python, `uv`, `make` and the report libraries |
+
+## Dashboard design
+
+The web dashboard follows one approved design: [`ui/design/codekavach-dashboard.html`](ui/design/codekavach-dashboard.html), made with Claude Design. Open it in a browser to see every screen. It is the single source of truth for the dashboard's look: design tokens, typography (IBM Plex Sans, Mono and Serif), the app shell, components and screens. Anyone changing `ui/` matches it; where the app and the design disagree, the design wins. See [`ui/design/README.md`](ui/design/README.md).
 
 ## Configuration
 
