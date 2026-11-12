@@ -103,6 +103,7 @@ class _Progress:
         self.findings_hint = 0
         self.counts: dict[str, tuple[Any, Any]] = {}
         self.queued: dict[str, tuple[str, list[int]]] = {}
+        self.limited: dict[str, int] = {}  # per stage: candidates left out by the review limit
 
     def _update(self, *, stage: str | None = None, progress: int | None = None) -> None:
         with self.job.state.db.transaction() as session:
@@ -117,6 +118,35 @@ class _Progress:
     def percent(self) -> int:
         """Pipeline progress mapped to 5..90 percent."""
         return 5 + int(85 * self.done / max(self.total, 1))
+
+    def _stage_ended(self, kind: str, stage: str, label: str, data: dict[str, Any]) -> None:
+        """A stage finished, failed or was skipped: counts, log lines and progress."""
+        self.done += 1
+        if self.limited.get(stage):
+            self.log.append(
+                "log",
+                {"level": "info", "message": f"{self.limited.pop(stage)} candidates kept "
+                 "their deterministic evidence and were not sent to the model (review "
+                 "limit); review any of them from its finding page"},
+            )  # fmt: skip
+        status = {"stage.finished": "completed", "stage.failed": "failed"}.get(str(kind), "skipped")
+        count, total = self.counts.get(stage, (None, None))
+        self.log.append(
+            "stage",
+            {"name": stage, "status": status, "label": label, "count": count, "total": total},
+        )
+        if kind == "stage.failed":
+            self.log.append(
+                "log",
+                {"level": "warning", "message": f"stage {stage} failed "
+                 f"({data.get('error_code', 'error')}); the scan continued without it"},
+            )  # fmt: skip
+        elif kind == "stage.finished":
+            took = data.get("duration_ms")
+            self.log.append("log", {"level": "info", "message": f"{label} done in {took} ms"})
+        percent = self.percent()
+        self.log.append("progress", {"percent": percent, "message": f"{label} {status}"})
+        self._update(progress=percent)
 
     def handle(self, event: "Event") -> None:
         """Map one pipeline event (only token fields are read)."""
@@ -147,27 +177,7 @@ class _Progress:
                 # Live meter: candidates reviewed so far; bytes and checks follow at the end.
                 self.log.append("egress", {"payloads": current, "total": total, "final": False})
         elif kind in {"stage.finished", "stage.failed", "stage.skipped"}:
-            self.done += 1
-            status = {"stage.finished": "completed", "stage.failed": "failed"}.get(
-                str(kind), "skipped"
-            )
-            count, total = self.counts.get(stage, (None, None))
-            self.log.append(
-                "stage",
-                {"name": stage, "status": status, "label": label, "count": count, "total": total},
-            )
-            if kind == "stage.failed":
-                self.log.append(
-                    "log",
-                    {"level": "warning", "message": f"stage {stage} failed "
-                     f"({data.get('error_code', 'error')}); the scan continued without it"},
-                )  # fmt: skip
-            elif kind == "stage.finished":
-                took = data.get("duration_ms")
-                self.log.append("log", {"level": "info", "message": f"{label} done in {took} ms"})
-            percent = self.percent()
-            self.log.append("progress", {"percent": percent, "message": f"{label} {status}"})
-            self._update(progress=percent)
+            self._stage_ended(str(kind), stage, label, data)
         elif kind == "item.queued":
             cwe = data.get("cwe")
             self.queued[str(data.get("item_id"))] = (
@@ -177,11 +187,8 @@ class _Progress:
         elif kind == "item.reviewed":
             self._verdict(data)
         elif kind == "item.failed" and data.get("error_code") == "llm_review_limit":
-            self.log.append(
-                "log",
-                {"level": "info", "message": f"item {data.get('item_id')} kept with its "
-                 "deterministic evidence; not reviewed by the model (review limit)"},
-            )  # fmt: skip
+            # One summary line when the stage ends, not one line per candidate.
+            self.limited[stage] = self.limited.get(stage, 0) + 1
         elif kind == "item.failed":
             self.log.append(
                 "log",

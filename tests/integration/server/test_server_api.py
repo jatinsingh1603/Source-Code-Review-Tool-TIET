@@ -439,6 +439,13 @@ def test_a_quick_review_then_an_on_demand_review_of_one_finding(
     assert quick["status"] == "completed", quick
     findings = client.get(f"/api/v1/scans/{quick['id']}/findings", headers=admin).json()
     assert sum(1 for item in findings if item["llm_reviewed"]) == 1
+    messages = [
+        str((e.get("data") or e).get("message", ""))
+        for e in _events(client, quick["id"], admin)
+        if e.get("type") == "log"
+    ]
+    limited = [m for m in messages if "review limit" in m]
+    assert len(limited) == 1, limited  # one summary line, not one per candidate
     target = next(
         item
         for item in findings
