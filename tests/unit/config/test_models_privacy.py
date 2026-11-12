@@ -209,6 +209,7 @@ def test_validation_iff_levels_meet_floor(
 EGRESS_DEFAULTS = {
     "max_payload_bytes": 262_144,
     "aggregation_budget_pct": 100.0,
+    "lifetime_budget_pct": None,
     "rate_per_minute": 60,
     "provider_host_allowlist": [],
     "encrypt_at_rest": True,

@@ -362,6 +362,37 @@ def test_a_configured_aggregation_budget_blocks_requests_in_a_real_scan(root: Pa
     assert set(failures_of(run.outcome, "llm-review").values()) == {"egress_blocked"}
 
 
+def test_the_engagement_budget_spans_scans_and_every_refusal_is_ledgered(
+    tmp_path: Path,
+) -> None:
+    """E26-01: a second scan cannot push a provider's engagement exposure over the lifetime cap.
+
+    The first scan discloses freely; the second runs with a lifetime budget below what the first
+    already disclosed, so each of its requests is blocked by the guard, ledgered with
+    ``aggregation_budget`` and the policy fields, and every candidate is still reported.
+    """
+    project = copy_fixture(tmp_path)
+    first = run_and_capture(project, home="home-engagement")
+    assert first.verdicts
+    exposure = first.outcome.state_dir / "exposure.json"
+    assert exposure.is_file()
+    second = run_and_capture(
+        project,
+        home="home-engagement",
+        overrides={"privacy": {"egress": {"lifetime_budget_pct": 0.1}}},
+    )
+    assert second.payloads
+    assert second.verdicts == []
+    assert len(second.ledger) == len(second.payloads)
+    assert {r.outcome for r in second.ledger} == {EgressOutcome.BLOCKED}
+    assert {r.block_code for r in second.ledger} == {"aggregation_budget"}
+    assert all(r.policy_hash and r.policy_rule_key for r in second.ledger)
+    assert len(second.findings) == len(second.candidates)
+    # without the cap, the same project is reviewed again
+    third = run_and_capture(project, home="home-engagement")
+    assert third.verdicts
+
+
 def test_a_disabled_llm_path_runs_neither_new_stage_and_writes_no_ledger(root: Path) -> None:
     outcome = scan(root, home="home-off", env={"CODEKAVACH_LLM__ENABLED": "false"})
     ran = [run.stage for run in outcome.result.stage_runs]

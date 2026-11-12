@@ -148,6 +148,7 @@ What may leave the machine.
 | `privacy.vault.kms.timeout_seconds` | float | `5.0` | `CODEKAVACH_PRIVACY__VAULT__KMS__TIMEOUT_SECONDS` | restricted | Seconds the key-management client waits for the service. |
 | `privacy.egress.max_payload_bytes` | int | `262144` | `CODEKAVACH_PRIVACY__EGRESS__MAX_PAYLOAD_BYTES` | restricted | Largest serialised request body the guard lets out, in bytes. |
 | `privacy.egress.aggregation_budget_pct` | float | `100.0` | `CODEKAVACH_PRIVACY__EGRESS__AGGREGATION_BUDGET_PCT` | restricted | Share of a repository that may be disclosed across one scan, in percent. |
+| `privacy.egress.lifetime_budget_pct` | float \| unset | unset | `CODEKAVACH_PRIVACY__EGRESS__LIFETIME_BUDGET_PCT` | restricted | Share of a repository that may be disclosed to one provider across every scan of the engagement (the union kept in the local exposure account), in percent. Unset applies aggregation_budget_pct to the engagement as well. |
 | `privacy.egress.rate_per_minute` | int | `60` | `CODEKAVACH_PRIVACY__EGRESS__RATE_PER_MINUTE` | restricted | Most requests the guard lets out in any one minute. |
 | `privacy.egress.provider_host_allowlist` | list[str] | `[]` | `CODEKAVACH_PRIVACY__EGRESS__PROVIDER_HOST_ALLOWLIST` | restricted | Hosts a remote provider may be reached on (exact, or *.example.com for subdomains). Empty allows no remote host. |
 | `privacy.egress.encrypt_at_rest` | bool | `true` | `CODEKAVACH_PRIVACY__EGRESS__ENCRYPT_AT_REST` | restricted | Encrypt the stored payloads of the egress ledger. |

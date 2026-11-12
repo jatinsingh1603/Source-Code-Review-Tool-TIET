@@ -45,7 +45,7 @@ because a stale automaton would pass a new original.
 import re
 import threading
 import time
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Collection, Iterable, Sequence
 from typing import Final
 
 from codekavach.config import Settings
@@ -473,9 +473,11 @@ class AggregationScanner:
     ``disclosure_for(provider)`` returns the scan's ``ScanDisclosure`` for that provider (the
     stage may keep one per provider; by default one record serves all). The slice of this request
     is already in the record, because slices are recorded when they are prepared, so the check is
-    the record's share against ``privacy.egress.aggregation_budget_pct``. At the default of 100
-    percent it never blocks: the control is off until it is configured, and nothing here presents
-    it as protection.
+    the record's share against ``privacy.egress.aggregation_budget_pct``. ``refused`` names the
+    candidates whose slice the prepare stage found over the scan or engagement budget of the
+    exposure account (E26-01); their requests are blocked here, so each refusal is ledgered with
+    ``aggregation_budget``. At the default of 100 percent and no refusals it never blocks: the
+    control is off until it is configured, and nothing here presents it as protection.
     """
 
     id = "aggregation"
@@ -486,8 +488,10 @@ class AggregationScanner:
         disclosure: ScanDisclosure,
         *,
         disclosure_for: Callable[[str], ScanDisclosure] | None = None,
+        refused: Collection[str] = (),
     ) -> None:
         self._disclosure_for = disclosure_for or (lambda _provider: disclosure)
+        self._refused = frozenset(refused)
         self._settings: Settings | None = None
 
     def __repr__(self) -> str:
@@ -501,6 +505,8 @@ class AggregationScanner:
         """One ``aggregation_budget`` hit when the share is over the ceiling."""
         if self._settings is None:
             raise RuntimeError("scanner used before it was bound")
+        if meta.candidate_id is not None and str(meta.candidate_id) in self._refused:
+            return _hit(self.id, "aggregation_budget", 1, 0)
         ceiling = self._settings.privacy.egress.aggregation_budget_pct
         share = self._disclosure_for(meta.provider).repo_pct
         if share <= ceiling:
@@ -516,6 +522,7 @@ def default_scanners(
     *,
     disclosure_for: Callable[[str], ScanDisclosure] | None = None,
     clock: Callable[[], float] = time.monotonic,
+    refused: Collection[str] = (),
 ) -> tuple[LeakScanner, ...]:
     """A fresh set of the six scanners, for one scan."""
     return (
@@ -524,7 +531,7 @@ def default_scanners(
         DomainTermScanner(),
         ResidualPiiScanner(),
         BudgetScanner(clock),
-        AggregationScanner(disclosure, disclosure_for=disclosure_for),
+        AggregationScanner(disclosure, disclosure_for=disclosure_for, refused=refused),
     )
 
 
@@ -534,9 +541,12 @@ def register_default_scanners(
     *,
     disclosure_for: Callable[[str], ScanDisclosure] | None = None,
     clock: Callable[[], float] = time.monotonic,
+    refused: Collection[str] = (),
 ) -> ScannerRegistry:
     """Add the six scanners to ``registry`` and return it."""
-    for scanner in default_scanners(disclosure, disclosure_for=disclosure_for, clock=clock):
+    for scanner in default_scanners(
+        disclosure, disclosure_for=disclosure_for, clock=clock, refused=refused
+    ):
         registry.register(scanner)
     return registry
 

@@ -230,6 +230,17 @@ class EgressSettings(SectionModel):
         description="Share of a repository that may be disclosed across one scan, in percent.",
         json_schema_extra={"minimum": 0.1, "maximum": 100.0} | restricted(),
     )
+    lifetime_budget_pct: (
+        Annotated[float, float_in_range(0.1, 100.0, "privacy.egress.lifetime_budget_pct")] | None
+    ) = Field(
+        default=None,
+        description=(
+            "Share of a repository that may be disclosed to one provider across every scan of the "
+            "engagement (the union kept in the local exposure account), in percent. Unset applies "
+            "aggregation_budget_pct to the engagement as well."
+        ),
+        json_schema_extra={"minimum": 0.1, "maximum": 100.0} | restricted(),
+    )
     rate_per_minute: Annotated[int, in_range(1, 100_000, "privacy.egress.rate_per_minute")] = Field(
         default=60,
         description="Most requests the guard lets out in any one minute.",

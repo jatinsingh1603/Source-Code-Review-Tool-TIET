@@ -1,9 +1,21 @@
 {
   "codekavach_version": "0.0.0-test",
   "created_at": "2026-10-01T09:30:00Z",
-  "fingerprint": "c72f94eae8fc9948e496cb0234fc1f5ed5eb263ab76f3946462c7889274228e5",
+  "fingerprint": "f1db69478cded37e6373e8bd53f17c7b27b16af52331581a1200a2209adc97c8",
   "org_policies": [],
   "origins": {
+    "aggregate.baseline_file": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "aggregate.suppressions_file": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
     "config_version": {
       "contributors": [],
       "layer": "default",
@@ -528,6 +540,12 @@
       "line": null,
       "source": null
     },
+    "privacy.egress.lifetime_budget_pct": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
     "privacy.egress.max_payload_bytes": {
       "contributors": [],
       "layer": "default",
@@ -908,6 +926,18 @@
       "line": null,
       "source": null
     },
+    "secrets.history": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "secrets.history_max_commits": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
     "taint.explain": {
       "contributors": [],
       "layer": "default",
@@ -932,6 +962,12 @@
       "line": null,
       "source": null
     },
+    "taint.max_depth": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
     "taint.max_function_nodes": {
       "contributors": [],
       "layer": "default",
@@ -950,7 +986,19 @@
       "line": null,
       "source": null
     },
+    "taint.recursion_iterations": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
     "taint.timeout_seconds": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "taint.unknown_callee": {
       "contributors": [],
       "layer": "default",
       "line": null,
@@ -961,6 +1009,10 @@
   "project_trust": "not-needed",
   "schema_version": 1,
   "settings": {
+    "aggregate": {
+      "baseline_file": ".codekavach/baseline.json",
+      "suppressions_file": ".codekavach/suppressions.yaml"
+    },
     "config_version": 1,
     "engines": {
       "disabled": [],
@@ -1094,6 +1146,7 @@
       "egress": {
         "aggregation_budget_pct": 100.0,
         "encrypt_at_rest": true,
+        "lifetime_budget_pct": null,
         "max_payload_bytes": 262144,
         "provider_host_allowlist": [],
         "proxy_trust": "none",
@@ -1212,15 +1265,22 @@
       "stage_timeouts": {},
       "timeout_seconds": 3600
     },
+    "secrets": {
+      "history": false,
+      "history_max_commits": 200
+    },
     "taint": {
       "explain": false,
       "loop_iterations": 3,
       "max_access_path": 3,
       "max_blocks": 5000,
+      "max_depth": 5,
       "max_function_nodes": 20000,
       "max_path_steps": 64,
       "max_paths_per_sink": 10,
-      "timeout_seconds": 10.0
+      "recursion_iterations": 3,
+      "timeout_seconds": 10.0,
+      "unknown_callee": "propagate"
     }
   },
   "warnings": []

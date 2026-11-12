@@ -32,7 +32,7 @@ import contextlib
 import hashlib
 import threading
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from types import TracebackType
@@ -116,7 +116,10 @@ class EgressSession:
         clock: Callable[[], float] = time.monotonic,
         disclosure: ScanDisclosure | None = None,
         policy: Mapping[str, tuple[str, str]] | None = None,
+        over_budget: Collection[str] = (),
     ) -> None:
+        # candidates the prepare stage found over an exposure budget: blocked and ledgered here
+        self._over_budget = frozenset(over_budget)
         # candidate id -> (policy hash, path-free rule key), recorded on every entry (E25-03)
         self._policy: Mapping[str, tuple[str, str]] = policy or {}
         self._settings = settings
@@ -147,7 +150,7 @@ class EgressSession:
                 settings=self._settings,
             )
             registry = register_default_scanners(
-                ScannerRegistry(), self._disclosure, clock=self._clock
+                ScannerRegistry(), self._disclosure, clock=self._clock, refused=self._over_budget
             )
             self._registry = registry
             self._guard = EgressGuard(registry)

@@ -389,6 +389,26 @@ def test_the_disclosure_can_be_chosen_per_provider() -> None:
     assert seen == ["hosted"]
 
 
+def test_a_candidate_refused_by_the_exposure_account_is_blocked_whatever_the_share() -> None:
+    """E26-01: the prepare stage's engagement or scan refusal reaches the guard and is ledgered."""
+    refused = "cand_01ARYZ6S410000000000000001"
+    scanner = bound(AggregationScanner(record_of(0), refused=[refused]))
+    mine = META.model_copy(update={"candidate_id": refused})
+    other = META.model_copy(update={"candidate_id": "cand_01ARYZ6S410000000000000002"})
+    hits = scanner.scan(b"{}", mine)
+    assert [(h.scanner_id, h.block_code) for h in hits] == [("aggregation", "aggregation_budget")]
+    assert scanner.scan(b"{}", other) == ()
+    assert scanner.scan(b"{}", META) == ()
+
+
+def test_the_lifetime_budget_is_optional_and_bounded() -> None:
+    assert settings().privacy.egress.lifetime_budget_pct is None
+    assert settings(egress={"lifetime_budget_pct": 15.0}).privacy.egress.lifetime_budget_pct == 15
+    for bad in (0.0, 100.5):
+        with pytest.raises(ValueError, match="lifetime_budget_pct"):
+            settings(egress={"lifetime_budget_pct": bad})
+
+
 # --- registration and determinism --------------------------------------------------------------
 
 

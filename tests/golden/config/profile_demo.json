@@ -1,4 +1,8 @@
 {
+  "aggregate": {
+    "baseline_file": ".codekavach/baseline.json",
+    "suppressions_file": ".codekavach/suppressions.yaml"
+  },
   "config_version": 1,
   "engines": {
     "disabled": [],
@@ -134,6 +138,7 @@
     "egress": {
       "aggregation_budget_pct": 100.0,
       "encrypt_at_rest": true,
+      "lifetime_budget_pct": null,
       "max_payload_bytes": 262144,
       "provider_host_allowlist": [],
       "proxy_trust": "none",
@@ -252,6 +257,10 @@
     "stage_timeout_seconds": 1800,
     "stage_timeouts": {},
     "timeout_seconds": 3600
+  },
+  "secrets": {
+    "history": false,
+    "history_max_commits": 200
   },
   "taint": {
     "explain": false,

@@ -140,6 +140,22 @@
           "type": "boolean",
           "x-ck-restricted": true
         },
+        "lifetime_budget_pct": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Share of a repository that may be disclosed to one provider across every scan of the engagement (the union kept in the local exposure account), in percent. Unset applies aggregation_budget_pct to the engagement as well.",
+          "maximum": 100.0,
+          "minimum": 0.1,
+          "title": "Lifetime Budget Pct",
+          "x-ck-restricted": true
+        },
         "max_payload_bytes": {
           "default": 262144,
           "description": "Largest serialised request body the guard lets out, in bytes.",

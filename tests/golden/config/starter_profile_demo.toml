@@ -57,6 +57,20 @@ name = "payments-api"
 #~ Number of most recent scans whose cache entries survive pruning.
 # cache_keep_scans = 5
 
+#~ Baseline and suppression files applied after analysis.
+[aggregate]
+#~ Baseline of accepted findings, relative to the project root; findings in it are known and are not reviewed again.
+# baseline_file = ".codekavach/baseline.json"
+#~ Suppression rules, relative to the project root; every rule needs a justification.
+# suppressions_file = ".codekavach/suppressions.yaml"
+
+#~ Options of the secret scan.
+[secrets]
+#~ Also scan the added lines of past commits for credentials that were removed.
+# history = false
+#~ Most recent commits the history scan reads.
+# history_max_commits = 200
+
 #~ Resource guards for repository discovery.
 [ingest]
 #~ Largest single file, in bytes, that is read.
@@ -103,6 +117,12 @@ name = "payments-api"
 # max_paths_per_sink = 10
 #~ Extra passes over a function with a loop before taint propagation stops.
 # loop_iterations = 3
+#~ Longest chain of calls a taint path may cross between source and sink.
+# max_depth = 5
+#~ Passes over a recursive group of functions before its summaries are widened and marked degraded.
+# recursion_iterations = 3
+#~ What a call to an unresolved function does with tainted arguments: 'propagate' (the result is tainted, the path is marked uncertain) or 'block' (it is clean).
+# unknown_callee = "propagate"
 #~ Record why each taint step was taken, for debugging a missed finding.
 # explain = false
 
@@ -173,6 +193,8 @@ level = "L3"
 # max_payload_bytes = 262144
 #~ Share of a repository that may be disclosed across one scan, in percent.
 # aggregation_budget_pct = 100.0
+#~ Share of a repository that may be disclosed to one provider across every scan of the engagement (the union kept in the local exposure account), in percent. Unset applies aggregation_budget_pct to the engagement as well.
+#? lifetime_budget_pct = 0.0
 #~ Most requests the guard lets out in any one minute.
 # rate_per_minute = 60
 #~ Hosts a remote provider may be reached on (exact, or *.example.com for subdomains). Empty allows no remote host.

@@ -181,6 +181,11 @@ _DISCLOSURES: dict[str, ScanDisclosure] = {}
 # The path-free policy record of each prepared candidate, handed the same way: candidate id ->
 # (policy hash, winning rule key). Every ledger entry of the scan carries both (E25-03).
 _POLICIES: dict[str, dict[str, tuple[str, str]]] = {}
+# Candidates whose slice would pass the scan or engagement exposure budget (E26-01). Their payloads
+# are kept, never recorded as disclosed, and the session's aggregation scanner blocks and ledgers
+# each request with ``aggregation_budget``; a resumed scan without this entry re-checks nothing
+# here, but the guard still enforces the in-memory per-scan ceiling.
+_OVER_BUDGET: dict[str, frozenset[str]] = {}
 
 
 @contextmanager
@@ -215,6 +220,7 @@ def open_egress_session(
             dry_run=dry_run,
             disclosure=_DISCLOSURES.pop(scan_id, None),
             policy=_POLICIES.pop(scan_id, None),
+            over_budget=_OVER_BUDGET.pop(scan_id, frozenset()),
         ) as session,
     ):
         yield session
@@ -265,7 +271,11 @@ class PrivacyPrepareStage:
         )
         disclosure = ScanDisclosure.for_index(index)
         ceiling = ctx.config.privacy.egress.aggregation_budget_pct
-        budget_limit = AggregationBudget(scan_pct=ceiling, engagement_pct=ceiling)
+        lifetime = ctx.config.privacy.egress.lifetime_budget_pct
+        budget_limit = AggregationBudget(
+            scan_pct=ceiling, engagement_pct=ceiling if lifetime is None else lifetime
+        )
+        over_budget: set[str] = set()
         provider_id, _ = ctx.config.llm.selected_provider()
         account = (
             ExposureAccount(index.total_lines, path=ctx.state_dir / "exposure.json")
@@ -322,10 +332,11 @@ class PrivacyPrepareStage:
                         ctx.fail_item(str(candidate.id), failure.code)
                         continue
                     if account.would_exceed(budget_limit, ctx.scan_id, provider_id, outcome.slice_):
-                        ctx.fail_item(str(candidate.id), BUDGET_EXCEEDED)
-                        continue
-                    account.record(ctx.scan_id, provider_id, outcome.slice_)
-                    disclosure.record(outcome.slice_, index)
+                        # not recorded as disclosed; the guard blocks and ledgers the request
+                        over_budget.add(str(candidate.id))
+                    else:
+                        account.record(ctx.scan_id, provider_id, outcome.slice_)
+                        disclosure.record(outcome.slice_, index)
                     payloads.append(outcome.payload)
                     slices.append(outcome.slice_)
                 if done % 25 == 0:
@@ -339,6 +350,7 @@ class PrivacyPrepareStage:
             candidates=len(candidates),
         )
         _DISCLOSURES[ctx.scan_id] = disclosure
+        _OVER_BUDGET[ctx.scan_id] = frozenset(over_budget)
         _POLICIES[ctx.scan_id] = {
             str(row.candidate_id): (row.policy_hash, row.rule_key) for row in decisions
         }
