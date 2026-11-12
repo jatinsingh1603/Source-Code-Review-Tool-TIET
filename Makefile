@@ -118,3 +118,29 @@ adr: ## Create the next ADR: make adr title="Title of decision"
 
 clean: ## Remove build artefacts and tool caches
 	rm -rf dist build htmlcov coverage.xml .coverage .coverage.* .pytest_cache .mypy_cache .ruff_cache .hypothesis .import_linter_cache
+
+# --- E39-02: container image, compose stack, Helm chart and air-gapped bundle ----------------
+# These recipes drive docker and helm, which are not Python tools, so they do not go through uv.
+.PHONY: images up down logs bundle helm-lint
+IMAGE ?= codekavach:local
+
+images: ## Build the server image (dashboard, API, CLI): make images IMAGE=codekavach:local
+	docker build -f deploy/docker/Dockerfile -t $(IMAGE) \
+		--build-arg REVISION=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown) .
+
+up: ## Start the local stack with docker compose and print the dashboard URL
+	docker compose up -d --build codekavach
+	@echo "dashboard: http://127.0.0.1:$${CODEKAVACH_PORT:-8080}  (user admin)"
+
+down: ## Stop the local stack; the data volume is kept
+	docker compose down
+
+logs: ## Follow the server log of the local stack
+	docker compose logs -f codekavach
+
+bundle: ## Build the air-gapped bundle in deploy/bundle/out
+	deploy/bundle/build-bundle.sh --image $(IMAGE)
+
+helm-lint: ## Lint and render the Helm chart
+	helm lint deploy/helm/codekavach
+	helm template codekavach deploy/helm/codekavach > /dev/null

@@ -45,3 +45,6 @@ ui/dist/
 .hypothesis/
 .import_linter_cache/
 .coverage.*
+
+# Air-gapped bundle output (E39-02)
+deploy/bundle/out/

@@ -1,6 +1,6 @@
 # Build context filter for deploy/docker/Dockerfile (E39-02).
 # This file is a privacy control, not tidiness: anything not excluded here can end up in an
-# image layer. tests/unit/deploy/test_dockerignore.py asserts each exclusion below.
+# image layer. tests/unit/repo/test_deploy_files.py asserts each exclusion below.
 
 # Version control and local environments
 .git
