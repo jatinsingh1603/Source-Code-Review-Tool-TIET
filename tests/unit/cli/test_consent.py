@@ -357,7 +357,20 @@ def test_a_stored_grant_covers_stricter_levels_only(
     assert len(stub.calls) == 2
     weaker = remote_scan(cli, project, "--set", "privacy.min_level=L1", "--privacy-level", "L2")
     assert weaker.exit_code == 3, weaker.stderr
-    assert "has not been approved for level L2" in weaker.stderr
+    assert "error[consent_downgrade_required]" in weaker.stderr
+    assert "approved for level L3; level L2 is" in weaker.stderr
+    asked = remote_scan(
+        cli,
+        project,
+        "--set",
+        "privacy.min_level=L1",
+        "--privacy-level",
+        "L2",
+        tty=True,
+        input="n\n",
+    )
+    assert asked.exit_code == 3
+    assert "at level L2? [y/N]" in asked.stderr  # on a terminal the gate asks again
     (project / "codekavach.toml").write_text(OTHER_HOST, encoding="utf-8")
     moved = remote_scan(cli, project)
     assert moved.exit_code == 3

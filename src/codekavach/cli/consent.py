@@ -281,6 +281,32 @@ def refusal(provider_id: str, level: PrivacyLevel) -> PrivacyBlockError:
     )
 
 
+def stricter_grant(
+    store: ConsentStore, provider_id: str, provider: ProviderSettings, level: PrivacyLevel
+) -> ConsentGrant | None:
+    """A grant for this provider at a level stricter than ``level``: the run is a downgrade."""
+    wanted = (provider_id, provider.kind.value, provider.host, provider.effective_trust_tier.value)
+    for grant in store.grants:
+        if _identity(grant) == wanted and not level.at_least(grant.level):
+            return grant
+    return None
+
+
+def downgrade_refusal(
+    provider_id: str, granted: PrivacyLevel, level: PrivacyLevel
+) -> PrivacyBlockError:
+    """The error of a run at a weaker level than the stored grant, with no terminal (exit 3)."""
+    return PrivacyBlockError(
+        f"remote provider '{provider_id}' was approved for level {granted.value}; "
+        f"level {level.value} is less strict and needs consent again",
+        code="consent_downgrade_required",
+        hint=(
+            f"run 'codekavach privacy consent grant --provider {provider_id} --level "
+            f"{level.value}' on a terminal, or pass --accept-egress for this run"
+        ),
+    )
+
+
 def ensure_egress_consent(
     ctx: click.Context,
     *,
@@ -299,7 +325,8 @@ def ensure_egress_consent(
     the variable the result is the refusal.
 
     Raises:
-        PrivacyBlockError: ``consent_required`` (exit 3); nothing has run.
+        PrivacyBlockError: ``consent_required``, or ``consent_downgrade_required`` when a grant
+            exists only at a stricter level (exit 3); nothing has run.
     """
     cli_ctx = get_context(ctx)
     if not consent_required(provider, cli_ctx.settings):
@@ -312,6 +339,9 @@ def ensure_egress_consent(
     if os.environ.get(ACCEPT_VARIABLE) == "1":
         return EgressConsent("env")
     if not interactive or not is_interactive(ctx):
+        earlier = stricter_grant(store, provider_id, provider, level)
+        if earlier is not None:  # E25-02: a weaker level than the one consented to asks again
+            raise downgrade_refusal(provider_id, earlier.level, level)
         raise refusal(provider_id, level)
     model = cli_ctx.settings.llm.model or provider.model
     get_err_console().print(

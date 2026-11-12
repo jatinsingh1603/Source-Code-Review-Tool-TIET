@@ -27,6 +27,12 @@ error[consent_required]: remote provider 'primary' has not been approved for lev
 hint: run 'codekavach privacy consent grant --provider primary' on a terminal, or pass --accept-egress for this run
 ```
 
+When the only stored grant for that provider is at a stricter level than the run asks for (a grant at L3, a run at L2), the run is a downgrade: on a terminal the question is asked again, and without one the run stops with exit code 3 and the code `consent_downgrade_required` (tested in `tests/unit/cli/test_consent.py`):
+
+```text
+error[consent_downgrade_required]: remote provider 'primary' was approved for level L3; level L2 is less strict and needs consent again
+```
+
 A scan that proceeds prints `remote egress to <provider> accepted via <source>` on stderr, where the source is `stored`, `flag` or `env`. The scan manifest records the source as `consent_source` (`user-file`, `flag`, `env` or `none`).
 
 ## What cannot give consent
