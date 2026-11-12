@@ -29,7 +29,7 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any, Final
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from codekavach.core.log import get_logger
 from codekavach.core.models.payload import SanitisedPayload
@@ -272,7 +272,9 @@ class Reviewer:
         except ProviderRefused:
             self.counts.refused += 1
             return None, "refused"
-        except ProviderParseError:
+        except ProviderParseError as error:
+            # the reason names a check, a field and an error type, never the answer's text
+            _log.info("llm_output_unparsable", task=name, reason=error.reason)
             return None, _UNPARSABLE  # asked again; a rejected (unsafe) answer is not
         except OutputRejected as rejected:
             self.counts.rejected += 1
@@ -292,10 +294,10 @@ class Reviewer:
             raise ProviderUnavailable(f"http_status_{raw.status}", raw.status)
         text = answer_text(self._provider, raw)
         try:
-            answer = task.parse_text(unwrap_json(text))
-            if not isinstance(answer, ReviewAnswer):
-                raise ProviderParseError("review_violates_schema")
+            answer = ReviewAnswer.model_validate_json(unwrap_json(text))
             return verdict_of(answer)
+        except ValidationError as error:
+            raise ProviderParseError(_reason("review_violates_schema", error)) from None
         except ValueError:
             raise ProviderParseError("review_violates_schema") from None
 
@@ -421,6 +423,15 @@ class Reviewer:
         return verdict.model_copy(
             update={"impact": impact[:MAX_IMPACT], "remediation": remediation[:MAX_REMEDIATION]}
         )
+
+
+def _reason(prefix: str, error: ValidationError) -> str:
+    """``prefix`` with the first failing field and error type (names only, never the value)."""
+    first = error.errors(include_url=False, include_input=False)[:1]
+    if not first:
+        return prefix
+    where = ".".join(str(part) for part in first[0].get("loc", ()) if isinstance(part, str))
+    return f"{prefix}:{where or 'answer'}:{first[0].get('type', 'invalid')}"
 
 
 def _enriched(verdict: LLMVerdict) -> bool:
