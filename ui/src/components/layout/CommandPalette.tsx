@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useCurrentProject } from "@/app/project-context";
+import { useSession } from "@/app/session";
+import type { Permission } from "@/lib/permissions";
 import { pickDefault } from "@/app/useSelectedScan";
 import { useFindings, useScans } from "@/api/queries";
 import { scanLabel } from "@/lib/display";
@@ -15,6 +17,23 @@ interface Item {
 }
 
 /** ⌘K / Ctrl+K command palette (COMPONENTS.md §23): findings, scans and actions. */
+const PAGES: [string, string, Permission?][] = [
+  ["Overview", "/"],
+  ["Projects", "/projects"],
+  ["Scans", "/scans"],
+  ["Findings", "/findings"],
+  ["Privacy Centre", "/privacy", "privacy:read"],
+  ["Egress Ledger", "/privacy/ledger", "privacy:read"],
+  ["Privacy policy", "/privacy/policy", "privacy:read"],
+  ["Reports", "/reports", "reports:read"],
+  ["Integrations", "/integrations"],
+  ["Providers", "/providers"],
+  ["Evaluation", "/evaluation"],
+  ["Admin", "/admin", "users:admin"],
+  ["Audit log", "/admin/audit", "audit:read"],
+  ["Settings", "/settings"],
+];
+
 export function CommandPalette({ onClose }: { onClose: () => void }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
@@ -27,6 +46,8 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const latest = pickDefault(scans);
   const term = q.trim();
   const findingsQ = useFindings(term.length >= 2 ? latest?.id : undefined, term.length >= 2 ? { q: term } : {}).data;
+
+  const { can } = useSession();
 
   const items = useMemo<Item[]>(() => {
     const go = (to: string) => () => {
@@ -69,8 +90,16 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         out.push({ key: `a-${label}`, lead: <span className="pal-k">ACTION</span>, text: label, go: go(to) });
       }
     }
+    if (t) {
+      // Every screen by name, so "admin" or "providers" + Enter goes there.
+      for (const [label, to, perm] of PAGES) {
+        if ((!perm || can(perm)) && label.toLowerCase().includes(t) && !out.some((o) => o.text === label)) {
+          out.push({ key: `p-${to}`, lead: <span className="pal-k">PAGE</span>, text: label, go: go(to) });
+        }
+      }
+    }
     return out;
-  }, [findingsQ, allScansQ, term, latest, navigate, onClose]);
+  }, [findingsQ, allScansQ, term, latest, navigate, onClose, can]);
 
   useEffect(() => setSel(0), [term]);
 
