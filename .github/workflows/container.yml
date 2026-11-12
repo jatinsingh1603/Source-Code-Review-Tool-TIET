@@ -10,11 +10,17 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
-      - "extensions/**"
-      - "changelog.d/**"
+    paths:
+      - "src/**"
+      - "ui/**"
+      - "rules/**"
+      - "data/**"
+      - "docs/schemas/**"
+      - "fixtures/kavachbank/**"
+      - "deploy/docker/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/container.yml"
   workflow_dispatch:
     inputs:
       push:
@@ -30,8 +36,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: container-${{ github.ref }}
-  cancel-in-progress: false  # main moves constantly; let a build finish so an image is always published
+  # One group per commit: main moves constantly and a shared group would drop queued builds, so
+  # an image for a given commit would never be published.
+  group: container-${{ github.sha }}-${{ github.run_id }}
+  cancel-in-progress: false
 
 env:
   IMAGE: ghcr.io/jatinsingh1603/codekavach
