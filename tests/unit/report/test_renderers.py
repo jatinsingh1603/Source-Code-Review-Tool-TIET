@@ -159,3 +159,15 @@ def test_the_pdf_fetcher_refuses_every_url() -> None:
     for url in ("https://evil.example/x.css", "file:///etc/passwd", "data:text/css,a{}"):
         with pytest.raises(ValueError, match="no external resource"):
             _refuse(url)
+
+
+def test_a_scan_without_a_recorded_provider_takes_it_from_the_ledger() -> None:
+    ledger = LedgerSummary(entries=3, provider="agentrouter", model="gpt-5.6-sol")
+    doc = build_report_document(
+        make_scan(provider=None, model=None), (make_finding(),), None, ledger
+    )
+    attestation = doc.privacy_attestation
+    assert attestation is not None
+    assert (attestation.provider, attestation.model) == ("agentrouter", "gpt-5.6-sol")
+    assert not attestation.provider_is_local
+    assert all("No live language model" not in item.statement for item in doc.limitations)

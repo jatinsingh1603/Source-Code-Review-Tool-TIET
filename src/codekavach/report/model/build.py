@@ -81,6 +81,8 @@ class LedgerSummary:
     placeholders_by_type: tuple[tuple[str, int], ...] = ()
     placeholders_counted: bool = False
     files: tuple[tuple[str, str, int], ...] = ()
+    provider: str | None = None
+    model: str | None = None
 
 
 def _placeholder_counts(reader: Any, records: Sequence[Any]) -> tuple[tuple[str, int], ...] | None:
@@ -135,11 +137,13 @@ def summarise_ledger(
     chain_detail: str | None = None
     sent = blocked = prompt = completion = 0
     placeholders: tuple[tuple[str, int], ...] | None = None
+    endpoints: Counter[tuple[str, str]] = Counter()
     try:
         reader = open_reader(state_dir, settings=settings)
         records = list(reader.records(scan_id))
         for record in records:
             head, entries = record.entry_hash, entries + 1
+            endpoints[(str(record.provider), str(record.model))] += 1
             outcomes[record.outcome.value] += 1
             if record.block_code is not None:
                 blocked += 1
@@ -189,6 +193,8 @@ def summarise_ledger(
         placeholders_by_type=placeholders or (),
         placeholders_counted=placeholders is not None,
         files=files,
+        provider=endpoints.most_common(1)[0][0][0] if endpoints else None,
+        model=endpoints.most_common(1)[0][0][1] if endpoints else None,
     )
 
 
@@ -343,6 +349,14 @@ def build_report_document(
     The summary is the scan's own when it stored one, otherwise it is aggregated from ``findings``.
     """
     ordered = tuple(sorted(findings, key=Finding.sort_key))
+    if scan.provider is None and ledger_summary is not None and ledger_summary.provider:
+        # Older scan records do not carry the provider; the ledger names who each request went to.
+        scan = scan.model_copy(
+            update={
+                "provider": ledger_summary.provider,
+                "model": scan.model or ledger_summary.model,
+            }
+        )
     reporting = settings.reporting if settings is not None else None
     summary = scan.summary or ScanSummary.from_findings(
         ordered,

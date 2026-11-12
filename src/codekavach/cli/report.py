@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from codekavach.core.models.scan import Scan
 
 LATEST: Final = "latest"
+TERMS_FILE: Final = ".codekavach-terms.txt"
 REPORT_DIR_MODE: Final = 0o750
 REPORT_FILE_MODE: Final = 0o640
 DOCTOR_HINT: Final = "run 'codekavach doctor --category report'"
@@ -269,6 +270,28 @@ def _write_manifest(
     return [_written("manifest", Path(manifest_path)), _written("sha256sums", Path(sums))]
 
 
+def _zero_leak(state_dir: Path, settings: Any, terms_file: Path) -> object | None:
+    """The verbatim zero-leak result of the ledger's payloads against ``terms_file``."""
+    try:
+        from codekavach.cli.ledger import VERIFY_STEPS, VerifyContext, run_verify  # noqa: PLC0415
+        from codekavach.privacy.egress.ledger import open_reader  # noqa: PLC0415
+        from codekavach.report.model.document import ZeroLeak  # noqa: PLC0415
+
+        context = VerifyContext(
+            reader=open_reader(state_dir, settings=settings),
+            options={"terms_files": [terms_file], "ignore_case": True},
+        )
+        results = run_verify(context, VERIFY_STEPS)
+    except Exception:  # noqa: BLE001 - the report is still written, marked "not checked"
+        return None
+    listed = next((result for result in results if result.name == "terms"), None)
+    if listed is None:
+        return None
+    hits = listed.data.get("hits", [])
+    checked = int(listed.data.get("checked", 0))
+    return ZeroLeak(checked=True, terms_checked=checked, occurrences=len(hits))
+
+
 def report_command(  # noqa: PLR0917 - Typer maps each parameter to one option
     ctx: typer.Context,
     target: Annotated[
@@ -303,6 +326,14 @@ def report_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         bool,
         typer.Option("--manifest/--no-manifest", help="Write a SHA-256 integrity manifest."),
     ] = True,
+    terms: Annotated[
+        Path | None,
+        typer.Option(
+            "--terms",
+            help="Zero-leak terms file (one confidential term per line) checked against every "
+            "recorded payload for the attestation; defaults to .codekavach-terms.txt if present.",
+        ),
+    ] = None,
 ) -> None:
     """Render the report of a stored scan."""
     project = Path(target)
@@ -352,11 +383,15 @@ def report_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         feature="the privacy attestation",
         epic="E13",
     )
+    terms_file = terms or loaded.project_root / TERMS_FILE
+    if terms is not None and not terms.is_file():
+        raise UsageError(f"terms file does not exist: {terms}", code="target_not_found")
+    leak = _zero_leak(state_dir, settings, terms_file) if terms_file.is_file() else None
     document = build_document(
         stored,
         findings,
         settings,
-        summarise(state_dir, str(stored.id), settings),
+        summarise(state_dir, str(stored.id), settings, zero_leak=leak),
         organisation=organisation,
         prepared_for=client,
         project_name=settings.project.name or loaded.project_root.name,
