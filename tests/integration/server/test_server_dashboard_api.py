@@ -386,6 +386,22 @@ def test_project_inventory(
     assert client.get(f"{API}/projects/prj_missing/inventory", headers=admin).status_code == 404
 
 
+def test_project_inventory_before_the_first_scan(
+    server: tuple[TestClient, Any], admin: dict[str, str]
+) -> None:
+    client = server[0]
+    body = {"name": "Inventory sample", "source": {"type": "sample"}}
+    project = client.post(f"{API}/projects", json=body, headers=admin).json()
+    found = client.get(f"{API}/projects/{project['id']}/inventory", headers=admin).json()
+    assert found["scan_id"] is None
+    assert found["totals"]["files"] > 0
+    assert any(row["language"] == "python" for row in found["languages"])
+    upload = {"name": "Inventory upload", "source": {"type": "upload"}}
+    project = client.post(f"{API}/projects", json=upload, headers=admin).json()
+    empty = client.get(f"{API}/projects/{project['id']}/inventory", headers=admin).json()
+    assert empty["languages"] == [] and empty["totals"] is None
+
+
 def test_health_network_and_system_health(
     server: tuple[TestClient, Any], admin: dict[str, str], users: dict[str, dict[str, str]]
 ) -> None:

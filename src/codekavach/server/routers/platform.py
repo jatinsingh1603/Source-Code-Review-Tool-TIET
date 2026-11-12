@@ -5,11 +5,13 @@ Owning epic: E32.
 ``/engines`` lists the built-in analysers and the external engines of the plugin registry with
 the install status the ``codekavach doctor`` engine checks report (a probe asks an engine for its
 version only; nothing is scanned and no network is used). ``/projects/{id}/inventory`` reads the
-file inventory the ingest stage stored for the project's latest scan. ``/system/health`` runs the
-server's own checks plus the doctor's engine and report checks. ``/privacy/invariants`` reports
-the recorded results of the privacy invariant suite (I1 to I6): the server never runs the tests,
-it reads the JUnit XML that ``pytest -m privacy --junitxml=...`` wrote into the data directory,
-and adds the guard evidence of the latest scan (ledger chain, zero-leak check, blocked payloads).
+file inventory the ingest stage stored for the project's latest scan; before the first scan it
+counts a local folder or the bundled sample in place (files are read, nothing is analysed).
+``/system/health`` runs the server's own checks plus the doctor's engine and report checks.
+``/privacy/invariants`` reports the recorded results of the privacy invariant suite (I1 to
+I6): the server never runs the tests, it reads the JUnit XML that ``pytest -m privacy
+--junitxml=...`` wrote into the data directory, and adds the guard evidence of the latest scan
+(ledger chain, zero-leak check, blocked payloads).
 """
 
 import os
@@ -176,9 +178,39 @@ def _support(language: str) -> dict[str, Any]:
     return {"support": level, "features": features}
 
 
+def _source_root(state: ServerState, project: Project) -> tuple[Path, tuple[str, ...]] | None:
+    """The folder a not yet scanned project reads in place, with the parts the scan leaves out."""
+    from codekavach.server.jobs.workspace import COPY_IGNORE, SAMPLE_IGNORE  # noqa: PLC0415
+
+    config = state.config
+    if project.source_type == "sample" and config.sample_dir is not None:
+        root, ignore = config.sample_dir, SAMPLE_IGNORE
+    elif project.source_type == "path" and config.allow_local_paths and project.source_path:
+        root, ignore = Path(project.source_path), COPY_IGNORE
+    else:
+        return None
+    return (root, ignore) if root.is_dir() else None
+
+
+def _count_in_place(root: Path, ignore: tuple[str, ...]) -> list[Any]:
+    """Discover the files of ``root`` the way the ingest stage does, without copying them."""
+    from codekavach.config.models.root import Settings  # noqa: PLC0415
+    from codekavach.ingest.discovery import discover  # noqa: PLC0415
+
+    skipped = set(ignore)
+    return [
+        item for item in discover(root, Settings())
+        if not skipped.intersection(str(item.path).split("/"))
+    ]  # fmt: skip
+
+
 @router.get("/projects/{project_id}/inventory", dependencies=[ReadDep])
-def inventory(project_id: str, session: SessionDep) -> dict[str, Any]:
-    """Files, lines and bytes per language from the project's latest completed scan."""
+def inventory(project_id: str, state: StateDep, session: SessionDep) -> dict[str, Any]:
+    """Files, lines and bytes per language from the project's latest completed scan.
+
+    Before the first scan, a local folder or the bundled sample is counted in place
+    (``scan_id`` is then null); an archive or a git source is counted on the first scan.
+    """
     project = session.get(Project, project_id)
     if project is None:
         raise not_found("project")
@@ -187,8 +219,18 @@ def inventory(project_id: str, session: SessionDep) -> dict[str, Any]:
         .where(ScanRow.project_id == project_id, ScanRow.status == "completed")
         .order_by(ScanRow.finished_at.desc())
     ).first()
+    files: list[Any]
     if scan is None or not scan.workspace or not scan.core_scan_id:
-        return {"project_id": project_id, "scan_id": None, "languages": [], "totals": None}
+        source = _source_root(state, project)
+        empty = {"project_id": project_id, "scan_id": None, "languages": [], "totals": None}
+        if source is None:
+            return empty
+        try:
+            files = _count_in_place(*source)
+        except Exception as error:  # noqa: BLE001 - a folder that cannot be counted is no inventory
+            _log.info("server_inventory_uncounted", error_type=type(error).__name__)
+            return empty
+        return _inventory_json(project_id, None, None, files)
     from codekavach.core.pipeline import keys  # noqa: PLC0415
     from codekavach.core.store.artefacts import OnDiskArtefactStore  # noqa: PLC0415
     from codekavach.core.store.layout import StateLayout  # noqa: PLC0415
@@ -202,6 +244,12 @@ def inventory(project_id: str, session: SessionDep) -> dict[str, Any]:
     except Exception as error:  # noqa: BLE001 - an unreadable store is reported, not raised
         raise ApiError(409, "inventory_unavailable", "the scan's file inventory cannot be read",
                        hint=type(error).__name__) from None  # fmt: skip
+    return _inventory_json(project_id, scan.id, as_utc(scan.finished_at), files)
+
+
+def _inventory_json(
+    project_id: str, scan_id: str | None, scanned_at: Any, files: list[Any]
+) -> dict[str, Any]:
     per: dict[str, Counter[str]] = {}
     for item in files:
         language = str(item.language.value)
@@ -216,8 +264,8 @@ def inventory(project_id: str, session: SessionDep) -> dict[str, Any]:
     ]
     return {
         "project_id": project_id,
-        "scan_id": scan.id,
-        "scanned_at": as_utc(scan.finished_at),
+        "scan_id": scan_id,
+        "scanned_at": scanned_at,
         "languages": languages,
         "totals": {
             "files": sum(row["files"] for row in languages),
