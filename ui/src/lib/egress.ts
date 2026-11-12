@@ -1,14 +1,6 @@
-import { useState } from "react";
-import { ChevronDown, ChevronRight, CloudOff, Send, ShieldCheck } from "lucide-react";
 import type { PrivacyLevel, ProviderInfo } from "@/api/types";
-import { LEVEL_INFO } from "@/lib/format";
-import { Callout } from "@/components/ui";
 
-/**
- * Plain-language statement of what will leave the machine for a given
- * level / provider / send combination. The wording is measured: it says what
- * is removed, what remains visible and what is recorded, and claims no secrecy.
- */
+/** Plain-language summary of what leaves at a level, for a provider. */
 export function egressSummary(level: PrivacyLevel, provider: ProviderInfo | undefined, send: boolean): {
   tone: "success" | "info" | "warning";
   title: string;
@@ -54,45 +46,4 @@ export function egressSummary(level: PrivacyLevel, provider: ProviderInfo | unde
           ? "Still visible to the provider: your source code apart from the redacted values, including internal names and comments."
           : "Still visible to the provider: the structure of the code sent, the technology stack through public library names, and the kind of weakness suspected.",
   };
-}
-
-export function EgressPreview({
-  level,
-  provider,
-  send,
-}: {
-  level: PrivacyLevel;
-  provider: ProviderInfo | undefined;
-  send: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const s = egressSummary(level, provider, send);
-  const Icon = s.tone === "success" ? (level === "L0" ? CloudOff : ShieldCheck) : Send;
-  return (
-    <Callout tone={s.tone} title={s.title} icon={<Icon className="h-5 w-5" aria-hidden />}>
-      <p>{s.body}</p>
-      {s.remains && <p className="mt-1.5">{s.remains}</p>}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-fg hover:underline"
-      >
-        {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />} Technical detail
-      </button>
-      {open && (
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
-          {LEVEL_INFO[level].detail.map((d) => (
-            <li key={d}>{d}</li>
-          ))}
-          <li>Privacy steps fail closed: if any redaction step fails for a candidate, that payload is blocked, not sent.</li>
-          {provider && !provider.local && level !== "L0" && (
-            <li>
-              Provider {provider.name} ({provider.kind}){provider.trust_tier ? `, trust tier ${provider.trust_tier}` : ""}{provider.min_level ? `, privacy floor ${provider.min_level}` : ""}.
-            </li>
-          )}
-        </ul>
-      )}
-    </Callout>
-  );
 }

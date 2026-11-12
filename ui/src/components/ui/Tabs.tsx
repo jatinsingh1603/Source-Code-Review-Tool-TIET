@@ -4,8 +4,7 @@ import { cn } from "@/lib/format";
 export interface TabItem {
   id: string;
   label: ReactNode;
-  icon?: ReactNode;
-  count?: number;
+  count?: number | string;
   disabled?: boolean;
 }
 
@@ -18,11 +17,13 @@ export interface TabsProps {
   label?: string;
 }
 
-/** WAI-ARIA tabs: arrow keys move between tabs, Home/End jump to the ends. */
-export function Tabs({ tabs, value, onChange, className, label }: TabsProps) {
-  const base = useId();
+function useRovingKeys<T extends { id: string; disabled?: boolean }>(
+  items: T[],
+  value: string,
+  onChange: (id: string) => void,
+) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const enabled = tabs.filter((t) => !t.disabled);
+  const enabled = items.filter((t) => !t.disabled);
   const onKey = (e: KeyboardEvent) => {
     const idx = enabled.findIndex((t) => t.id === value);
     let next = -1;
@@ -34,15 +35,17 @@ export function Tabs({ tabs, value, onChange, className, label }: TabsProps) {
     e.preventDefault();
     const t = enabled[next]!;
     onChange(t.id);
-    refs.current[tabs.indexOf(t)]?.focus();
+    refs.current[items.indexOf(t)]?.focus();
   };
+  return { refs, onKey };
+}
+
+/** Underlined tabs with counts (COMPONENTS.md §11); arrow keys move between tabs. */
+export function Tabs({ tabs, value, onChange, className, label }: TabsProps) {
+  const base = useId();
+  const { refs, onKey } = useRovingKeys(tabs, value, onChange);
   return (
-    <div
-      role="tablist"
-      aria-label={label}
-      onKeyDown={onKey}
-      className={cn("flex gap-1 overflow-x-auto border-b border-border", className)}
-    >
+    <div role="tablist" aria-label={label} onKeyDown={onKey} className={cn("tabs", className)}>
       {tabs.map((t, i) => {
         const active = t.id === value;
         return (
@@ -58,25 +61,10 @@ export function Tabs({ tabs, value, onChange, className, label }: TabsProps) {
             tabIndex={active ? 0 : -1}
             disabled={t.disabled}
             onClick={() => onChange(t.id)}
-            className={cn(
-              "relative -mb-px inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors disabled:opacity-40",
-              active
-                ? "border-primary text-primary"
-                : "border-transparent text-fg-muted hover:border-border-strong hover:text-fg",
-            )}
+            className={active ? "on" : undefined}
           >
-            {t.icon}
             {t.label}
-            {t.count !== undefined && (
-              <span
-                className={cn(
-                  "rounded-full px-1.5 text-xs",
-                  active ? "bg-primary-soft text-primary" : "bg-surface-3 text-fg-muted",
-                )}
-              >
-                {t.count}
-              </span>
-            )}
+            {t.count !== undefined && <span className="cnt">{t.count}</span>}
           </button>
         );
       })}
@@ -84,35 +72,48 @@ export function Tabs({ tabs, value, onChange, className, label }: TabsProps) {
   );
 }
 
-/** Pill-style segmented control for small option sets. */
+/** Segmented control (`.seg`). With `tabs` it behaves as a tab list (Privacy Inspect). */
 export function Segmented<T extends string>({
   options,
   value,
   onChange,
   label,
+  tabs,
+  className,
 }: {
-  options: { value: T; label: ReactNode }[];
+  options: { value: T; label: ReactNode; disabled?: boolean; title?: string }[];
   value: T;
   onChange: (v: T) => void;
   label: string;
+  tabs?: boolean;
+  className?: string;
 }) {
+  const items = options.map((o) => ({ id: o.value as string, disabled: o.disabled }));
+  const { refs, onKey } = useRovingKeys(items, value, (id) => onChange(id as T));
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-md bg-surface-2 p-0.5 ring-1 ring-inset ring-border">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          role="radio"
-          aria-checked={o.value === value}
-          onClick={() => onChange(o.value)}
-          className={cn(
-            "rounded px-2.5 py-1 text-sm font-medium transition-colors",
-            o.value === value ? "bg-surface text-fg shadow-sm" : "text-fg-muted hover:text-fg",
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
+    <div role={tabs ? "tablist" : "radiogroup"} aria-label={label} className={cn("seg", className)} onKeyDown={onKey}>
+      {options.map((o, i) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={o.value}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            type="button"
+            role={tabs ? "tab" : "radio"}
+            aria-selected={tabs ? on : undefined}
+            aria-checked={tabs ? undefined : on}
+            tabIndex={on ? 0 : -1}
+            disabled={o.disabled}
+            title={o.title}
+            onClick={() => onChange(o.value)}
+            className={on ? "on" : undefined}
+          >
+            {o.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

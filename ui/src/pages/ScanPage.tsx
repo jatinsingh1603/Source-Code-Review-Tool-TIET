@@ -1,353 +1,489 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { subscribeScanEvents, type StreamState } from "@/api/events";
+import { qk, useCancelScan, usePrivacy, useProject, useProviders, useScan } from "@/api/queries";
+import type { PrivacySummary, Scan, ScanEvent } from "@/api/types";
+import { useSession } from "@/app/session";
+import { fmtClock, fmtElapsed, fmtInt, fmtTime, findingLabel, LEVEL_NAME, scanLabel, secondsBetween } from "@/lib/display";
+import { providerName } from "@/lib/domain";
 import {
-  AlertTriangle,
-  Ban,
-  Bug,
-  Check,
-  CircleDashed,
-  FileText,
-  Loader2,
-  Lock,
-  MinusCircle,
-  Terminal,
-  WifiOff,
-  XCircle,
-} from "lucide-react";
-import { qk, useCancelScan, useFindings, useScan } from "@/api/queries";
-import { useScanEvents, type StageState } from "@/api/useScanEvents";
-import type { Severity } from "@/api/types";
-import { PageHeader } from "@/components/layout/PageHeader";
-import {
-  Badge,
   Button,
-  Callout,
-  Card,
-  CardBody,
-  CardHeader,
+  Content,
   Dialog,
-  EmptyState,
-  ErrorState,
-  PrivacyLevelBadge,
-  ProgressBar,
-  ScanStatusBadge,
-  SeverityBadge,
+  Empty,
+  ErrorBanner,
+  Icon,
+  MoreLink,
+  PageHeader,
+  SCAN_STATUS,
   Skeleton,
-  StatTile,
+
   useToast,
 } from "@/components/ui";
-import { useSession } from "@/app/session";
-import { cn, fmtDateTime, fmtDuration, SEVERITY_RANK } from "@/lib/format";
+import { ENGINE_GROUPS, STAGES } from "@/lib/pipeline";
 
-const STAGE_LABEL: Record<string, string> = {
-  ingest: "Ingest",
-  parse: "Parse",
-  analyse: "Analyse",
-  aggregate: "Aggregate",
-  "privacy-prepare": "Privacy prepare",
-  "llm-review": "Model review",
-  restore: "Restore",
-  rate: "Rate",
-  "privacy-check": "Ledger check",
-  report: "Report",
-  sync: "Sync",
-};
+type Ev = ScanEvent & { t: number };
 
-const STAGE_HINT: Record<string, string> = {
-  ingest: "Read files, detect languages",
-  parse: "Build syntax trees",
-  analyse: "Rules, taint, engines",
-  aggregate: "Deduplicate candidates",
-  "privacy-prepare": "Redact, pseudonymise, slice",
-  "llm-review": "Sanitised model review",
-  restore: "Map pseudonyms back locally",
-  rate: "CVSS, risk, compliance",
-  "privacy-check": "Verify hash chain",
-  report: "Render reports",
-  sync: "Optional integrations",
-};
-
-function StageIcon({ state }: { state: StageState }) {
-  if (state === "done") return <Check className="h-4 w-4" aria-hidden />;
-  if (state === "running") return <Loader2 className="h-4 w-4 animate-spin" aria-hidden />;
-  if (state === "failed") return <XCircle className="h-4 w-4" aria-hidden />;
-  if (state === "skipped") return <MinusCircle className="h-4 w-4" aria-hidden />;
-  return <CircleDashed className="h-4 w-4" aria-hidden />;
+/** Collect a scan's events: the server replays history, then streams until `done`. */
+function useScanTimeline(scanId: string | undefined, enabled: boolean) {
+  const [events, setEvents] = useState<Ev[]>([]);
+  const [stream, setStream] = useState<StreamState>("connecting");
+  useEffect(() => {
+    setEvents([]);
+    if (!scanId || !enabled) return;
+    const buf: Ev[] = [];
+    let raf: number | null = null;
+    const flush = () => {
+      raf = null;
+      setEvents([...buf]);
+    };
+    const stop = subscribeScanEvents(scanId, {
+      onEvent: (e) => {
+        const t = e.at ? Date.parse(e.at) : Date.now();
+        buf.push({ ...e, t: Number.isNaN(t) ? Date.now() : t });
+        if (raf === null) raf = window.setTimeout(flush, 80) as unknown as number;
+      },
+      onState: setStream,
+    });
+    return () => {
+      stop();
+      if (raf !== null) clearTimeout(raf);
+    };
+  }, [scanId, enabled]);
+  return { events, stream };
 }
 
-const stageTone: Record<StageState, string> = {
-  done: "bg-success text-white",
-  running: "bg-primary text-primary-fg ring-4 ring-primary/20",
-  failed: "bg-danger text-white",
-  skipped: "bg-surface-3 text-fg-subtle",
-  pending: "bg-surface-2 text-fg-subtle ring-1 ring-border",
-};
+const SHORT: [RegExp, string][] = [
+  [/^(intake|ingest)$/, "ingest"],
+  [/^parse$/, "parse"],
+  [/^analyse/, "analyse"],
+  [/^aggregate$/, "candidate"],
+  [/^privacy/, "privacy"],
+  [/^llm/, "llm"],
+  [/^restore$/, "restore"],
+  [/^rate$/, "risk"],
+  [/^report$/, "report"],
+  [/^sync/, "sync"],
+];
+const shortStage = (s: string) => SHORT.find(([r]) => r.test(s))?.[1] ?? s;
+
+type StageState = "done" | "run" | "wait" | "skip" | "fail";
+
+function deriveStages(events: Ev[], scan: Scan | undefined) {
+  const state = new Map<string, "running" | "done" | "skipped" | "failed">();
+  for (const e of events) {
+    if (e.type !== "stage") continue;
+    const st = /start|running/.test(e.status) ? "running" : /skip/.test(e.status) ? "skipped" : /fail|error/.test(e.status) ? "failed" : "done";
+    state.set(e.name, st);
+  }
+  const done = events.find((e) => e.type === "done") as (Ev & { type: "done" }) | undefined;
+  const final = done?.status ?? (scan && scan.status !== "running" && scan.status !== "queued" ? scan.status : null);
+  return STAGES.map((g) => {
+    const members = [...state.entries()].filter(([k]) => g.members(k));
+    let s: StageState = "wait";
+    if (members.some(([, v]) => v === "running")) s = final ? (final === "completed" ? "done" : "fail") : "run";
+    else if (members.some(([, v]) => v === "failed")) s = "fail";
+    else if (members.length && members.every(([, v]) => v === "skipped")) s = "skip";
+    else if (members.length) s = "done";
+    else if (final === "completed") s = "skip";
+    return { ...g, state: s };
+  });
+}
+
+function stageCount(n: string, state: StageState, scan: Scan | undefined, events: Ev[], privacy?: PrivacySummary): string {
+  if (state === "wait") return "waiting";
+  if (state === "skip") return n === "09" ? "off" : "skipped";
+  if (state === "fail") return "failed";
+  const findings = events.filter((e) => e.type === "finding").length;
+  switch (n) {
+    case "01":
+      return scan?.files ? `${fmtInt(scan.files)} files` : state === "run" ? "running" : "done";
+    case "03":
+      return state === "done" && (findings || scan?.findings_total) ? `${fmtInt(findings || scan?.findings_total)} found` : state === "run" ? "running" : "done";
+    case "04":
+      return privacy ? `${fmtInt(privacy.payloads + (privacy.blocked ?? 0))} slices` : state === "run" ? "running" : "done";
+    case "05":
+      return privacy ? `${fmtInt(privacy.payloads)} / ${fmtInt(privacy.payloads + (privacy.blocked ?? 0))} sent` : state === "run" ? "running" : "done";
+    default:
+      return state === "run" ? "running" : "done";
+  }
+}
 
 export default function ScanPage() {
   const { id } = useParams();
-  const qc = useQueryClient();
-  const toast = useToast();
-  const { can } = useSession();
-  const [fallback, setFallback] = useState(false);
   const scanQ = useScan(id, {
     refetchInterval: (q) => {
-      const st = q.state.data?.status;
-      if (st !== "running" && st !== "queued") return false;
-      return fallback ? 5000 : 4000;
+      const s = (q.state.data as Scan | undefined)?.status;
+      return s === "running" || s === "queued" ? 3000 : false;
     },
   });
   const scan = scanQ.data;
+  const project = useProject(scan?.project_id).data;
+  const providers = useProviders().data;
+  const { events } = useScanTimeline(id, !!scan);
   const running = scan?.status === "running" || scan?.status === "queued";
-  const live = useScanEvents(id, !!scan && running);
-  const findingsQ = useFindings(id && !running ? id : undefined);
+  const doneEv = events.find((e) => e.type === "done") as (Ev & { type: "done" }) | undefined;
+  const status = doneEv?.status ?? scan?.status;
+  const finished = status === "completed";
+  const privacyQ = usePrivacy(finished ? id : undefined);
   const cancel = useCancelScan();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const { can } = useSession();
   const [confirm, setConfirm] = useState(false);
-  const logRef = useRef<HTMLDivElement>(null);
+  const [now, setNow] = useState(Date.now());
+  const wasRunning = useRef(false);
 
   useEffect(() => {
-    if (live.stream === "fallback") setFallback(true);
-  }, [live.stream]);
+    if (!running) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [running]);
 
   useEffect(() => {
-    if (live.done) {
-      void qc.invalidateQueries({ queryKey: qk.scan(id ?? "") });
-      void qc.invalidateQueries({ queryKey: qk.findingsAll });
-      void qc.invalidateQueries({ queryKey: qk.stats });
+    if (running) wasRunning.current = true;
+    if (doneEv && wasRunning.current) {
+      wasRunning.current = false;
+      void qc.invalidateQueries({ queryKey: qk.scan(id!) });
       void qc.invalidateQueries({ queryKey: qk.scansAll });
+      void qc.invalidateQueries({ queryKey: qk.stats });
+      if (doneEv.status === "completed") toast.success("Scan completed", "Findings and the egress ledger are ready.");
+      else toast.error(`Scan ${doneEv.status}`);
     }
-  }, [live.done, id, qc]);
+  }, [doneEv, running, id, qc, toast]);
 
+  const stages = useMemo(() => deriveStages(events, scan), [events, scan]);
+  const progress = useMemo(() => {
+    const p = [...events].reverse().find((e) => e.type === "progress") as (Ev & { type: "progress" }) | undefined;
+    if (finished) return 100;
+    return p?.percent ?? scan?.progress ?? 0;
+  }, [events, finished, scan]);
+  const cur = stages.findIndex((s) => s.state === "run");
+  const stageNo = cur >= 0 ? cur + 1 : finished ? 9 : stages.filter((s) => s.state === "done").length;
+
+  const lines = useMemo(() => {
+    let stage = "scan";
+    const out: { t: number; stage: string; text: string; cls?: string }[] = [];
+    for (const e of events) {
+      if (e.type === "stage") stage = shortStage(e.name);
+      if (e.type === "log") {
+        const pol = /policy|never-send|egress_blocked|blocked/.test(e.message) && stage === "privacy";
+        const warn = /warn|error/.test(e.level) || /failed/.test(e.message);
+        out.push({ t: e.t, stage, text: e.message, cls: pol ? "acl" : warn ? "wl" : undefined });
+      } else if (e.type === "finding") {
+        out.push({ t: e.t, stage: "finding", text: `${findingLabel(e.id)} ${e.severity} · ${e.title}` });
+      } else if (e.type === "done") {
+        out.push({ t: e.t, stage: "done", text: `scan ${e.status}`, cls: e.status === "completed" ? "okl" : "wl" });
+      }
+    }
+    return out;
+  }, [events]);
+  const consoleRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const el = logRef.current;
+    const el = consoleRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [live.logs.length]);
+  }, [lines.length]);
 
-  const stages = useMemo(() => {
-    if (running || live.done) return live.stages;
-    // Finished before this page opened: derive the stepper from the scan summary.
-    const doneAll = scan?.status === "completed";
-    const llmOff = scan?.privacy_level === "L0" || scan?.send === false;
-    return live.stages.map((s) => ({
-      ...s,
-      state: (doneAll
-        ? (s.name === "llm-review" || s.name === "restore" || s.name === "privacy-check") && llmOff
-          ? "skipped"
-          : "done"
-        : s.name === scan?.stage
-          ? "failed"
-          : "pending") as StageState,
-    }));
-  }, [running, live.stages, live.done, scan?.status, scan?.stage, scan?.privacy_level, scan?.send]);
+  if (scanQ.isError) {
+    return (
+      <Content>
+        <PageHeader crumbs={[{ label: "Scans", to: "/scans" }, { label: id ?? "" }]} title="Scan" />
+        <ErrorBanner what="This scan could not be loaded." error={scanQ.error} onRetry={() => void scanQ.refetch()} />
+      </Content>
+    );
+  }
+  if (!scan) {
+    return (
+      <Content>
+        <div className="card">
+          <Skeleton rows={3} />
+        </div>
+      </Content>
+    );
+  }
 
-  if (scanQ.error) return <ErrorState error={scanQ.error} onRetry={() => void scanQ.refetch()} />;
-  if (!scan) return <Skeleton className="h-96" />;
-
-  const percent = running ? (live.percent ?? scan.progress ?? 0) : scan.status === "completed" ? 100 : scan.progress;
-  const liveFindings = running ? live.findings : [];
-  const counts = scan.counts;
-  const totalFindings = Object.values(counts ?? {}).reduce((a, b) => a + b, 0);
-  const sortedFindings = [...(findingsQ.data ?? [])].sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity]).slice(0, 8);
-
-  const doCancel = async () => {
-    try {
-      await cancel.mutateAsync(scan.id);
-      toast.info("Scan cancelled");
-    } catch (e) {
-      toast.error("Could not cancel the scan", e instanceof Error ? e.message : undefined);
-    }
-    setConfirm(false);
+  const st = SCAN_STATUS[status ?? scan.status] ?? SCAN_STATUS.queued;
+  const elapsed = secondsBetween(scan.started_at ?? scan.created_at, finished || !running ? scan.finished_at ?? null : null, now) ?? 0;
+  const p = privacyQ.data;
+  const download = () => {
+    const text = lines.map((l) => `${fmtTime(l.t)}  ${l.stage.padEnd(10)} ${l.text}`).join("\n");
+    const url = URL.createObjectURL(new Blob([text + "\n"], { type: "text/plain" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `codekavach-${scan.id}.log`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
   };
 
   return (
-    <>
+    <Content>
       <PageHeader
-        crumbs={[
-          { label: "Scans", to: "/scans" },
-          { label: scan.project_name ?? scan.project_id, to: `/projects/${scan.project_id}` },
-          { label: scan.id },
-        ]}
-        title={
-          <span className="flex flex-wrap items-center gap-3">
-            Scan <span className="font-mono">{scan.id}</span>
-            <ScanStatusBadge status={scan.status} />
+        crumbs={[{ label: project?.name ?? scan.project_name ?? "Project", to: "/" }, { label: "Scans", to: "/scans" }, { label: scanLabel(scan.id) }]}
+        title={`Scan ${scanLabel(scan.id)}`}
+        titleExtra={
+          <span className="st sm" style={{ marginLeft: 8, verticalAlign: "middle" }}>
+            <span className={`dot${st.tone === "neutral" ? "" : ` ${st.tone}`}`} />
+            {st.label}
           </span>
         }
-        meta={
-          <>
-            <PrivacyLevelBadge level={scan.privacy_level} withName />
-            <Badge tone="neutral">
-              {scan.provider && scan.provider !== "none" ? `${scan.provider}${scan.model ? ` · ${scan.model}` : ""}` : "No model"}
-            </Badge>
-            {scan.send === false && scan.privacy_level !== "L0" && <Badge tone="success">payloads not sent</Badge>}
-            <span className="text-xs text-fg-subtle">
-              Started {fmtDateTime(scan.started_at ?? scan.created_at)} · {fmtDuration(scan.started_at, scan.finished_at)}
-            </span>
-          </>
-        }
         actions={
-          running ? (
-            can("scans:run") && (
-              <Button variant="outline" icon={<Ban className="h-4 w-4" />} onClick={() => setConfirm(true)}>
+          <>
+            <span className="sub mono">
+              {running
+                ? `${fmtClock(elapsed)} elapsed${scan.eta_seconds ? ` · about ${Math.round(scan.eta_seconds)} s left` : ""}`
+                : finished
+                  ? `Completed in ${fmtElapsed(scan.started_at, scan.finished_at)}`
+                  : status === "failed"
+                    ? "Failed"
+                    : "Cancelled"}
+            </span>
+            {running && can("scans:run") && (
+              <Button variant="danger" onClick={() => setConfirm(true)}>
                 Cancel scan
               </Button>
-            )
-          ) : (
-            <>
-              <Link to={`/privacy?scan=${scan.id}`}>
-                <Button variant="outline" icon={<Lock className="h-4 w-4" />}>
-                  Privacy
-                </Button>
-              </Link>
-              <Link to={`/reports?scan=${scan.id}`}>
-                <Button variant="outline" icon={<FileText className="h-4 w-4" />}>
-                  Reports
-                </Button>
-              </Link>
-              <Link to={`/findings?scan=${scan.id}`}>
-                <Button icon={<Bug className="h-4 w-4" />}>View findings</Button>
-              </Link>
-            </>
-          )
+            )}
+            {finished && (
+              <>
+                <Link className="btn" to={`/findings?scan=${scan.id}`}>
+                  Open findings
+                </Link>
+                <Link className="btn" to={`/privacy/ledger?scan=${scan.id}`}>
+                  Open ledger
+                </Link>
+              </>
+            )}
+          </>
         }
       />
-
-      {scan.status === "failed" && (
-        <Callout tone="danger" title="The scan failed" icon={<XCircle className="h-5 w-5" />} className="mb-6">
-          {scan.error ?? "See the log for details."} Privacy steps fail closed, so nothing was sent for candidates whose preparation failed.
-        </Callout>
-      )}
-      {scan.status === "cancelled" && (
-        <Callout tone="warning" title="The scan was cancelled" icon={<Ban className="h-5 w-5" />} className="mb-6">
-          Results up to the point of cancellation are kept.
-        </Callout>
-      )}
-      {fallback && running && (
-        <Callout tone="warning" title="Live updates interrupted" icon={<WifiOff className="h-5 w-5" />} className="mb-6">
-          The event stream could not be re-established, so this page now refreshes the scan summary every five seconds.
-        </Callout>
-      )}
-
-      <Card>
-        <CardBody className="pt-5">
-          <div className="mb-5 flex items-center gap-4">
-            <ProgressBar value={percent} label="Scan progress" className="h-2.5" />
-            <span className="w-12 text-right text-sm font-semibold tabular-nums text-fg">{Math.round(percent)}%</span>
-          </div>
-          <ol className="grid grid-cols-2 gap-x-2 gap-y-4 sm:grid-cols-5 xl:grid-cols-10" aria-label="Pipeline stages">
-            {stages.map((s) => (
-              <li key={s.name} className="flex flex-col items-center text-center">
-                <span className={cn("flex h-8 w-8 items-center justify-center rounded-full transition-colors", stageTone[s.state])}>
-                  <StageIcon state={s.state} />
-                </span>
-                <span className={cn("mt-2 text-xs font-semibold", s.state === "pending" ? "text-fg-subtle" : "text-fg")}>
-                  {STAGE_LABEL[s.name] ?? s.name}
-                </span>
-                <span className="mt-0.5 text-[11px] leading-tight text-fg-subtle">
-                  {s.state === "skipped"
-                    ? "skipped"
-                    : s.startedAt && s.endedAt
-                      ? `${((s.endedAt - s.startedAt) / 1000).toFixed(1)}s${s.members.length > 1 ? ` · ${s.members.length} steps` : ""}`
-                      : (STAGE_HINT[s.name] ?? "")}
-                </span>
-                <span className="sr-only">{s.state}</span>
-              </li>
-            ))}
-          </ol>
-          {running && live.message && (
-            <p className="mt-4 text-sm text-fg-muted" aria-live="polite">
-              {live.message}
-            </p>
-          )}
-        </CardBody>
-      </Card>
-
-      {!running && scan.status === "completed" && (
-        <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
-          {(["critical", "high", "medium", "low", "info"] as Severity[]).map((s) => (
-            <StatTile
-              key={s}
-              label={s.charAt(0).toUpperCase() + s.slice(1)}
-              value={counts?.[s] ?? 0}
-              tone={s === "critical" || s === "high" ? "danger" : s === "medium" ? "warning" : "primary"}
-              to={`/findings?scan=${scan.id}&severity=${s}`}
-            />
-          ))}
+      {status === "failed" && (
+        <div className="banner bad sm" role="alert">
+          {scan.error ?? "The scan failed."}
+          {/privacy|I4/i.test(scan.error ?? "") ? " Request aborted under I4. Nothing was sent." : ""}
         </div>
       )}
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader
-            icon={<Bug className="h-4 w-4" />}
-            title={running ? "Findings as they appear" : "Top findings"}
-            description={running ? `${liveFindings.length} so far` : `${totalFindings} in total`}
-          />
-          <div className="max-h-[26rem] overflow-y-auto px-2 pb-3">
-            {(running ? liveFindings : sortedFindings).length === 0 ? (
-              <EmptyState
-                title={running ? "No findings yet" : "No findings"}
-                description={running ? "Findings appear here as analysis produces them." : "This scan produced no findings."}
-              />
-            ) : (
-              <ul aria-live="polite">
-                {(running ? [...liveFindings].reverse() : sortedFindings).map((f) => (
-                  <li key={f.id}>
-                    <Link
-                      to={`/findings/${f.id}`}
-                      className="flex animate-fade-in items-center gap-3 rounded-md px-3 py-2.5 hover:bg-surface-2"
-                    >
-                      <SeverityBadge severity={f.severity} />
-                      <span className="min-w-0 flex-1 truncate text-sm text-fg">{f.title}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </Card>
-        <Card>
-          <CardHeader icon={<Terminal className="h-4 w-4" />} title="Scan log" description="Stage events, counts and codes; no source code" />
-          <div ref={logRef} className="mx-5 mb-5 h-[24rem] overflow-y-auto rounded-md bg-code-bg p-3 font-mono text-xs leading-relaxed ring-1 ring-border" role="log" aria-live="off">
-            {live.logs.length === 0 ? (
-              <p className="text-fg-subtle">{running ? "Waiting for events…" : "The live log is available while a scan runs."}</p>
-            ) : (
-              live.logs.map((l, i) => (
-                <div key={i} className="flex gap-3">
-                  <span className="shrink-0 text-code-gutter">{new Date(l.at).toLocaleTimeString("en-GB")}</span>
-                  <span
-                    className={cn(
-                      "w-14 shrink-0 uppercase",
-                      l.level === "error" ? "text-danger" : l.level.startsWith("warn") ? "text-warning" : "text-accent",
-                    )}
+      <section className="g g-side-l">
+        <LaunchSummary
+          scan={scan}
+          projectName={project?.name ?? scan.project_name}
+          providers={providers}
+          source={scan.ref ?? project?.source.ref ?? (project?.source as { upload_name?: string } | undefined)?.upload_name ?? project?.source.path ?? project?.source.type}
+        />
+
+        <div className="stack s16">
+          <div className="card stack s16">
+            <div className="row between">
+              <h2>Pipeline</h2>
+              <span className="sub">
+                Stage {Math.max(1, stageNo)} of 9 · {Math.round(progress)}%
+              </span>
+            </div>
+            <div className="bar" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label="Scan progress">
+              <i style={{ width: `${progress}%` }} />
+            </div>
+            <div className="pipe-wrap">
+              <div className="pipe">
+                {stages.map((s) => (
+                  <div
+                    key={s.n}
+                    className={`stage ${s.state === "done" ? "done" : s.state === "run" ? "run" : s.state === "fail" ? "done" : "wait"}${s.guard ? " guardz" : ""}`}
                   >
-                    {l.level}
-                  </span>
-                  <span className="break-words text-fg">{l.message}</span>
+                    <span className="sn">
+                      {s.n}
+                      {s.state === "run" ? " running" : ""}
+                    </span>
+                    <span className="st-t">{s.title}</span>
+                    <span className={`cnt${s.state === "fail" ? " badc" : ""}`}>{stageCount(s.n, s.state, scan, events, p)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-h">
+              <div>
+                <h2>Egress meter</h2>
+                <p className="sub">What left during this scan, checked as it left</p>
+              </div>
+              <MoreLink to={`/privacy/ledger?scan=${scan.id}`}>Open ledger</MoreLink>
+            </div>
+            {scan.privacy_level === "L0" ? (
+              <Empty title="Nothing leaves at L0">This scan uses local engines only; no payload is prepared.</Empty>
+            ) : !p ? (
+              running ? (
+                <p className="sm muted">Counts appear here as soon as the privacy step has written the ledger.</p>
+              ) : privacyQ.isLoading ? (
+                <Skeleton />
+              ) : (
+                <p className="sm muted">No egress summary for this scan.</p>
+              )
+            ) : (
+              <div className="kpi-strip boxed">
+                <div className="kpi">
+                  <div className="k-l">Payloads</div>
+                  <div className="k-v">
+                    {fmtInt(p.payloads)} <small>/ {fmtInt(p.payloads + (p.blocked ?? 0))}</small>
+                  </div>
+                  <div className="k-d">{fmtInt(p.blocked)} blocked</div>
                 </div>
-              ))
+                <div className="kpi">
+                  <div className="k-l">{p.bytes_sent !== undefined && p.bytes_sent !== null ? "Bytes out" : "Tokens out"}</div>
+                  <div className="k-v">
+                    {p.bytes_sent !== undefined && p.bytes_sent !== null ? (p.bytes_sent / 1000).toFixed(1) : (p.tokens_sent / 1000).toFixed(1)}{" "}
+                    <small>{p.bytes_sent !== undefined && p.bytes_sent !== null ? "KB" : "k"}</small>
+                  </div>
+                </div>
+                <div className="kpi">
+                  <div className="k-l">Secrets redacted</div>
+                  <div className="k-v">{fmtInt(Object.values(p.placeholders_by_type ?? {}).reduce((a, b) => a + b, 0))}</div>
+                  <div className="k-d">replaced before sending</div>
+                </div>
+                <div className="kpi">
+                  <div className="k-l">Domain terms in payloads</div>
+                  <div className="k-v">{fmtInt(p.zero_leak.occurrences)}</div>
+                  <div className="k-d">{fmtInt(p.zero_leak.checked)} listed terms</div>
+                </div>
+              </div>
             )}
           </div>
-        </Card>
-      </div>
+
+          <div className="card">
+            <div className="card-h">
+              <h2>Log</h2>
+              <div className="row">
+                <span className="xs faint">{running ? "streaming" : `${lines.length} lines`}</span>
+                <Button size="sm" onClick={download} disabled={!lines.length}>
+                  Download log
+                </Button>
+              </div>
+            </div>
+            <div className="console" role="log" aria-live="polite" ref={consoleRef} tabIndex={0}>
+              {lines.length === 0 && <div>{running ? "Waiting for the first event…" : "No log for this scan."}</div>}
+              {lines.map((l, i) => (
+                <div key={i}>
+                  <span className="t">{fmtTime(l.t)}</span>
+                  {"  "}
+                  {l.cls ? <span className={l.cls}>{`${l.stage.padEnd(10)} ${l.text}`}</span> : `${l.stage.padEnd(10)} ${l.text}`}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <Dialog
         open={confirm}
         onClose={() => setConfirm(false)}
-        size="sm"
         title="Cancel this scan?"
-        description="Running stages stop at the next checkpoint. Findings produced so far are kept."
+        description="Stages that have not started will not run. Payloads already recorded stay in the ledger."
         footer={
           <>
-            <Button variant="outline" onClick={() => setConfirm(false)}>
+            <Button variant="ghost" onClick={() => setConfirm(false)}>
               Keep running
             </Button>
-            <Button variant="danger" loading={cancel.isPending} onClick={doCancel} icon={<AlertTriangle className="h-4 w-4" />}>
+            <Button
+              variant="danger"
+              loading={cancel.isPending}
+              onClick={() =>
+                cancel.mutate(scan.id, {
+                  onSuccess: () => {
+                    setConfirm(false);
+                    toast.info("Scan cancelled");
+                  },
+                  onError: (e) => toast.error("Could not cancel", e.message),
+                })
+              }
+            >
               Cancel scan
             </Button>
           </>
         }
       />
-    </>
+    </Content>
+  );
+}
+
+/** The launch form, locked while the scan runs (left column of the live view). */
+function LaunchSummary({
+  scan,
+  projectName,
+  providers,
+  source,
+}: {
+  scan: Scan;
+  projectName?: string;
+  providers?: { id: string; name: string; models: string[] }[];
+  source?: string;
+}) {
+  const rules = scan.rules ?? [];
+  return (
+    <form className="card stack s16 locked" aria-label="Scan configuration" onSubmit={(e) => e.preventDefault()}>
+      <div className="row between">
+        <h2>Launch settings</h2>
+        <span className="xs faint">{scan.status === "running" || scan.status === "queued" ? "locked while running" : "as launched"}</span>
+      </div>
+      <div className="fld">
+        <label htmlFor="sc-t">Target</label>
+        <select id="sc-t" className="inp" disabled value="x">
+          <option value="x">{projectName ?? scan.project_id}</option>
+        </select>
+      </div>
+      <div className="fld">
+        <span className="lbl">Mode</span>
+        <div className="seg">
+          <button className={scan.mode !== "diff" ? "on" : undefined} type="button" disabled>
+            Branch
+          </button>
+          <button className={scan.mode === "diff" ? "on" : undefined} type="button" disabled>
+            Diff
+          </button>
+        </div>
+      </div>
+      <div className="fld">
+        <label htmlFor="sc-b">Source</label>
+        <input id="sc-b" className="inp mono" disabled value={source ?? ""} />
+      </div>
+      <div className="fld">
+        <label htmlFor="sc-l">Privacy level</label>
+        <select id="sc-l" className="inp" disabled value="x">
+          <option value="x">
+            {scan.privacy_level} · {LEVEL_NAME[scan.privacy_level]}
+            {scan.privacy_level === "L3" ? " (default)" : ""}
+          </option>
+        </select>
+      </div>
+      <div className="g" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+        <div className="fld">
+          <label htmlFor="sc-p">Provider</label>
+          <select id="sc-p" className="inp" disabled value="x">
+            <option value="x">{providerName(scan.provider, providers as never)}</option>
+          </select>
+        </div>
+        <div className="fld">
+          <label htmlFor="sc-m">Model</label>
+          <select id="sc-m" className="inp" disabled value="x">
+            <option value="x">{scan.model ?? "default"}</option>
+          </select>
+        </div>
+      </div>
+      <div className="stack s6">
+        <span className="lbl">Engines</span>
+        {ENGINE_GROUPS.map((g) => (
+          <label key={g} className="swrow">
+            <input type="checkbox" className="chk" checked readOnly aria-readonly="true" tabIndex={-1} onClick={(e) => e.preventDefault()} /> {g}
+          </label>
+        ))}
+        {rules.length > 0 && <span className="xs faint mono">rules: {rules.join(", ")}</span>}
+      </div>
+      <div className="hr" />
+      <label className="swrow">
+        <input type="checkbox" className="sw" checked={scan.send === false} readOnly disabled /> No-send (dry run)
+      </label>
+      <Link className="more" to={`/projects/${scan.project_id}/scan`}>
+        Run again with changes <Icon name="arrow-right" />
+      </Link>
+    </form>
   );
 }

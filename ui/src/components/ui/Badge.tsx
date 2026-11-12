@@ -1,217 +1,176 @@
-import type { HTMLAttributes, ReactNode } from "react";
-import {
-  AlertOctagon,
-  AlertTriangle,
-  CheckCircle2,
-  Circle,
-  Info,
-  ShieldAlert,
-  ShieldCheck,
-  ShieldQuestion,
-  XCircle,
-  Loader2,
-  Ban,
-  Clock,
-} from "lucide-react";
+import { useState, type ReactNode } from "react";
 import type { FindingStatus, PrivacyLevel, ScanStatus, Severity } from "@/api/types";
-import { cn, LEVEL_INFO, SEVERITY_LABEL, STATUS_LABEL } from "@/lib/format";
+import { cn, SEVERITY_LABEL, STATUS_LABEL } from "@/lib/format";
+import { cvssBand, fmtHash, LEVEL_BARS, LEVEL_NAME } from "@/lib/display";
+import { Icon } from "./Icon";
 
-export type BadgeTone =
-  | "neutral"
-  | "primary"
-  | "success"
-  | "warning"
-  | "danger"
-  | "info"
-  | "accent";
+/** Severity with its marker shape (COMPONENTS.md §6). */
+export const SEV_CLASS: Record<Severity, string> = { critical: "c", high: "h", medium: "m", low: "l", info: "i" };
 
-const tones: Record<BadgeTone, string> = {
-  neutral: "bg-surface-3 text-fg-muted",
-  primary: "bg-primary-soft text-primary",
-  success: "bg-success-soft text-success",
-  warning: "bg-warning-soft text-warning",
-  danger: "bg-danger-soft text-danger",
-  info: "bg-info-soft text-info",
-  accent: "bg-accent-soft text-accent",
-};
-
-export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  tone?: BadgeTone;
-  icon?: ReactNode;
+export function SeverityBadge({ severity, label, className }: { severity: Severity; label?: ReactNode; className?: string }) {
+  const known = SEV_CLASS[severity] ? severity : "info";
+  return (
+    <span className={cn("sev", SEV_CLASS[known], className)}>{label === undefined ? SEVERITY_LABEL[known] : label}</span>
+  );
 }
 
-export function Badge({ tone = "neutral", icon, className, children, ...rest }: BadgeProps) {
+/** Severity marker plus a count, as in the KPI detail line. */
+export function SevCount({ severity, n, first }: { severity: Severity; n: number; first?: boolean }) {
   return (
     <span
-      className={cn(
-        "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium",
-        tones[tone],
-        className,
-      )}
-      {...rest}
+      className={cn("sev", SEV_CLASS[severity])}
+      style={{ height: "auto", marginLeft: first ? undefined : 8 }}
+      title={`${SEVERITY_LABEL[severity]}: ${n}`}
     >
-      {icon}
-      {children}
+      {n}
     </span>
   );
 }
 
-const sevClass: Record<Severity, string> = {
-  critical: "bg-sev-critical-soft text-sev-critical ring-sev-critical/30",
-  high: "bg-sev-high-soft text-sev-high ring-sev-high/30",
-  medium: "bg-sev-medium-soft text-sev-medium ring-sev-medium/30",
-  low: "bg-sev-low-soft text-sev-low ring-sev-low/30",
-  info: "bg-sev-info-soft text-sev-info ring-sev-info/30",
-};
-
-const sevIcon: Record<Severity, typeof AlertOctagon> = {
-  critical: AlertOctagon,
-  high: AlertTriangle,
-  medium: AlertTriangle,
-  low: Info,
-  info: Info,
-};
-
-export const sevDot: Record<Severity, string> = {
-  critical: "bg-sev-critical",
-  high: "bg-sev-high",
-  medium: "bg-sev-medium",
-  low: "bg-sev-low",
-  info: "bg-sev-info",
-};
-
-export const sevText: Record<Severity, string> = {
-  critical: "text-sev-critical",
-  high: "text-sev-high",
-  medium: "text-sev-medium",
-  low: "text-sev-low",
-  info: "text-sev-info",
-};
-
-/** Severity is always shown as colour plus icon plus label, never colour alone. */
-export function SeverityBadge({
-  severity,
-  className,
-  size = "sm",
-}: {
-  severity: Severity;
-  className?: string;
-  size?: "sm" | "md";
-}) {
-  const Icon = sevIcon[severity] ?? Info;
+export function CvssBox({ score, suffix }: { score?: number | null; suffix?: string }) {
+  if (score === null || score === undefined) return <span className="faint">—</span>;
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 whitespace-nowrap rounded-md font-semibold ring-1 ring-inset",
-        size === "sm" ? "px-1.5 py-0.5 text-xs" : "px-2.5 py-1 text-sm",
-        sevClass[severity] ?? sevClass.info,
-        className,
-      )}
-    >
-      <Icon className={size === "sm" ? "h-3 w-3" : "h-4 w-4"} aria-hidden />
-      {SEVERITY_LABEL[severity] ?? severity}
+    <span className={cn("cvss", cvssBand(score))}>
+      <b>{score.toFixed(1)}</b>
+      {suffix && <span>{suffix}</span>}
     </span>
   );
 }
 
-const statusTone: Record<FindingStatus, BadgeTone> = {
-  open: "warning",
-  confirmed: "danger",
-  false_positive: "neutral",
-  accepted_risk: "info",
-  fixed: "success",
-};
-const statusIcon: Record<FindingStatus, typeof Circle> = {
-  open: Circle,
-  confirmed: ShieldAlert,
-  false_positive: XCircle,
-  accepted_risk: ShieldQuestion,
-  fixed: CheckCircle2,
+export type VerdictKind = "conf" | "like" | "rev" | "fp";
+export const VERDICT_LABEL: Record<VerdictKind, string> = {
+  conf: "Confirmed",
+  like: "Likely",
+  rev: "Needs review",
+  fp: "False positive",
 };
 
-export function StatusBadge({ status }: { status: FindingStatus }) {
-  const Icon = statusIcon[status] ?? Circle;
-  return (
-    <Badge tone={statusTone[status] ?? "neutral"} icon={<Icon className="h-3 w-3" aria-hidden />}>
-      {STATUS_LABEL[status] ?? status}
-    </Badge>
-  );
+export function Verdict({ kind, children }: { kind: VerdictKind; children?: ReactNode }) {
+  return <span className={cn("vd", kind)}>{children ?? VERDICT_LABEL[kind]}</span>;
 }
 
-const scanTone: Record<ScanStatus, BadgeTone> = {
-  queued: "neutral",
-  running: "primary",
-  completed: "success",
-  failed: "danger",
-  cancelled: "warning",
-};
-const scanIcon: Record<ScanStatus, typeof Circle> = {
-  queued: Clock,
-  running: Loader2,
-  completed: CheckCircle2,
-  failed: XCircle,
-  cancelled: Ban,
-};
-
-export function ScanStatusBadge({ status }: { status: ScanStatus }) {
-  const Icon = scanIcon[status] ?? Circle;
-  return (
-    <Badge
-      tone={scanTone[status] ?? "neutral"}
-      icon={
-        <Icon className={cn("h-3 w-3", status === "running" && "animate-spin")} aria-hidden />
-      }
-    >
-      {status.charAt(0).toUpperCase() + status.slice(1)}
-    </Badge>
-  );
-}
-
-const lvlClass: Record<PrivacyLevel, string> = {
-  L0: "text-lvl-0 ring-lvl-0/40 bg-lvl-0/10",
-  L1: "text-lvl-1 ring-lvl-1/40 bg-lvl-1/10",
-  L2: "text-lvl-2 ring-lvl-2/40 bg-lvl-2/10",
-  L3: "text-lvl-3 ring-lvl-3/40 bg-lvl-3/10",
-  L4: "text-lvl-4 ring-lvl-4/40 bg-lvl-4/10",
-};
-
-export function PrivacyLevelBadge({
+/** Privacy level badge: neutral grey with a five-bar protection meter (COMPONENTS.md §7). */
+export function LevelBadge({
   level,
-  withName = false,
+  meter = false,
+  name = false,
+  label,
 }: {
-  level: PrivacyLevel;
-  withName?: boolean;
+  level: PrivacyLevel | string;
+  meter?: boolean;
+  /** Append the level name ("L3 Minimal slice"). */
+  name?: boolean;
+  /** Replace the visible text entirely. */
+  label?: ReactNode;
 }) {
-  const info = LEVEL_INFO[level];
+  const lv = level as PrivacyLevel;
+  const bars = LEVEL_BARS[lv] ?? 0;
   return (
-    <span
-      title={info ? `${level}: ${info.short}` : level}
-      className={cn(
-        "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5 text-xs font-semibold ring-1 ring-inset",
-        lvlClass[level] ?? lvlClass.L3,
+    <span className="lvl" title={LEVEL_NAME[lv] ? `${lv} · ${LEVEL_NAME[lv]}` : undefined}>
+      {label ?? (name && LEVEL_NAME[lv] ? `${lv} ${LEVEL_NAME[lv]}` : level)}
+      {meter && (
+        <span className="meter" aria-hidden>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <i key={i} className={i < bars ? "f" : undefined} />
+          ))}
+        </span>
       )}
-    >
-      {level === "L0" ? (
-        <ShieldCheck className="h-3 w-3" aria-hidden />
-      ) : (
-        <ShieldAlert className="h-3 w-3" aria-hidden />
-      )}
-      {level}
-      {withName && info ? ` · ${info.name}` : ""}
     </span>
   );
 }
 
-export function Chip({ children, className, title }: { children: ReactNode; className?: string; title?: string }) {
+export type DotTone = "ok" | "warn" | "bad" | "acc" | "neutral";
+
+/** Status word with a coloured dot (`.st`). */
+export function StatusDot({ tone, children, className }: { tone: DotTone; children: ReactNode; className?: string }) {
   return (
-    <span
-      title={title}
-      className={cn(
-        "inline-flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2 py-0.5 font-mono text-xs text-fg-muted",
-        className,
-      )}
-    >
+    <span className={cn("st", className)}>
+      <span className={cn("dot", tone !== "neutral" && tone)} />
       {children}
     </span>
+  );
+}
+
+export const SCAN_STATUS: Record<ScanStatus, { tone: DotTone; label: string }> = {
+  queued: { tone: "neutral", label: "Queued" },
+  running: { tone: "acc", label: "Running" },
+  completed: { tone: "ok", label: "Completed" },
+  failed: { tone: "bad", label: "Failed" },
+  cancelled: { tone: "neutral", label: "Cancelled" },
+};
+
+export function ScanStatusBadge({ status, error }: { status: ScanStatus; error?: string | null }) {
+  const s = SCAN_STATUS[status] ?? { tone: "neutral" as DotTone, label: status };
+  let label = s.label;
+  if (status === "failed" && error && /abort|I4|privacy/i.test(error)) label = "Aborted · I4";
+  return (
+    <StatusDot tone={s.tone}>
+      <span title={error ?? undefined}>{label}</span>
+    </StatusDot>
+  );
+}
+
+/** Finding status as a word ("Suppressed" is faint, as in the design). */
+export function StatusBadge({ status }: { status: FindingStatus }) {
+  const label = STATUS_LABEL[status] ?? status;
+  return <span className={status === "accepted_risk" || status === "false_positive" ? "faint" : undefined}>{label}</span>;
+}
+
+export function Chip({ children, tone, className, title }: { children: ReactNode; tone?: "on" | "new" | "fixed"; className?: string; title?: string }) {
+  return (
+    <span className={cn("chip", tone, className)} title={title}>
+      {children}
+    </span>
+  );
+}
+
+/** Hash chip: first 6 and last 4 hex characters, with an optional copy button. */
+export function Hash({ value, copy = true, prefix }: { value?: string | null; copy?: boolean; prefix?: string }) {
+  const [copied, setCopied] = useState(false);
+  if (!value) return <span className="faint">none</span>;
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      /* clipboard unavailable (insecure context) */
+    }
+  };
+  return (
+    <span className="hash" title={value}>
+      {prefix}
+      {fmtHash(value)}
+      {copy && (
+        <button type="button" aria-label={copied ? "Copied" : "Copy hash"} title={copied ? "Copied" : "Copy full hash"} onClick={onCopy}>
+          <Icon name="copy" />
+        </button>
+      )}
+    </span>
+  );
+}
+
+export function Avatar({ name, size }: { name: string; size?: "xs" | "sm" | "lg" }) {
+  return (
+    <span className={cn("avatar", size)} aria-hidden>
+      {initialsOf(name)}
+    </span>
+  );
+}
+
+function initialsOf(name: string): string {
+  if (name === "CodeKavach" || name === "system") return "CK";
+  const parts = name.trim().split(/\s+|[._-]/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "?") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+/** One row of a checks list (`.guard`): id, text, and "Pass" or a note word. */
+export function Guard({ id, children, result }: { id?: string; children: ReactNode; result: ReactNode | "pass" }) {
+  return (
+    <div className="guard">
+      {id && <span className="gid">{id}</span>}
+      <span className="gt">{children}</span>
+      {result === "pass" ? <span className="chk">Pass</span> : result}
+    </div>
   );
 }

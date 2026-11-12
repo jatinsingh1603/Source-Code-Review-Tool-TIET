@@ -26,6 +26,7 @@ import type {
   User,
   UserCreate,
   VersionInfo,
+  AuditLog,
 } from "./types";
 
 /** Lists may come back bare or wrapped (`{items: [...]}`); accept both. */
@@ -42,7 +43,33 @@ export function unwrapList<T>(data: unknown, ...keys: string[]): T[] {
 
 const enc = encodeURIComponent;
 
+/**
+ * Endpoints the design needs that a server build may not have yet (SCREENS.md,
+ * "API gaps"). A 404 or 405 resolves to `null` so the page can show an empty
+ * state instead of an error; other failures still throw.
+ */
+export async function optional<T>(p: Promise<T>): Promise<T | null> {
+  try {
+    return await p;
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 404 || e.status === 405 || e.status === 501)) return null;
+    throw e;
+  }
+}
+
 export const endpoints = {
+  audit: (limit = 50) => api.get<AuditLog>("/audit", { limit }),
+  notifications: () => optional(api.get<unknown>("/notifications")),
+  evaluation: () => optional(api.get<unknown>("/evaluation")),
+  integrationsGithub: () => optional(api.get<unknown>("/integrations/github")),
+  policyTemplates: () => optional(api.get<unknown>("/policy/templates")),
+  policyValidate: (toml: string) => optional(api.post<unknown>("/policy/validate", { toml })),
+  policyExplain: (path: string) => optional(api.get<unknown>("/policy/explain", { path })),
+  ledgerPreview: (scanId: string, seq: number, level: string) =>
+    optional(api.get<LedgerDetail>(`/scans/${enc(scanId)}/ledger/${seq}/preview`, { level })),
+  tokens: () => optional(api.get<unknown>("/tokens")),
+  engines: () => optional(api.get<unknown>("/engines")),
+
   // auth
   login: (username: string, password: string) =>
     api.post<LoginResponse>("/auth/login", { username, password }),

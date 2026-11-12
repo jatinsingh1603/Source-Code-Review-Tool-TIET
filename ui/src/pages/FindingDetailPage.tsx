@@ -1,495 +1,703 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useState, type ReactNode } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useFinding, useFindingHistory, useLedgerEntry, usePatchFinding, useUsers } from "@/api/queries";
+import { FINDING_STATUSES, type Finding, type FindingStatus, type PrivacyLevel, type TaintStep } from "@/api/types";
+import { useSession } from "@/app/session";
+import { locationOf, verdictOf } from "@/lib/domain";
+import { capitalise, byteLength, engineLabel, fmtDate, fmtHash, fmtInt, fmtSeq, fmtShort, findingLabel, LEVEL_NAME, lineCount, payloadLineCount, scanLabel } from "@/lib/display";
+import { confidenceFraction, frameworkLabel, STATUS_LABEL } from "@/lib/format";
+import { cvssRating, parseVector } from "@/lib/cvss";
+import { MarkedCode } from "@/components/Marked";
+import { GithubSyncDialog } from "@/components/GithubSyncDialog";
+import { AssignDialog, SuppressDialog } from "./FindingsPage";
 import {
-  ArrowDown,
-  Bot,
-  BotOff,
-  BookOpen,
-  CircleDot,
-  Code2,
-  ExternalLink,
-  Filter,
-  GitCommitVertical,
-  History,
-  Scale,
-  ShieldCheck,
-  Target,
-  Wrench,
-} from "lucide-react";
-import { useFinding, useFindingHistory, usePatchFinding } from "@/api/queries";
-import { FINDING_STATUSES, type Finding, type FindingStatus, type TaintStep } from "@/api/types";
-import { ApiError } from "@/api/client";
-import { PageHeader } from "@/components/layout/PageHeader";
-import {
-  Badge,
+  Avatar,
+  Breadcrumb,
   Button,
-  Callout,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
   CodeBlock,
-  EmptyState,
-  ErrorState,
-  Field,
-  Input,
-  Select,
+  Content,
+  CvssBox,
+  Empty,
+  ErrorBanner,
+  Icon,
+  LevelBadge,
+  MoreLink,
   SeverityBadge,
   Skeleton,
-  StatusBadge,
   Tabs,
   useToast,
+  Verdict,
+  VERDICT_LABEL,
 } from "@/components/ui";
-import { useSession } from "@/app/session";
-import { cvssRating, parseVector } from "@/lib/cvss";
-import { cn, confidenceFraction, fmtConfidence, fmtDateTime, fmtRelative, frameworkLabel, STATUS_LABEL } from "@/lib/format";
 
-const stepStyle: Record<string, { icon: typeof Target; tone: string; label: string }> = {
-  source: { icon: CircleDot, tone: "bg-info-soft text-info ring-info/40", label: "Source" },
-  propagation: { icon: GitCommitVertical, tone: "bg-surface-3 text-fg-muted ring-border-strong", label: "Flow" },
-  sanitiser: { icon: Filter, tone: "bg-success-soft text-success ring-success/40", label: "Sanitiser" },
-  sink: { icon: Target, tone: "bg-danger-soft text-danger ring-danger/40", label: "Sink" },
-};
+type Tab = "saw" | "real" | "reason";
 
-function TaintPath({ steps }: { steps: TaintStep[] }) {
-  if (!steps.length) {
-    return (
-      <p className="text-sm text-fg-muted">
-        This finding comes from a pattern or configuration rule rather than a data flow, so there is no source-to-sink path.
-      </p>
-    );
+/** Split the model's impact narrative into the impact text and the attack scenario. */
+function splitImpact(text?: string | null): { impact: string; scenario: string | null } {
+  if (!text) return { impact: "", scenario: null };
+  const parts = text.split(/\n\s*\n/);
+  let scenario: string | null = null;
+  const rest: string[] = [];
+  for (const p of parts) {
+    const m = /^\s*(attack|exploit) scenario:\s*/i.exec(p);
+    if (m) scenario = p.slice(m[0].length).trim();
+    else rest.push(p.trim());
   }
+  return { impact: rest.join("\n\n"), scenario };
+}
+
+/** Plain text with ``` fences rendered as code blocks (text only, never HTML). */
+function RichText({ text }: { text: string }) {
+  const blocks = text.split(/```[a-zA-Z0-9]*\n?/);
   return (
-    <ol className="space-y-0" aria-label="Taint path from source to sink">
-      {steps.map((s, i) => {
-        const st = stepStyle[s.kind] ?? stepStyle.propagation!;
-        const Icon = st.icon;
-        return (
-          <li key={i}>
-            <div className="flex items-start gap-3">
-              <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full ring-1", st.tone)}>
-                <Icon className="h-4 w-4" aria-hidden />
-              </div>
-              <div className="min-w-0 flex-1 rounded-lg border border-border bg-surface-2/50 px-3 py-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">{st.label}</span>
-                  <span className="text-sm font-medium text-fg">{s.label}</span>
-                </div>
-                <p className="mt-0.5 font-mono text-xs text-fg-muted">
-                  {s.path}:{s.line}
-                </p>
-                {s.code && <pre className="mt-1.5 overflow-x-auto rounded bg-code-bg px-2 py-1 font-mono text-xs text-fg">{s.code}</pre>}
-              </div>
-            </div>
-            {i < steps.length - 1 && (
-              <div className="ml-[17px] flex h-6 items-center">
-                <ArrowDown className="h-4 w-4 text-fg-subtle" aria-hidden />
-              </div>
-            )}
-          </li>
-        );
-      })}
-    </ol>
+    <>
+      {blocks.map((b, i) =>
+        i % 2 === 1 ? (
+          <CodeBlock key={i} code={b.replace(/\n$/, "")} />
+        ) : (
+          b
+            .split(/\n\s*\n/)
+            .filter((p) => p.trim())
+            .map((p, j) => (
+              <p key={`${i}-${j}`} className="sm muted" style={{ whiteSpace: "pre-line" }}>
+                {p.trim()}
+              </p>
+            ))
+        ),
+      )}
+    </>
   );
 }
 
-function CvssCard({ label, vector, score }: { label: string; vector?: string | null; score?: number | null }) {
-  const parsed = parseVector(vector);
-  const rating = cvssRating(score);
-  const tone =
-    rating === "Critical" ? "text-sev-critical" : rating === "High" ? "text-sev-high" : rating === "Medium" ? "text-sev-medium" : "text-sev-low";
+const TAINT_KIND: Record<string, { cls: string; label: string }> = {
+  source: { cls: "src", label: "Source" },
+  propagation: { cls: "", label: "Propagation" },
+  propagator: { cls: "", label: "Propagation" },
+  sanitiser: { cls: "san", label: "Sanitiser" },
+  sanitizer: { cls: "san", label: "Sanitiser" },
+  sink: { cls: "sink", label: "Sink" },
+};
+
+const CVSS_ROWS: [string, string][] = [
+  ["AV", "Attack vector"],
+  ["AC", "Attack complexity"],
+  ["AT", "Attack requirements"],
+  ["PR", "Privileges required"],
+  ["UI", "User interaction"],
+  ["VC", "Confidentiality"],
+  ["VI", "Integrity"],
+  ["VA", "Availability"],
+];
+
+export default function FindingDetailPage() {
+  const { id } = useParams();
+  const [params, setParams] = useSearchParams();
+  const tab = ((params.get("tab") as Tab) || "saw") as Tab;
+  const setTab = (t: Tab) => {
+    const n = new URLSearchParams(params);
+    n.set("tab", t);
+    setParams(n, { replace: true });
+  };
+  const q = useFinding(id);
+  const f = q.data;
+  const history = useFindingHistory(id);
+  const reviews = f?.provenance?.llm_reviews ?? [];
+  const seq = reviews.find((r) => r.ledger_seq !== null && r.ledger_seq !== undefined)?.ledger_seq ?? null;
+  const ledger = useLedgerEntry(f?.scan_id, seq);
+  const patch = usePatchFinding();
+  const users = useUsers().data;
+  const { can } = useSession();
+  const toast = useToast();
+  const [dialog, setDialog] = useState<null | "assign" | "suppress" | "sync">(null);
+  const [comment, setComment] = useState("");
+  const [jump, setJump] = useState<number | null>(null);
+
+  const doPatch = (p: Parameters<typeof patch.mutate>[0]["patch"], ok: string) =>
+    patch.mutate(
+      { id: id!, patch: p },
+      {
+        onSuccess: () => toast.success(ok),
+        onError: (e) => toast.error("Update failed", e instanceof Error ? e.message : undefined),
+      },
+    );
+
+  if (q.isError) {
+    return (
+      <Content>
+        <Breadcrumb nav items={[{ label: "Findings", to: "/findings" }, { label: id ?? "" }]} />
+        <ErrorBanner what="This finding could not be loaded." error={q.error} onRetry={() => void q.refetch()} />
+      </Content>
+    );
+  }
+  if (!f) {
+    return (
+      <Content>
+        <div className="card">
+          <Skeleton rows={2} />
+        </div>
+        <section className="g g-side">
+          <div className="card">
+            <Skeleton rows={3} />
+          </div>
+          <div className="card">
+            <Skeleton rows={2} />
+          </div>
+        </section>
+      </Content>
+    );
+  }
+
+  const v = verdictOf(f);
+  const conf = confidenceFraction(f.llm?.confidence ?? null);
+  const loc = locationOf(f);
+  const taint = f.evidence?.taint_path ?? [];
+  const hasSan = taint.some((t) => /saniti[sz]/.test(t.kind));
+  const files = new Set(taint.map((t) => t.path)).size;
+  const { impact } = splitImpact(f.llm?.impact ?? f.impact_detail?.narrative ?? null);
+  const level = (ledger.data?.entry.level ?? f.scan?.privacy_level ?? reviews[0]?.level) as PrivacyLevel | undefined;
+  const engines = [...new Set((f.engines?.length ? f.engines : f.provenance?.engines?.map((e) => e.engine) ?? [f.engine ?? ""]).map(engineLabel))];
+  const sinkLine = taint.find((t) => t.kind === "sink" && t.path === f.evidence?.code?.path)?.line ?? loc?.line;
+  const srcLine = taint.find((t) => t.kind === "source" && t.path === f.evidence?.code?.path)?.line;
+  const assigneeName = f.assignee
+    ? users?.find((u) => u.username === f.assignee || u.id === f.assignee)?.display_name || f.assignee
+    : null;
+
+  const tags: ReactNode[] = [];
+  if (f.cwe) {
+    const n = f.cwe.replace(/\D/g, "");
+    tags.push(
+      <a key="cwe" className="tag" href={`https://cwe.mitre.org/data/definitions/${n}.html`} target="_blank" rel="noreferrer noopener">
+        {f.cwe}
+      </a>,
+    );
+  }
+  if (f.owasp) tags.push(<span key="owasp" className="tag">OWASP {f.owasp}</span>);
+  const asvs = f.asvs_refs?.[0] ?? f.asvs?.split(",")[0]?.trim();
+  if (asvs) tags.push(<span key="asvs" className="tag">ASVS {asvs}</span>);
+  const capec = f.capec_refs?.[0] ?? f.capec?.split(",")[0]?.trim();
+  if (capec) tags.push(<span key="capec" className="tag">{capec}</span>);
+  const seen = new Set<string>();
+  for (const c of f.compliance ?? []) {
+    if (["owasp-asvs", "capec", "cwe-top25"].includes(c.framework) || seen.has(c.framework)) continue;
+    seen.add(c.framework);
+    if (seen.size > 4) break;
+    tags.push(
+      <span key={`c-${c.framework}`} className="tag" title={c.title ?? undefined}>
+        {frameworkLabel(c.framework)} {c.clause}
+      </span>,
+    );
+  }
+
+  const hist = [...(history.data ?? f.history ?? [])].sort((a, b) => b.at.localeCompare(a.at));
+  const vec = parseVector(f.cvss4_vector);
+
   return (
-    <div className="rounded-lg border border-border p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm font-semibold text-fg">{label}</p>
-        {score != null && (
-          <p>
-            <span className={cn("text-2xl font-bold tabular-nums", tone)}>{score.toFixed(1)}</span>
-            <span className="ml-1.5 text-sm text-fg-muted">{rating}</span>
-          </p>
-        )}
+    <Content>
+      <div className="stack" style={{ gap: 10 }}>
+        <Breadcrumb
+          nav
+          items={[{ label: f.scan?.project_name ?? "Project", to: "/" }, { label: "Findings", to: `/findings?scan=${f.scan_id}` }, { label: findingLabel(f.id) }]}
+        />
+        <div className="ph" style={{ alignItems: "flex-start" }}>
+          <div className="stack s6" style={{ minWidth: 0, flex: "1 1 100%" }}>
+            <div className="row" style={{ gap: 12 }}>
+              <SeverityBadge severity={f.severity} />
+              <span className="mono sm muted" title={f.id}>
+                {findingLabel(f.id)}
+              </span>
+              {v && (
+                <Verdict kind={v.kind}>
+                  {v.kind === "fp" ? VERDICT_LABEL.fp : `${VERDICT_LABEL[v.kind]} by LLM`}
+                  {v.conf !== null ? ` · ${v.conf.toFixed(2)}` : ""}
+                </Verdict>
+              )}
+            </div>
+            <h1 style={{ fontSize: 24 }}>{f.title}</h1>
+            <div className="row" style={{ gap: 6 }}>
+              <CvssBox score={f.cvss4_score} suffix="CVSS 4.0" />
+              {tags}
+            </div>
+          </div>
+          <div className="row">
+            {can("findings:triage") && (
+              <>
+                <Button onClick={() => setDialog("assign")}>Assign</Button>
+                <Button onClick={() => setDialog("suppress")}>Suppress</Button>
+              </>
+            )}
+            {can("github:sync") && (
+              <Button variant="primary" onClick={() => setDialog("sync")}>
+                Create GitHub issue
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
-      {vector ? (
-        <>
-          <p className="mt-1 break-all font-mono text-xs text-fg-muted">{vector}</p>
-          {parsed && (
-            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-              {parsed.metrics.map((m) => (
-                <div key={m.key} className="flex justify-between gap-2 border-b border-border/60 py-0.5">
-                  <dt className="text-fg-subtle">{m.name}</dt>
-                  <dd className="font-medium text-fg">{m.label}</dd>
+
+      <section className="g g-side">
+        <div className="stack s20">
+          <div className="card">
+            <div className="card-h">
+              <div>
+                <h2>Taint path</h2>
+                <p className="sub">
+                  {taint.length
+                    ? `Source to sink across ${files} file${files === 1 ? "" : "s"}. Select a step to jump to the line.`
+                    : "No data-flow path: this finding comes from a pattern, secret, dependency or configuration check."}
+                </p>
+              </div>
+              {taint.length > 0 && (
+                <span className="xs faint">
+                  {taint.length} steps{hasSan ? "" : " · no sanitiser on path"}
+                </span>
+              )}
+            </div>
+            {taint.length > 0 ? (
+              <div className="taint">
+                {taint.map((t, i) => (
+                  <TaintNode
+                    key={i}
+                    step={t}
+                    n={t.index ?? i + 1}
+                    last={i === taint.length - 1}
+                    onPick={() => {
+                      setTab("real");
+                      setJump(t.line);
+                      setTimeout(() => document.getElementById(`L${t.line}`)?.scrollIntoView({ block: "center" }), 50);
+                    }}
+                  />
+                ))}
+              </div>
+            ) : loc ? (
+              <p className="mono sm">
+                {loc.path}:{loc.line}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="card" style={{ paddingTop: 6 }}>
+            <Tabs
+              label="Evidence"
+              value={tab}
+              onChange={(t) => setTab(t as Tab)}
+              tabs={[
+                { id: "saw", label: "What the LLM saw" },
+                { id: "real", label: "Real code" },
+                { id: "reason", label: "LLM reasoning", count: reviews.length ? `${reviews.length} run${reviews.length === 1 ? "" : "s"}` : undefined },
+              ]}
+            />
+            <div style={{ paddingTop: 14 }}>
+              {tab === "saw" && <SawTab f={f} seq={seq} ledger={ledger} />}
+              {tab === "real" && (
+                <div className="stack">
+                  {f.evidence?.code ? (
+                    <CodeBlock
+                      title={<span className="mono">{f.evidence.code.path}</span>}
+                      titleRight={<span className="faint">Local only · never sent</span>}
+                      lines={f.evidence.code.lines}
+                      highlight={f.evidence.code.highlight}
+                      anchor="L"
+                      kindOf={(n) =>
+                        n === sinkLine ? "sink" : n === srcLine ? "src" : n === jump || f.evidence!.code!.highlight.some((r) => n >= r.start && n <= r.end) ? "hl" : undefined
+                      }
+                    />
+                  ) : f.evidence?.snippet ? (
+                    <CodeBlock title={<span className="mono">{loc?.path}</span>} code={f.evidence.snippet} startLine={loc?.line ?? 1} />
+                  ) : (
+                    <Empty title="No code excerpt">The original code is only shown to roles allowed to read it.</Empty>
+                  )}
+                </div>
+              )}
+              {tab === "reason" && <ReasonTab f={f} conf={conf} />}
+            </div>
+          </div>
+
+          <div className="card stack">
+            <h2>Impact</h2>
+            {impact ? <RichText text={impact} /> : <p className="sm muted">{f.description ?? "No impact statement for this finding."}</p>}
+          </div>
+
+          <div className="card stack">
+            <div className="row between">
+              <h2>Remediation</h2>
+              <span className="xs faint">Suggested fix · review before applying</span>
+            </div>
+            {f.remediation || f.llm?.remediation ? (
+              <RichText text={(f.remediation ?? f.llm?.remediation)!} />
+            ) : (
+              <p className="sm muted">No remediation guidance for this rule yet.</p>
+            )}
+            {f.remediation_diff && <CodeBlock title={<span className="mono">{loc?.path}</span>} code={f.remediation_diff} />}
+          </div>
+
+          {(f.references ?? []).length > 0 && (
+            <div className="card stack">
+              <h2>References</h2>
+              <div className="stack s6 sm">
+                {(f.references ?? []).map((r, i) => {
+                  const ref = typeof r === "string" ? { title: r, url: /^https?:/.test(r) ? r : undefined } : r;
+                  return ref.url ? (
+                    <a key={i} className="more" href={ref.url} target="_blank" rel="noreferrer noopener" style={{ whiteSpace: "normal" }}>
+                      {ref.title} <Icon name="arrow-up-right" />
+                    </a>
+                  ) : (
+                    <span key={i} className="muted">
+                      {ref.title}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="stack s16">
+          <div className="card">
+            <h2 style={{ marginBottom: 12 }}>Details</h2>
+            <dl className="dl">
+              <dt>Status</dt>
+              <dd>
+                <select
+                  className="inp sm"
+                  aria-label="Status"
+                  value={f.status}
+                  disabled={!can("findings:triage") || patch.isPending}
+                  onChange={(e) => doPatch({ status: e.target.value as FindingStatus }, "Status updated")}
+                >
+                  {FINDING_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {STATUS_LABEL[s]}
+                    </option>
+                  ))}
+                </select>
+              </dd>
+              <dt>Assignee</dt>
+              <dd className="row">
+                {assigneeName ? (
+                  <>
+                    <Avatar name={assigneeName} size="xs" />
+                    {assigneeName}
+                  </>
+                ) : (
+                  <span className="faint">Unassigned</span>
+                )}
+              </dd>
+              <dt>Scan</dt>
+              <dd className="mono sm">
+                <Link to={`/scans/${f.scan_id}`} title={f.scan_id} style={{ textDecoration: "none" }}>
+                  {scanLabel(f.scan_id)}
+                </Link>
+              </dd>
+              <dt>Engines</dt>
+              <dd>
+                {engines.join(", ")}
+                {engines.length > 1 ? ` · merged from ${engines.length}` : ""}
+              </dd>
+              <dt>Privacy level</dt>
+              <dd>{level ? <LevelBadge level={level} name /> : "—"}</dd>
+              <dt>Payload</dt>
+              <dd>
+                {seq !== null ? (
+                  <Link className="mono acc sm" to={`/privacy/ledger?scan=${f.scan_id}&seq=${seq}`} style={{ textDecoration: "none" }}>
+                    #{fmtSeq(seq)}
+                    {ledger.data ? ` · ${fmtHash(ledger.data.entry.payload_hash)}` : ""}
+                  </Link>
+                ) : (
+                  <span className="sm faint">Nothing sent</span>
+                )}
+              </dd>
+              <dt>First seen</dt>
+              <dd className="sm">{fmtDate(f.created_at)}</dd>
+              {f.due_at && (
+                <>
+                  <dt>Due</dt>
+                  <dd className="sm">{fmtDate(f.due_at)}</dd>
+                </>
+              )}
+            </dl>
+          </div>
+
+          {f.cvss4_score !== null && f.cvss4_score !== undefined && (
+            <div className="card">
+              <h2 style={{ marginBottom: 4 }}>
+                CVSS 4.0 · {f.cvss4_score.toFixed(1)} {cvssRating(f.cvss4_score)}
+              </h2>
+              {f.cvss4_vector && (
+                <p className="mono xs muted" style={{ wordBreak: "break-all", marginBottom: 12 }}>
+                  {f.cvss4_vector}
+                </p>
+              )}
+              {vec && (
+                <dl className="dl sm">
+                  {CVSS_ROWS.map(([k, name]) => {
+                    const m = vec.metrics.find((x) => x.key === k);
+                    return m ? (
+                      <Pair key={k} k={name}>
+                        {m.label}
+                      </Pair>
+                    ) : null;
+                  })}
+                </dl>
+              )}
+            </div>
+          )}
+
+          <div className="card">
+            <h2 style={{ marginBottom: 14 }}>Activity</h2>
+            <div className="timeline">
+              {hist.map((h, i) => (
+                <div className="tl-i" key={h.id ?? i}>
+                  <Avatar name={h.actor} />
+                  <div>
+                    <div>
+                      <b>{h.actor}</b> <span className="muted">{describe(h)}</span>
+                    </div>
+                    {h.comment && (
+                      <p className="sm" style={{ marginTop: 4 }}>
+                        {h.comment}
+                      </p>
+                    )}
+                    <div className="xs faint">{fmtShort(h.at)}</div>
+                  </div>
                 </div>
               ))}
-            </dl>
-          )}
-        </>
-      ) : (
-        <p className="mt-1 text-sm text-fg-subtle">Not rated</p>
+              <div className="tl-i">
+                <Avatar name="CodeKavach" />
+                <div>
+                  <div>
+                    <b>CodeKavach</b>{" "}
+                    <span className="muted">
+                      opened from {scanLabel(f.scan_id)}
+                      {f.cvss4_score ? ` · rated ${capitalise(f.severity)} · CVSS ${f.cvss4_score.toFixed(1)}` : ""}
+                    </span>
+                  </div>
+                  <div className="xs faint">{fmtShort(f.created_at)}</div>
+                </div>
+              </div>
+            </div>
+            {can("findings:triage") && (
+              <form
+                className="fld"
+                style={{ marginTop: 14 }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!comment.trim()) return;
+                  patch.mutate(
+                    { id: f.id, patch: { comment: comment.trim() } },
+                    { onSuccess: () => setComment(""), onError: (err) => toast.error("Comment not saved", err.message) },
+                  );
+                }}
+              >
+                <label htmlFor="fd-c">Add a comment</label>
+                <textarea
+                  id="fd-c"
+                  className="inp"
+                  rows={2}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) (e.currentTarget.form as HTMLFormElement).requestSubmit();
+                  }}
+                />
+                {comment.trim() && (
+                  <div className="row" style={{ justifyContent: "flex-end" }}>
+                    <button className="btn sm" type="submit" disabled={patch.isPending}>
+                      Comment
+                    </button>
+                  </div>
+                )}
+              </form>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <AssignDialog
+        open={dialog === "assign"}
+        onClose={() => setDialog(null)}
+        users={users?.map((u) => ({ id: u.username, name: u.display_name || u.username })) ?? []}
+        busy={patch.isPending}
+        onAssign={(a) => {
+          doPatch({ assignee: a }, `Assigned to ${a}`);
+          setDialog(null);
+        }}
+      />
+      <SuppressDialog
+        open={dialog === "suppress"}
+        onClose={() => setDialog(null)}
+        busy={patch.isPending}
+        onSuppress={(reason) => {
+          doPatch({ status: "accepted_risk", comment: reason }, "Finding suppressed");
+          setDialog(null);
+        }}
+      />
+      {dialog === "sync" && <GithubSyncDialog scanId={f.scan_id} open onClose={() => setDialog(null)} findingIds={[f.id]} />}
+    </Content>
+  );
+}
+
+function Pair({ k, children }: { k: string; children: ReactNode }) {
+  return (
+    <>
+      <dt>{k}</dt>
+      <dd>{children}</dd>
+    </>
+  );
+}
+
+function describe(h: { action: string; from_status?: string | null; to_status?: string | null; comment?: string | null; assignee?: string | null }): string {
+  if (h.to_status && h.to_status !== h.from_status) {
+    return `changed status ${h.from_status ? `from ${STATUS_LABEL[h.from_status as FindingStatus] ?? h.from_status} ` : ""}to ${STATUS_LABEL[h.to_status as FindingStatus] ?? h.to_status}`;
+  }
+  if (h.action === "assign" || h.assignee) return `assigned to ${h.assignee ?? "someone"}`;
+  if (h.comment) return "commented";
+  return h.action;
+}
+
+function TaintNode({ step, n, last, onPick }: { step: TaintStep; n: number; last: boolean; onPick: () => void }) {
+  const k = TAINT_KIND[step.kind] ?? { cls: "", label: capitalise(step.kind) };
+  const file = step.path.split("/").slice(-2).join("/");
+  return (
+    <>
+      <a
+        className={`tnode ${k.cls}`}
+        href={`#L${step.line}`}
+        onClick={(e) => {
+          e.preventDefault();
+          onPick();
+        }}
+        title={step.label}
+      >
+        <span className="tk-l">
+          {n} · {k.label}
+        </span>
+        <code>{step.code ?? step.label}</code>
+        <span className="tl">
+          {file}:{step.line}
+        </span>
+      </a>
+      {!last && (
+        <div className="tedge">
+          <Icon name="arrow-right" />
+        </div>
       )}
+    </>
+  );
+}
+
+function SawTab({ f, seq, ledger }: { f: Finding; seq: number | null; ledger: ReturnType<typeof useLedgerEntry> }) {
+  if (seq === null) {
+    return (
+      <Empty title="Nothing was sent for this finding">It was reviewed at L0 or by deterministic engines only.</Empty>
+    );
+  }
+  if (ledger.isLoading) return <Skeleton rows={2} />;
+  if (ledger.isError || !ledger.data) {
+    return <ErrorBanner what="The payload could not be loaded." error={ledger.error} />;
+  }
+  const d = ledger.data;
+  const lv = d.entry.level;
+  if (d.entry.outcome?.startsWith("blocked")) {
+    return <div className="banner bad sm">Blocked by policy · {d.entry.block_code ?? "never-send"}. Nothing was sent.</div>;
+  }
+  const sent = payloadLineCount(d.payload_text);
+  const total = lineCount(d.original_text);
+  const bytes = d.entry.bytes ?? byteLength(d.payload_text);
+  return (
+    <div className="stack">
+      <div className="row between sm">
+        <span className="muted">
+          Payload{" "}
+          <Link className="mono acc" to={`/privacy/ledger?scan=${f.scan_id}&seq=${seq}`} style={{ textDecoration: "none" }}>
+            #{fmtSeq(seq)}
+          </Link>{" "}
+          · {lv} {LEVEL_NAME[lv]?.toLowerCase()} · {sent} of {total || "—"} lines · {fmtInt(bytes)} bytes
+        </span>
+        <MoreLink to={`/privacy/inspect/${f.scan_id}/${seq}`}>Inspect side by side</MoreLink>
+      </div>
+      <MarkedCode text={d.payload_text} markup={d.markup} side="payload" />
+      <p className="xs faint">
+        Visible to the model: control flow, literal shapes and public API names. Not visible: real names, secrets and string
+        values that were replaced.
+      </p>
     </div>
   );
 }
 
-function refLink(r: Finding["references"] extends (infer T)[] | undefined ? T : never) {
-  if (typeof r === "string") return { title: r, url: /^https?:\/\//.test(r) ? r : undefined };
-  return r;
-}
-
-function TriageCard({ f }: { f: Finding }) {
-  const patch = usePatchFinding();
-  const toast = useToast();
-  const { can } = useSession();
-  const [status, setStatus] = useState<FindingStatus>(f.status);
-  const [assignee, setAssignee] = useState(f.assignee ?? "");
-  const [comment, setComment] = useState("");
-  useEffect(() => {
-    setStatus(f.status);
-    setAssignee(f.assignee ?? "");
-  }, [f.status, f.assignee]);
-  const needsReason = (status === "false_positive" || status === "accepted_risk") && status !== f.status;
-  const dirty = status !== f.status || assignee !== (f.assignee ?? "") || comment.trim() !== "";
-  const save = async () => {
-    if (needsReason && !comment.trim()) {
-      toast.error("A reason is required", `Explain why this finding is ${STATUS_LABEL[status].toLowerCase()}.`);
-      return;
-    }
-    try {
-      await patch.mutateAsync({
-        id: f.id,
-        patch: {
-          status: status !== f.status ? status : undefined,
-          assignee: assignee !== (f.assignee ?? "") ? assignee : undefined,
-          comment: comment.trim() || undefined,
-        },
-      });
-      setComment("");
-      toast.success("Triage saved");
-    } catch (e) {
-      toast.error("Triage was not saved", e instanceof ApiError ? `${e.message} (${e.code})` : undefined);
-    }
-  };
-  const disabled = !can("findings:triage");
+function ReasonTab({ f, conf }: { f: Finding; conf: number | null }) {
+  const reviews = f.provenance?.llm_reviews ?? [];
+  const runs = f.llm?.runs?.length ? f.llm.runs : reviews;
+  if (!f.llm && !reviews.length) {
+    return <Empty title="No model review">This finding was not sent to a model.</Empty>;
+  }
+  const v = verdictOf(f);
+  const agree = reviews.filter((r) => r.is_vulnerable === f.llm?.is_vulnerable).length;
+  const { scenario } = splitImpact(f.llm?.impact ?? null);
   return (
-    <Card>
-      <CardHeader title="Triage" description="Recorded in the finding history" />
-      <CardBody className="space-y-4">
-        <Field label="Status">
-          {(id) => (
-            <Select id={id} value={status} disabled={disabled} onChange={(e) => setStatus(e.target.value as FindingStatus)}>
-              {FINDING_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_LABEL[s]}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-        <Field label="Assignee">
-          {(id) => <Input id={id} value={assignee} disabled={disabled} placeholder="username" onChange={(e) => setAssignee(e.target.value)} />}
-        </Field>
-        <Field label={needsReason ? "Reason" : "Comment"} required={needsReason}>
-          {(id) => (
-            <textarea
-              id={id}
-              rows={3}
-              disabled={disabled}
-              className="ck-textarea"
-              value={comment}
-              placeholder={needsReason ? "Why is this not a risk to act on?" : "e.g. reproduced on staging"}
-              onChange={(e) => setComment(e.target.value)}
-            />
-          )}
-        </Field>
-        <Button className="w-full" onClick={save} loading={patch.isPending} disabled={disabled || !dirty}>
-          Save triage
-        </Button>
-        {f.comment && (
-          <p className="rounded-md bg-surface-2 px-3 py-2 text-xs text-fg-muted">
-            <span className="font-semibold text-fg">Latest comment: </span>
-            {f.comment}
-          </p>
-        )}
-      </CardBody>
-    </Card>
-  );
-}
-
-export default function FindingDetailPage() {
-  const { id } = useParams();
-  const q = useFinding(id);
-  const history = useFindingHistory(id);
-  const [tab, setTab] = useState("evidence");
-
-  if (q.error) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
-  const f = q.data;
-  if (!f) return <Skeleton className="h-[32rem]" />;
-
-  const loc = f.locations[0];
-  const code = f.evidence?.code;
-  const dismissed = f.llm?.is_vulnerable === false;
-  const refs = (f.references ?? []).map(refLink);
-
-  return (
-    <>
-      <PageHeader
-        crumbs={[
-          { label: "Findings", to: `/findings?scan=${f.scan_id}` },
-          { label: f.id },
-        ]}
-        title={f.title}
-        meta={
-          <>
-            <SeverityBadge severity={f.severity} size="md" />
-            <StatusBadge status={f.status} />
-            {f.cwe && <Chip title={f.cwe_name ?? undefined}>{f.cwe}</Chip>}
-            {loc && (
-              <span className="font-mono text-xs text-fg-muted">
-                {loc.path}:{loc.start_line}
-              </span>
-            )}
-            <span className="text-xs text-fg-subtle">
-              {f.engine} · {f.rule_id}
-            </span>
-          </>
-        }
-      />
-      {dismissed && (
-        <Callout tone="info" icon={<BotOff className="h-5 w-5" />} title="The model judged this finding not exploitable" className="mb-6">
-          It stays in the results with its deterministic evidence and is shown down-ranked. Only deterministic evidence or a person can close a finding.
-        </Callout>
-      )}
-      <div className="grid gap-6 xl:grid-cols-[1fr_20rem]">
-        <div className="min-w-0">
-          <Tabs
-            label="Finding detail"
-            value={tab}
-            onChange={setTab}
-            tabs={[
-              { id: "evidence", label: "Evidence", icon: <Code2 className="h-4 w-4" /> },
-              { id: "analysis", label: "Model analysis", icon: <Bot className="h-4 w-4" /> },
-              { id: "standards", label: "Risk & standards", icon: <Scale className="h-4 w-4" /> },
-              { id: "remediation", label: "Remediation", icon: <Wrench className="h-4 w-4" /> },
-              { id: "history", label: "History", icon: <History className="h-4 w-4" />, count: history.data?.length },
-            ]}
-          />
-          <div className="mt-5 space-y-6" role="tabpanel">
-            {tab === "evidence" && (
-              <>
-                {f.description && f.description !== f.title && <p className="text-base text-fg-muted">{f.description}</p>}
-                <Card>
-                  <CardHeader title="Code evidence" description="Secrets in evidence are masked on the server before they reach the browser" />
-                  <CardBody>
-                    {code ? (
-                      <CodeBlock
-                        title={code.path}
-                        lines={code.lines}
-                        highlight={code.highlight}
-                        language={code.language}
-                        maxHeight={420}
-                      />
-                    ) : f.evidence?.snippet ? (
-                      <CodeBlock title={loc?.path} code={f.evidence.snippet} startLine={loc?.start_line ?? 1} highlight={loc ? [{ start: loc.start_line, end: loc.end_line ?? loc.start_line }] : []} />
-                    ) : (
-                      <p className="text-sm text-fg-muted">No code evidence was recorded for this finding.</p>
-                    )}
-                  </CardBody>
-                </Card>
-                <Card>
-                  <CardHeader title="Data flow" description="How untrusted input reaches the dangerous operation" />
-                  <CardBody>
-                    <TaintPath steps={f.evidence?.taint_path ?? []} />
-                  </CardBody>
-                </Card>
-              </>
-            )}
-            {tab === "analysis" && (
-              <Card>
-                <CardHeader
-                  icon={<Bot className="h-4 w-4" />}
-                  title="Model verdict"
-                  description={f.llm ? `${f.llm.provider} · ${f.llm.model}` : undefined}
-                />
-                <CardBody>
-                  {f.llm ? (
-                    <div className="space-y-5">
-                      <div className="flex flex-wrap items-center gap-4">
-                        <Badge tone={f.llm.is_vulnerable ? "danger" : "neutral"} className="px-3 py-1 text-sm">
-                          {f.llm.is_vulnerable ? "Vulnerable" : "Not exploitable"}
-                        </Badge>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-fg-muted">Confidence</span>
-                          <div className="h-2 w-32 overflow-hidden rounded-full bg-surface-3" aria-hidden>
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.round((confidenceFraction(f.llm.confidence) ?? 0) * 100)}%` }} />
-                          </div>
-                          <span className="text-sm font-semibold tabular-nums text-fg">{fmtConfidence(f.llm.confidence)}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-fg">Reasoning</h4>
-                        <p className="mt-1 whitespace-pre-wrap text-base leading-relaxed text-fg-muted">{f.llm.reasoning}</p>
-                      </div>
-                      {f.llm.impact && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-fg">Impact</h4>
-                          <p className="mt-1 whitespace-pre-wrap text-base text-fg-muted">{f.llm.impact}</p>
-                        </div>
-                      )}
-                      {f.llm.remediation && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-fg">Suggested fix</h4>
-                          <p className="mt-1 whitespace-pre-wrap text-base text-fg-muted">{f.llm.remediation}</p>
-                        </div>
-                      )}
-                      <p className="flex items-start gap-1.5 text-xs text-fg-subtle">
-                        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-                        The model saw only the sanitised payload recorded in the ledger; pseudonyms were mapped back locally.
-                      </p>
-                    </div>
-                  ) : (
-                    <EmptyState
-                      icon={<Bot className="h-6 w-6" />}
-                      title="No model review"
-                      description="This scan ran at level L0 or without sending payloads, so the finding rests on deterministic evidence only."
-                    />
-                  )}
-                </CardBody>
-              </Card>
-            )}
-            {tab === "standards" && (
-              <>
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <CvssCard label="CVSS v4.0" vector={f.cvss4_vector} score={f.cvss4_score} />
-                  <CvssCard label="CVSS v3.1" vector={f.cvss31_vector} score={f.cvss31_score} />
-                </div>
-                <Card>
-                  <CardHeader title="Classification" />
-                  <CardBody>
-                    <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
-                      {[
-                        ["CWE", f.cwe ? `${f.cwe}${f.cwe_name ? ` · ${f.cwe_name}` : ""}` : null],
-                        ["OWASP Top 10", f.owasp],
-                        ["OWASP ASVS", f.asvs],
-                        ["CAPEC", f.capec],
-                        ["Likelihood", f.likelihood],
-                        ["Impact", f.impact],
-                        ["Confidence", fmtConfidence(f.confidence)],
-                        ["Fingerprint", f.fingerprint],
-                      ].map(([k, v]) => (
-                        <div key={k as string}>
-                          <dt className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{k}</dt>
-                          <dd className={cn("mt-0.5 text-sm text-fg", k === "Fingerprint" && "break-all font-mono text-xs")}>{v || "—"}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </CardBody>
-                </Card>
-                <Card>
-                  <CardHeader title="Compliance mapping" description="Controls this weakness is relevant to" />
-                  <CardBody>
-                    {(f.compliance ?? []).length ? (
-                      <div className="flex flex-wrap gap-2">
-                        {f.compliance!.map((c) => (
-                          <span key={`${c.framework}-${c.clause}`} className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2.5 py-1 text-xs" title={c.title}>
-                            <span className="font-semibold text-fg">{frameworkLabel(c.framework)}</span>
-                            <span className="text-fg-muted">{c.clause}</span>
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-fg-muted">No compliance mapping for this rule.</p>
-                    )}
-                  </CardBody>
-                </Card>
-              </>
-            )}
-            {tab === "remediation" && (
-              <Card>
-                <CardHeader icon={<Wrench className="h-4 w-4" />} title="Remediation" />
-                <CardBody className="space-y-5">
-                  <p className="whitespace-pre-wrap text-base leading-relaxed text-fg">{f.remediation ?? f.llm?.remediation ?? "No remediation guidance recorded."}</p>
-                  {refs.length > 0 && (
-                    <div>
-                      <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-fg">
-                        <BookOpen className="h-4 w-4" aria-hidden /> References
-                      </h4>
-                      <ul className="space-y-1.5">
-                        {refs.map((r) => (
-                          <li key={r.title} className="text-sm">
-                            {r.url ? (
-                              <a href={r.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-primary hover:underline">
-                                {r.title} <ExternalLink className="h-3 w-3" aria-hidden />
-                              </a>
-                            ) : (
-                              <span className="text-fg">{r.title}</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </CardBody>
-              </Card>
-            )}
-            {tab === "history" && (
-              <Card>
-                <CardHeader title="History" description="Status changes, assignments and comments" />
-                <CardBody>
-                  {history.isLoading ? (
-                    <Skeleton className="h-24" />
-                  ) : (history.data ?? []).length === 0 ? (
-                    <p className="text-sm text-fg-muted">No history yet.</p>
-                  ) : (
-                    <ol className="relative space-y-4 border-l border-border pl-5">
-                      {[...history.data!].reverse().map((h, i) => (
-                        <li key={i} className="relative">
-                          <span className="absolute -left-[25px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-surface" aria-hidden />
-                          <p className="text-sm text-fg">
-                            <span className="font-semibold">{h.actor}</span>{" "}
-                            {h.action === "status_changed" && h.to_status ? (
-                              <>
-                                changed status {h.from_status ? `from ${STATUS_LABEL[h.from_status]} ` : ""}to <span className="font-semibold">{STATUS_LABEL[h.to_status]}</span>
-                              </>
-                            ) : (
-                              h.action.replace(/_/g, " ")
-                            )}
-                          </p>
-                          {h.comment && <p className="mt-0.5 text-sm text-fg-muted">{h.comment}</p>}
-                          <p className="mt-0.5 text-xs text-fg-subtle" title={fmtDateTime(h.at)}>
-                            {fmtRelative(h.at)}
-                          </p>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </CardBody>
-              </Card>
-            )}
-          </div>
+    <div className="stack s16">
+      <div className="row" style={{ gap: 24 }}>
+        <div>
+          <div className="xs faint">Verdict</div>
+          {v ? <Verdict kind={v.kind} /> : "—"}
         </div>
-        <div className="space-y-6">
-          <TriageCard f={f} />
-          <Card>
-            <CardHeader title="Details" />
-            <CardBody>
-              <dl className="space-y-2.5 text-sm">
-                {[
-                  ["Scan", <Link key="s" className="font-mono text-primary hover:underline" to={`/scans/${f.scan_id}`}>{f.scan_id}</Link>],
-                  ["Engine", f.engine],
-                  ["Rule", <span key="r" className="font-mono text-xs">{f.rule_id}</span>],
-                  ["CVSS v4", f.cvss4_score != null ? `${f.cvss4_score.toFixed(1)} (${cvssRating(f.cvss4_score)})` : "—"],
-                  ["Assignee", f.assignee || "Unassigned"],
-                  ["First seen", fmtDateTime(f.created_at)],
-                ].map(([k, v]) => (
-                  <div key={k as string} className="flex justify-between gap-3">
-                    <dt className="text-fg-muted">{k}</dt>
-                    <dd className="text-right text-fg">{v || "—"}</dd>
-                  </div>
-                ))}
-              </dl>
-            </CardBody>
-          </Card>
+        <div>
+          <div className="xs faint">Confidence</div>
+          <span className="mono">{conf === null ? (f.llm?.confidence ?? "—") : conf.toFixed(2)}</span>
+        </div>
+        <div>
+          <div className="xs faint">Consensus</div>
+          <span className="mono">
+            {reviews.length ? `${agree} of ${reviews.length} run${reviews.length === 1 ? "" : "s"} agree` : "—"}
+          </span>
+        </div>
+        <div>
+          <div className="xs faint">Model</div>
+          <span className="mono sm">
+            {f.llm?.model ?? reviews[0]?.model ?? "—"}
+            {f.llm?.temperature !== undefined && f.llm?.temperature !== null ? ` · temp ${f.llm.temperature}` : ""}
+          </span>
         </div>
       </div>
-    </>
+      <div>
+        <h3 style={{ fontSize: 13, marginBottom: 4 }}>Rationale</h3>
+        <p className="sm muted" style={{ whiteSpace: "pre-line" }}>
+          {f.llm?.reasoning ?? reviews[0]?.reasoning ?? "—"}
+        </p>
+      </div>
+      {(f.llm?.exploit_scenario || scenario) && (
+        <div>
+          <h3 style={{ fontSize: 13, marginBottom: 4 }}>Exploit scenario</h3>
+          <p className="sm muted">{f.llm?.exploit_scenario ?? scenario}</p>
+        </div>
+      )}
+      {runs.length > 0 && (
+        <div className="tbl-wrap">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Verdict</th>
+                <th className="num">Confidence</th>
+                <th>Payload</th>
+              </tr>
+            </thead>
+            <tbody>
+              {runs.map((r, i) => {
+                const c = confidenceFraction(r.confidence ?? null);
+                const vk = verdictOf({ status: f.status, llm: { is_vulnerable: !!r.is_vulnerable, confidence: r.confidence ?? 0, reasoning: "" } });
+                return (
+                  <tr key={i}>
+                    <td className="mono">{i + 1}</td>
+                    <td>{vk ? <Verdict kind={vk.kind} /> : "—"}</td>
+                    <td className="num mono">{c === null ? (r.confidence ?? "—") : c.toFixed(2)}</td>
+                    <td className="mono sm">{r.ledger_seq !== undefined && r.ledger_seq !== null ? `#${fmtSeq(r.ledger_seq)}` : "—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }

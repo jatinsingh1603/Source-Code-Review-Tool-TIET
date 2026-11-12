@@ -1,379 +1,490 @@
 import { useMemo, useState } from "react";
-import { Check, Copy, FileCheck2, Fingerprint, Link2, Link2Off, ListTree, Lock, ScrollText, ShieldCheck, Tags } from "lucide-react";
-import { ApiError } from "@/api/client";
-import { useLedger, useLedgerEntry, usePrivacy, useVerifyLedger } from "@/api/queries";
-import type { LedgerEntry, LedgerVerifyResult } from "@/api/types";
-import { PageHeader } from "@/components/layout/PageHeader";
-import {
-  Badge,
-  Button,
-  Callout,
-  Card,
-  CardBody,
-  CardHeader,
-  DataTable,
-  Drawer,
-  EmptyState,
-  ErrorState,
-  PrivacyLevelBadge,
-  Skeleton,
-  SkeletonRows,
-  Tabs,
-  type Column,
-} from "@/components/ui";
-import { ScanPicker } from "@/components/ScanPicker";
-import { PrivacyFacts } from "@/components/PrivacyPosture";
-import { SideBySide } from "@/components/SideBySide";
+import { Link } from "react-router-dom";
 import { useSelectedScan } from "@/app/useSelectedScan";
-import { useSession } from "@/app/session";
-import { fmtDateTime, fmtNum, shortHash } from "@/lib/format";
+import { useFindings, useHealth, useOptional, usePolicy, usePrivacy, useProviders } from "@/api/queries";
+import { endpoints, fetchReport, saveBlob } from "@/api/endpoints";
+import type { PrivacyLevel, PrivacySummary } from "@/api/types";
+import { locationOf, sortScans } from "@/lib/domain";
+import { fmtInt, fmtLong, LEVEL_NAME, scanLabel } from "@/lib/display";
+import { matches, policyDoc, strictest } from "@/lib/policy";
+import { asEvaluation, Frontier } from "@/components/Frontier";
+import { sampleEvaluation } from "@/lib/sampleEval";
+import {
+  Button,
+  ButtonLink,
+  Content,
+  Empty,
+  ErrorBanner,
+  Guard,
+  Hash,
+  LevelBadge,
+  MoreLink,
+  PageHeader,
+  Skeleton,
+  StatusDot,
+  useToast,
+} from "@/components/ui";
 
-function placeholderLabel(type: string): string {
-  return type
-    .toLowerCase()
-    .split("_")
-    .map((w, i) => (i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w))
-    .join(" ");
-}
+const PART_LABEL: Record<string, string> = {
+  level_strength: "Level strength",
+  disclosure_volume: "Disclosure volume",
+  residual_terms: "Zero-leak check",
+  linkability: "Unlinkability",
+  budget_usage: "Exposure budget headroom",
+  ledger_integrity: "Ledger integrity",
+  naming_channel: "Naming channel",
+};
 
-function PlaceholderBars({ counts }: { counts: Record<string, number> }) {
-  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  const max = Math.max(1, ...entries.map(([, v]) => v));
-  if (!entries.length) return <p className="text-sm text-fg-muted">No placeholders were needed for this scan.</p>;
-  return (
-    <table className="w-full text-sm">
-      <caption className="sr-only">Placeholders by type</caption>
-      <tbody>
-        {entries.map(([k, v]) => (
-          <tr key={k}>
-            <th scope="row" className="w-[45%] py-1 pr-3 text-left font-normal">
-              <span className="font-mono text-xs text-fg">{`<${k}>`}</span>
-              <span className="block text-[11px] text-fg-subtle">{placeholderLabel(k)}</span>
-            </th>
-            <td className="py-1">
-              <div className="flex items-center gap-2">
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-3" aria-hidden>
-                  <div
-                    className={k.startsWith("SECRET") ? "h-full rounded-full bg-mark-secret" : k.startsWith("PII") ? "h-full rounded-full bg-mark-pii" : "h-full rounded-full bg-mark-literal"}
-                    style={{ width: `${(v / max) * 100}%` }}
-                  />
-                </div>
-                <span className="w-8 text-right font-semibold tabular-nums text-fg">{v}</span>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
+export const INVARIANTS_LONG: [string, string][] = [
+  ["I1", "One transport module opens LLM connections"],
+  ["I2", "LLM layer accepts sanitised payloads only"],
+  ["I3", "Vault never logged or exported"],
+  ["I4", "Privacy-step failure aborts the request"],
+  ["I5", "Pseudonyms deterministic per scan salt"],
+  ["I6", "No listed term of 4+ chars in payloads"],
+];
 
-function outcomeBadge(e: LedgerEntry) {
-  const o = e.outcome ?? "sent";
-  if (o.startsWith("blocked")) return <Badge tone="danger">{o}</Badge>;
-  if (o.includes("local")) return <Badge tone="success">{o}</Badge>;
-  return <Badge tone="info">{o}</Badge>;
-}
-
-function CopyHash({ value }: { value: string }) {
-  const [done, setDone] = useState(false);
-  return (
-    <button
-      type="button"
-      className="inline-flex items-center gap-1 rounded px-1 text-xs text-fg-subtle hover:text-fg"
-      aria-label="Copy full hash"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(value);
-          setDone(true);
-          setTimeout(() => setDone(false), 1200);
-        } catch {
-          /* ignore */
-        }
-      }}
-    >
-      {done ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-    </button>
-  );
-}
-
-function LedgerDrawer({ scanId, entry, onClose }: { scanId: string; entry: LedgerEntry | null; onClose: () => void }) {
-  const q = useLedgerEntry(scanId, entry?.seq ?? null);
-  return (
-    <Drawer
-      open={!!entry}
-      onClose={onClose}
-      width="max-w-6xl"
-      title={entry ? `Ledger entry #${entry.seq}` : ""}
-      subtitle={entry && (
-        <span className="flex flex-wrap items-center gap-2">
-          <PrivacyLevelBadge level={entry.level} />
-          {outcomeBadge(entry)}
-          <span className="font-mono text-xs">{entry.candidate_id}</span>
-        </span>
-      )}
-    >
-      {q.isLoading ? (
-        <Skeleton className="h-80" />
-      ) : q.error instanceof ApiError && q.error.status === 403 ? (
-        <Callout tone="info" icon={<Lock className="h-4 w-4" />} title="Original code and payload need the Auditor role">
-          Reading a ledger entry next to the original code is restricted to auditors and administrators, and every read is audited. The entry's hashes and
-          outcome are listed in the ledger table.
-        </Callout>
-      ) : q.error ? (
-        <ErrorState error={q.error} title="This entry could not be loaded" />
-      ) : q.data ? (
-        <div className="space-y-5">
-          <dl className="grid gap-x-6 gap-y-2 rounded-lg bg-surface-2 p-4 text-sm sm:grid-cols-2">
-            {[
-              ["Timestamp", fmtDateTime(q.data.entry.timestamp)],
-              ["Provider · model", `${q.data.entry.provider} · ${q.data.entry.model}`],
-              ["Tokens", fmtNum(q.data.entry.tokens)],
-              ["Finding", q.data.entry.finding_id ?? "—"],
-            ].map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-3">
-                <dt className="text-fg-muted">{k}</dt>
-                <dd className="text-right text-fg">{v}</dd>
-              </div>
-            ))}
-            {[
-              ["Payload hash", q.data.entry.payload_hash],
-              ["Entry hash", q.data.entry.entry_hash],
-              ["Previous hash", q.data.entry.prev_hash],
-            ].map(([k, v]) => (
-              <div key={k} className="sm:col-span-2">
-                <dt className="text-fg-muted">{k}</dt>
-                <dd className="flex items-center gap-1 break-all font-mono text-xs text-fg">
-                  {v}
-                  <CopyHash value={v ?? ""} />
-                </dd>
-              </div>
-            ))}
-          </dl>
-          <SideBySide detail={q.data} />
-          <p className="text-xs text-fg-subtle">
-            The pseudonym mapping stays in the local vault and is never shown or exported here. The payload hash above is the one recorded in the ledger, so this is the
-            recorded payload, not a re-render.
-          </p>
-        </div>
-      ) : null}
-    </Drawer>
-  );
-}
-
+/** Privacy Centre (SCREENS.md §11). */
 export default function PrivacyPage() {
-  const { scanId, setScanId, scans } = useSelectedScan();
-  const privacy = usePrivacy(scanId);
-  const ledger = useLedger(scanId);
-  const verify = useVerifyLedger();
-  const { can } = useSession();
-  const [tab, setTab] = useState("ledger");
-  const [selected, setSelected] = useState<LedgerEntry | null>(null);
-  const [verifyResult, setVerifyResult] = useState<LedgerVerifyResult | null>(null);
-  const [outcome, setOutcome] = useState<"all" | "sent" | "blocked">("all");
+  const { scanId, scans, project } = useSelectedScan();
+  const sorted = useMemo(() => sortScans(scans), [scans]);
+  const scan = sorted.find((s) => s.id === scanId);
+  const prev = useMemo(() => {
+    const i = sorted.findIndex((s) => s.id === scanId);
+    return i < 0 ? undefined : sorted.slice(i + 1).find((s) => s.status === "completed");
+  }, [sorted, scanId]);
+  const privacyQ = usePrivacy(scanId);
+  const prevPrivacy = usePrivacy(prev?.id).data;
+  const policy = usePolicy().data;
+  const health = useHealth().data;
+  const findings = useFindings(scanId).data;
+  const providers = useProviders().data;
+  const evalQ = useOptional("evaluation", endpoints.evaluation);
+  const evaluation = useMemo(() => asEvaluation(evalQ.data) ?? sampleEvaluation(), [evalQ.data]);
+  const toast = useToast();
+  const p = privacyQ.data;
 
-  const entries = useMemo(() => {
-    const list = ledger.data ?? [];
-    if (outcome === "all") return list;
-    return list.filter((e) => (outcome === "blocked" ? e.outcome?.startsWith("blocked") : !e.outcome?.startsWith("blocked")));
-  }, [ledger.data, outcome]);
+  const files = useMemo(() => [...new Set((findings ?? []).map((f) => locationOf(f)?.path).filter((x): x is string => !!x))].sort(), [findings]);
+  const [file, setFile] = useState<string>("");
+  const doc = policyDoc(policy);
+  const chosen = file || files[0] || "";
+  const provider = providers?.find((x) => x.id === scan?.provider);
+  const matching = doc.path.filter((r) => matches(r.pattern, chosen));
+  const effective = scan
+    ? strictest([
+        scan.privacy_level,
+        ...(provider?.min_level ? [provider.min_level] : []),
+        ...matching.map((r) => (r.never_send ? "never-send" : r.level)).filter((x): x is PrivacyLevel | "never-send" => !!x),
+      ])
+    : null;
 
-  const runVerify = async () => {
-    if (!scanId) return;
-    setVerifyResult(null);
-    try {
-      setVerifyResult(await verify.mutateAsync(scanId));
-    } catch (e) {
-      setVerifyResult({ ok: false, entries: 0, message: e instanceof Error ? e.message : "Verification failed" });
-    }
-  };
+  const delta = p?.privacy_score !== null && p?.privacy_score !== undefined && prevPrivacy?.privacy_score !== null && prevPrivacy?.privacy_score !== undefined ? p.privacy_score - prevPrivacy.privacy_score : null;
 
-  const cols: Column<LedgerEntry>[] = [
-    { id: "seq", header: "#", rowHeader: true, cell: (e) => <span className="font-mono text-sm text-fg">{e.seq}</span>, sortValue: (e) => e.seq },
-    { id: "ts", header: "Time", cell: (e) => <span className="whitespace-nowrap text-sm text-fg-muted">{fmtDateTime(e.timestamp)}</span>, sortValue: (e) => e.timestamp },
-    {
-      id: "candidate",
-      header: "Candidate",
-      cell: (e) => (
-        <span className="block max-w-[11rem] truncate font-mono text-xs text-fg" title={e.candidate_id}>
-          {e.candidate_id}
-        </span>
-      ),
-    },
-    { id: "level", header: "Level", cell: (e) => <PrivacyLevelBadge level={e.level} /> },
-    { id: "tokens", header: "Tokens", cell: (e) => <span className="tabular-nums text-sm text-fg">{fmtNum(e.tokens)}</span>, sortValue: (e) => e.tokens },
-    {
-      id: "hash",
-      header: "Payload hash",
-      cell: (e) => (
-        <span className="font-mono text-xs text-fg-muted" title={e.payload_hash}>
-          {shortHash(e.payload_hash, 12)}
-        </span>
-      ),
-    },
-    {
-      id: "chain",
-      header: "Chain",
-      cell: (e) => (
-        <span className="inline-flex items-center gap-1 font-mono text-xs text-fg-subtle" title={`prev ${e.prev_hash}\nentry ${e.entry_hash}`}>
-          <Link2 className="h-3 w-3" aria-hidden />
-          {shortHash(e.prev_hash, 6)}→{shortHash(e.entry_hash, 6)}
-        </span>
-      ),
-    },
-    { id: "outcome", header: "Outcome", cell: outcomeBadge, sortValue: (e) => e.outcome ?? "" },
-  ];
-
-  const p = privacy.data;
   return (
-    <>
+    <Content>
       <PageHeader
+        crumbs={[{ label: project?.name ?? "Project", to: "/" }, { label: "Privacy Centre" }]}
         title="Privacy Centre"
-        description="Exactly what left this machine, for each scan: the attestation, every payload in the hash-chained ledger, and a side-by-side view against the original code."
-        actions={<ScanPicker scans={scans} value={scanId} onChange={setScanId} />}
+        sub="How much this project discloses, why, and how that is verified."
+        actions={
+          <>
+            <ButtonLink to="/privacy/inspect">Inspect a payload</ButtonLink>
+            <ButtonLink to="/privacy/policy">Edit policy</ButtonLink>
+          </>
+        }
       />
-      {!scanId ? (
-        <Card>
-          <EmptyState icon={<Lock className="h-6 w-6" />} title="No scans yet" description="Run a scan to see its privacy attestation and egress ledger." />
-        </Card>
-      ) : privacy.error ? (
-        <Card>
-          <ErrorState error={privacy.error} onRetry={() => void privacy.refetch()} title="Privacy summary unavailable" />
-        </Card>
+
+      {privacyQ.isError && <ErrorBanner what="The privacy summary could not be loaded." error={privacyQ.error} />}
+      {!scanId && !scans.length ? (
+        <div className="card">
+          <Empty title="No scans yet" action="Run the KavachBank demo" to="/demo">
+            Privacy measurements appear after the first scan.
+          </Empty>
+        </div>
       ) : (
         <>
-          <div className="grid gap-6 xl:grid-cols-3">
-            <Card className="xl:col-span-2">
-              <CardHeader icon={<FileCheck2 className="h-4 w-4" />} title="Privacy attestation" description="Generated from the ledger of this scan" />
-              <CardBody>
-                {p ? (
-                  <div className="grid gap-6 lg:grid-cols-[1fr_17rem]">
-                    <blockquote className="rounded-lg border-l-4 border-primary bg-primary-soft/40 px-4 py-3 text-base leading-relaxed text-fg">
-                      {p.attestation_text}
-                    </blockquote>
-                    <PrivacyFacts p={p} />
+          <section className="g g-3">
+            <div className="card">
+              <div className="card-h">
+                <h2>Privacy score</h2>
+                <span className="xs faint">{scanLabel(scanId)}</span>
+              </div>
+              {!p ? (
+                <Skeleton rows={2} />
+              ) : (
+                <>
+                  <div className="row" style={{ alignItems: "baseline", gap: 6 }}>
+                    <span className="big-num">{p.privacy_score ?? "—"}</span>
+                    <span className="faint">/ 100</span>
+                    {delta !== null && delta !== 0 && (
+                      <span className={`sm ${delta > 0 ? "down" : "up"}`} style={{ marginLeft: 8 }}>
+                        {delta > 0 ? "+" : ""}
+                        {delta} vs {scanLabel(prev?.id)}
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <Skeleton className="h-48" />
-                )}
-                <p className="mt-4 text-xs text-fg-subtle">
-                  These are measured disclosure volumes for this scan. They do not measure what a determined reader could infer from what was sent.
-                </p>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardHeader icon={<Tags className="h-4 w-4" />} title="Placeholders by type" description={p ? `${fmtNum(p.pseudonyms)} identifiers pseudonymised` : undefined} />
-              <CardBody>{p ? <PlaceholderBars counts={p.placeholders_by_type ?? {}} /> : <Skeleton className="h-40" />}</CardBody>
-            </Card>
-          </div>
-
-          <Card className="mt-6">
-            <div className="px-5 pt-3">
-              <Tabs
-                label="Privacy views"
-                value={tab}
-                onChange={setTab}
-                tabs={[
-                  { id: "ledger", label: "Egress ledger", icon: <ScrollText className="h-4 w-4" />, count: ledger.data?.length },
-                  { id: "integrity", label: "Integrity", icon: <Fingerprint className="h-4 w-4" /> },
-                ]}
-              />
-            </div>
-            {tab === "ledger" && (
-              <>
-                <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
-                  <p className="text-sm text-fg-muted">
-                    Select an entry to compare the payload with the original code.
-                    {ledger.data?.[0] ? ` All entries: ${ledger.data[0].provider} · ${ledger.data[0].model}.` : ""}
-                  </p>
-                  <div className="flex gap-1.5" role="group" aria-label="Outcome filter">
-                    {(["all", "sent", "blocked"] as const).map((o) => (
-                      <Button key={o} size="sm" variant={outcome === o ? "secondary" : "ghost"} aria-pressed={outcome === o} onClick={() => setOutcome(o)}>
-                        {o === "all" ? "All" : o === "sent" ? "Sent" : "Blocked"}
-                      </Button>
+                  <div className="stack" style={{ gap: 9, marginTop: 16 }}>
+                    {(p.score_components ?? []).map((c) => (
+                      <div key={c.name} title={c.basis}>
+                        <div className="row between sm">
+                          <span className="muted">
+                            {PART_LABEL[c.name] ?? c.name}
+                            {c.raw ? ` · ${c.raw}` : ""}
+                          </span>
+                          <span className="mono">{c.value === null ? <span className="faint">n/a</span> : Math.round(c.value)}</span>
+                        </div>
+                        <div className="bar priv" style={{ marginTop: 4 }}>
+                          <i style={{ width: `${c.value ?? 0}%` }} />
+                        </div>
+                      </div>
                     ))}
                   </div>
-                </div>
-                {ledger.isLoading ? (
-                  <div className="p-5">
-                    <SkeletonRows rows={6} />
+                </>
+              )}
+            </div>
+
+            <div className="card">
+              <div className="card-h">
+                <h2>Exposure budget</h2>
+                <Link className="btn sm" to="/privacy/policy">
+                  Adjust
+                </Link>
+              </div>
+              {!p ? (
+                <Skeleton rows={2} />
+              ) : (
+                <ExposureBudget p={p} />
+              )}
+            </div>
+
+            <div className="card">
+              <div className="card-h">
+                <h2>Invariant suite</h2>
+                <span className="xs faint">{health?.invariants?.length ? `${health.invariants.length} checks` : "this scan"}</span>
+              </div>
+              {health?.invariants?.length ? (
+                INVARIANTS_LONG.map(([id, t]) => {
+                  const r = health.invariants!.find((x) => x.id === id);
+                  return (
+                    <Guard key={id} id={id} result={r?.passed ? "pass" : <span className="note-w">{r ? "Fail" : "Not run"}</span>}>
+                      {t}
+                    </Guard>
+                  );
+                })
+              ) : p ? (
+                <>
+                  <Guard id="I6" result={p.zero_leak.passed ? "pass" : <span className="note-w">{p.zero_leak.checked ? "Fail" : "Not run"}</span>}>
+                    No listed term of 4+ chars in payloads
+                  </Guard>
+                  <Guard id="I4" result={<span className="xs faint">{fmtInt(p.blocked)} blocked</span>}>
+                    Privacy-step failure aborts the request
+                  </Guard>
+                  <Guard result={p.chain_ok ? "pass" : <span className="note-w">Broken</span>}>Ledger hash chain intact</Guard>
+                  <p className="xs faint" style={{ marginTop: 8 }}>
+                    Results for this scan. The I1 to I6 suite runs in CI; its results appear here when the server reports them.
+                  </p>
+                </>
+              ) : (
+                <Skeleton rows={2} />
+              )}
+            </div>
+          </section>
+
+          <section className="g g-side">
+            <div className="stack">
+              <div className="row between">
+                <h2 style={{ fontSize: 14, fontWeight: 600 }}>Policy decisions</h2>
+                <MoreLink to="/privacy/policy">Open policy</MoreLink>
+              </div>
+              <div className="tbl-wrap">
+                <table className="tbl">
+                  <thead>
+                    <tr>
+                      <th>Path</th>
+                      <th>Language</th>
+                      <th>Rule</th>
+                      <th>Decision</th>
+                      <th className="num">Files</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {doc.path.map((r, i) => (
+                      <tr key={i}>
+                        <td className="mono sm">{r.pattern}</td>
+                        <td className="sm">{r.language ?? "any"}</td>
+                        <td className="mono xs">{r.id ?? `path.${i + 1}`}</td>
+                        <td>{r.never_send ? <StatusDot tone="bad">never-send</StatusDot> : r.level ? <LevelBadge level={r.level} /> : "—"}</td>
+                        <td className="num mono">{files.filter((f) => matches(r.pattern, f)).length}</td>
+                      </tr>
+                    ))}
+                    {scan && (
+                      <tr>
+                        <td className="mono sm">**</td>
+                        <td className="sm">any</td>
+                        <td className="mono xs">default</td>
+                        <td>
+                          <LevelBadge level={scan.privacy_level} />
+                        </td>
+                        <td className="num mono">{files.filter((f) => !doc.path.some((r) => matches(r.pattern, f))).length}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <p className="xs faint">Files counts the files with findings in this scan that each rule matches.</p>
+            </div>
+            <div className="card stack">
+              <h2>Privacy explain</h2>
+              {files.length === 0 ? (
+                <Empty title="No files to explain">Files with findings in this scan appear here.</Empty>
+              ) : (
+                <>
+                  <div className="fld">
+                    <label htmlFor="pe-f">File</label>
+                    <select id="pe-f" className="inp mono" value={chosen} onChange={(e) => setFile(e.target.value)}>
+                      {files.map((f) => (
+                        <option key={f}>{f}</option>
+                      ))}
+                    </select>
                   </div>
-                ) : ledger.error ? (
-                  <ErrorState error={ledger.error} />
-                ) : (
-                  <DataTable
-                    className="max-h-[38rem] overflow-y-auto"
-                    columns={cols}
-                    rows={entries}
-                    rowKey={(e) => String(e.seq)}
-                    onRowClick={setSelected}
-                    initialSort={{ id: "seq", dir: "asc" }}
-                    caption="Egress ledger"
-                    empty={
-                      <EmptyState
-                        icon={<ShieldCheck className="h-6 w-6" />}
-                        title="The ledger is empty"
-                        description={
-                          p?.level === "L0"
-                            ? "This scan ran at level L0: no payload was prepared for or sent to any model."
-                            : "No payload was recorded for this scan."
-                        }
-                      />
-                    }
-                  />
-                )}
-              </>
-            )}
-            {tab === "integrity" && (
-              <CardBody className="pt-5">
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      {(verifyResult ? verifyResult.ok : p?.chain_ok) ? (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success-soft text-success">
-                          <Link2 className="h-6 w-6" aria-hidden />
-                        </div>
-                      ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-danger-soft text-danger">
-                          <Link2Off className="h-6 w-6" aria-hidden />
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-lg font-semibold text-fg">
-                          {(verifyResult ? verifyResult.ok : p?.chain_ok) ? "Hash chain intact" : "Hash chain broken"}
-                        </p>
-                        <p className="text-sm text-fg-muted">
-                          {verifyResult
-                            ? `${verifyResult.message ?? ""} · ${fmtNum(verifyResult.entries)} entries verified${verifyResult.verified_at ? ` at ${fmtDateTime(verifyResult.verified_at)}` : ""}`
-                            : `${fmtNum(ledger.data?.length ?? 0)} entries, first #${ledger.data?.[0]?.seq ?? "—"}, last #${ledger.data?.[ledger.data.length - 1]?.seq ?? "—"}`}
-                        </p>
-                      </div>
+                  <div className="stack s6 sm">
+                    <div className="row between">
+                      <span className="muted">Scan default</span>
+                      {scan && <LevelBadge level={scan.privacy_level} />}
                     </div>
-                    {verifyResult && !verifyResult.ok && verifyResult.first_bad_seq != null && (
-                      <Callout tone="danger" title={`First inconsistent entry: #${verifyResult.first_bad_seq}`}>
-                        An entry's recorded hash does not match its content or its predecessor. The ledger has been altered after it was written.
-                      </Callout>
+                    {provider?.min_level && (
+                      <div className="row between">
+                        <span className="muted">Provider floor · {provider.name}</span>
+                        <LevelBadge level={provider.min_level} />
+                      </div>
                     )}
-                    {can("privacy:read_original") && (
-                      <Button icon={<ListTree className="h-4 w-4" />} loading={verify.isPending} onClick={runVerify}>
-                        Re-verify the chain
-                      </Button>
-                    )}
+                    {matching.map((r, i) => (
+                      <div key={i} className="row between">
+                        <span className="muted">Rule · {r.pattern}</span>
+                        {r.never_send ? <StatusDot tone="bad">never-send</StatusDot> : r.level ? <LevelBadge level={r.level} /> : null}
+                      </div>
+                    ))}
+                    <div className="hr" style={{ margin: "4px 0" }} />
+                    <div className="row between">
+                      <b>Effective level</b>
+                      {effective === "never-send" ? (
+                        <StatusDot tone="bad">never-send</StatusDot>
+                      ) : effective ? (
+                        <LevelBadge level={effective} name />
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="rounded-lg bg-surface-2 p-4 text-sm text-fg-muted">
-                    <p className="font-semibold text-fg">What this checks</p>
-                    <p className="mt-1">
-                      Each ledger entry stores the hash of its payload and the hash of the previous entry. Verification recomputes every hash in order. An intact chain
-                      means no entry was edited, removed or reordered after it was written; a broken chain names the first entry that does not match.
-                    </p>
-                  </div>
+                  <p className="xs faint">
+                    The strictest applicable rule wins.{" "}
+                    {effective === "never-send"
+                      ? "Nothing from this file is sent."
+                      : effective === "L4"
+                        ? "This file sends data-flow facts only, never code."
+                        : effective === "L0"
+                          ? "Nothing from this file leaves the machine."
+                          : effective
+                            ? `This file is reviewed at ${effective} (${LEVEL_NAME[effective].toLowerCase()}).`
+                            : ""}
+                  </p>
+                </>
+              )}
+            </div>
+          </section>
+
+          <section className="g g-2">
+            <div className="card">
+              <div className="card-h">
+                <div>
+                  <h2>Leakage evaluation</h2>
+                  <p className="sub">Identifier recovery by a simulated attacker with the payloads</p>
                 </div>
-              </CardBody>
-            )}
-          </Card>
-          {scanId && <LedgerDrawer scanId={scanId} entry={selected} onClose={() => setSelected(null)} />}
+                <div className="row">
+                  {evaluation.sample !== false && <span className="chip">Sample results</span>}
+                  <MoreLink to="/evaluation">Method</MoreLink>
+                </div>
+              </div>
+              {evaluation?.leakage?.length ? (
+                <div className="stack" style={{ gap: 10 }}>
+                  {evaluation.leakage.map((l) => (
+                    <div key={l.level}>
+                      <div className="row between sm">
+                        <span>
+                          {l.level} {LEVEL_NAME[l.level as PrivacyLevel] ?? ""}
+                        </span>
+                        <span className="mono">{(l.recovery * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="bar" style={{ marginTop: 4 }}>
+                        <i style={{ width: `${l.recovery * 100}%`, ...(l.recovery >= 0.5 ? { background: "var(--high)" } : {}) }} />
+                      </div>
+                      {l.note && <div className="xs faint">{l.note}</div>}
+                    </div>
+                  ))}
+                  {evaluation.note && <p className="xs faint" style={{ marginTop: 2 }}>{evaluation.note}</p>}
+                </div>
+              ) : (
+                <Empty title="No leakage evaluation yet" action="Open Evaluation" to="/evaluation">
+                  Run the attacker benchmark to measure identifier recovery per level.
+                </Empty>
+              )}
+            </div>
+            <div className="card">
+              <div className="card-h">
+                <div>
+                  <h2>Privacy-utility frontier</h2>
+                  <p className="sub">Detection F1 against identifier recovery</p>
+                </div>
+              </div>
+              {evaluation?.frontier?.length ? (
+                <Frontier points={evaluation.frontier} />
+              ) : (
+                <Empty title="No frontier yet" action="Open Evaluation" to="/evaluation">
+                  It is drawn from benchmark runs at each level.
+                </Empty>
+              )}
+            </div>
+          </section>
+
+          <section className="g g-2">
+            <div className="card stack">
+              <div className="row between">
+                <div>
+                  <h2>Privacy attestation</h2>
+                  <p className="sub">Signed summary for auditors and customers</p>
+                </div>
+                <div className="row">
+                  <Button
+                    size="sm"
+                    disabled={!scanId}
+                    title="The PDF audit report includes the privacy attestation."
+                    onClick={async () => {
+                      try {
+                        const { blob, filename } = await fetchReport(scanId!, "pdf");
+                        saveBlob(blob, filename);
+                      } catch (e) {
+                        toast.error("Download failed", e instanceof Error ? e.message : undefined);
+                      }
+                    }}
+                  >
+                    Download PDF
+                  </Button>
+                  <Button size="sm" disabled={!p} onClick={() => p && downloadAttestation(scanId!, p)}>
+                    JSON
+                  </Button>
+                </div>
+              </div>
+              {!p ? (
+                <Skeleton rows={2} />
+              ) : (
+                <dl className="dl">
+                  <dt>Scan</dt>
+                  <dd className="mono sm">
+                    {scanLabel(scanId)} · {project?.name}
+                  </dd>
+                  <dt>Levels used</dt>
+                  <dd className="row">
+                    {Object.entries(p.levels_by_candidate ?? { [p.level]: p.payloads }).map(([l, n]) => (
+                      <LevelBadge key={l} level={l} label={`${l} · ${n}`} />
+                    ))}
+                    {p.blocked ? <LevelBadge level="never-send" label={`blocked · ${p.blocked}`} /> : null}
+                  </dd>
+                  <dt>Payloads</dt>
+                  <dd className="sm">
+                    {fmtInt(p.payloads)} {p.send === false || p.provider_tier === "local" ? "recorded" : "sent"} · {fmtInt(p.tokens_sent)} tokens
+                    {p.disclosure?.repository_fraction_pct !== undefined ? ` · ${p.disclosure.repository_fraction_pct}% of repository lines` : ""}
+                  </dd>
+                  <dt>Checks</dt>
+                  <dd className="sm">
+                    Ledger chain {p.chain_ok ? "verified" : "broken"}; zero-leak check ({fmtInt(p.zero_leak.checked)} terms){" "}
+                    {p.zero_leak.passed ? "passed" : p.zero_leak.checked ? "failed" : "not run"}
+                  </dd>
+                  <dt>Ledger head</dt>
+                  <dd>
+                    <Hash value={p.ledger_head ?? p.ledger_head_hash} />
+                  </dd>
+                  <dt>Digest</dt>
+                  <dd className="sm row">
+                    <Hash value={p.attestation_digest} />
+                    <span className="faint">{fmtLong(scan?.finished_at)}</span>
+                  </dd>
+                </dl>
+              )}
+            </div>
+            <div className="note box">
+              <b>What this attestation does not cover.</b>
+              <ul>
+                <li>It describes what left during this scan only, not earlier scans or other tools.</li>
+                <li>The model still saw control flow, literal shapes and public API names in L3 slices.</li>
+                <li>The zero-leak check is verbatim against the listed terms. Unlisted terms, paraphrases or encoded values are not checked.</li>
+                <li>It does not attest to how the provider stores or uses received payloads. That is governed by your provider agreement.</li>
+                <li>With the Mock provider, nothing was transmitted; the ledger records what would have been sent.</li>
+              </ul>
+            </div>
+          </section>
         </>
       )}
-    </>
+    </Content>
   );
+}
+
+function ExposureBudget({ p }: { p: PrivacySummary }) {
+  const pct = Number(p.disclosure?.repository_fraction_pct ?? NaN);
+  const budget = p.score_components?.find((c) => c.name === "budget_usage");
+  return (
+    <div className="stack s16">
+      {!Number.isNaN(pct) && (
+        <div>
+          <div className="row between sm">
+            <span>This scan</span>
+            <span className="mono">{pct}% of repository lines</span>
+          </div>
+          <div className="bar ink" style={{ marginTop: 6 }}>
+            <i style={{ width: `${Math.min(100, pct)}%` }} />
+          </div>
+          <div className="xs faint" style={{ marginTop: 4 }}>
+            {fmtInt(Number(p.disclosure?.lines_disclosed ?? 0))} of {fmtInt(Number(p.disclosure?.lines_prepared_total ?? 0))} prepared lines in{" "}
+            {fmtInt(Number(p.disclosure?.slices ?? p.payloads))} slices
+          </div>
+        </div>
+      )}
+      <div>
+        <div className="row between sm">
+          <span>Tokens sent</span>
+          <span className="mono">{fmtInt(p.tokens_sent)}</span>
+        </div>
+      </div>
+      <p className="xs faint">
+        {budget?.value !== null && budget?.value !== undefined
+          ? `Budget headroom ${Math.round(budget.value)} / 100.`
+          : `No exposure ceiling is configured${budget?.basis ? ` (${budget.basis})` : ""}. A scan stops at 100% once one is set.`}
+      </p>
+    </div>
+  );
+}
+
+function downloadAttestation(scanId: string, p: PrivacySummary) {
+  const body = {
+    scan_id: scanId,
+    level: p.level,
+    provider: p.provider,
+    provider_tier: p.provider_tier,
+    payloads: p.payloads,
+    blocked: p.blocked,
+    withheld: p.withheld,
+    levels_by_candidate: p.levels_by_candidate,
+    tokens_sent: p.tokens_sent,
+    disclosure: p.disclosure,
+    zero_leak: p.zero_leak,
+    chain_ok: p.chain_ok,
+    ledger_head: p.ledger_head ?? p.ledger_head_hash,
+    attestation_digest: p.attestation_digest,
+    privacy_score: p.privacy_score,
+    score_components: p.score_components,
+    attestation_text: p.attestation_text,
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(body, null, 2)], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `codekavach-attestation-${scanId}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }

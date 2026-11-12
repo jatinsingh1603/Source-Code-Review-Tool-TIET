@@ -156,7 +156,10 @@ export function useScanEvents(scanId: string | undefined, active: boolean): Live
   useEffect(() => {
     if (!scanId || !active) return;
     return subscribeScanEvents(scanId, {
-      onEvent: (e) => dispatch({ kind: "event", e, at: Date.now() }),
+      onEvent: (e) => {
+        const t = e.at ? Date.parse(e.at) : NaN;
+        dispatch({ kind: "event", e, at: Number.isNaN(t) ? Date.now() : t });
+      },
       onState: (s) => dispatch({ kind: "stream", s }),
     });
   }, [scanId, active]);

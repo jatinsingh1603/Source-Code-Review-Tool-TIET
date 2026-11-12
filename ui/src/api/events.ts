@@ -61,6 +61,12 @@ export function toScanEvent(msg: SseMessage): ScanEvent | null {
     data = { message: msg.data };
   }
   const type = (msg.event !== "message" ? msg.event : (data.type as string)) ?? "message";
+  const ev = toTyped(type, data);
+  if (ev && typeof data.at === "string") ev.at = data.at;
+  return ev;
+}
+
+function toTyped(type: string, data: Record<string, unknown>): ScanEvent | null {
   switch (type) {
     case "stage":
       return { type, name: String(data.name ?? data.stage ?? ""), status: String(data.status ?? "") };

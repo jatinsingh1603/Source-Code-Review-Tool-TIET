@@ -110,6 +110,14 @@ export type MockHandler = (method: string, path: string, opts: RequestOptions) =
 
 type FetchLike = typeof fetch;
 
+function rememberedToken(): string | null {
+  try {
+    return globalThis.localStorage?.getItem(TOKEN_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export class ApiClient {
   private token: string | null = null;
   private unauthorisedHandler: (() => void) | null = null;
@@ -120,7 +128,7 @@ export class ApiClient {
     private readonly storage: Storage | null = safeSessionStorage(),
   ) {
     try {
-      this.token = this.storage?.getItem(TOKEN_KEY) ?? null;
+      this.token = this.storage?.getItem(TOKEN_KEY) ?? rememberedToken();
     } catch {
       this.token = null;
     }
@@ -138,11 +146,14 @@ export class ApiClient {
     return this.token;
   }
 
-  setToken(token: string | null): void {
+  /** Store the session token; `remember` also keeps it across browser restarts ("Remember this device"). */
+  setToken(token: string | null, remember = false): void {
     this.token = token;
     try {
       if (token) this.storage?.setItem(TOKEN_KEY, token);
       else this.storage?.removeItem(TOKEN_KEY);
+      if (token && remember) globalThis.localStorage?.setItem(TOKEN_KEY, token);
+      if (!token) globalThis.localStorage?.removeItem(TOKEN_KEY);
     } catch {
       /* storage unavailable: keep the token in memory only */
     }

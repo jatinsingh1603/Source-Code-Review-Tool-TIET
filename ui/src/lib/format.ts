@@ -116,7 +116,7 @@ export const STATUS_LABEL: Record<FindingStatus, string> = {
   open: "Open",
   confirmed: "Confirmed",
   false_positive: "False positive",
-  accepted_risk: "Accepted risk",
+  accepted_risk: "Suppressed",
   fixed: "Fixed",
 };
 

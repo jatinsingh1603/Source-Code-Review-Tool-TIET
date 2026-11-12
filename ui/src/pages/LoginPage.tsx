@@ -1,171 +1,198 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Fingerprint, LockKeyhole, ScrollText, ShieldCheck } from "lucide-react";
 import { useSession } from "@/app/session";
-import { ApiError, api } from "@/api/client";
-import { Button, Callout, Field, Input } from "@/components/ui";
-import { LogoMark } from "@/components/layout/Logo";
+import { ApiError } from "@/api/client";
+import { api } from "@/api/client";
+import { Icon, Logo } from "@/components/ui";
 
-const FEATURES = [
-  {
-    icon: ShieldCheck,
-    title: "Deterministic first",
-    text: "Rules, taint analysis and external engines find candidates locally before any model is involved.",
-  },
-  {
-    icon: Fingerprint,
-    title: "Privacy by construction",
-    text: "Secrets and personal data are redacted, internal names pseudonymised and code minimally sliced before egress.",
-  },
-  {
-    icon: ScrollText,
-    title: "Verifiable egress",
-    text: "Every payload is recorded in a hash-chained ledger you can inspect side by side with the original.",
-  },
-];
-
+/** Login (landing hero), SCREENS.md §04. Outside the app shell. */
 export default function LoginPage() {
-  const { user, login, loading } = useSession();
+  const { login, user, loading } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
   const state = (location.state ?? {}) as { from?: string; expired?: boolean };
-  const [username, setUsername] = useState("admin");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [show, setShow] = useState(false);
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [demoHint, setDemoHint] = useState(false);
+  const nextRef = useRef<string>(state.from ?? "/");
+  const emailRef = useRef<HTMLInputElement>(null);
 
-  if (!loading && user) return <Navigate to={state.from ?? "/"} replace />;
+  if (!loading && user) return <Navigate to={nextRef.current && nextRef.current !== "/login" ? nextRef.current : "/"} replace />;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
+    if (!username.trim() || !password) {
+      setError("Enter your email or username and password.");
+      return;
+    }
     setBusy(true);
+    setError(null);
     try {
-      await login(username.trim(), password);
-      navigate(state.from && state.from !== "/login" ? state.from : "/", { replace: true });
+      await login(username.trim(), password, remember);
+      const to = nextRef.current && nextRef.current !== "/login" ? nextRef.current : "/";
+      navigate(to, { replace: true });
     } catch (err) {
-      setError(
-        err instanceof ApiError && (err.status === 401 || err.status === 400)
-          ? "The username or password is not correct."
-          : err instanceof Error
-            ? err.message
-            : "Sign-in failed.",
-      );
+      if (err instanceof ApiError && (err.status === 401 || err.status === 400 || err.status === 403)) {
+        setError("Email or password is incorrect.");
+      } else if (err instanceof ApiError && err.status === 429) {
+        setError("Too many attempts. Wait a minute and try again.");
+      } else if (err instanceof ApiError && err.status === 0) {
+        setError("The CodeKavach server cannot be reached.");
+      } else {
+        setError(err instanceof Error ? err.message : "Sign-in failed.");
+      }
     } finally {
       setBusy(false);
     }
   };
 
-  return (
-    <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
-      <div className="relative hidden overflow-hidden bg-sidebar p-12 text-white lg:flex lg:flex-col">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-[rgb(var(--ck-primary)/0.35)] blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-40 left-10 h-[26rem] w-[26rem] rounded-full bg-[rgb(var(--ck-accent)/0.25)] blur-3xl"
-        />
-        <div className="relative flex items-center gap-3">
-          <LogoMark className="h-10 w-10" />
-          <div>
-            <p className="text-xl font-bold tracking-tight">CodeKavach</p>
-            <p className="text-sm text-sidebar-muted">Privacy-preserving secure code review</p>
-          </div>
-        </div>
-        <div className="relative mt-auto max-w-lg">
-          <h1 className="text-3xl font-semibold leading-tight tracking-tight">
-            LLM-assisted security review, without handing over your source code.
-          </h1>
-          <ul className="mt-8 space-y-5">
-            {FEATURES.map((f) => (
-              <li key={f.title} className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                  <f.icon className="h-5 w-5 text-[rgb(var(--ck-accent))]" aria-hidden />
-                </div>
-                <div>
-                  <p className="font-semibold">{f.title}</p>
-                  <p className="mt-0.5 text-sm text-sidebar-fg">{f.text}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <p className="relative mt-12 text-xs text-sidebar-muted">Thapar Institute of Engineering &amp; Technology</p>
-      </div>
+  const tryDemo = () => {
+    nextRef.current = "/demo";
+    if (api.isMock) {
+      void login("demo", "demo").then(() => navigate("/demo", { replace: true }));
+      return;
+    }
+    setDemoHint(true);
+    emailRef.current?.focus();
+  };
 
-      <div className="flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <LogoMark className="h-10 w-10" />
-            <div>
-              <p className="text-xl font-bold tracking-tight text-fg">CodeKavach</p>
-              <p className="text-sm text-fg-subtle">Privacy-preserving secure code review</p>
+  const host = typeof window !== "undefined" ? window.location.host : "";
+
+  return (
+    <div className="ck" style={{ display: "flex", flexWrap: "wrap", minHeight: "100vh" }}>
+      <section
+        style={{
+          flex: "1 1 520px",
+          padding: "clamp(24px, 6vw, 56px)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          gap: 40,
+          background: "var(--surface)",
+          borderRight: "1px solid var(--border)",
+          minWidth: 0,
+        }}
+      >
+        <div className="row" style={{ gap: 12 }}>
+          <Logo size={32} />
+          <span style={{ fontSize: 20, fontWeight: 700 }}>CodeKavach</span>
+          <span style={{ fontFamily: "'Noto Sans Devanagari', sans-serif", color: "var(--muted)" }}>कवच</span>
+        </div>
+        <div className="stack s20" style={{ maxWidth: 560 }}>
+          <h1 style={{ fontSize: "clamp(28px, 4vw, 36px)", lineHeight: 1.15, fontWeight: 650, letterSpacing: "-0.025em" }}>
+            Get an LLM security review. Keep secrets and personal data local.
+          </h1>
+          <p className="muted" style={{ fontSize: 16 }}>
+            Minimise and measure the business logic you disclose. Every byte that leaves is hashed, checked and written to a
+            tamper-evident ledger.
+          </p>
+          <div className="stack s6">
+            <div className="guard">
+              <span className="gid">L3</span>
+              <span className="gt">Minimal slice by default. No whole files.</span>
+            </div>
+            <div className="guard">
+              <span className="gid">I4</span>
+              <span className="gt">Any privacy-step failure aborts the request.</span>
+            </div>
+            <div className="guard">
+              <span className="gid">I6</span>
+              <span className="gt">Ledger payloads checked for listed terms of 4+ characters.</span>
             </div>
           </div>
-          <h2 className="text-2xl font-semibold tracking-tight text-fg">Sign in</h2>
-          <p className="mt-1 text-sm text-fg-muted">Use your CodeKavach account to continue.</p>
-
-          {state.expired && !error && (
-            <Callout tone="warning" className="mt-6">
-              Your session has ended. Please sign in again.
-            </Callout>
-          )}
-          {error && (
-            <Callout tone="danger" className="mt-6" title="Sign-in failed">
-              {error}
-            </Callout>
-          )}
-
-          <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
-            <Field label="Username" required>
-              {(id) => (
-                <Input
-                  id={id}
-                  autoComplete="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  autoFocus
-                />
-              )}
-            </Field>
-            <Field label="Password" required>
-              {(id) => (
-                <div className="relative">
-                  <Input
-                    id={id}
-                    type={show ? "text" : "password"}
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShow((s) => !s)}
-                    aria-label={show ? "Hide password" : "Show password"}
-                    className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-fg-subtle hover:text-fg"
-                  >
-                    {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              )}
-            </Field>
-            <Button type="submit" className="w-full" size="lg" loading={busy} icon={<LockKeyhole className="h-4 w-4" />}>
-              Sign in
-            </Button>
-          </form>
-          <p className="mt-6 text-xs text-fg-subtle">
-            {api.isMock
-              ? "Demo data mode: sign in as admin with password kavach-admin."
-              : "Local installations print the initial administrator password when the server starts."}
-          </p>
         </div>
-      </div>
+        <div className="xs faint">OWASP Code Review Guide · ASVS · CWE · CVSS 4.0 · SARIF 2.1.0 · NIST SSDF</div>
+      </section>
+      <section
+        style={{ flex: "1 1 440px", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 24px", minWidth: 0 }}
+      >
+        <form className="card stack s16" style={{ width: "100%", maxWidth: 420, padding: 28 }} onSubmit={submit} noValidate>
+          <div>
+            <h2 style={{ fontSize: 20, fontWeight: 650 }}>Sign in</h2>
+            <p className="sub" style={{ marginTop: 4 }}>
+              Choose your organisation to continue.
+            </p>
+          </div>
+          <div className="fld">
+            <label htmlFor="tenant">Organisation</label>
+            <select id="tenant" className="inp">
+              <option>This server · {host}</option>
+            </select>
+          </div>
+          <button
+            className="btn pri"
+            type="button"
+            style={{ width: "100%" }}
+            disabled
+            title="Single sign-on is not configured on this server. Use a local account."
+          >
+            <Icon name="lock-wide" />
+            Continue with SSO (SAML / OIDC)
+          </button>
+          <div className="row" style={{ gap: 10 }}>
+            <div className="hr" style={{ flex: 1 }} />
+            <span className="xs faint">or local account</span>
+            <div className="hr" style={{ flex: 1 }} />
+          </div>
+          {state.expired && !error && <div className="banner warn sm">Your session has ended. Sign in again.</div>}
+          {demoHint && !error && (
+            <div className="banner info sm">Sign in with your local account to open the demo.</div>
+          )}
+          <div className="fld">
+            <label htmlFor="em">Email or username</label>
+            <input
+              id="em"
+              ref={emailRef}
+              className="inp"
+              type="text"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
+          <div className="fld">
+            <label htmlFor="pw">Password</label>
+            <input
+              id="pw"
+              className="inp"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="row between">
+            <label className="swrow">
+              <input type="checkbox" className="chk" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember
+              this device
+            </label>
+            <span className="sm faint" title="Ask an administrator to reset your password in Admin → Users and roles.">
+              Forgot password? Ask an admin.
+            </span>
+          </div>
+          {error && (
+            <div className="banner bad sm" role="alert">
+              {error}
+            </div>
+          )}
+          <button className="btn" type="submit" style={{ width: "100%" }} disabled={busy} aria-busy={busy || undefined}>
+            {busy ? "Signing in…" : "Sign in"}
+          </button>
+          <div className="hr" />
+          <button className="btn ghost" type="button" style={{ width: "100%" }} onClick={tryDemo}>
+            <Icon name="play" />
+            Try the offline demo
+          </button>
+          <p className="xs faint" style={{ textAlign: "center" }}>
+            No telemetry leaves this machine.
+          </p>
+        </form>
+      </section>
     </div>
   );
 }

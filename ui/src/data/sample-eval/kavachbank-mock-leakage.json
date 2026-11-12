@@ -1,0 +1,376 @@
+{
+  "ablations": [
+    {
+      "ablation": "default",
+      "canary_passed": true,
+      "coverage": 0.1167,
+      "f1": 0.9091,
+      "identifier_subword_rate": 0.1897,
+      "leakage_score": 11.2,
+      "level": "L3",
+      "linkability": 0.1648
+    },
+    {
+      "ablation": "sink-window-slices",
+      "canary_passed": true,
+      "coverage": 0.113,
+      "f1": 0.9091,
+      "identifier_subword_rate": 0.1897,
+      "leakage_score": 11.1,
+      "level": "L3",
+      "linkability": 0.1648
+    },
+    {
+      "ablation": "per-request-pseudonyms",
+      "canary_passed": true,
+      "coverage": 0.1167,
+      "f1": 0.9091,
+      "identifier_subword_rate": 0.1897,
+      "leakage_score": 11.2,
+      "level": "L3",
+      "linkability": 0.1648
+    },
+    {
+      "ablation": "role-hints",
+      "canary_passed": true,
+      "coverage": 0.1167,
+      "f1": 0.9091,
+      "identifier_subword_rate": 0.1897,
+      "leakage_score": 11.2,
+      "level": "L3",
+      "linkability": 0.1648
+    }
+  ],
+  "adversary": "honest-but-curious provider: sees every sent payload and its metadata; no vault, salt, project tree or ground truth",
+  "dataset": {
+    "canaries": 51,
+    "name": "KavachBank",
+    "synthetic": true
+  },
+  "frontier": [
+    {
+      "f1": 0.9091,
+      "leakage_score": 41.1,
+      "level": "L1",
+      "privacy_score": 58.9
+    },
+    {
+      "f1": 0.9091,
+      "leakage_score": 11.2,
+      "level": "L2",
+      "privacy_score": 88.8
+    },
+    {
+      "f1": 0.9091,
+      "leakage_score": 11.2,
+      "level": "L3",
+      "privacy_score": 88.8
+    },
+    {
+      "f1": 0.9091,
+      "leakage_score": 0.0,
+      "level": "L4",
+      "privacy_score": 100.0
+    }
+  ],
+  "kind": "leakage",
+  "levels": {
+    "L1": {
+      "canary": {
+        "business_term_occurrences": 0,
+        "by_category": {
+          "identifier": {
+            "checked": 3,
+            "occurrences": 4
+          },
+          "pii": {
+            "checked": 16,
+            "occurrences": 0
+          },
+          "secret": {
+            "checked": 9,
+            "occurrences": 0
+          },
+          "term": {
+            "checked": 23,
+            "occurrences": 0
+          }
+        },
+        "hard_occurrences": 0,
+        "leaked": [
+          {
+            "category": "identifier",
+            "label": "canary function",
+            "occurrences": "1",
+            "value_hash": "f6dd18fa63d2"
+          },
+          {
+            "category": "identifier",
+            "label": "canary parameter",
+            "occurrences": "2",
+            "value_hash": "2e7a35f57f18"
+          },
+          {
+            "category": "identifier",
+            "label": "canary table",
+            "occurrences": "1",
+            "value_hash": "853416a5d280"
+          }
+        ],
+        "passed": true
+      },
+      "detection_f1": 0.9091,
+      "detection_recall": 1.0,
+      "identifier": {
+        "defined": 64,
+        "exact_rate": 0.4688,
+        "exact_recovered": 30,
+        "examples_hashed": [
+          "30613060d3aa",
+          "9af211329b2f",
+          "878ff637ab31",
+          "0eb3e36bfb24",
+          "27a5f6645569"
+        ],
+        "subword_rate": 0.7344,
+        "subword_recovered": 17
+      },
+      "inference": {
+        "correct": true,
+        "evidence_share": 0.125,
+        "guess": "banking",
+        "scores": {
+          "banking": 2,
+          "healthcare": 0,
+          "retail": 0,
+          "telecom": 0
+        }
+      },
+      "leakage_score": 41.1,
+      "llm": {
+        "reason": "the LLM attacker runs only on request, on synthetic data, through the egress path",
+        "skipped": true
+      },
+      "payloads_blocked": 0,
+      "payloads_prepared": 16,
+      "payloads_sent": 16,
+      "privacy_score": 58.9,
+      "stitching": {
+        "coverage": 0.1389,
+        "covered_lines": 75,
+        "linkability": 1.0,
+        "linkable_pairs": 120,
+        "payload_pairs": 120,
+        "source_lines": 540
+      }
+    },
+    "L2": {
+      "canary": {
+        "business_term_occurrences": 0,
+        "by_category": {
+          "identifier": {
+            "checked": 3,
+            "occurrences": 0
+          },
+          "pii": {
+            "checked": 16,
+            "occurrences": 0
+          },
+          "secret": {
+            "checked": 9,
+            "occurrences": 0
+          },
+          "term": {
+            "checked": 23,
+            "occurrences": 0
+          }
+        },
+        "hard_occurrences": 0,
+        "leaked": [],
+        "passed": true
+      },
+      "detection_f1": 0.9091,
+      "detection_recall": 1.0,
+      "identifier": {
+        "defined": 58,
+        "exact_rate": 0.0862,
+        "exact_recovered": 5,
+        "examples_hashed": [
+          "c806cd9c716c",
+          "310ff200149b",
+          "dc93c7ded0fe",
+          "a0af9f865bf6",
+          "a8b771920b83"
+        ],
+        "subword_rate": 0.1897,
+        "subword_recovered": 6
+      },
+      "inference": {
+        "correct": false,
+        "evidence_share": 0.0,
+        "guess": "unknown",
+        "scores": {
+          "banking": 0,
+          "healthcare": 0,
+          "retail": 0,
+          "telecom": 0
+        }
+      },
+      "leakage_score": 11.2,
+      "llm": {
+        "reason": "the LLM attacker runs only on request, on synthetic data, through the egress path",
+        "skipped": true
+      },
+      "payloads_blocked": 1,
+      "payloads_prepared": 15,
+      "payloads_sent": 14,
+      "privacy_score": 88.8,
+      "stitching": {
+        "coverage": 0.1167,
+        "covered_lines": 63,
+        "linkability": 0.1648,
+        "linkable_pairs": 15,
+        "payload_pairs": 91,
+        "source_lines": 540
+      }
+    },
+    "L3": {
+      "canary": {
+        "business_term_occurrences": 0,
+        "by_category": {
+          "identifier": {
+            "checked": 3,
+            "occurrences": 0
+          },
+          "pii": {
+            "checked": 16,
+            "occurrences": 0
+          },
+          "secret": {
+            "checked": 9,
+            "occurrences": 0
+          },
+          "term": {
+            "checked": 23,
+            "occurrences": 0
+          }
+        },
+        "hard_occurrences": 0,
+        "leaked": [],
+        "passed": true
+      },
+      "detection_f1": 0.9091,
+      "detection_recall": 1.0,
+      "identifier": {
+        "defined": 58,
+        "exact_rate": 0.0862,
+        "exact_recovered": 5,
+        "examples_hashed": [
+          "c806cd9c716c",
+          "310ff200149b",
+          "dc93c7ded0fe",
+          "a0af9f865bf6",
+          "a8b771920b83"
+        ],
+        "subword_rate": 0.1897,
+        "subword_recovered": 6
+      },
+      "inference": {
+        "correct": false,
+        "evidence_share": 0.0,
+        "guess": "unknown",
+        "scores": {
+          "banking": 0,
+          "healthcare": 0,
+          "retail": 0,
+          "telecom": 0
+        }
+      },
+      "leakage_score": 11.2,
+      "llm": {
+        "reason": "the LLM attacker runs only on request, on synthetic data, through the egress path",
+        "skipped": true
+      },
+      "payloads_blocked": 1,
+      "payloads_prepared": 15,
+      "payloads_sent": 14,
+      "privacy_score": 88.8,
+      "stitching": {
+        "coverage": 0.1167,
+        "covered_lines": 63,
+        "linkability": 0.1648,
+        "linkable_pairs": 15,
+        "payload_pairs": 91,
+        "source_lines": 540
+      }
+    },
+    "L4": {
+      "canary": {
+        "business_term_occurrences": 0,
+        "by_category": {
+          "identifier": {
+            "checked": 3,
+            "occurrences": 0
+          },
+          "pii": {
+            "checked": 16,
+            "occurrences": 0
+          },
+          "secret": {
+            "checked": 9,
+            "occurrences": 0
+          },
+          "term": {
+            "checked": 23,
+            "occurrences": 0
+          }
+        },
+        "hard_occurrences": 0,
+        "leaked": [],
+        "passed": true
+      },
+      "detection_f1": 0.9091,
+      "detection_recall": 1.0,
+      "identifier": {
+        "defined": 0,
+        "exact_rate": 0.0,
+        "exact_recovered": 0,
+        "examples_hashed": [],
+        "subword_rate": 0.0,
+        "subword_recovered": 0
+      },
+      "inference": {
+        "correct": false,
+        "evidence_share": 0.0,
+        "guess": "unknown",
+        "scores": {
+          "banking": 0,
+          "healthcare": 0,
+          "retail": 0,
+          "telecom": 0
+        }
+      },
+      "leakage_score": 0.0,
+      "llm": {
+        "reason": "the LLM attacker runs only on request, on synthetic data, through the egress path",
+        "skipped": true
+      },
+      "payloads_blocked": 0,
+      "payloads_prepared": 0,
+      "payloads_sent": 0,
+      "privacy_score": 100.0,
+      "stitching": {
+        "coverage": 0.0,
+        "covered_lines": 0,
+        "linkability": 0.0,
+        "linkable_pairs": 0,
+        "payload_pairs": 0,
+        "source_lines": 540
+      }
+    }
+  },
+  "note": "No code payloads are stored in this file; leaked values appear only as hashes.",
+  "provider": "mock",
+  "schema_version": 1,
+  "zero_leak": true
+}

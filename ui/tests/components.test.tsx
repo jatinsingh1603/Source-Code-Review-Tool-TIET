@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Button, CodeBlock, DataTable, Dialog, SeverityBadge, StatusBadge, Tabs, Toggle } from "@/components/ui";
-import { SideBySide } from "@/components/SideBySide";
+import { MarkedCode } from "@/components/Marked";
 import type { LedgerDetail } from "@/api/types";
 
 describe("primitives", () => {
@@ -115,16 +115,17 @@ const detail: LedgerDetail = {
   ],
 };
 
-describe("SideBySide", () => {
-  it("shows both sides with marks", () => {
-    render(<SideBySide detail={detail} />);
-    expect(screen.getByText(/stays on this machine/)).toBeInTheDocument();
-    expect(screen.getByText("<SECRET_1>").tagName).toBe("MARK");
+describe("MarkedCode", () => {
+  it("marks the payload side with the design classes, as text", () => {
+    const { container } = render(<MarkedCode text={detail.payload_text} markup={detail.markup} side="payload" />);
+    const mark = screen.getByText("<SECRET_1>");
+    expect(mark.className).toBe("rd");
+    expect(container.querySelector(".code .ln .n")?.textContent).toBe("1");
   });
-  it("explains the missing original side", () => {
-    render(<SideBySide detail={{ ...detail, original_text: "" }} />);
-    expect(screen.getByText(/Auditor role/)).toBeInTheDocument();
-    expect(screen.queryByText(/stays on this machine/)).toBeNull();
+  it("leaves unmarked text plain on the original side", () => {
+    render(<MarkedCode text={detail.original_text} markup={detail.markup} side="original" />);
+    expect(screen.getByText("AKIA").className).toBe("rd");
+    expect(screen.queryByText("<SECRET_1>")).toBeNull();
   });
 });
 

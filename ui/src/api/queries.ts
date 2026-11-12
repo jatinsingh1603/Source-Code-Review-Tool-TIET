@@ -47,6 +47,14 @@ export const qk = {
 
 type Opts<T> = Omit<UseQueryOptions<T, Error, T, readonly unknown[]>, "queryKey" | "queryFn">;
 
+export const useHealth = () =>
+  useQuery({ queryKey: qk.health, queryFn: endpoints.health, staleTime: 60_000, retry: false });
+export const useAudit = (enabled = true) =>
+  useQuery({ queryKey: ["audit"], queryFn: () => endpoints.audit(50), enabled, retry: false });
+/** An endpoint from the design's API gaps; `null` data means the server does not have it yet. */
+export const useOptional = <T,>(key: string, fn: () => Promise<T | null>, enabled = true) =>
+  useQuery({ queryKey: ["optional", key], queryFn: fn, enabled, retry: false, staleTime: 60_000 });
+
 export const useVersion = () =>
   useQuery({ queryKey: qk.version, queryFn: endpoints.version, staleTime: Infinity, retry: false });
 export const useStats = () => useQuery({ queryKey: qk.stats, queryFn: endpoints.stats });

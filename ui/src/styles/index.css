@@ -1,56 +1,281 @@
-@import "./tokens.css";
-
-@tailwind base;
-@tailwind components;
+/*
+ * Global styles. The design system lives in ui/design (tokens.css and
+ * components.css, imported in main.tsx before this file); this file only adds
+ * the Tailwind utility layer and a few app-level rules the prototype does not
+ * draw (focus ring, overlays, menus, the toast stack).
+ */
 @tailwind utilities;
 
-@layer base {
-  html {
-    font-family: var(--ck-font-sans);
-    font-size: 16px;
-    -webkit-font-smoothing: antialiased;
-  }
-  body {
-    @apply bg-bg text-fg text-base;
-    min-height: 100vh;
-  }
-  :focus-visible {
-    outline: 2px solid rgb(var(--ck-focus));
-    outline-offset: 2px;
-  }
-  ::selection {
-    background: rgb(var(--ck-primary) / 0.22);
-  }
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: rgb(var(--ck-border-strong)) transparent;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
+body {
+  min-height: 100vh;
+}
+#root {
+  min-height: 100vh;
+}
+.ck button,
+.ck input,
+.ck select,
+.ck textarea {
+  font-family: inherit;
+}
+.ck :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.ck .tbl a:focus-visible,
+.ck .nav a:focus-visible {
+  outline-offset: -2px;
+}
+.ck .ico.inline {
+  display: inline-block;
+  vertical-align: -3px;
+}
+.ck .btn:disabled,
+.ck .btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ck .btn.pri:disabled:hover {
+  background: var(--text);
+}
+.ck .inp:disabled {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.ck .tbl tbody tr.click {
+  cursor: pointer;
+}
+.ck .tbl tbody tr.click:hover td {
+  background: var(--surface-2);
+}
+.ck .tbl tbody tr.click.sel:hover td {
+  background: var(--accent-soft);
+}
+.ck .skip {
+  position: absolute;
+  left: 8px;
+  top: -40px;
+  z-index: 70;
+}
+.ck .skip:focus {
+  top: 8px;
+}
+.ck .linkbtn {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.app {
+  min-height: 100vh;
+}
+/* Settings → Appearance. */
+.ck.no-shapes .sev::before {
+  transform: none;
+  border: 0;
+  border-radius: 50%;
+  height: 8px;
+}
+.ck.no-shapes .sev.l::before {
+  background: var(--low);
+}
+.ck.no-shapes .sev.i::before {
+  height: 8px;
+}
+.ck.comfortable .tbl td {
+  padding: 14px 12px;
+}
+.ck .tnode code {
+  overflow-wrap: anywhere;
+}
+/* A launch form shown read-only while (or after) a scan runs: keep the design's look. */
+.ck form.locked .inp:disabled {
+  background: var(--surface);
+  color: var(--text);
+  opacity: 1;
+}
+.ck form.locked .seg button:disabled {
+  cursor: default;
+}
+/* Long finding titles stay on two lines in tables; the full title is the link's title attribute. */
+.ck .tbl td.wrap .t-title.clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-@layer components {
-  .ck-input {
-    @apply h-9 w-full rounded-md border border-border bg-surface px-3 text-base text-fg placeholder:text-fg-subtle
-      transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:opacity-60;
+/* Overlays: dialogs, the command palette and pop-over menus. Flat, 1 px lines. */
+.ck-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(16, 24, 40, 0.32);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 10vh 16px 16px;
+  overflow-y: auto;
+}
+.ck-dialog {
+  width: 100%;
+  max-width: 520px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+.ck-dialog.lg {
+  max-width: 760px;
+}
+.ck-dialog > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.ck-dialog > header h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+.ck-dialog > .body {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ck-dialog > footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 0 0 8px 8px;
+}
+.ck-pop {
+  position: relative;
+}
+.ck-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ck-menu.right {
+  left: auto;
+  right: 0;
+}
+.ck-menu .mi {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ck-menu .mi:hover,
+.ck-menu .mi.on {
+  background: var(--surface-3);
+}
+.ck-menu .mh {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  padding: 6px 10px 4px;
+  font-weight: 500;
+}
+.ck .palette {
+  width: 100%;
+}
+.ck .palette .pal-i {
+  cursor: pointer;
+}
+.ck .palette .pal-in input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  background: transparent;
+  color: var(--text);
+  min-width: 0;
+}
+.ck .search {
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+}
+.ck-toasts {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+}
+.ck-toasts .toast.bad {
+  background: var(--crit-t);
+}
+.ck-toasts .toast button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--toast-sub);
+  cursor: pointer;
+  padding: 0 0 0 8px;
+  margin-left: auto;
+  font: inherit;
+}
+.ck .mockbar {
+  padding: 4px 24px;
+  font-size: 12px;
+  background: var(--warn-bg);
+  border-bottom: 1px solid var(--warn-line);
+  color: var(--text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck *,
+  .ck *::before,
+  .ck *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
-  .ck-textarea {
-    @apply w-full rounded-md border border-border bg-surface px-3 py-2 text-base text-fg placeholder:text-fg-subtle
-      focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25;
-  }
-  .ck-label {
-    @apply mb-1.5 block text-sm font-medium text-fg;
-  }
-  .ck-help {
-    @apply mt-1 text-xs text-fg-subtle;
-  }
-  .ck-kbd {
-    @apply rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-fg-muted;
+}
+.ck.reduce-motion *,
+.ck.reduce-motion *::before,
+.ck.reduce-motion *::after {
+  transition-duration: 0.01ms !important;
+}
+@media print {
+  .side,
+  .top {
+    display: none;
   }
 }

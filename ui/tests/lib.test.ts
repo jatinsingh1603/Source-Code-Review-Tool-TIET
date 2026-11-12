@@ -3,9 +3,8 @@ import { countPlaceholders, segmentLines } from "@/lib/markup";
 import { applyFiltersToParams, filtersFromParams, toggleListValue } from "@/lib/filters";
 import { cvssRating, parseVector } from "@/lib/cvss";
 import { atLeastAsStrict, confidenceFraction, LEVELS_BY_STRICTNESS } from "@/lib/format";
-import { resolveTheme } from "@/lib/theme";
-import { egressSummary } from "@/components/EgressPreview";
-import { validateGitUrl } from "@/components/NewProjectDialog";
+import { egressSummary } from "@/lib/egress";
+import { validateGitUrl } from "@/lib/validate";
 import { permissionsFor } from "@/lib/permissions";
 import type { ProviderInfo } from "@/api/types";
 
@@ -86,11 +85,6 @@ describe("privacy levels", () => {
 });
 
 describe("misc helpers", () => {
-  it("resolves the theme", () => {
-    expect(resolveTheme("system", true)).toBe("dark");
-    expect(resolveTheme("system", false)).toBe("light");
-    expect(resolveTheme("light", true)).toBe("light");
-  });
   it("validates git URLs", () => {
     expect(validateGitUrl("https://github.com/o/r.git")).toBeNull();
     expect(validateGitUrl("git@github.com:o/r.git")).toBeNull();

@@ -32,6 +32,7 @@ export interface User {
   id: string;
   username: string;
   display_name?: string | null;
+  full_name?: string | null;
   email?: string | null;
   role: Role;
   active?: boolean;
@@ -48,7 +49,32 @@ export interface LoginResponse {
 
 export interface Health {
   status: string;
+  database?: string;
+  active_scans?: number;
+  /** Network posture for the top-bar pill (API gap; optional). */
+  network?: "offline" | "online" | string;
+  /** Invariant suite results (API gap; optional). */
+  invariants?: { id: string; title?: string; passed: boolean; run_at?: string; tests?: number }[];
+  /** System health checks (API gap; optional). */
+  checks?: { name: string; ok: boolean; detail?: string; level?: string }[];
   [k: string]: unknown;
+}
+
+export interface AuditEvent {
+  id: number | string;
+  at: string;
+  actor: string;
+  action: string;
+  resource?: string;
+  outcome?: string;
+  client?: string;
+  detail?: Record<string, unknown>;
+}
+
+export interface AuditLog {
+  chain_intact?: boolean;
+  checked?: number;
+  events: AuditEvent[];
 }
 
 export interface VersionInfo {
@@ -63,6 +89,8 @@ export interface TrendPoint {
   high: number;
   medium: number;
   low: number;
+  info?: number;
+  project_id?: string;
 }
 
 export interface Stats {
@@ -72,6 +100,10 @@ export interface Stats {
   open_findings: number;
   last_scan: Scan | null;
   trend: TrendPoint[];
+  findings_total?: number;
+  /** API gaps (optional). */
+  mttr_days?: number | null;
+  mttr_delta_days?: number | null;
 }
 
 export type SourceType = "path" | "git" | "upload" | "sample";
@@ -94,6 +126,7 @@ export interface Project {
   scan_count?: number;
   languages?: string[];
   files?: number;
+  scans?: number;
 }
 
 export interface ProjectCreate {
@@ -128,6 +161,23 @@ export interface Scan {
   files?: number;
   languages?: string[];
   error?: string | null;
+  findings_total?: number;
+  lines?: number;
+  rules?: string[];
+  /** API gaps (optional until the server provides them). */
+  mode?: "branch" | "diff" | string | null;
+  ref?: string | null;
+  payloads?: number | null;
+  engines?: string[] | null;
+  eta_seconds?: number | null;
+  privacy_summary?: {
+    payloads: number;
+    blocked: number;
+    chain_ok: boolean;
+    zero_leak?: { checked: number; occurrences: number; passed: boolean };
+    tokens_sent?: number;
+    bytes_sent?: number;
+  } | null;
 }
 
 export interface Location {
@@ -152,6 +202,7 @@ export interface CodeSnippet {
 }
 
 export interface TaintStep {
+  index?: number;
   kind: "source" | "propagation" | "sanitiser" | "sink" | string;
   label: string;
   path: string;
@@ -167,12 +218,16 @@ export interface Evidence {
 
 export interface LlmVerdict {
   is_vulnerable: boolean;
-  confidence: number;
+  confidence: number | string;
   reasoning: string;
   impact?: string | null;
   remediation?: string | null;
-  model: string;
-  provider: string;
+  model?: string;
+  provider?: string;
+  /** API gaps (optional). */
+  exploit_scenario?: string | null;
+  temperature?: number | null;
+  runs?: { verdict?: string; is_vulnerable?: boolean; confidence?: number | string; ledger_seq?: number }[] | null;
 }
 
 export interface ComplianceRef {
@@ -217,6 +272,37 @@ export interface Finding {
   assignee?: string | null;
   comment?: string | null;
   created_at?: string;
+  updated_at?: string;
+  path?: string;
+  line?: number;
+  language?: string;
+  llm_reviewed?: boolean;
+  cwes?: string[];
+  asvs_refs?: string[];
+  capec_refs?: string[];
+  impact_detail?: { level?: number; narrative?: string } | null;
+  likelihood_detail?: { level?: number; rationale?: string } | null;
+  provenance?: {
+    origin?: string;
+    engines?: { engine: string; rule_id?: string }[];
+    llm_reviews?: {
+      provider: string;
+      model: string;
+      level?: PrivacyLevel;
+      ledger_seq?: number | null;
+      is_vulnerable?: boolean;
+      confidence?: number | string;
+      reasoning?: string;
+      task?: string;
+    }[];
+  } | null;
+  scan?: { id: string; project_id?: string; project_name?: string; privacy_level?: PrivacyLevel; provider?: string; model?: string } | null;
+  history?: FindingHistoryEntry[];
+  /** API gaps (optional). */
+  baseline_state?: "new" | "unchanged" | "fixed" | string | null;
+  engines?: string[] | null;
+  due_at?: string | null;
+  remediation_diff?: string | null;
 }
 
 export interface FindingPatch {
@@ -255,6 +341,22 @@ export interface PrivacySummary {
   provider: string;
   model?: string | null;
   attestation_text: string;
+  sent?: number;
+  withheld?: number;
+  chain_entries?: number;
+  ledger_head?: string | null;
+  ledger_head_hash?: string | null;
+  ledger_entries?: number;
+  attestation_digest?: string | null;
+  send?: boolean;
+  provider_tier?: string;
+  levels_by_candidate?: Record<string, number>;
+  policy_rules?: Record<string, number>;
+  score_components?: { name: string; value: number | null; raw?: string; unit?: string; kind?: string; basis?: string }[];
+  score_formula?: string;
+  disclosure?: Record<string, string | number>;
+  /** API gap (optional): bytes of payload sent. */
+  bytes_sent?: number | null;
 }
 
 export interface LedgerEntry {
@@ -270,6 +372,13 @@ export interface LedgerEntry {
   candidate_id: string;
   finding_id?: string | null;
   outcome?: string;
+  task?: string;
+  block_code?: string | null;
+  ref_seq?: number | null;
+  tokens_prompt?: number | null;
+  tokens_completion?: number | null;
+  /** API gap (optional). */
+  bytes?: number | null;
 }
 
 export type MarkupKind = "secret" | "pii" | "identifier" | "literal";
@@ -287,6 +396,13 @@ export interface LedgerDetail {
   payload_text: string;
   original_text: string;
   markup: Markup[];
+  original_start_line?: number | null;
+  /** API gaps (optional). */
+  path?: string | null;
+  start_line?: number | null;
+  slice_lines?: number[] | null;
+  source_line?: number | null;
+  sink_line?: number | null;
 }
 
 export interface LedgerVerifyResult {
@@ -295,6 +411,11 @@ export interface LedgerVerifyResult {
   first_bad_seq?: number | null;
   message?: string;
   verified_at?: string;
+  hashes_ok?: number;
+  blocked?: number;
+  terms_checked?: number;
+  terms_found?: number;
+  head_hash?: string;
 }
 
 export interface ReportFormat {
@@ -371,9 +492,10 @@ export interface GithubSyncResult {
 }
 
 /** Server-sent event payloads of `GET /scans/{id}/events`. */
-export type ScanEvent =
+export type ScanEvent = (
   | { type: "stage"; name: string; status: "started" | "completed" | "skipped" | "failed" | string }
   | { type: "progress"; percent: number; message?: string }
   | { type: "log"; level: string; message: string }
   | { type: "finding"; id: string; severity: Severity; title: string }
-  | { type: "done"; status: ScanStatus };
+  | { type: "done"; status: ScanStatus }
+) & { /** Server timestamp of the event (ISO 8601), when sent. */ at?: string };

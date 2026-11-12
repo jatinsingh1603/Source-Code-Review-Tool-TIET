@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/format";
+import { SkeletonRows } from "./Feedback";
 
 export interface Column<T> {
   id: string;
@@ -8,10 +8,10 @@ export interface Column<T> {
   cell: (row: T) => ReactNode;
   /** Value used for sorting; omit to make the column unsortable. */
   sortValue?: (row: T) => string | number;
+  /** Class on each `td` (`num`, `mono`, `wrap`, `sm muted`…). */
   className?: string;
   headerClassName?: string;
-  /** Marks the column whose cell names the row (rendered as a row header). */
-  rowHeader?: boolean;
+  headerStyle?: React.CSSProperties;
 }
 
 export interface DataTableProps<T> {
@@ -21,13 +21,16 @@ export interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
   initialSort?: { id: string; dir: "asc" | "desc" };
   empty?: ReactNode;
-  className?: string;
-  /** Row ids that should appear selected. */
-  selected?: Set<string>;
+  loading?: boolean;
+  /** Row ids drawn as selected (`tr.sel`). */
+  selected?: Set<string> | string | null;
   caption?: string;
-  dense?: boolean;
+  /** Drop the table frame (inside a card). */
+  bare?: boolean;
+  className?: string;
 }
 
+/** `.tbl` inside `.tbl-wrap` (COMPONENTS.md §12), with optional column sorting. */
 export function DataTable<T>({
   columns,
   rows,
@@ -35,10 +38,11 @@ export function DataTable<T>({
   onRowClick,
   initialSort,
   empty,
-  className,
+  loading,
   selected,
   caption,
-  dense,
+  bare,
+  className,
 }: DataTableProps<T>) {
   const [sort, setSort] = useState(initialSort ?? null);
   const sorted = useMemo(() => {
@@ -46,52 +50,43 @@ export function DataTable<T>({
     const col = columns.find((c) => c.id === sort.id);
     if (!col?.sortValue) return rows;
     const sv = col.sortValue;
-    const out = [...rows].sort((a, b) => {
+    return [...rows].sort((a, b) => {
       const x = sv(a);
       const y = sv(b);
       const r = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y));
       return sort.dir === "asc" ? r : -r;
     });
-    return out;
   }, [rows, columns, sort]);
 
   const toggle = (id: string) =>
     setSort((s) => (s?.id === id ? { id, dir: s.dir === "asc" ? "desc" : "asc" } : { id, dir: "desc" }));
+  const isSel = (k: string) => (typeof selected === "string" ? selected === k : !!selected?.has(k));
 
   return (
-    <div className={cn("overflow-x-auto", className)}>
-      <table className="w-full border-collapse text-left text-base">
+    <div className={cn("tbl-wrap", className)} style={bare ? { border: 0 } : undefined}>
+      <table className="tbl">
         {caption && <caption className="sr-only">{caption}</caption>}
         <thead>
-          <tr className="border-b border-border">
+          <tr>
             {columns.map((c) => {
               const active = sort?.id === c.id;
               return (
                 <th
                   key={c.id}
                   scope="col"
+                  className={c.headerClassName}
+                  style={c.headerStyle}
                   aria-sort={active ? (sort!.dir === "asc" ? "ascending" : "descending") : undefined}
-                  className={cn(
-                    "whitespace-nowrap bg-surface-2/60 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle",
-                    c.headerClassName,
-                  )}
                 >
                   {c.sortValue ? (
                     <button
                       type="button"
+                      className="linkbtn"
+                      style={{ color: "inherit", fontWeight: "inherit", fontSize: "inherit" }}
                       onClick={() => toggle(c.id)}
-                      className="inline-flex items-center gap-1 uppercase hover:text-fg"
                     >
                       {c.header}
-                      {active ? (
-                        sort!.dir === "asc" ? (
-                          <ArrowUp className="h-3 w-3" aria-hidden />
-                        ) : (
-                          <ArrowDown className="h-3 w-3" aria-hidden />
-                        )
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-40" aria-hidden />
-                      )}
+                      {active ? (sort!.dir === "asc" ? " ↑" : " ↓") : ""}
                     </button>
                   ) : (
                     c.header
@@ -102,45 +97,38 @@ export function DataTable<T>({
           </tr>
         </thead>
         <tbody>
-          {sorted.map((r) => {
-            const key = rowKey(r);
-            return (
-              <tr
-                key={key}
-                onClick={onRowClick ? () => onRowClick(r) : undefined}
-                onKeyDown={
-                  onRowClick
-                    ? (e) => {
-                        if (e.key === "Enter" && e.target === e.currentTarget) onRowClick(r);
-                      }
-                    : undefined
-                }
-                tabIndex={onRowClick ? 0 : undefined}
-                aria-selected={selected ? selected.has(key) : undefined}
-                className={cn(
-                  "border-b border-border last:border-0 transition-colors",
-                  onRowClick && "cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2",
-                  selected?.has(key) && "bg-primary-soft/50",
-                )}
-              >
-                {columns.map((c) => {
-                  const Tag = c.rowHeader ? "th" : "td";
-                  return (
-                    <Tag
-                      key={c.id}
-                      scope={c.rowHeader ? "row" : undefined}
-                      className={cn("px-4 align-middle font-normal", dense ? "py-2" : "py-3", c.className)}
-                    >
+          {loading ? (
+            <SkeletonRows cols={columns.length} />
+          ) : (
+            sorted.map((r) => {
+              const key = rowKey(r);
+              return (
+                <tr
+                  key={key}
+                  onClick={onRowClick ? () => onRowClick(r) : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.key === "Enter" && e.target === e.currentTarget) onRowClick(r);
+                        }
+                      : undefined
+                  }
+                  tabIndex={onRowClick ? 0 : undefined}
+                  aria-selected={selected ? isSel(key) : undefined}
+                  className={cn(onRowClick && "click", isSel(key) && "sel")}
+                >
+                  {columns.map((c) => (
+                    <td key={c.id} className={c.className}>
                       {c.cell(r)}
-                    </Tag>
-                  );
-                })}
-              </tr>
-            );
-          })}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
-      {rows.length === 0 && empty}
+      {!loading && rows.length === 0 && empty}
     </div>
   );
 }

@@ -8,20 +8,19 @@ import {
   type ReactNode,
 } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { ShieldOff } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { endpoints } from "@/api/endpoints";
 import type { User } from "@/api/types";
 import { minimumRoleFor, permissionsFor, roleLabel, type Permission } from "@/lib/permissions";
-import { EmptyState, Spinner } from "@/components/ui";
+import { Content, Empty, Skeleton } from "@/components/ui";
 
 interface Session {
   user: User | null;
   loading: boolean;
   permissions: Set<Permission>;
   can: (p: Permission) => boolean;
-  login: (username: string, password: string) => Promise<User>;
+  login: (username: string, password: string, remember?: boolean) => Promise<User>;
   logout: () => Promise<void>;
 }
 
@@ -60,9 +59,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string, remember = false) => {
     const res = await endpoints.login(username, password);
-    api.setToken(res.token);
+    api.setToken(res.token, remember);
     setUser(res.user);
     return res.user;
   }, []);
@@ -98,8 +97,8 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation();
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Spinner className="h-7 w-7" />
+      <div style={{ padding: 48, maxWidth: 480 }}>
+        <Skeleton />
       </div>
     );
   }
@@ -117,10 +116,12 @@ export function RequirePermission({ permission, children }: { permission: Permis
 export function AccessDenied({ permission }: { permission: Permission }) {
   const role = minimumRoleFor(permission);
   return (
-    <EmptyState
-      icon={<ShieldOff className="h-6 w-6" aria-hidden />}
-      title="Access denied"
-      description={`This area needs the ${roleLabel(role)} role or higher. Ask an administrator if you need access.`}
-    />
+    <Content>
+      <div className="card">
+        <Empty title="Access denied" action="Back to Overview" to="/">
+          {`This area needs the ${roleLabel(role)} role or higher. Ask an administrator if you need access.`}
+        </Empty>
+      </div>
+    </Content>
   );
 }

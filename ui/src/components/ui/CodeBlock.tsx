@@ -1,5 +1,4 @@
-import { useState, type ReactNode } from "react";
-import { Check, ChevronDown, ChevronUp, Copy } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
 import { cn } from "@/lib/format";
 
 export interface CodeLineInput {
@@ -7,121 +6,79 @@ export interface CodeLineInput {
   text: string;
 }
 
+export type LineKind = "hl" | "src" | "sink" | "out" | "diff-add" | "diff-del" | undefined;
+
 export interface CodeBlockProps {
   /** Either plain text (numbered from `startLine`) or explicit numbered lines. */
   code?: string;
   lines?: CodeLineInput[];
   startLine?: number;
-  /** Inclusive line ranges to highlight, in file line numbers. */
+  /** Inclusive line ranges to highlight (`.ln.hl`), in file line numbers. */
   highlight?: { start: number; end: number }[];
-  /** Optional title bar text, usually the file path. */
+  /** Per-line kind, overriding `highlight` (source, sink, out of slice, diff). */
+  kindOf?: (n: number) => LineKind;
+  /** Optional `.code-h` header: left and right parts. */
   title?: ReactNode;
-  language?: string;
-  /** Collapse to this many pixels with an expand control. */
-  maxHeight?: number;
+  titleRight?: ReactNode;
   className?: string;
-  /** Per-line decoration (e.g. redaction spans); must return text nodes only. */
+  style?: CSSProperties;
+  /** Per-line decoration (e.g. privacy markup); must return text nodes only. */
   renderLine?: (line: CodeLineInput) => ReactNode;
-  copyable?: boolean;
+  /** Extra rows rendered after a line (folds, vault tooltips). */
+  after?: (line: CodeLineInput) => ReactNode;
+  /** Id prefix for line anchors, e.g. `L` gives `id="L58"`. */
+  anchor?: string;
 }
 
 /**
- * Renders code as text with a line-number gutter and highlighted ranges.
- * It never accepts HTML: everything is rendered through React text nodes.
+ * Code viewer (`.code`, COMPONENTS.md §13). Renders code as text with a line
+ * number gutter; it never accepts HTML.
  */
 export function CodeBlock({
   code,
   lines,
   startLine = 1,
   highlight = [],
+  kindOf,
   title,
-  language,
-  maxHeight,
+  titleRight,
   className,
+  style,
   renderLine,
-  copyable = true,
+  after,
+  anchor,
 }: CodeBlockProps) {
   const rows: CodeLineInput[] =
     lines ?? (code ?? "").replace(/\n$/, "").split("\n").map((text, i) => ({ number: startLine + i, text }));
-  const [expanded, setExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
   const isHl = (n: number) => highlight.some((r) => n >= r.start && n <= r.end);
-  const gutterWidth = String(rows[rows.length - 1]?.number ?? 1).length;
-  const collapsible = maxHeight !== undefined && rows.length * 21 > maxHeight;
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(rows.map((r) => r.text).join("\n"));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard unavailable */
-    }
-  };
-
   return (
-    <div className={cn("overflow-hidden rounded-lg border border-border bg-code-bg", className)}>
-      {(title || copyable || language) && (
-        <div className="flex items-center justify-between gap-3 border-b border-border bg-surface-2/70 px-3 py-1.5">
-          <div className="min-w-0 truncate font-mono text-xs text-fg-muted">{title}</div>
-          <div className="flex items-center gap-2">
-            {language && <span className="text-xs uppercase tracking-wide text-fg-subtle">{language}</span>}
-            {copyable && (
-              <button
-                type="button"
-                onClick={copy}
-                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-fg-muted hover:bg-surface-3 hover:text-fg"
-                aria-label="Copy code as text"
-              >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                {copied ? "Copied" : "Copy"}
-              </button>
-            )}
-          </div>
+    <div>
+      {(title || titleRight) && (
+        <div className="code-h">
+          <span>{title}</span>
+          {titleRight}
         </div>
       )}
-      <div
-        className="overflow-auto"
-        style={collapsible && !expanded ? { maxHeight } : undefined}
-      >
-        <pre className="min-w-full py-2 font-mono text-[12.5px] leading-[21px]">
-          <code>
-            {rows.map((r) => {
-              const hl = isHl(r.number);
-              return (
-                <div
-                  key={r.number}
-                  data-line={r.number}
-                  data-highlighted={hl || undefined}
-                  className={cn(
-                    "flex min-w-max border-l-[3px] pr-4",
-                    hl ? "border-code-hl-border bg-code-hl" : "border-transparent",
-                  )}
-                >
-                  <span
-                    aria-hidden
-                    className="sticky left-0 select-none bg-inherit pl-3 pr-4 text-right text-code-gutter"
-                    style={{ minWidth: `calc(${gutterWidth}ch + 1.75rem)` }}
-                  >
-                    {r.number}
-                  </span>
-                  <span className="whitespace-pre text-fg">{renderLine ? renderLine(r) : r.text || " "}</span>
-                </div>
-              );
-            })}
-          </code>
-        </pre>
+      <div className={cn("code", className)} style={style}>
+        {rows.map((r) => {
+          const kind = kindOf?.(r.number) ?? (isHl(r.number) ? "hl" : undefined);
+          const hl = kind !== undefined && kind !== "out";
+          return (
+            <div key={r.number} style={{ display: "contents" }}>
+              <div
+                className={cn("ln", kind)}
+                id={anchor ? `${anchor}${r.number}` : undefined}
+                data-line={r.number}
+                data-highlighted={hl || undefined}
+              >
+                <span className="n">{r.number}</span>
+                {renderLine ? renderLine(r) : r.text}
+              </div>
+              {after?.(r)}
+            </div>
+          );
+        })}
       </div>
-      {collapsible && (
-        <button
-          type="button"
-          onClick={() => setExpanded((x) => !x)}
-          className="flex w-full items-center justify-center gap-1 border-t border-border bg-surface-2/60 py-1.5 text-xs font-medium text-fg-muted hover:text-fg"
-        >
-          {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          {expanded ? "Collapse" : `Show all ${rows.length} lines`}
-        </button>
-      )}
     </div>
   );
 }

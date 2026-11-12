@@ -1,0 +1,914 @@
+{
+  "arms": [
+    {
+      "arm": "engines-only",
+      "by_cwe": {
+        "CWE-22": {
+          "f1": 0.6667,
+          "f1_ci": [
+            0.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 1,
+          "precision": 0.5,
+          "precision_ci": [
+            0.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            0.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-327": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-329": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-502": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-639": {
+          "f1": 0.6667,
+          "f1_ci": [
+            0.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 1,
+          "precision": 0.5,
+          "precision_ci": [
+            0.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            0.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-78": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-79": {
+          "f1": 0.6667,
+          "f1_ci": [
+            0.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 1,
+          "precision": 0.5,
+          "precision_ci": [
+            0.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            0.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-862": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-89": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-918": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        }
+      },
+      "by_family": {
+        "authz": {
+          "f1": 0.8,
+          "f1_ci": [
+            0.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 1,
+          "precision": 0.6667,
+          "precision_ci": [
+            0.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            0.0,
+            1.0
+          ],
+          "tp": 2
+        },
+        "crypto": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 2
+        },
+        "deserialisation": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "injection-os": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "injection-sql": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "path": {
+          "f1": 0.6667,
+          "f1_ci": [
+            0.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 1,
+          "precision": 0.5,
+          "precision_ci": [
+            0.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            0.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "ssrf": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "xss": {
+          "f1": 0.6667,
+          "f1_ci": [
+            0.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 1,
+          "precision": 0.5,
+          "precision_ci": [
+            0.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            0.0,
+            1.0
+          ],
+          "tp": 1
+        }
+      },
+      "by_language": {
+        "javascript": {
+          "f1": 0.75,
+          "f1_ci": [
+            0.3333,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 2,
+          "precision": 0.6,
+          "precision_ci": [
+            0.2,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 3
+        },
+        "python": {
+          "f1": 0.9333,
+          "f1_ci": [
+            0.7692,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 1,
+          "precision": 0.875,
+          "precision_ci": [
+            0.625,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 7
+        }
+      },
+      "duplicates": 1,
+      "duration_s": 5.09,
+      "findings": 59,
+      "in_scope_findings": 14,
+      "level": null,
+      "missed": [],
+      "on_controls": 2,
+      "out_of_scope": 45,
+      "overall": {
+        "f1": 0.8696,
+        "f1_ci": [
+          0.7,
+          1.0
+        ],
+        "fn": 0,
+        "fp": 3,
+        "precision": 0.7692,
+        "precision_ci": [
+          0.5385,
+          1.0
+        ],
+        "recall": 1.0,
+        "recall_ci": [
+          1.0,
+          1.0
+        ],
+        "tp": 10
+      },
+      "provider": "none",
+      "skipped_reason": null
+    },
+    {
+      "arm": "agentrouter@L3",
+      "by_cwe": {
+        "CWE-22": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-327": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-329": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-502": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-639": {
+          "f1": 0.6667,
+          "f1_ci": [
+            0.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 1,
+          "precision": 0.5,
+          "precision_ci": [
+            0.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            0.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-78": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-79": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-862": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-89": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "CWE-918": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        }
+      },
+      "by_family": {
+        "authz": {
+          "f1": 0.8,
+          "f1_ci": [
+            0.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 1,
+          "precision": 0.6667,
+          "precision_ci": [
+            0.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            0.0,
+            1.0
+          ],
+          "tp": 2
+        },
+        "crypto": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 2
+        },
+        "deserialisation": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "injection-os": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "injection-sql": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "path": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "ssrf": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        },
+        "xss": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 1
+        }
+      },
+      "by_language": {
+        "javascript": {
+          "f1": 1.0,
+          "f1_ci": [
+            1.0,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 0,
+          "precision": 1.0,
+          "precision_ci": [
+            1.0,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 3
+        },
+        "python": {
+          "f1": 0.9333,
+          "f1_ci": [
+            0.7692,
+            1.0
+          ],
+          "fn": 0,
+          "fp": 1,
+          "precision": 0.875,
+          "precision_ci": [
+            0.625,
+            1.0
+          ],
+          "recall": 1.0,
+          "recall_ci": [
+            1.0,
+            1.0
+          ],
+          "tp": 7
+        }
+      },
+      "duplicates": 1,
+      "duration_s": 872.55,
+      "findings": 57,
+      "in_scope_findings": 12,
+      "level": "L3",
+      "missed": [],
+      "on_controls": 0,
+      "out_of_scope": 45,
+      "overall": {
+        "f1": 0.9524,
+        "f1_ci": [
+          0.8421,
+          1.0
+        ],
+        "fn": 0,
+        "fp": 1,
+        "precision": 0.9091,
+        "precision_ci": [
+          0.7273,
+          1.0
+        ],
+        "recall": 1.0,
+        "recall_ci": [
+          1.0,
+          1.0
+        ],
+        "tp": 10
+      },
+      "provider": "agentrouter",
+      "skipped_reason": null
+    },
+    {
+      "arm": "llm-raw",
+      "by_cwe": {},
+      "by_family": {},
+      "by_language": {},
+      "duplicates": 0,
+      "duration_s": 0.0,
+      "findings": 0,
+      "in_scope_findings": 0,
+      "level": null,
+      "missed": [],
+      "on_controls": 0,
+      "out_of_scope": 0,
+      "overall": {},
+      "provider": "-",
+      "skipped_reason": "raw code is never sent by this harness; run it by hand on synthetic fixtures only"
+    }
+  ],
+  "dataset": {
+    "controls": 10,
+    "layout": "kavachbank",
+    "name": "KavachBank",
+    "synthetic": true,
+    "vulnerabilities": 10
+  },
+  "kind": "detection",
+  "method": {
+    "bootstrap": "1000 resamples of tp/fp/fn units, seed 20260101, 95 percent",
+    "llm_filter": "findings the LLM judged not vulnerable are dropped, except for the mock provider, whose canned verdicts are ignored",
+    "matcher": "same file, line window 3, same CWE family",
+    "precision": "in-scope findings only; out-of-scope findings are counted separately"
+  },
+  "schema_version": 1
+}

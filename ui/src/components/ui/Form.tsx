@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
+import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/format";
 
 export interface FieldProps {
@@ -10,45 +10,45 @@ export interface FieldProps {
   className?: string;
 }
 
-/** Label + control + help/error text with the ARIA wiring done. */
+/** `.fld`: label above the control, with help or error text wired by ARIA. */
 export function Field({ label, help, error, required, children, className }: FieldProps) {
   const id = useId();
   const helpId = `${id}-help`;
   const describedBy = error || help ? helpId : undefined;
   return (
-    <div className={className}>
-      <label htmlFor={id} className="ck-label">
+    <div className={cn("fld", className)}>
+      <label htmlFor={id}>
         {label}
-        {required && (
-          <span className="ml-0.5 text-danger" aria-hidden>
-            *
-          </span>
-        )}
+        {required && <span aria-hidden> *</span>}
       </label>
       {children(id, describedBy)}
       {error ? (
-        <p id={helpId} className="mt-1 text-xs text-danger" role="alert">
+        <span id={helpId} className="xs badc" role="alert">
           {error}
-        </p>
+        </span>
       ) : help ? (
-        <p id={helpId} className="ck-help">
+        <span id={helpId} className="xs faint">
           {help}
-        </p>
+        </span>
       ) : null}
     </div>
   );
 }
 
-export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn("ck-input", className)} {...rest} />;
+export function Input({ className, mono, ...rest }: InputHTMLAttributes<HTMLInputElement> & { mono?: boolean }) {
+  return <input className={cn("inp", mono && "mono", className)} {...rest} />;
 }
 
 export function Select({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={cn("ck-input appearance-auto pr-8", className)} {...rest}>
+    <select className={cn("inp", className)} {...rest}>
       {children}
     </select>
   );
+}
+
+export function Textarea({ className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className={cn("inp", className)} {...rest} />;
 }
 
 export interface ToggleProps {
@@ -57,61 +57,77 @@ export interface ToggleProps {
   label: ReactNode;
   description?: ReactNode;
   disabled?: boolean;
+  className?: string;
 }
 
-export function Toggle({ checked, onChange, label, description, disabled }: ToggleProps) {
-  const id = useId();
+/** Switch (`.sw` inside `.swrow`), exposed to assistive technology as a switch. */
+export function Toggle({ checked, onChange, label, description, disabled, className }: ToggleProps) {
   return (
-    <div className="flex items-start gap-3">
-      <button
-        id={id}
-        type="button"
+    <label className={cn("swrow", className)}>
+      <input
+        type="checkbox"
         role="switch"
+        className="sw"
+        checked={checked}
         aria-checked={checked}
         disabled={disabled}
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "relative mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-50",
-          checked ? "bg-primary" : "bg-border-strong",
-        )}
-      >
-        <span
-          className={cn(
-            "inline-block h-4 w-4 rounded-full bg-white shadow transition-transform",
-            checked ? "translate-x-[18px]" : "translate-x-0.5",
-          )}
-        />
-      </button>
-      <label htmlFor={id} className="cursor-pointer select-none">
-        <span className="block text-sm font-medium text-fg">{label}</span>
-        {description && <span className="block text-xs text-fg-muted">{description}</span>}
-      </label>
-    </div>
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      {description ? (
+        <span>
+          <b className="sm">{label}</b>
+          <br />
+          <span className="xs faint">{description}</span>
+        </span>
+      ) : (
+        label
+      )}
+    </label>
   );
 }
 
+/** Checkbox row (`.chk` inside `.swrow`). Without `label` text it renders the bare box. */
 export function Checkbox({
   checked,
   onChange,
   label,
   indeterminate,
+  bare,
+  disabled,
+  top,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
-  label: string;
+  label: ReactNode;
   indeterminate?: boolean;
+  /** Render only the input, with `label` as its accessible name. */
+  bare?: boolean;
+  disabled?: boolean;
+  /** Align a multi-line label to the top (consent rows). */
+  top?: boolean;
 }) {
-  return (
+  const id = useId();
+  const box = (
     <input
+      id={id}
       type="checkbox"
-      aria-label={label}
+      className="chk"
+      aria-label={bare && typeof label === "string" ? label : undefined}
       checked={checked}
+      disabled={disabled}
       ref={(el) => {
         if (el) el.indeterminate = !!indeterminate;
       }}
       onChange={(e) => onChange(e.target.checked)}
       onClick={(e) => e.stopPropagation()}
-      className="h-4 w-4 cursor-pointer rounded border-border-strong accent-[rgb(var(--ck-primary))]"
+      style={top ? { marginTop: 3 } : undefined}
     />
+  );
+  if (bare) return box;
+  return (
+    <label className="swrow" htmlFor={id} style={top ? { alignItems: "flex-start" } : undefined}>
+      {box}
+      <span>{label}</span>
+    </label>
   );
 }

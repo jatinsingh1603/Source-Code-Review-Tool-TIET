@@ -1,111 +1,622 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { AlertOctagon, Bug, FolderGit2, ScanSearch, TrendingUp, PieChart as PieIcon, History } from "lucide-react";
-import { useScans, useStats } from "@/api/queries";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardBody, CardHeader, EmptyState, ErrorState, Skeleton, StatTile } from "@/components/ui";
-import { FindingsTrend, SeverityDonut } from "@/components/charts/SeverityCharts";
-import { PrivacyPostureCard } from "@/components/PrivacyPosture";
-import { ScanTable } from "@/components/ScanTable";
 import { useCurrentProject } from "@/app/project-context";
-import { useSession } from "@/app/session";
-import { pickDefault } from "@/app/useSelectedScan";
-import { fmtNum, fmtRelative } from "@/lib/format";
+import { useFindings, useHealth, usePrivacy, useProviders, useScans, useStats } from "@/api/queries";
+import type { Finding, PrivacySummary, Project, ProviderInfo, Scan, TrendPoint } from "@/api/types";
+import { isOpen, providerName, scanPayloads, scanTarget, sevCounts, sortScans } from "@/lib/domain";
+import {
+  ENGINE_COLUMNS,
+  engineColumn,
+  fmtBytes,
+  fmtDayMonth,
+  fmtElapsed,
+  fmtHM,
+  fmtInt,
+  fmtLong,
+  fmtShort,
+  riskLevel,
+  scanLabel,
+} from "@/lib/display";
+import { CWE_SHORT, OWASP_TOP10, parseOwasp } from "@/lib/taxonomy";
+import {
+  ButtonLink,
+  Content,
+  Empty,
+  ErrorBanner,
+  Guard,
+  Icon,
+  Kpi,
+  LevelBadge,
+  MoreLink,
+  PageHeader,
+  ScanStatusBadge,
+  SectionHead,
+  SevCount,
+  Skeleton,
+} from "@/components/ui";
 
 export default function OverviewPage() {
-  const stats = useStats();
-  const scans = useScans();
-  const { current } = useCurrentProject();
-  const { user } = useSession();
-  const s = stats.data;
-  const recent = (scans.data ?? []).slice(0, 6);
-  const projectScan = pickDefault((scans.data ?? []).filter((x) => x.project_id === current?.id));
-  const postureScanId = projectScan?.id ?? s?.last_scan?.id;
+  const { current, loading: projLoading } = useCurrentProject();
+  const scansQ = useScans(current?.id);
+  const scans = useMemo(() => sortScans(scansQ.data ?? []), [scansQ.data]);
+  const completed = scans.filter((s) => s.status === "completed");
+  const last = completed[0] ?? scans[0];
+  const prev = completed[1];
+  const findingsQ = useFindings(last?.id);
+  const privacyQ = usePrivacy(last?.status === "completed" ? last.id : undefined);
+  const prevPrivacy = usePrivacy(prev?.id).data;
+  const stats = useStats().data;
+  const providers = useProviders().data;
+  const health = useHealth().data;
 
-  if (stats.error) return <ErrorState error={stats.error} onRetry={() => void stats.refetch()} />;
+  const crumbs = [{ label: current?.name ?? "Project" }, { label: "Overview" }];
+  const loading = projLoading || scansQ.isLoading;
 
-  const sev = s?.findings_by_severity;
+  if (!loading && scans.length === 0) {
+    return (
+      <Content>
+        <PageHeader crumbs={crumbs} title="Overview" />
+        <div className="card">
+          <Empty title="No scans yet" action="Run a scan" to={current ? `/projects/${current.id}/scan` : "/projects/new"}>
+            Run a scan to see results here.
+          </Empty>
+          <div className="row" style={{ justifyContent: "center" }}>
+            <Link className="more" to="/demo">
+              Or run the KavachBank demo <Icon name="arrow-right" />
+            </Link>
+          </div>
+        </div>
+      </Content>
+    );
+  }
+
+  const findings = findingsQ.data ?? [];
+  const open = findings.filter(isOpen);
+  const counts = sevCounts(open);
+  const trend = (stats?.trend ?? []).filter((t) => !t.project_id || t.project_id === current?.id).slice(-12);
+
   return (
-    <>
+    <Content>
       <PageHeader
-        title={`Welcome back${user?.display_name ? `, ${user.display_name.split(" ")[0]}` : ""}`}
-        description="Security posture across your projects, from deterministic analysis and privacy-preserving model review."
+        crumbs={crumbs}
+        title="Overview"
+        actions={
+          <>
+            {last && (
+              <span className="sub">
+                Last scan <span className="mono">{scanLabel(last.id)}</span> · {fmtLong(last.started_at ?? last.created_at)}
+              </span>
+            )}
+            {current && (
+              <ButtonLink variant="primary" to={`/projects/${current.id}/scan`}>
+                New scan
+              </ButtonLink>
+            )}
+          </>
+        }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {s ? (
-          <>
-            <StatTile label="Projects" value={fmtNum(s.projects)} icon={<FolderGit2 className="h-5 w-5" />} to="/projects" hint="Connected code bases" />
-            <StatTile
-              label="Scans"
-              value={fmtNum(s.scans)}
-              icon={<ScanSearch className="h-5 w-5" />}
-              tone="accent"
-              to="/scans"
-              hint={s.last_scan ? `Last ${fmtRelative(s.last_scan.finished_at ?? s.last_scan.started_at ?? s.last_scan.created_at)}` : "No scans yet"}
-            />
-            <StatTile label="Open findings" value={fmtNum(s.open_findings)} icon={<Bug className="h-5 w-5" />} tone="warning" to="/findings" hint="Open and confirmed, latest scans" />
-            <StatTile
-              label="Critical and high"
-              value={fmtNum((sev?.critical ?? 0) + (sev?.high ?? 0))}
-              icon={<AlertOctagon className="h-5 w-5" />}
-              tone="danger"
-              to="/findings?severity=critical,high"
-              hint={`${sev?.critical ?? 0} critical · ${sev?.high ?? 0} high`}
-            />
-          </>
+      <section className="card" style={{ padding: 0 }}>
+        {loading || findingsQ.isLoading ? (
+          <div style={{ padding: 18 }}>
+            <Skeleton />
+          </div>
         ) : (
-          Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[126px]" />)
-        )}
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader icon={<TrendingUp className="h-4 w-4" />} title="Findings trend" description="Findings per completed scan, stacked by severity" />
-          <CardBody>
-            {s ? (
-              s.trend.length ? (
-                <FindingsTrend trend={s.trend} />
-              ) : (
-                <EmptyState title="No completed scans yet" description="The trend appears after the first scan completes." />
-              )
-            ) : (
-              <Skeleton className="h-60" />
-            )}
-          </CardBody>
-        </Card>
-        <Card>
-          <CardHeader icon={<PieIcon className="h-4 w-4" />} title="Open by severity" description="Latest scan of every project" />
-          <CardBody>{sev ? <SeverityDonut counts={sev} /> : <Skeleton className="h-44" />}</CardBody>
-        </Card>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader
-            icon={<History className="h-4 w-4" />}
-            title="Recent scans"
-            actions={
-              <Link to="/scans" className="text-sm font-medium text-primary hover:underline">
-                View all
-              </Link>
-            }
-          />
-          {scans.isLoading ? (
-            <CardBody>
-              <Skeleton className="h-48" />
-            </CardBody>
-          ) : (
-            <ScanTable
-              scans={recent}
-              showProject
-              dense
-              compact
-              empty={<EmptyState title="No scans yet" description="Create a project and start your first scan." />}
+          <div className="kpi-strip">
+            <Kpi
+              to="/findings"
+              label="Open findings"
+              value={fmtInt(open.length)}
+              detail={
+                <>
+                  <SevCount severity="critical" n={counts.critical} first />
+                  <SevCount severity="high" n={counts.high} />
+                  <SevCount severity="medium" n={counts.medium} />
+                  <SevCount severity="low" n={counts.low + counts.info} />
+                </>
+              }
             />
-          )}
-        </Card>
-        <PrivacyPostureCard scanId={postureScanId} />
+            <PrivacyScoreKpi p={privacyQ.data} prev={prevPrivacy} />
+            <EgressKpi p={privacyQ.data} scan={last} />
+            <Kpi
+              to="/privacy/ledger"
+              label="Zero-leak check"
+              value={privacyQ.data ? fmtInt(privacyQ.data.zero_leak.occurrences) : "—"}
+              unit="terms found"
+              detail={privacyQ.data ? `${fmtInt(privacyQ.data.zero_leak.checked)} listed terms, verbatim` : "not checked"}
+            />
+            <Kpi
+              label="Last scan"
+              value={fmtHM(last?.started_at ?? last?.created_at)}
+              detail={
+                last
+                  ? `${fmtDayMonth(last.started_at ?? last.created_at)} · ${fmtElapsed(last.started_at, last.finished_at)}${
+                      current?.source?.ref ? ` · ${current.source.ref}` : ""
+                    }`
+                  : undefined
+              }
+            />
+            <MttrKpi findings={findings} days={stats?.mttr_days} delta={stats?.mttr_delta_days} />
+          </div>
+        )}
+      </section>
+
+      <section className="g g-side">
+        <TrendCard trend={trend} loading={!stats} />
+        <RiskMatrix findings={open} loading={findingsQ.isLoading} />
+      </section>
+
+      <section className="g g-side">
+        <OwaspCard findings={open} loading={findingsQ.isLoading} />
+        <div className="stack s16">
+          <TopCwes findings={open} loading={findingsQ.isLoading} />
+          <GuardCard health={health} privacy={privacyQ.data} />
+        </div>
+      </section>
+
+      <section className="stack">
+        <SectionHead title="Recent scans" right={<MoreLink to="/scans">All scans</MoreLink>} />
+        {scansQ.isError ? (
+          <ErrorBanner what="Scans could not be loaded." error={scansQ.error} onRetry={() => void scansQ.refetch()} />
+        ) : (
+          <ScansTable scans={scans.slice(0, 5)} providers={providers} loading={loading} />
+        )}
+      </section>
+    </Content>
+  );
+}
+
+function PrivacyScoreKpi({ p, prev }: { p?: PrivacySummary; prev?: PrivacySummary }) {
+  const score = p?.privacy_score;
+  const d = score !== null && score !== undefined && prev?.privacy_score !== null && prev?.privacy_score !== undefined ? score - prev.privacy_score : null;
+  return (
+    <Kpi
+      to="/privacy"
+      label="Privacy score"
+      value={score ?? "—"}
+      unit="/ 100"
+      detailClass={d === null || d === 0 ? undefined : d > 0 ? "down" : "up"}
+      detail={
+        d === null ? (
+          p ? `${p.level} · ${p.payloads} payloads` : "not computed"
+        ) : d === 0 ? (
+          "no change vs last scan"
+        ) : (
+          <>
+            <Icon name={d > 0 ? "arrow-up" : "arrow-down"} size={12} />
+            {Math.abs(d)} pts vs last scan
+          </>
+        )
+      }
+    />
+  );
+}
+
+function EgressKpi({ p, scan }: { p?: PrivacySummary; scan?: Scan }) {
+  const payloads = p?.payloads ?? (scan ? scanPayloads(scan) : null);
+  const frac = p?.disclosure?.repository_fraction_pct;
+  const detail = `${fmtInt(payloads)} payloads${frac !== undefined ? ` · ${frac}% of repo` : ""}`;
+  if (p?.bytes_sent !== undefined && p?.bytes_sent !== null) {
+    const b = fmtBytes(p.bytes_sent);
+    return <Kpi to="/privacy/ledger" label="Bytes egressed, this scan" value={b.v} unit={b.unit} detail={detail} />;
+  }
+  const tokens = p?.tokens_sent ?? scan?.privacy_summary?.tokens_sent;
+  return (
+    <Kpi
+      to="/privacy/ledger"
+      label="Tokens out, this scan"
+      value={tokens === undefined ? "—" : tokens >= 10_000 ? (tokens / 1000).toFixed(1) : fmtInt(tokens)}
+      unit={tokens === undefined ? "" : tokens >= 10_000 ? "k tokens" : "tokens"}
+      detail={detail}
+    />
+  );
+}
+
+function MttrKpi({ findings, days, delta }: { findings: Finding[]; days?: number | null; delta?: number | null }) {
+  let value: number | null = days ?? null;
+  if (value === null) {
+    const fixed = findings.filter((f) => f.status === "fixed" && f.created_at && f.updated_at);
+    if (fixed.length) {
+      const total = fixed.reduce((a, f) => a + (Date.parse(f.updated_at!) - Date.parse(f.created_at!)), 0);
+      value = total / fixed.length / 86_400_000;
+    }
+  }
+  return (
+    <Kpi
+      label="Mean time to remediate"
+      value={value === null ? "—" : value.toFixed(1)}
+      unit={value === null ? "" : "days"}
+      detailClass={delta ? (delta < 0 ? "down" : "up") : undefined}
+      detail={
+        delta ? (
+          <>
+            <Icon name={delta < 0 ? "arrow-down" : "arrow-up"} size={12} />
+            {Math.abs(delta).toFixed(1)} days in 30 days
+          </>
+        ) : value === null ? (
+          "no findings fixed yet"
+        ) : (
+          "fixed findings, this scan"
+        )
+      }
+    />
+  );
+}
+
+function TrendCard({ trend, loading }: { trend: TrendPoint[]; loading: boolean }) {
+  // Keep the design's twelve column slots so a short history keeps its bar width.
+  const pad = Math.max(0, 12 - trend.length);
+  const max = Math.max(1, ...trend.map((t) => t.critical + t.high + t.medium + t.low + (t.info ?? 0)));
+  const scale = 160 / max;
+  const first = trend[0];
+  const lastT = trend[trend.length - 1];
+  const tot = (t?: TrendPoint) => (t ? t.critical + t.high + t.medium + t.low + (t.info ?? 0) : 0);
+  const label =
+    trend.length > 1
+      ? `Open findings went from ${tot(first)} to ${tot(lastT)} over ${trend.length} scans`
+      : "Open findings by severity";
+  return (
+    <div className="card">
+      <div className="card-h">
+        <div>
+          <h2>Findings trend</h2>
+          <p className="sub">Open findings by severity, last {trend.length || 12} scans</p>
+        </div>
+        <div className="legend">
+          <span>
+            <i style={{ background: "var(--crit)" }} />
+            Critical
+          </span>
+          <span>
+            <i style={{ background: "var(--high)" }} />
+            High
+          </span>
+          <span>
+            <i style={{ background: "var(--med)" }} />
+            Medium
+          </span>
+          <span>
+            <i style={{ background: "var(--border-strong)" }} />
+            Low and info
+          </span>
+        </div>
       </div>
+      {loading ? (
+        <Skeleton rows={2} />
+      ) : trend.length === 0 ? (
+        <Empty title="No trend yet">Completed scans of this project appear here.</Empty>
+      ) : (
+        <>
+          <div className="vbars" role="img" aria-label={label}>
+            {Array.from({ length: pad }, (_, i) => (
+              <div className="col" key={`pad-${i}`} />
+            ))}
+            {trend.map((t) => (
+              <div className="col" key={t.scan_id} title={`${fmtShort(t.date)}: ${tot(t)} open`}>
+                <i style={{ height: t.critical * scale, background: "var(--crit)" }} />
+                <i style={{ height: t.high * scale, background: "var(--high)" }} />
+                <i style={{ height: t.medium * scale, background: "var(--med)" }} />
+                <i style={{ height: (t.low + (t.info ?? 0)) * scale, background: "var(--border-strong)" }} />
+              </div>
+            ))}
+          </div>
+          <div className="xax">
+            {Array.from({ length: pad }, (_, i) => (
+              <span key={`pad-${i}`} />
+            ))}
+            {trend.map((t, i) => {
+              const prevDay = i > 0 ? fmtDayMonth(trend[i - 1]!.date) : "";
+              const day = fmtDayMonth(t.date);
+              return <span key={t.scan_id}>{day === prevDay ? fmtHM(t.date) : day}</span>;
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+const RM: string[][] = [
+  ["r2", "r3", "r4", "r5", "r5"],
+  ["r1", "r2", "r3", "r4", "r5"],
+  ["r1", "r2", "r3", "r3", "r4"],
+  ["r1", "r1", "r2", "r2", "r3"],
+  ["r1", "r1", "r1", "r1", "r2"],
+];
+
+function RiskMatrix({ findings, loading }: { findings: Finding[]; loading: boolean }) {
+  const grid = Array.from({ length: 5 }, () => [0, 0, 0, 0, 0]);
+  for (const f of findings) {
+    const l = riskLevel(f.likelihood_detail?.level ?? f.likelihood);
+    const i = riskLevel(f.impact_detail?.level ?? f.impact);
+    if (l && i) grid[5 - l]![i - 1]! += 1;
+  }
+  return (
+    <div className="card">
+      <div className="card-h">
+        <div>
+          <h2>Risk matrix</h2>
+          <p className="sub">Likelihood × impact, open findings</p>
+        </div>
+      </div>
+      {loading ? (
+        <Skeleton rows={2} />
+      ) : (
+        <>
+          <div className="rm" role="table" aria-label="Open findings by likelihood and impact">
+            {grid.map((row, r) => (
+              <RmRow key={r} lik={5 - r} row={row} cls={RM[r]!} />
+            ))}
+            <span />
+            {[1, 2, 3, 4, 5].map((n) => (
+              <span key={n} className="ax">
+                {n}
+              </span>
+            ))}
+          </div>
+          <div className="row between xs faint" style={{ marginTop: 8 }}>
+            <span>Likelihood ↑</span>
+            <span>Impact →</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function RmRow({ lik, row, cls }: { lik: number; row: number[]; cls: string[] }) {
+  return (
+    <>
+      <span className="ax">{lik}</span>
+      {row.map((n, i) =>
+        n ? (
+          <Link
+            key={i}
+            className={`c ${cls[i]}`}
+            to={`/findings?likelihood=${lik}&impact=${i + 1}`}
+            style={{ textDecoration: "none" }}
+            title={`Likelihood ${lik}, impact ${i + 1}: ${n}`}
+          >
+            {n}
+          </Link>
+        ) : (
+          <span key={i} className={`c ${cls[i]}`} />
+        ),
+      )}
     </>
+  );
+}
+
+function bucket(n: number): string {
+  if (n <= 0) return "h0";
+  if (n === 1) return "h1";
+  if (n === 2) return "h2";
+  if (n <= 4) return "h3";
+  return "h4";
+}
+
+function OwaspCard({ findings, loading }: { findings: Finding[]; loading: boolean }) {
+  const years = findings.map((f) => parseOwasp(f.owasp)?.year).filter(Boolean);
+  const year: "2021" | "2025" = years.includes("2025") || years.length === 0 ? "2025" : "2021";
+  const cols = [...ENGINE_COLUMNS, "LLM"] as const;
+  const counts = new Map<string, number>();
+  for (const f of findings) {
+    const o = parseOwasp(f.owasp);
+    if (!o) continue;
+    const k1 = `${o.code}|${engineColumn(f.engine)}`;
+    counts.set(k1, (counts.get(k1) ?? 0) + 1);
+    if (f.llm_reviewed || f.llm) counts.set(`${o.code}|LLM`, (counts.get(`${o.code}|LLM`) ?? 0) + 1);
+  }
+  return (
+    <div className="card">
+      <div className="card-h">
+        <div>
+          <h2>OWASP Top 10:{year} coverage</h2>
+          <p className="sub">Findings per category and detection source</p>
+        </div>
+        <MoreLink to="/findings">Open findings</MoreLink>
+      </div>
+      {loading ? (
+        <Skeleton rows={3} />
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <div className="hm" style={{ gridTemplateColumns: "220px repeat(6, minmax(56px, 1fr))", minWidth: 620 }}>
+            <span />
+            {cols.map((c) => (
+              <span key={c} className="xs faint" style={{ textAlign: "center" }}>
+                {c}
+              </span>
+            ))}
+            {OWASP_TOP10[year].map(([code, name]) => (
+              <HmRow key={code} code={code} name={name} cols={cols} counts={counts} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HmRow({ code, name, cols, counts }: { code: string; name: string; cols: readonly string[]; counts: Map<string, number> }) {
+  return (
+    <>
+      <span className="sm" style={{ alignSelf: "center" }}>
+        {code} {name}
+      </span>
+      {cols.map((c) => {
+        const n = counts.get(`${code}|${c}`) ?? 0;
+        return n ? (
+          <Link
+            key={c}
+            className={`c ${bucket(n)}`}
+            style={{ textDecoration: "none" }}
+            to={c === "LLM" ? `/findings?owasp=${code}` : `/findings?owasp=${code}&engine=${c.toLowerCase()}`}
+            title={`${code} · ${c}: ${n}`}
+          >
+            {n}
+          </Link>
+        ) : (
+          <span key={c} className="c h0">
+            0
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+function TopCwes({ findings, loading }: { findings: Finding[]; loading: boolean }) {
+  const m = new Map<string, { n: number; name?: string }>();
+  for (const f of findings) {
+    if (!f.cwe) continue;
+    const e = m.get(f.cwe) ?? { n: 0, name: f.cwe_name ?? undefined };
+    e.n += 1;
+    m.set(f.cwe, e);
+  }
+  const top = [...m.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 6);
+  const max = top[0]?.[1].n ?? 1;
+  return (
+    <div className="card">
+      <div className="card-h">
+        <h2>Top CWEs</h2>
+      </div>
+      {loading ? (
+        <Skeleton />
+      ) : top.length === 0 ? (
+        <Empty title="No open findings">Nothing to rank in this scan.</Empty>
+      ) : (
+        <div className="stack" style={{ gap: 10 }}>
+          {top.map(([cwe, e]) => (
+            <div key={cwe}>
+              <div className="row between sm">
+                <span>
+                  <span className="mono">{cwe}</span> <span className="muted">{CWE_SHORT[cwe] ?? e.name ?? ""}</span>
+                </span>
+                <span className="mono">{e.n}</span>
+              </div>
+              <div className="bar" style={{ marginTop: 4 }}>
+                <i style={{ width: `${Math.round((e.n / max) * 100)}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const INVARIANTS: [string, string][] = [
+  ["I1", "Single transport module"],
+  ["I2", "Sanitised payloads only"],
+  ["I3", "Vault never logged or exported"],
+  ["I4", "Fail closed on privacy error"],
+  ["I5", "Deterministic pseudonyms per salt"],
+  ["I6", "No listed term in ledger payloads"],
+];
+
+function GuardCard({ health, privacy }: { health?: { invariants?: { id: string; passed: boolean; title?: string }[] }; privacy?: PrivacySummary }) {
+  const inv = health?.invariants;
+  return (
+    <div className="card">
+      <div className="card-h">
+        <h2>Privacy guard status</h2>
+        <MoreLink to="/privacy">Details</MoreLink>
+      </div>
+      {inv && inv.length ? (
+        INVARIANTS.map(([id, title]) => {
+          const r = inv.find((x) => x.id === id);
+          return (
+            <Guard key={id} id={id} result={r ? (r.passed ? "pass" : <span className="note-w">Fail</span>) : <span className="xs faint">not run</span>}>
+              {title}
+            </Guard>
+          );
+        })
+      ) : privacy ? (
+        <>
+          <Guard id="I6" result={privacy.zero_leak.passed ? "pass" : <span className="note-w">{privacy.zero_leak.checked ? "Fail" : "Not run"}</span>}>
+            No listed term in ledger payloads
+          </Guard>
+          <Guard id="" result={privacy.chain_ok ? "pass" : <span className="note-w">Broken</span>}>
+            Ledger hash chain intact
+          </Guard>
+          <Guard id="I4" result={<span className="xs faint">{fmtInt(privacy.blocked)} blocked</span>}>
+            Blocked payloads stayed local
+          </Guard>
+          <p className="xs faint" style={{ marginTop: 8 }}>
+            Checks for the latest scan. The full I1 to I6 suite result appears here when the server reports it.
+          </p>
+        </>
+      ) : (
+        <Empty title="No privacy checks yet">They appear after a completed scan.</Empty>
+      )}
+    </div>
+  );
+}
+
+export function ScansTable({
+  scans,
+  providers,
+  loading,
+  projects,
+}: {
+  scans: Scan[];
+  providers?: ProviderInfo[];
+  loading?: boolean;
+  projects?: Project[];
+}) {
+  const { projects: ctxProjects } = useCurrentProject();
+  const list = projects ?? ctxProjects;
+  return (
+    <div className="tbl-wrap">
+      <table className="tbl">
+        <thead>
+          <tr>
+            <th>Scan</th>
+            <th>Target</th>
+            <th>Level</th>
+            <th>Provider</th>
+            <th className="num">Findings</th>
+            <th className="num">Payloads</th>
+            <th>Status</th>
+            <th>Started</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr>
+              <td colSpan={8}>
+                <Skeleton />
+              </td>
+            </tr>
+          ) : (
+            scans.map((s) => {
+              const total = s.findings_total ?? Object.values(s.counts ?? {}).reduce((a, b) => a + b, 0);
+              const proj = list.find((p) => p.id === s.project_id);
+              return (
+                <tr key={s.id}>
+                  <td className="mono">
+                    <Link className="t-title" to={`/scans/${s.id}`} title={s.id}>
+                      {scanLabel(s.id)}
+                    </Link>
+                  </td>
+                  <td className="mono sm">{scanTarget(s, proj)}</td>
+                  <td>
+                    <LevelBadge level={s.privacy_level} />
+                  </td>
+                  <td>{providerName(s.provider, providers)}</td>
+                  <td className="num mono">{s.status === "completed" ? fmtInt(total) : "—"}</td>
+                  <td className="num mono">{fmtInt(scanPayloads(s))}</td>
+                  <td>
+                    <ScanStatusBadge status={s.status} error={s.error} />
+                  </td>
+                  <td className="sm muted">{fmtShort(s.started_at ?? s.created_at)}</td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+      {!loading && scans.length === 0 && <Empty title="No scans yet">Run a scan to see results here.</Empty>}
+    </div>
   );
 }
