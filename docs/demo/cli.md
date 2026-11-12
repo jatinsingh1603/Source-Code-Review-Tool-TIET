@@ -1,6 +1,6 @@
 # Terminal demo runbook
 
-One script, twelve steps, about ten minutes: [`scripts/demo-cli.sh`](../../scripts/demo-cli.sh). It runs the real CLI on a throw-away copy of the synthetic `fixtures/kavachbank` project and prints, after every step, one line saying what the step proves. A recorded run is in [`cli-transcript.md`](cli-transcript.md).
+One script, twelve steps. The mock run takes a few minutes of machine time (about one on an idle laptop); a run against the real model takes about ten, because every payload is a round trip, so start it before you need it or narrate over it: [`scripts/demo-cli.sh`](../../scripts/demo-cli.sh). It runs the real CLI on a throw-away copy of the synthetic `fixtures/kavachbank` project and prints, after every step, one line saying what the step proves. A recorded run is in [`cli-transcript.md`](cli-transcript.md).
 
 Audience is security people: say what was measured, and when something is "not measured yet", say so. Never claim more than [Known limits](../../README.md#known-limits) allows.
 
@@ -13,7 +13,8 @@ $ scripts/demo-cli.sh --auto --out /tmp/rehearsal      # full dry run, no pauses
 ```
 
 - The script never touches your project, ledger or vault: it copies the fixture (without its answer key) to a work directory, points `CODEKAVACH_HOME` there and gives the vault a random passphrase that lives in the script's process only.
-- A rehearsal that ends `0 failed` is the pass mark. `skipped` means a command is not in this build; the script says so and carries on.
+- A rehearsal that ends `12 ok, 0 skipped, 0 failed` is the pass mark. `skipped` would mean a command is not in this build; the script says so and carries on.
+- Verified: the mock run and the AgentRouter run (`gpt-5.6-sol`) both ended `12 ok, 0 failed`; no key appears in any output or file of either run.
 - Make the terminal wide (at least 110 columns) and use a dark theme. The script uses colour only when stdout is a terminal; `NO_COLOR=1` turns it off.
 - Network off is fine for the mock run (the PDF and HTML load nothing remotely).
 - `doctor` shows two expected `WARN` lines on a laptop: `privacy:ner-model` (name recognition is an optional extra: install spaCy and `en_core_web_sm`) and `secrets:keyring` (headless or WSL machines have no secure keyring; the passphrase mode is used). Neither blocks a scan. Missing analysis engines (`opengrep`, `bandit`, `eslint`) show as `SKIP` when not selected, and as `WARN` with an install hint when the project selects them.
@@ -59,7 +60,7 @@ When the variable is set and the `agentrouter` provider exists in this build, th
 |---------|-------|------------|
 | `skipped: not in this build yet` on a step | The command belongs to a feature that has not landed on the checkout | `git pull && uv sync --all-extras`; otherwise say nothing and move on. |
 | Step 5 ends `FAILED` with exit code other than 0 or 1 | A pipeline error; the log path is printed | Open the log. For a stage that failed closed (`privacy-prepare`), the scan continues without it and reports from deterministic evidence; the summary says so. |
-| `error[consent_required]` or egress refused on a remote provider | No consent for a remote provider | The script passes `--accept-egress` for remote providers. Confirm the key variable is set in this shell and the provider is enabled. |
+| Step 4 says the provider is not configured or has no credential | The key variable is not set in this shell | `providers list` should show `agentrouter` with the key set; the script passes `--accept-egress` itself. |
 | Remote provider call fails (network, quota, 401/403) | The venue's network, or the key | Rerun with `--provider mock`; the story is identical, and the ledger still shows what would have been sent. Never paste a key into the terminal output. |
 | `pdf` missing from the report step | Pango libraries missing | `apt install libpango-1.0-0 libpangoft2-1.0-0` (or `brew install pango`); the HTML report is complete without it. |
 | `uv: command not found` | PATH | `export PATH=$HOME/.local/bin:$PATH`, or set `CODEKAVACH_BIN` to a codekavach executable. |
