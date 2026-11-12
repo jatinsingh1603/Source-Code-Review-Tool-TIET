@@ -46,6 +46,7 @@ import ipaddress
 import random
 import re
 import socket
+import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -379,8 +380,13 @@ class Transport:
         clock: Callable[[], float] = time.monotonic,
         sleep: Callable[[float], None] = time.sleep,
         rng: random.Random | None = None,
+        lock: "threading.Lock | None" = None,
     ) -> None:
         self._settings = settings
+        # Serialises the ticket check and redemption when several threads send; the session
+        # passes its own lock so that guard evaluation and redemption never interleave.
+        self._lock = lock if lock is not None else threading.Lock()
+        self._client_lock = threading.Lock()
         self._policy = _Policy(guard, settings, resolver, clock)
         self._clock = clock
         self._sleep = sleep
@@ -417,8 +423,9 @@ class Transport:
         self, request: OutboundRequest, ticket: EgressTicket, *, payload_text: str | None = None
     ) -> tuple[OutboundResponse, Delivery]:
         """Like ``send``, also returning what the caller needs for its ledger entry."""
-        provider = self._policy.verify(request, ticket, payload_text)
-        self._policy.redeem(ticket)
+        with self._lock:
+            provider = self._policy.verify(request, ticket, payload_text)
+            self._policy.redeem(ticket)
         started = self._clock()
         try:
             response = self._perform(request, provider)
@@ -507,6 +514,10 @@ class Transport:
     # ------------------------------------------------------------------ internals
 
     def _client(self, provider: ProviderSettings) -> httpx.Client:
+        with self._client_lock:
+            return self._client_locked(provider)
+
+    def _client_locked(self, provider: ProviderSettings) -> httpx.Client:
         proxied = provider.effective_trust_tier is not TrustTier.LOCAL
         client = self._clients.get(proxied)
         if client is not None:

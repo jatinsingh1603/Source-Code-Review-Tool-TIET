@@ -15,12 +15,16 @@ other candidates go on. ``llm.enabled = false`` publishes an empty list and open
 """
 
 import importlib
+import os
+import queue
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import AbstractContextManager
 from typing import cast
 
 from pydantic import BaseModel
 
+from codekavach.config.models.llm import ProviderSettings
 from codekavach.core.log import get_logger
 from codekavach.core.models.payload import SanitisedPayload
 from codekavach.core.models.verdict import CandidateVerdict
@@ -36,8 +40,9 @@ from codekavach.core.pipeline.stage import StageCategory
 from codekavach.core.store.base import ArtefactTypeError
 from codekavach.llm.cache import CACHE_DIR, ResponseCache
 from codekavach.llm.lifecycle import ManagedSession
+from codekavach.llm.providers.base import OfflineProvider
 from codekavach.llm.providers.factory import build_provider
-from codekavach.llm.review import Reviewer
+from codekavach.llm.review import Outcome, ReviewCounts, Reviewer
 from codekavach.llm.tasks import build_task
 from codekavach.privacy.egress.session import EgressSession
 
@@ -80,6 +85,26 @@ def _read[Model: BaseModel](ctx: RunContext, key: str, model: type[Model]) -> li
         raise
 
 
+CONCURRENCY_VARIABLE = "CODEKAVACH_LLM_CONCURRENCY"
+MAX_CONCURRENCY = 16
+
+
+def concurrency(provider: ProviderSettings, *, offline: bool) -> int:
+    """How many candidates are reviewed at once (E22-03).
+
+    ``CODEKAVACH_LLM_CONCURRENCY`` wins, then the provider's ``options.concurrency``; the default
+    is one. Offline providers always use one worker, so a mock or replay run stays sequential.
+    """
+    if offline:
+        return 1
+    raw = os.environ.get(CONCURRENCY_VARIABLE) or provider.options.get("concurrency", 1)
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        value = 1
+    return max(1, min(MAX_CONCURRENCY, value))
+
+
 class LlmReviewStage:
     """Asks the selected provider for a triage verdict on every payload."""
 
@@ -113,41 +138,70 @@ class LlmReviewStage:
                 max_retries=llm.max_retries,
             )
             session = cast("EgressSession", managed)
-            reviewer = Reviewer(
-                provider,
-                session,
-                tasks=frozenset(task.value for task in ctx.config.llm.tasks) | {"triage"},
-                consensus=ctx.config.llm.consensus,
-                wait_seconds=float(ctx.config.llm.timeout_seconds),
-                build_task=build_task,
-            )
-            for done, payload in enumerate(payloads, start=1):
+
+            def make_reviewer() -> Reviewer:
+                return Reviewer(
+                    provider,
+                    session,
+                    tasks=frozenset(task.value for task in llm.tasks) | {"triage"},
+                    consensus=llm.consensus,
+                    wait_seconds=float(llm.timeout_seconds),
+                    build_task=build_task,
+                )
+
+            # One reviewer per worker: a reviewer's tasks keep per-call state (the injection
+            # report of the last render), so reviewers are never shared between threads.
+            workers = concurrency(provider_settings, offline=isinstance(provider, OfflineProvider))
+            reviewers: queue.SimpleQueue[Reviewer] = queue.SimpleQueue()
+            pool = [make_reviewer() for _ in range(workers)]
+            for each in pool:
+                reviewers.put(each)
+
+            def review(payload: SanitisedPayload) -> Outcome:
                 ctx.check_cancelled()
-                with guard_item(ctx, str(payload.candidate_id), ITEM_EXCEPTION):
-                    item = str(payload.candidate_id)
-                    outcome = reviewer.review(payload)
-                    if outcome.verdict is not None:
-                        verdicts.append(
-                            CandidateVerdict(
-                                candidate_id=payload.candidate_id, verdict=outcome.verdict
-                            )
-                        )
-                    elif outcome.failure == "blocked":
-                        ctx.fail_item(item, EGRESS_BLOCKED)
-                    elif outcome.failure == "failed":
-                        ctx.fail_item(item, LLM_REQUEST_FAILED)
-                    elif outcome.failure == "invalid":
-                        ctx.fail_item(item, LLM_OUTPUT_INVALID)
-                if done % 25 == 0:
-                    ctx.emit_progress(done, len(payloads), "candidates")
+                reviewer = reviewers.get()
+                try:
+                    return reviewer.review(payload)
+                finally:
+                    reviewers.put(reviewer)
+
+            with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="llm-review") as pool_:
+                futures = [pool_.submit(review, payload) for payload in payloads]
+                try:
+                    for done, (payload, future) in enumerate(
+                        zip(payloads, futures, strict=True), start=1
+                    ):
+                        item = str(payload.candidate_id)
+                        with guard_item(ctx, item, ITEM_EXCEPTION):
+                            outcome = future.result()
+                            if outcome.verdict is not None:
+                                verdicts.append(
+                                    CandidateVerdict(
+                                        candidate_id=payload.candidate_id, verdict=outcome.verdict
+                                    )
+                                )
+                            elif outcome.failure == "blocked":
+                                ctx.fail_item(item, EGRESS_BLOCKED)
+                            elif outcome.failure == "failed":
+                                ctx.fail_item(item, LLM_REQUEST_FAILED)
+                            elif outcome.failure == "invalid":
+                                ctx.fail_item(item, LLM_OUTPUT_INVALID)
+                        ctx.emit_progress(done, len(payloads), "candidates")
+                finally:
+                    for future in futures:
+                        future.cancel()
+            counts = ReviewCounts()
+            for each in pool:
+                for name, value in each.counts.as_dict().items():
+                    setattr(counts, name, getattr(counts, name) + value)
+            prompts = {name: value for each in pool for name, value in each.prompts.items()}
         ctx.emit_progress(len(payloads), len(payloads), "candidates")
         _log.info(
             "llm_review_done",
             provider=provider.id,
-            prompts={
-                name: f"{ver}:{digest[:12]}" for name, (ver, digest) in reviewer.prompts.items()
-            },
-            **reviewer.counts.as_dict(),
+            prompts={name: f"{ver}:{digest[:12]}" for name, (ver, digest) in prompts.items()},
+            workers=workers,
+            **counts.as_dict(),
             usage=managed.budget.summary(),
             retries=managed.retries,
         )

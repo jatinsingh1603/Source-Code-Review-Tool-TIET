@@ -130,6 +130,7 @@ PRESETS: Mapping[str, ProviderPreset] = MappingProxyType(
                     "header:user-agent": "codex_cli_rs/0.50.0",
                     "header:originator": "codex_cli_rs",
                     "reasoning_effort": "low",
+                    "concurrency": 6,
                 }
             ),
             description="AgentRouter gateway (OpenAI Responses API)",

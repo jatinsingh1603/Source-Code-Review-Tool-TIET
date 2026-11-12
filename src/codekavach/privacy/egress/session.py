@@ -17,12 +17,20 @@ For every request the session does, in this order:
    failure as ``failed``, both pointing back at the ``sent`` entry.
 
 Only ``codekavach.privacy.egress.transport`` opens a connection (I1); this module never imports a
-network library. Any exception here is the caller's to turn into a failed candidate (I4), and no
-exception message carries payload text.
+network library.
+
+**Concurrent dispatch.** ``dispatch`` may be called from several threads (the review stage sends
+several candidates at once). The guard evaluation, every ledger append and the transport's ticket
+check and redemption run under one lock, so the ledger's hash chain stays a single sequence and
+each ticket is redeemed exactly once; only the HTTP exchange itself runs outside the lock.
+
+Any exception here is the caller's to turn into a failed candidate (I4), and no exception message
+carries payload text.
 """
 
 import contextlib
 import hashlib
+import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
@@ -123,6 +131,7 @@ class EgressSession:
         self._ledger: LedgerWriter | None = None
         self._transport: Transport | DryRunTransport | None = None
         self._registry: ScannerRegistry | None = None
+        self._lock = threading.Lock()
 
     def __enter__(self) -> Self:
         state = self._state
@@ -144,7 +153,10 @@ class EgressSession:
                 self._transport = DryRunTransport(self._guard, self._settings)
             else:
                 transport = Transport(
-                    self._guard, self._settings, http_transport=self._http_transport
+                    self._guard,
+                    self._settings,
+                    http_transport=self._http_transport,
+                    lock=self._lock,
                 )
                 self._stack.callback(transport.close)
                 self._transport = transport
@@ -196,15 +208,16 @@ class EgressSession:
         interval = 60.0 / max(self._settings.privacy.egress.rate_per_minute, 1)
         waited = 0.0
         while True:
-            decision = guard.evaluate(
-                request.body,
-                meta,
-                settings=self._settings,
-                consent=self._consent,
-                vault=self._vault,
-                payload_text=text.expose(),
-                static_text=static_text,
-            )
+            with self._lock:
+                decision = guard.evaluate(
+                    request.body,
+                    meta,
+                    settings=self._settings,
+                    consent=self._consent,
+                    vault=self._vault,
+                    payload_text=text.expose(),
+                    static_text=static_text,
+                )
             only_rate = bool(decision.hits) and all(
                 hit.block_code == "rate_budget" for hit in decision.hits
             )
@@ -235,12 +248,15 @@ class EgressSession:
 
         if not decision.allowed or decision.ticket is None:
             code = decision.block_code or "scanner_error"
-            entry = ledger.append(draft(EgressOutcome.BLOCKED, block_code=code), text)
+            with self._lock:
+                entry = ledger.append(draft(EgressOutcome.BLOCKED, block_code=code), text)
             return Dispatch("blocked", block_code=code, ledger_seq=entry.seq)
         ticket = decision.ticket
         if self._dry_run:
-            return self._dry(transport, guard, request, ticket, respond, ledger, draft, payload)
-        sent = ledger.append(draft(EgressOutcome.SENT), text)
+            with self._lock:
+                return self._dry(transport, guard, request, ticket, respond, ledger, draft, payload)
+        with self._lock:
+            sent = ledger.append(draft(EgressOutcome.SENT), text)
         try:
             if respond is None:
                 if not isinstance(transport, Transport):
@@ -248,23 +264,28 @@ class EgressSession:
                 response = transport.send(request, ticket, payload_text=text.expose())
                 status, body, headers = response.status, response.body, response.headers
             else:
-                guard.redeem(
-                    ticket, payload_hash=meta.payload_hash, provider=provider, level=meta.level
-                )
+                with self._lock:
+                    guard.redeem(
+                        ticket, payload_hash=meta.payload_hash, provider=provider, level=meta.level
+                    )
                 answer = respond()
                 status, body, headers = answer.status, answer.body, {}
         except EgressBlocked as blocked:
-            self._follow_up(ledger, draft, EgressOutcome.FAILED, sent.seq, 0)
+            with self._lock:
+                self._follow_up(ledger, draft, EgressOutcome.FAILED, sent.seq, 0)
             return Dispatch(
                 "failed", block_code=blocked.block_code, error_kind="refused", ledger_seq=sent.seq
             )
         except TransportError as error:
-            self._follow_up(ledger, draft, EgressOutcome.FAILED, sent.seq, 0)
+            with self._lock:
+                self._follow_up(ledger, draft, EgressOutcome.FAILED, sent.seq, 0)
             return Dispatch("failed", error_kind=error.kind, ledger_seq=sent.seq)
         except Exception:  # noqa: BLE001 - an offline provider may raise anything; text is dropped
-            self._follow_up(ledger, draft, EgressOutcome.FAILED, sent.seq, 0)
+            with self._lock:
+                self._follow_up(ledger, draft, EgressOutcome.FAILED, sent.seq, 0)
             return Dispatch("failed", error_kind="provider_error", ledger_seq=sent.seq)
-        self._follow_up(ledger, draft, EgressOutcome.COMPLETED, sent.seq, len(body))
+        with self._lock:
+            self._follow_up(ledger, draft, EgressOutcome.COMPLETED, sent.seq, len(body))
         return Dispatch(
             "answered", status=status, body=body, headers=dict(headers), ledger_seq=sent.seq
         )

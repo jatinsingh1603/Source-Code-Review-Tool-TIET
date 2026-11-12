@@ -359,6 +359,11 @@ def test_the_header_allow_list_is_closed_and_an_extra_header_is_refused() -> Non
         "content-type",
         "accept",
         "user-agent",
+        "originator",
+        "x-goog-api-key",
+        "x-amz-date",
+        "x-amz-content-sha256",
+        "x-amz-security-token",
     } == ALLOWED_HEADERS
     guard = EgressGuard(ScannerRegistry([Clean()]))
     for name in ("x-repository", "x-machine-id", "x-forwarded-for", "cookie", "x-trace"):

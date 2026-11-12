@@ -22,6 +22,7 @@ already answer locally.
 """
 
 import random
+import threading
 import time
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
@@ -84,6 +85,7 @@ class ManagedSession:
         self._max_retries = max(0, max_retries)
         self._sleep = sleep
         self._rng = rng if rng is not None else random.Random()  # noqa: S311 - jitter only
+        self._lock = threading.Lock()  # dispatch may run on several threads at once
         self._samples: Counter[tuple[str, str]] = Counter()
         self.retries = 0
 
@@ -114,8 +116,9 @@ class ManagedSession:
 
     def _key(self, request: PreparedRequest, task: str, payload: SanitisedPayload) -> CacheKey:
         sample_key = (task, payload.payload_hash)
-        sample = self._samples[sample_key]
-        self._samples[sample_key] += 1
+        with self._lock:
+            sample = self._samples[sample_key]
+            self._samples[sample_key] += 1
         return CacheKey(
             kind=self._kind,
             host=urlsplit(request.url).hostname or "",
@@ -177,7 +180,8 @@ class ManagedSession:
                 wait_seconds=wait_seconds,
             )
             if result.kind in {"answered", "failed"} and not offline:
-                self._budget.record(usage_of(result.body), request_bytes=len(request.body))
+                with self._lock:
+                    self._budget.record(usage_of(result.body), request_bytes=len(request.body))
             if attempt >= self._max_retries or not self._transient(result):
                 break
             delay = self._backoff(attempt, result)
