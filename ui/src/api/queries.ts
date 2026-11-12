@@ -58,7 +58,9 @@ export const useOptional = <T,>(key: string, fn: () => Promise<T | null>, enable
 
 export const useVersion = () =>
   useQuery({ queryKey: qk.version, queryFn: endpoints.version, staleTime: Infinity, retry: false });
-export const useStats = () => useQuery({ queryKey: qk.stats, queryFn: endpoints.stats });
+/** Dashboard figures; with a project, scoped to it (the invalidations on `qk.stats` match both). */
+export const useStats = (projectId?: string) =>
+  useQuery({ queryKey: projectId ? [...qk.stats, projectId] : qk.stats, queryFn: () => endpoints.stats(projectId) });
 export const useProjects = () => useQuery({ queryKey: qk.projects, queryFn: endpoints.projects });
 export const useProject = (id: string | undefined) =>
   useQuery({ queryKey: qk.project(id ?? ""), queryFn: () => endpoints.project(id!), enabled: !!id });

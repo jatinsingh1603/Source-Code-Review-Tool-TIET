@@ -121,7 +121,7 @@ export const endpoints = {
   // meta
   health: () => api.get<Health>("/health"),
   version: () => api.get<VersionInfo>("/version"),
-  stats: () => api.get<Stats>("/stats"),
+  stats: (projectId?: string) => api.get<Stats>("/stats", projectId ? { project_id: projectId } : undefined),
 
   // projects
   projects: async () => unwrapList<Project>(await api.get("/projects"), "projects"),

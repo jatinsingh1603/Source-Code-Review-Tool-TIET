@@ -48,7 +48,7 @@ export default function OverviewPage() {
   const findingsQ = useFindings(last?.id);
   const privacyQ = usePrivacy(last?.status === "completed" ? last.id : undefined);
   const prevPrivacy = usePrivacy(prev?.id).data;
-  const stats = useStats().data;
+  const stats = useStats(current?.id).data;
   const providers = useProviders().data;
   const invariants = useOptional("invariants", endpoints.invariants).data;
 
