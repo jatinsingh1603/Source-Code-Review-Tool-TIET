@@ -185,9 +185,16 @@ export default function PrivacyPage() {
   const cols: Column<LedgerEntry>[] = [
     { id: "seq", header: "#", rowHeader: true, cell: (e) => <span className="font-mono text-sm text-fg">{e.seq}</span>, sortValue: (e) => e.seq },
     { id: "ts", header: "Time", cell: (e) => <span className="whitespace-nowrap text-sm text-fg-muted">{fmtDateTime(e.timestamp)}</span>, sortValue: (e) => e.timestamp },
-    { id: "candidate", header: "Candidate", cell: (e) => <span className="font-mono text-xs text-fg">{e.candidate_id}</span> },
+    {
+      id: "candidate",
+      header: "Candidate",
+      cell: (e) => (
+        <span className="block max-w-[11rem] truncate font-mono text-xs text-fg" title={e.candidate_id}>
+          {e.candidate_id}
+        </span>
+      ),
+    },
     { id: "level", header: "Level", cell: (e) => <PrivacyLevelBadge level={e.level} /> },
-    { id: "provider", header: "Provider", cell: (e) => <span className="whitespace-nowrap text-sm text-fg-muted">{e.provider} · {e.model}</span> },
     { id: "tokens", header: "Tokens", cell: (e) => <span className="tabular-nums text-sm text-fg">{fmtNum(e.tokens)}</span>, sortValue: (e) => e.tokens },
     {
       id: "hash",
@@ -269,7 +276,10 @@ export default function PrivacyPage() {
             {tab === "ledger" && (
               <>
                 <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
-                  <p className="text-sm text-fg-muted">Select an entry to compare the payload with the original code.</p>
+                  <p className="text-sm text-fg-muted">
+                    Select an entry to compare the payload with the original code.
+                    {ledger.data?.[0] ? ` All entries: ${ledger.data[0].provider} · ${ledger.data[0].model}.` : ""}
+                  </p>
                   <div className="flex gap-1.5" role="group" aria-label="Outcome filter">
                     {(["all", "sent", "blocked"] as const).map((o) => (
                       <Button key={o} size="sm" variant={outcome === o ? "secondary" : "ghost"} aria-pressed={outcome === o} onClick={() => setOutcome(o)}>
@@ -286,6 +296,7 @@ export default function PrivacyPage() {
                   <ErrorState error={ledger.error} />
                 ) : (
                   <DataTable
+                    className="max-h-[38rem] overflow-y-auto"
                     columns={cols}
                     rows={entries}
                     rowKey={(e) => String(e.seq)}

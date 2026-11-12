@@ -42,7 +42,7 @@ import {
 } from "@/components/ui";
 import { useSession } from "@/app/session";
 import { cvssRating, parseVector } from "@/lib/cvss";
-import { cn, fmtConfidence, fmtDateTime, fmtRelative, STATUS_LABEL } from "@/lib/format";
+import { cn, confidenceFraction, fmtConfidence, fmtDateTime, fmtRelative, frameworkLabel, STATUS_LABEL } from "@/lib/format";
 
 const stepStyle: Record<string, { icon: typeof Target; tone: string; label: string }> = {
   source: { icon: CircleDot, tone: "bg-info-soft text-info ring-info/40", label: "Source" },
@@ -275,7 +275,7 @@ export default function FindingDetailPage() {
           <div className="mt-5 space-y-6" role="tabpanel">
             {tab === "evidence" && (
               <>
-                {f.description && <p className="text-base text-fg-muted">{f.description}</p>}
+                {f.description && f.description !== f.title && <p className="text-base text-fg-muted">{f.description}</p>}
                 <Card>
                   <CardHeader title="Code evidence" description="Secrets in evidence are masked on the server before they reach the browser" />
                   <CardBody>
@@ -319,7 +319,7 @@ export default function FindingDetailPage() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-fg-muted">Confidence</span>
                           <div className="h-2 w-32 overflow-hidden rounded-full bg-surface-3" aria-hidden>
-                            <div className="h-full rounded-full bg-primary" style={{ width: fmtConfidence(f.llm.confidence) }} />
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.round((confidenceFraction(f.llm.confidence) ?? 0) * 100)}%` }} />
                           </div>
                           <span className="text-sm font-semibold tabular-nums text-fg">{fmtConfidence(f.llm.confidence)}</span>
                         </div>
@@ -390,7 +390,7 @@ export default function FindingDetailPage() {
                       <div className="flex flex-wrap gap-2">
                         {f.compliance!.map((c) => (
                           <span key={`${c.framework}-${c.clause}`} className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2.5 py-1 text-xs" title={c.title}>
-                            <span className="font-semibold text-fg">{c.framework}</span>
+                            <span className="font-semibold text-fg">{frameworkLabel(c.framework)}</span>
                             <span className="text-fg-muted">{c.clause}</span>
                           </span>
                         ))}

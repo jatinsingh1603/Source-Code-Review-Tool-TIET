@@ -59,6 +59,43 @@ export function fmtConfidence(c: number | string | undefined | null): string {
   return `${Math.round(c <= 1 ? c * 100 : c)}%`;
 }
 
+const CONFIDENCE_WORDS: Record<string, number> = {
+  certain: 1,
+  "very high": 0.95,
+  high: 0.85,
+  medium: 0.6,
+  low: 0.35,
+  "very low": 0.15,
+};
+
+/** Confidence as a 0..1 fraction, whether given as a number or a word. */
+export function confidenceFraction(c: number | string | undefined | null): number | null {
+  if (c === undefined || c === null) return null;
+  if (typeof c === "number") return c <= 1 ? c : c / 100;
+  return CONFIDENCE_WORDS[c.toLowerCase()] ?? null;
+}
+
+const FRAMEWORK_LABEL: Record<string, string> = {
+  "pci-dss": "PCI DSS 4.0",
+  iso27001: "ISO/IEC 27001:2022",
+  "nist-ssdf": "NIST SSDF",
+  "nist-800-53": "NIST SP 800-53",
+  rbi: "RBI Cyber Security Framework",
+  "rbi-itgrca": "RBI IT Governance",
+  "cert-in": "CERT-In",
+  dpdp: "DPDP Act 2023",
+  "dpdp-act": "DPDP Act 2023",
+  gdpr: "GDPR",
+  "owasp-asvs": "OWASP ASVS",
+  sebi: "SEBI CSCRF",
+  hipaa: "HIPAA",
+  soc2: "SOC 2",
+};
+
+export function frameworkLabel(f: string): string {
+  return FRAMEWORK_LABEL[f.toLowerCase()] ?? f;
+}
+
 export const SEVERITY_LABEL: Record<Severity, string> = {
   critical: "Critical",
   high: "High",
