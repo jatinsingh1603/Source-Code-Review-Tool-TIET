@@ -1,0 +1,440 @@
+"""The scan job: materialise the source, run the real pipeline, store the results.
+
+Owning epic: E32.
+
+``execute_scan`` runs in a worker thread. It copies or extracts the project's source into the
+scan's workspace, loads the configuration the way ``codekavach scan`` does (privacy level,
+provider and model as overrides), calls ``run_scan`` with a cancellation token and an event bus,
+and translates the pipeline's token-only events into the dashboard's stream. Afterwards it stores
+the findings, computes the privacy summary from the ledger and renders the reports. The server
+never talks to a model itself: when a remote provider is chosen and ``send`` is set, the request
+carries the operator's consent into the pipeline, whose egress guard decides what leaves (I1, I4).
+"""
+
+import json
+import shutil
+import traceback
+from dataclasses import dataclass
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Final
+
+from codekavach.core.log import get_logger
+from codekavach.server.db.models import FindingRow, Project, ScanRow, utcnow
+from codekavach.server.events import EventLog
+from codekavach.server.jobs.workspace import (
+    SAMPLE_IGNORE,
+    ArchiveLimits,
+    IntakeError,
+    assert_safe_clone_url,
+    clone_git,
+    copy_tree,
+    extract_archive,
+)
+from codekavach.server.results import (
+    SEVERITY_ORDER,
+    ScanPaths,
+    ScanResults,
+    finding_columns,
+    read_findings,
+    scan_env,
+)
+
+if TYPE_CHECKING:
+    from codekavach.core.pipeline.cancel import CancellationToken
+    from codekavach.core.pipeline.events import Event
+    from codekavach.server.state import ServerState
+
+_log = get_logger("codekavach.server.jobs.scan")
+
+LOCAL_PROVIDERS: Final = frozenset({"mock", "replay"})
+STAGE_LABELS: Final = {
+    "intake": "Preparing source",
+    "ingest": "Ingesting files",
+    "parse": "Parsing code",
+    "analyse-engines": "Running external engines",
+    "analyse-rules": "Matching security rules",
+    "analyse-taint": "Tracing tainted data flows",
+    "aggregate": "Aggregating candidates",
+    "privacy-prepare": "Sanitising payloads (redaction, pseudonymisation, slicing)",
+    "llm-review": "LLM review through the egress guard",
+    "restore": "Restoring verdicts locally",
+    "rate": "Rating risk and compliance",
+    "privacy-check": "Verifying the egress ledger",
+    "report": "Rendering reports",
+}
+TERMS_FILE: Final = Path("ground-truth") / "terms.txt"
+POLICY_FILE: Final = "codekavach.policy.toml"
+EAGER_FORMATS: Final = ("html", "json", "sarif")
+
+
+class ScanCancelled(Exception):  # noqa: N818 - a control-flow signal, not an error
+    """The scan was cancelled by a user."""
+
+
+@dataclass
+class ScanJob:
+    """What a worker needs to run one scan."""
+
+    scan_id: str
+    state: "ServerState"
+    token: "CancellationToken"
+
+
+class _Progress:
+    """Turns pipeline events into dashboard events and progress figures."""
+
+    def __init__(self, job: ScanJob, log: EventLog) -> None:
+        self.job = job
+        self.log = log
+        self.total = 10
+        self.done = 0
+        self.findings_hint = 0
+
+    def _update(self, *, stage: str | None = None, progress: int | None = None) -> None:
+        with self.job.state.db.transaction() as session:
+            row = session.get(ScanRow, self.job.scan_id)
+            if row is None:
+                return
+            if stage is not None:
+                row.stage = stage
+            if progress is not None:
+                row.progress = max(row.progress, min(progress, 100))
+
+    def percent(self) -> int:
+        """Pipeline progress mapped to 5..90 percent."""
+        return 5 + int(85 * self.done / max(self.total, 1))
+
+    def handle(self, event: "Event") -> None:
+        """Map one pipeline event (only token fields are read)."""
+        data = event.to_dict()
+        kind = data.get("event")
+        stage = str(data.get("stage", ""))
+        label = STAGE_LABELS.get(stage, stage)
+        if kind == "plan.resolved":
+            stages = data.get("stages")
+            self.total = len(stages) if isinstance(stages, list) else self.total
+        elif kind == "stage.started":
+            self.log.append("stage", {"name": stage, "status": "running", "label": label})
+            self._update(stage=stage)
+        elif kind == "stage.progress":
+            current, total = data.get("current"), data.get("total")
+            unit = data.get("unit", "items")
+            message = f"{label}: {current}/{total} {unit}" if total else f"{label}: {current}"
+            self.log.append("progress", {"percent": self.percent(), "message": message})
+        elif kind in {"stage.finished", "stage.failed", "stage.skipped"}:
+            self.done += 1
+            status = {"stage.finished": "completed", "stage.failed": "failed"}.get(
+                str(kind), "skipped"
+            )
+            self.log.append("stage", {"name": stage, "status": status, "label": label})
+            if kind == "stage.failed":
+                self.log.append(
+                    "log",
+                    {"level": "warning", "message": f"stage {stage} failed "
+                     f"({data.get('error_code', 'error')}); the scan continued without it"},
+                )  # fmt: skip
+            elif kind == "stage.finished":
+                took = data.get("duration_ms")
+                self.log.append("log", {"level": "info", "message": f"{label} done in {took} ms"})
+            percent = self.percent()
+            self.log.append("progress", {"percent": percent, "message": f"{label} {status}"})
+            self._update(progress=percent)
+        elif kind == "item.failed":
+            self.log.append(
+                "log",
+                {"level": "warning", "message": f"{stage}: item {data.get('item_id')} failed "
+                 f"({data.get('error_code')})"},
+            )  # fmt: skip
+        elif kind == "warning":
+            self.log.append("log", {"level": "warning", "message": str(data.get("code"))})
+
+
+def _materialise(project: Project, paths: ScanPaths, job: ScanJob) -> None:
+    config = job.state.config
+    source = paths.source
+    if source.exists():
+        shutil.rmtree(source)
+    if project.source_type == "sample":
+        sample = config.sample_dir
+        if sample is None or not sample.is_dir():
+            raise IntakeError("sample_missing", "the KavachBank sample is not installed")
+        copy_tree(sample, source, ignore=SAMPLE_IGNORE)
+    elif project.source_type == "path":
+        if not config.allow_local_paths:
+            raise IntakeError("path_source_disabled", "local path sources are disabled")
+        copy_tree(Path(project.source_path or ""), source)
+    elif project.source_type == "upload":
+        archive = config.uploads_dir / project.id / (project.upload_name or "")
+        if not project.upload_name or not archive.is_file():
+            raise IntakeError("upload_missing", "no archive has been uploaded for this project")
+        limits = ArchiveLimits(
+            max_entries=config.max_archive_entries,
+            max_bytes=config.max_extracted_bytes,
+            max_ratio=config.max_compression_ratio,
+        )
+        extract_archive(archive, source, limits)
+    elif project.source_type == "git":
+        url = assert_safe_clone_url(project.source_url or "", config.git_allowed_hosts)
+        clone_git(url, source, ref=project.source_ref)
+    else:
+        raise IntakeError("source_type_unknown", f"unknown source type {project.source_type}")
+    policy = config.data_dir / POLICY_FILE
+    if policy.is_file() and not (source / POLICY_FILE).exists():
+        shutil.copyfile(policy, source / POLICY_FILE)
+    # An empty .git marks the project root, as the demo does, so the configuration loader does
+    # not climb into the server's data directory.
+    (source / ".git").mkdir(exist_ok=True)
+
+
+def _overrides(row: ScanRow) -> dict[str, Any]:
+    llm: dict[str, Any] = {}
+    if row.provider in {"", "none"}:
+        llm["enabled"] = False
+    else:
+        llm["enabled"] = True
+        llm["default_provider"] = row.provider
+        if row.model:
+            llm["model"] = row.model
+    overrides: dict[str, Any] = {"privacy": {"level": row.privacy_level}, "llm": llm}
+    if row.rules:
+        overrides["rules"] = {"paths": [str(item) for item in row.rules]}
+    return overrides
+
+
+def _terms_file(project: Project, job: ScanJob, paths: ScanPaths) -> Path | None:
+    if project.source_type == "sample" and job.state.config.sample_dir is not None:
+        candidate = job.state.config.sample_dir / TERMS_FILE
+        return candidate if candidate.is_file() else None
+    candidate = paths.source / ".codekavach-terms.txt"
+    return candidate if candidate.is_file() else None
+
+
+def _finish(job: ScanJob, status: str, *, error: str | None = None) -> None:
+    with job.state.db.transaction() as session:
+        row = session.get(ScanRow, job.scan_id)
+        if row is not None:
+            row.status = status
+            row.finished_at = utcnow()
+            row.error = error
+            if status == "completed":
+                row.progress = 100
+                row.stage = "done"
+    job.state.hub.log(job.scan_id).append("done", {"status": status, "error": error})
+
+
+def execute_scan(job: ScanJob) -> None:
+    """Run the scan ``job.scan_id`` end to end; every failure ends in a ``failed`` status."""
+    state = job.state
+    log = state.hub.log(job.scan_id)
+    with state.db.transaction() as session:
+        row = session.get(ScanRow, job.scan_id)
+        if row is None:
+            return
+        if row.status == "cancelled" or job.token.is_cancelled:
+            return
+        project = session.get(Project, row.project_id)
+        if project is None:
+            row.status, row.error = "failed", "project deleted"
+            return
+        row.status, row.started_at, row.stage, row.progress = "running", utcnow(), "intake", 1
+        session.expunge(project)
+        scan = {
+            "level": row.privacy_level,
+            "provider": row.provider,
+            "model": row.model,
+            "send": row.send,
+            "overrides": _overrides(row),
+            "workspace": row.workspace,
+        }
+    paths = ScanPaths(Path(str(scan["workspace"])))
+    progress = _Progress(job, log)
+    try:
+        log.append(
+            "stage", {"name": "intake", "status": "running", "label": STAGE_LABELS["intake"]}
+        )
+        log.append("log", {"level": "info", "message": f"Source type: {project.source_type}"})
+        _materialise(project, paths, job)
+        log.append("stage", {"name": "intake", "status": "completed", "label": "Source ready"})
+        if job.token.is_cancelled:
+            raise ScanCancelled
+        outcome, settings = _run_pipeline(job, scan, paths, progress)
+        if outcome.result.status.value == "cancelled" or job.token.is_cancelled:
+            raise ScanCancelled
+        if outcome.result.status.value == "failed":
+            failed = ", ".join(outcome.result.failed_stages()) or "unknown"
+            raise RuntimeError(f"the pipeline failed in stage {failed}")
+        _store(job, outcome, settings, project, paths, log)
+        _finish(job, "completed")
+        _log.info("server_scan_completed", scan_id=job.scan_id)
+    except ScanCancelled:
+        log.append("log", {"level": "warning", "message": "Scan cancelled by user"})
+        _finish(job, "cancelled")
+    except IntakeError as error:
+        log.append("log", {"level": "error", "message": f"{error.code}: {error.message}"})
+        _finish(job, "failed", error=f"{error.code}: {error.message}")
+    except Exception as error:  # noqa: BLE001 - a failed job is reported, never a crashed worker
+        _log.error(
+            "server_scan_failed",
+            scan_id=job.scan_id,
+            error_type=type(error).__name__,
+            where=traceback.extract_tb(error.__traceback__)[-1].name
+            if error.__traceback__
+            else None,
+        )
+        message = _safe_message(error)
+        log.append("log", {"level": "error", "message": message})
+        _finish(job, "failed", error=message)
+
+
+def _safe_message(error: Exception) -> str:
+    """A short error text that names the error and, for our own errors, their message."""
+    name = type(error).__name__
+    module = type(error).__module__
+    if module.startswith("codekavach") or isinstance(error, RuntimeError | ValueError):
+        text = str(error).splitlines()[0] if str(error) else ""
+        return f"{name}: {text[:300]}" if text else name
+    return name
+
+
+def _run_pipeline(
+    job: ScanJob, scan: dict[str, Any], paths: ScanPaths, progress: _Progress
+) -> tuple[Any, Any]:
+    from codekavach.config import load_settings  # noqa: PLC0415
+    from codekavach.core.pipeline.context import ConsentDecision  # noqa: PLC0415
+    from codekavach.core.pipeline.events import InMemoryEventBus  # noqa: PLC0415
+    from codekavach.core.pipeline.runner import run_scan  # noqa: PLC0415
+    from codekavach.core.pipeline.salt import ScanSalt  # noqa: PLC0415
+
+    state = job.state
+    overrides = scan["overrides"]
+    paths.workspace.mkdir(parents=True, exist_ok=True)
+    paths.settings_json.write_text(json.dumps(overrides), encoding="utf-8")
+    env = scan_env(state.config.home_dir, state.passphrase_env)
+    loaded = load_settings(target=paths.source, env=env, cli_overrides=overrides)
+    llm = loaded.settings.llm
+    consent = None
+    remote = False
+    if llm.enabled:
+        provider = llm.providers.get(scan["provider"])
+        if provider is None:
+            raise ValueError(f"provider {scan['provider']} is not configured on this server")
+        remote = bool(provider.is_remote)
+        model = scan["model"] or llm.model or provider.model
+        with state.db.transaction() as session:
+            row = session.get(ScanRow, job.scan_id)
+            if row is not None and model and not row.model:
+                row.model = str(model)
+        if remote and scan["send"]:
+            consent = ConsentDecision(granted=True, source="flag")
+    where = "remote" if remote else "local"
+    progress.log.append(
+        "log",
+        {"level": "info", "message": f"Privacy level {scan['level']}; provider "
+         f"{scan['provider']} ({where}); payloads {'sent' if scan['send'] else 'recorded only'}"},
+    )  # fmt: skip
+    bus = InMemoryEventBus()
+    unsubscribe = bus.subscribe(progress.handle)
+    try:
+        outcome = run_scan(
+            loaded,
+            str(paths.source),
+            salt=ScanSalt.generate(),
+            bus=bus,
+            cancellation=job.token,
+            consent=consent,
+            persist=False,
+            no_send=not scan["send"],
+        )
+    finally:
+        unsubscribe()
+    return outcome, loaded.settings
+
+
+def _store(  # noqa: PLR0917 - the parts of one result
+    job: ScanJob,
+    outcome: Any,
+    settings: Any,
+    project: Project,
+    paths: ScanPaths,
+    log: EventLog,
+) -> None:
+    from codekavach.server.reports import available_formats, render  # noqa: PLC0415
+
+    state = job.state
+    core_id = str(outcome.scan.id)
+    paths.scan_json.write_text(outcome.scan.model_dump_json(), encoding="utf-8")
+    findings = read_findings(paths, core_id)
+    summary = outcome.scan.summary
+    counts = dict.fromkeys(SEVERITY_ORDER, 0)
+    for finding in findings:
+        counts[str(finding.severity.value)] = counts.get(str(finding.severity.value), 0) + 1
+    with state.db.transaction() as session:
+        row = session.get(ScanRow, job.scan_id)
+        if row is None:
+            return
+        row.core_scan_id = core_id
+        row.state_dir = str(paths.state_dir)
+        row.counts = counts
+        row.languages = [str(getattr(item, "value", item)) for item in outcome.scan.languages]
+        row.files = int(getattr(summary, "files_scanned", 0) or 0) if summary else 0
+        row.lines = int(getattr(summary, "lines_scanned", 0) or 0) if summary else 0
+        for finding in findings:
+            columns = finding_columns(finding)
+            session.merge(FindingRow(scan_id=job.scan_id, **columns))
+    for finding in findings:
+        log.append(
+            "finding",
+            {
+                "id": str(finding.id),
+                "severity": str(finding.severity.value),
+                "title": finding.title,
+            },
+        )
+    log.append(
+        "stage", {"name": "privacy-check", "status": "running",
+                  "label": STAGE_LABELS["privacy-check"]},
+    )  # fmt: skip
+    results = ScanResults(paths, core_id, settings)
+    privacy = results.privacy_summary(
+        level=str(outcome.scan.privacy_level.value)
+        if outcome.scan.privacy_level
+        else str(settings.privacy.level.value),
+        provider=None if not settings.llm.enabled else settings.llm.default_provider,
+        model=None,
+        terms_file=_terms_file(project, job, paths),
+    )
+    with state.db.transaction() as session:
+        row = session.get(ScanRow, job.scan_id)
+        if row is not None:
+            row.privacy = privacy.to_json()
+            row.progress = 92
+            row.stage = "report"
+    log.append(
+        "stage", {"name": "privacy-check", "status": "completed", "label": "Ledger verified"}
+    )
+    log.append(
+        "log",
+        {"level": "info" if privacy.chain_ok else "error",
+         "message": f"Ledger chain {'intact' if privacy.chain_ok else 'BROKEN'}; "
+         f"{privacy.payloads} payloads, {privacy.blocked} blocked; zero-leak "
+         f"{'passed' if privacy.zero_leak.get('passed') else 'not passed'}"},
+    )  # fmt: skip
+    log.append("stage", {"name": "report", "status": "running", "label": STAGE_LABELS["report"]})
+    formats = [fmt for fmt in EAGER_FORMATS if fmt in available_formats(settings)]
+    for fmt in formats:
+        try:
+            render(
+                fmt,
+                scan_json=paths.scan_json,
+                state_dir=paths.state_dir,
+                findings=findings,
+                settings=job.state.report_settings(settings),
+                out_dir=paths.reports,
+                zero_leak=privacy.zero_leak,
+                stem="report",
+            )
+        except Exception as error:  # noqa: BLE001 - a report can be rendered later on demand
+            log.append("log", {"level": "warning", "message": f"{fmt} report not rendered: "
+                               f"{type(error).__name__}"})  # fmt: skip
+    log.append("stage", {"name": "report", "status": "completed", "label": "Reports ready"})
+    log.append("progress", {"percent": 100, "message": f"{len(findings)} findings"})
