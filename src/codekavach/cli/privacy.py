@@ -34,6 +34,7 @@ from codekavach.cli.errors import PrivacyBlockError, UsageError
 from codekavach.cli.ledger import ledger_app
 from codekavach.cli.onboarding import build_notice, notice_facts, notice_lines
 from codekavach.cli.output import TABLE_BOX, get_output, simple_table, to_jsonable
+from codekavach.cli.privacy_policy import explain_command, score_command
 
 if TYPE_CHECKING:
     from codekavach.config import Settings
@@ -538,3 +539,7 @@ def terms_suggest_command(
         )
 
     get_output(ctx).result(data, human=render)
+
+
+privacy_app.command("explain")(explain_command)
+privacy_app.command("score")(score_command)

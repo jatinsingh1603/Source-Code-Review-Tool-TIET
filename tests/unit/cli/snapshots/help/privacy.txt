@@ -42,6 +42,8 @@
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
 │ notice   Show the privacy notice for the effective settings; it is not marked as shown.          │
 │ inspect  Show original code next to the exact payload prepared for the LLM.                      │
+│ explain  Explain the effective privacy level of a file or candidate, axis by axis.               │
+│ score    Show the privacy score of a stored scan with every component and its kind.              │
 │ ledger   Audit the egress ledger.                                                                │
 │ consent  Show, grant and revoke consent for sending payloads to remote providers.                │
 │ terms    Domain terms: suggestions to review before anything is redacted.                        │
