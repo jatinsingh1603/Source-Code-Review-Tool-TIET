@@ -141,6 +141,17 @@ def _materialise(ctx: RunContext, source: Source, target: str, limits: IngestLim
     return source.materialise(target, limits=limits, into=into)
 
 
+def _read_from_target(ctx: RunContext, target: str) -> None:
+    """Make later stages read a local directory target, not the project root above it.
+
+    ``scan sub/dir`` inside a project whose configuration lives higher up discovers the files of
+    ``sub/dir`` only, so the engines' read-only view and the parsers must start there too.
+    """
+    path = Path(target)
+    if path.is_dir() and path.resolve() != ctx.project_root.resolve():
+        ctx.scan_root.set(path.resolve())
+
+
 class IngestStage:
     """Discovers, filters and classifies the files of the scan target."""
 
@@ -170,6 +181,7 @@ class IngestStage:
             with _scratch(ctx) as into:
                 root = source.materialise(target, limits=limits, into=into)
                 files = discover(root, ctx.config, on_candidate=checkpoint, report=report)
+            _read_from_target(ctx, target)
         report.submodules_not_scanned = unfetched_submodules(root)
         if report.submodules_not_scanned:
             ctx.warn("submodules_not_scanned")

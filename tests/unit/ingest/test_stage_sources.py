@@ -37,7 +37,7 @@ PROJECT = {
 
 
 def run_stage(
-    target: str, state_dir: Path, **options: Any
+    target: str, state_dir: Path, project_root: Path | None = None, **options: Any
 ) -> tuple[InMemoryArtefactStore, CollectingBus, RunContext]:
     store = InMemoryArtefactStore()
     payload: dict[str, Any] = {"target": target}
@@ -46,7 +46,7 @@ def run_stage(
         payload["options"] = mapping
     store.put(keys.TARGET, payload)
     bus = CollectingBus()
-    ctx = make_run_context(store=store, bus=bus, state_dir=state_dir)
+    ctx = make_run_context(store=store, bus=bus, state_dir=state_dir, project_root=project_root)
     IngestStage().run(ctx.for_stage("ingest"))
     return store, bus, ctx
 
@@ -92,9 +92,16 @@ def test_keeping_the_working_root_leaves_it_in_place(tmp_path: Path) -> None:
 
 def test_a_local_directory_leaves_the_source_root_at_the_project(tmp_path: Path) -> None:
     root = make_tree(PROJECT)
-    _, _, ctx = run_stage(str(root), tmp_path / "state")
+    _, _, ctx = run_stage(str(root), tmp_path / "state", project_root=root)
     assert ctx.scan_root.path is None
     assert ctx.source_root == ctx.project_root
+
+
+def test_a_local_subdirectory_becomes_the_source_root_below_its_project(tmp_path: Path) -> None:
+    root = make_tree(PROJECT)
+    store, _, ctx = run_stage(str(root / "web"), tmp_path / "state", project_root=root)
+    assert paths_of(store) == ["index.js", "package.json"]
+    assert ctx.source_root == (root / "web").resolve()
 
 
 def test_a_hostile_archive_fails_the_stage_and_leaves_no_working_root(tmp_path: Path) -> None:
