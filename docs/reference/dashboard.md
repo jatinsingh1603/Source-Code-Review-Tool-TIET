@@ -20,8 +20,8 @@ Navigation is filtered by role for presentation; the server enforces every permi
 | Role | Sees |
 |---|---|
 | admin | Everything, including Users and editing settings and policy |
-| auditor | Projects, scans, findings and triage, the full Privacy Centre including original code, reports, GitHub sync |
-| developer | Scans, findings and triage, Privacy Centre metadata and payloads, reports |
+| auditor | Everything a developer sees, plus original code next to each payload in the Privacy Centre |
+| developer | Projects, scans, findings and triage, the Privacy Centre ledger without original code, reports, GitHub sync |
 | viewer | Overview, projects, scans, findings (read only) and reports |
 
 A user who opens a page their role does not allow sees an "Access denied" page naming the role required.

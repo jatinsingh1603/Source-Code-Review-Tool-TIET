@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Check, Copy, FileCheck2, Fingerprint, Link2, Link2Off, ListTree, Lock, ScrollText, ShieldCheck, Tags } from "lucide-react";
+import { ApiError } from "@/api/client";
 import { useLedger, useLedgerEntry, usePrivacy, useVerifyLedger } from "@/api/queries";
 import type { LedgerEntry, LedgerVerifyResult } from "@/api/types";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -114,6 +115,11 @@ function LedgerDrawer({ scanId, entry, onClose }: { scanId: string; entry: Ledge
     >
       {q.isLoading ? (
         <Skeleton className="h-80" />
+      ) : q.error instanceof ApiError && q.error.status === 403 ? (
+        <Callout tone="info" icon={<Lock className="h-4 w-4" />} title="Original code and payload need the Auditor role">
+          Reading a ledger entry next to the original code is restricted to auditors and administrators, and every read is audited. The entry's hashes and
+          outcome are listed in the ledger table.
+        </Callout>
       ) : q.error ? (
         <ErrorState error={q.error} title="This entry could not be loaded" />
       ) : q.data ? (
