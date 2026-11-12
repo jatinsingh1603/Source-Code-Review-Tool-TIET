@@ -31,7 +31,7 @@ permissions:
 
 concurrency:
   group: container-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false  # main moves constantly; let a build finish so an image is always published
 
 env:
   IMAGE: ghcr.io/jatinsingh1603/codekavach
