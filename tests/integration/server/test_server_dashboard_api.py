@@ -8,6 +8,7 @@ settings) and check the role of every new route.
 """
 
 import json
+import sys
 import time
 from collections.abc import Iterator
 from typing import Any
@@ -514,3 +515,259 @@ def test_providers_wire_keys_and_usage(
     assert client.get(f"{API}/providers/usage", params={"month": "May"},
                       headers=admin).status_code == 400  # fmt: skip
     assert client.get(f"{API}/providers/usage", headers=users["viewer"]).status_code == 403
+
+
+# --- evaluation -----------------------------------------------------------------------------
+
+
+def test_evaluation_reads_the_latest_results(
+    server: tuple[TestClient, Any], users: dict[str, dict[str, str]]
+) -> None:
+    client, state = server
+    empty = client.get(f"{API}/evaluation", headers=users["viewer"]).json()
+    assert empty["available"] is False and empty["benchmarks"] == []
+    root = state.config.data_dir / "evaluation" / "manual"
+    (root / "detection").mkdir(parents=True)
+    (root / "leakage").mkdir(parents=True)
+    detection = {
+        "kind": "detection",
+        "dataset": {"name": "kavachbank"},
+        "arms": [{"arm": "mock@L3", "level": "L3", "provider": "mock", "findings": 9,
+                  "overall": {"precision": 0.9, "recall": 0.8, "f1": 0.85,
+                              "f1_ci": [0.7, 0.95], "tp": 8, "fp": 1, "fn": 2}}],
+    }  # fmt: skip
+    leakage = {
+        "kind": "leakage",
+        "dataset": {"name": "kavachbank"},
+        "levels": {"L3": {"canary": {"passed": True}, "identifier": {"subword_rate": 0.1},
+                          "leakage_score": 12.0}},
+        "frontier": [{"level": "L3", "privacy_score": 88.0, "leakage_score": 12.0, "f1": 0.85}],
+        "zero_leak": True,
+    }  # fmt: skip
+    (root / "detection" / "results.json").write_text(json.dumps(detection), encoding="utf-8")
+    (root / "leakage" / "results.json").write_text(json.dumps(leakage), encoding="utf-8")
+    body = client.get(f"{API}/evaluation", headers=users["viewer"]).json()
+    assert body["available"] is True and body["sample"] is False
+    assert body["benchmarks"][0]["f1"] == 0.85
+    assert body["benchmarks"][0]["f1_ci"] == [0.7, 0.95]
+    assert body["frontier"][0]["level"] == "L3"
+    canary = next(row for row in body["attacks"] if row["experiment"] == "canary")
+    assert canary["by_level"]["L3"] is True
+    assert body["zero_leak"] is True
+
+
+def test_evaluation_run_starts_a_background_job(
+    server: tuple[TestClient, Any],
+    admin: dict[str, str],
+    users: dict[str, dict[str, str]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from codekavach.server.routers import evaluation  # noqa: PLC0415
+
+    client = server[0]
+
+    def fake_command(kind: str, dataset: Any, levels: list[str], out: Any, limit: Any) -> list[str]:
+        script = (
+            "import json, pathlib, sys; out = pathlib.Path(sys.argv[1]); "
+            "out.mkdir(parents=True, exist_ok=True); "
+            "(out / 'results.json').write_text(json.dumps({'kind': sys.argv[2], 'arms': []}))"
+        )
+        return [sys.executable, "-c", script, str(out), kind]
+
+    monkeypatch.setattr(evaluation, "_command", fake_command)
+    denied = client.post(f"{API}/evaluation/run", json={}, headers=users["auditor"])
+    assert denied.status_code == 403
+    started = client.post(f"{API}/evaluation/run", json={"levels": ["L3"]}, headers=admin)
+    assert started.status_code == 202, started.text
+    job = started.json()
+    assert job["provider"] == "mock" and job["levels"] == ["L3"]
+    for thread in list(evaluation._running.values()):
+        thread.join(timeout=60)
+    done = client.get(f"{API}/evaluation/runs/{job['id']}", headers=admin).json()
+    assert done["status"] == "completed", done
+    assert [step["status"] for step in done["steps"]] == ["completed", "completed"]
+    latest = client.get(f"{API}/evaluation", headers=admin).json()
+    assert latest["job"]["id"] == job["id"]
+    assert client.get(f"{API}/evaluation/runs/eval_none", headers=admin).status_code == 404
+
+
+# --- administration -------------------------------------------------------------------------
+
+
+def test_role_change_and_revoke(
+    server: tuple[TestClient, Any], admin: dict[str, str], users: dict[str, dict[str, str]]
+) -> None:
+    client, state = server
+    body = {"username": "temp2", "password": "temp-password", "role": "viewer"}
+    user = client.post(f"{API}/users", json=body, headers=admin).json()
+    headers = _login(client, "temp2", "temp-password")
+    changed = client.put(f"{API}/users/{user['id']}/role", json={"role": "developer"},
+                         headers=admin)  # fmt: skip
+    assert changed.status_code == 200 and changed.json()["role"] == "developer"
+    assert client.get(f"{API}/auth/me", headers=headers).status_code == 401
+    assert client.put(f"{API}/users/{user['id']}/role", json={"role": "root"},
+                      headers=admin).status_code == 422  # fmt: skip
+    assert client.put(f"{API}/users/{user['id']}/role", json={"role": "admin"},
+                      headers=users["developer"]).status_code == 403  # fmt: skip
+    headers = _login(client, "temp2", "temp-password")
+    revoked = client.post(f"{API}/users/{user['id']}/revoke", headers=admin)
+    assert revoked.status_code == 200 and revoked.json()["active"] is False
+    assert client.get(f"{API}/auth/me", headers=headers).status_code == 401
+    me = client.get(f"{API}/auth/me", headers=admin).json()
+    assert client.post(f"{API}/users/{me['id']}/revoke", headers=admin).status_code == 409
+    audit.flush(state.db)
+    log = client.get(f"{API}/audit", params={"action": "user."}, headers=admin).json()
+    assert {"user.role", "user.revoke"} <= {event["action"] for event in log["events"]}
+
+
+def test_personal_tokens(
+    server: tuple[TestClient, Any], admin: dict[str, str], users: dict[str, dict[str, str]]
+) -> None:
+    client = server[0]
+    developer = users["developer"]
+    created = client.post(f"{API}/me/tokens", json={"name": "ci", "expires_in_days": 30},
+                          headers=developer)  # fmt: skip
+    assert created.status_code == 201, created.text
+    token = created.json()
+    assert token["token"].startswith("ck_pat_")
+    assert token["prefix"] == token["token"][: len(token["prefix"])]
+    bearer = {"Authorization": f"Bearer {token['token']}"}
+    assert client.get(f"{API}/auth/me", headers=bearer).json()["username"] == "developer2"
+    assert client.get(f"{API}/users", headers=bearer).status_code == 403
+    listed = client.get(f"{API}/me/tokens", headers=developer).json()
+    assert [item["id"] for item in listed] == [token["id"]]
+    assert "token" not in listed[0] and "token_hash" not in listed[0]
+    assert listed[0]["last_used_at"] is not None
+    every = client.get(f"{API}/tokens", headers=admin).json()
+    assert any(item["id"] == token["id"] and item["username"] == "developer2" for item in every)
+    assert client.get(f"{API}/tokens", headers=developer).status_code == 403
+    assert client.delete(f"{API}/me/tokens/{token['id']}", headers=users["viewer"]).status_code \
+        == 404  # fmt: skip
+    assert client.delete(f"{API}/me/tokens/{token['id']}", headers=developer).status_code == 200
+    assert client.get(f"{API}/auth/me", headers=bearer).status_code == 401
+    second = client.post(f"{API}/me/tokens", json={"name": "other"}, headers=developer).json()
+    assert client.delete(f"{API}/tokens/{second['id']}", headers=admin).status_code == 200
+    gone = {"Authorization": f"Bearer {second['token']}"}
+    assert client.get(f"{API}/auth/me", headers=gone).status_code == 401
+
+
+def test_audit_paging_and_filters(
+    server: tuple[TestClient, Any], admin: dict[str, str], users: dict[str, dict[str, str]]
+) -> None:
+    client, state = server
+    audit.flush(state.db)
+    page = client.get(f"{API}/audit", params={"limit": 2}, headers=users["auditor"]).json()
+    assert page["chain_intact"] is True
+    assert len(page["events"]) == 2 and page["total"] > 2
+    nxt = client.get(f"{API}/audit", params={"limit": 2, "offset": 2},
+                     headers=users["auditor"]).json()  # fmt: skip
+    assert nxt["events"][0]["id"] < page["events"][-1]["id"]
+    denied = client.get(f"{API}/audit", params={"outcome": "denied"}, headers=admin).json()
+    assert all(event["outcome"] == "denied" for event in denied["events"])
+    assert client.get(f"{API}/audit", headers=users["developer"]).status_code == 403
+
+
+def test_vault_and_retention_status(
+    server: tuple[TestClient, Any],
+    admin: dict[str, str],
+    users: dict[str, dict[str, str]],
+    scan: dict[str, Any],
+) -> None:
+    client = server[0]
+    body = client.get(f"{API}/vault", headers=admin).json()
+    assert body["count"] >= 1
+    row = next(item for item in body["vaults"] if item["scan_id"] == scan["id"])
+    assert row["records"] > 0
+    assert set(row) <= {
+        "scan_id",
+        "project_id",
+        "format_version",
+        "key_source",
+        "records",
+        "created_at",
+        "last_write_at",
+        "rotated_at",
+        "rotations",
+        "size_bytes",
+    }
+    text = json.dumps(body)
+    assert "fn_" not in text and "var_" not in text
+    assert client.get(f"{API}/vault", headers=users["auditor"]).status_code == 403
+    kept = client.get(f"{API}/retention", headers=admin).json()
+    assert kept["scans"] >= 1 and kept["scans_bytes"] > 0
+    assert kept["automatic_purge"] is False
+
+
+def test_not_implemented_features_answer_501(
+    server: tuple[TestClient, Any], admin: dict[str, str]
+) -> None:
+    client = server[0]
+    for url in (f"{API}/orgs", f"{API}/auth/sso"):
+        response = client.get(url, headers=admin)
+        assert response.status_code == 501
+        assert response.json()["error"]["code"] == "not_implemented"
+
+
+# --- the caller's settings ------------------------------------------------------------------
+
+
+def test_profile_preferences_and_notifications(
+    server: tuple[TestClient, Any], users: dict[str, dict[str, str]], scan: dict[str, Any]
+) -> None:
+    client = server[0]
+    viewer = users["viewer"]
+    updated = client.patch(f"{API}/me", json={"display_name": "Vee Ewer", "email": "v@example.org"},
+                           headers=viewer)  # fmt: skip
+    assert updated.status_code == 200
+    assert updated.json()["display_name"] == "Vee Ewer"
+    prefs = client.patch(f"{API}/me/preferences", json={"density": "compact",
+                         "time_zone": "Australia/Sydney"}, headers=viewer).json()  # fmt: skip
+    assert prefs["density"] == "compact" and prefs["theme"] == "system"
+    assert client.get(f"{API}/me", headers=viewer).json()["preferences"]["density"] == "compact"
+    bad = client.patch(f"{API}/me/preferences", json={"time_zone": "Mars/Base"}, headers=viewer)
+    assert bad.status_code == 400
+    assert client.patch(f"{API}/me/preferences", json={"colour": "red"},
+                        headers=viewer).status_code == 422  # fmt: skip
+    notes = client.patch(f"{API}/me/notifications",
+                         json={"events": {"scan_completed": {"email": True}}},
+                         headers=viewer).json()  # fmt: skip
+    assert notes["events"]["scan_completed"] == {"in_app": True, "email": True}
+    assert "stored only" in notes["delivery"]
+    assert client.patch(f"{API}/me/notifications", json={"events": {"nope": {"email": True}}},
+                        headers=viewer).status_code == 400  # fmt: skip
+    feed = client.get(f"{API}/notifications", headers=viewer).json()
+    assert any(item["event"] == "scan_completed" for item in feed["items"])
+    assert feed["unread"] >= 1
+    client.post(f"{API}/notifications/read", headers=viewer)
+    assert client.get(f"{API}/notifications", headers=viewer).json()["unread"] == 0
+
+
+def test_openapi_lists_the_new_routes(server: tuple[TestClient, Any]) -> None:
+    paths = server[0].get("/api/openapi.json").json()["paths"]
+    for route in (
+        "/api/v1/findings",
+        "/api/v1/views",
+        "/api/v1/engines",
+        "/api/v1/projects/{project_id}/inventory",
+        "/api/v1/system/health",
+        "/api/v1/privacy/invariants",
+        "/api/v1/privacy/budgets",
+        "/api/v1/policy/explain",
+        "/api/v1/policy/validate",
+        "/api/v1/policy/templates",
+        "/api/v1/providers/usage",
+        "/api/v1/evaluation",
+        "/api/v1/evaluation/run",
+        "/api/v1/users/{user_id}/role",
+        "/api/v1/users/{user_id}/revoke",
+        "/api/v1/tokens",
+        "/api/v1/me/tokens",
+        "/api/v1/me/preferences",
+        "/api/v1/me/notifications",
+        "/api/v1/notifications",
+        "/api/v1/vault",
+        "/api/v1/retention",
+        "/api/v1/scans/{scan_id}/ledger-verification",
+        "/api/v1/scans/{scan_id}/privacy/attestation.{fmt}",
+    ):
+        assert route in paths, route

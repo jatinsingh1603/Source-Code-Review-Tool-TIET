@@ -421,15 +421,35 @@ def provider_test(
 
 
 @router.get("/audit", dependencies=[Depends(require(Permission.audit_read))])
-def audit_log(session: SessionDep, limit: int = 200) -> dict[str, Any]:
-    """The newest audit events and whether the hash chain is intact."""
+def audit_log(
+    session: SessionDep,
+    limit: int = 200,
+    offset: int = 0,
+    actor: str | None = None,
+    action: str | None = None,
+    outcome: str | None = None,
+    resource: str | None = None,
+) -> dict[str, Any]:
+    """Audit events, newest first, filtered and paged, and whether the hash chain is intact."""
     intact, checked = audit.verify_audit_chain(session)
-    rows = session.scalars(
-        select(AuditEvent).order_by(AuditEvent.id.desc()).limit(max(1, min(limit, 1000)))
-    )
+    query = select(AuditEvent)
+    if actor:
+        query = query.where(AuditEvent.actor == actor)
+    if action:
+        query = query.where(AuditEvent.action.startswith(action))
+    if outcome:
+        query = query.where(AuditEvent.outcome == outcome)
+    if resource:
+        query = query.where(AuditEvent.resource.contains(resource))
+    total = session.scalar(select(func.count()).select_from(query.subquery())) or 0
+    size = max(1, min(limit, 1000))
+    rows = session.scalars(query.order_by(AuditEvent.id.desc()).offset(max(0, offset)).limit(size))
     return {
         "chain_intact": intact,
         "checked": checked,
+        "total": total,
+        "offset": max(0, offset),
+        "limit": size,
         "events": [
             {
                 "id": row.id,

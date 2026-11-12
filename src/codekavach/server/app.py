@@ -44,8 +44,11 @@ h1{font-size:1.6rem}</style></head><body>
 
 def _api_router() -> APIRouter:
     from codekavach.server.routers import (  # noqa: PLC0415
+        admin,
         auth,
+        evaluation,
         findings,
+        me,
         platform,
         privacy,
         projects,
@@ -54,7 +57,8 @@ def _api_router() -> APIRouter:
     )
 
     router = APIRouter(prefix=API_PREFIX)
-    for module in (system, platform, privacy, auth, projects, scans, findings):
+    modules = (system, platform, privacy, evaluation, auth, admin, me, projects, scans, findings)
+    for module in modules:
         router.include_router(module.router)
     return router
 
