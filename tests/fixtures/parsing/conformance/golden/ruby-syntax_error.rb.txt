@@ -1,0 +1,14 @@
+identifiers:
+  syntax_error.rb.txt:1:5 'ok'
+  syntax_error.rb.txt:1:8 'a'
+  syntax_error.rb.txt:2:3 'a'
+  syntax_error.rb.txt:5:5 'bad'
+  syntax_error.rb.txt:5:9 'a'
+  syntax_error.rb.txt:6:3 'a'
+  syntax_error.rb.txt:7:1 'end'
+  syntax_error.rb.txt:9:5 'later'
+  syntax_error.rb.txt:9:11 'b'
+  syntax_error.rb.txt:10:3 'b'
+strings:
+comments:
+error_count: 2

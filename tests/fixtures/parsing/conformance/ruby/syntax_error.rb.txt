@@ -1,0 +1,11 @@
+def ok(a)
+  a
+end
+
+def bad(a
+  a +
+end
+
+def later(b)
+  b
+end

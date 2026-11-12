@@ -1,0 +1,28 @@
+def total(count)
+  sum = 0
+  count.times do |index|
+    sum += index
+  end
+  [1, 2, 3].each { |value| sum += value }
+  begin
+    sum /= count
+  rescue ZeroDivisionError => error
+    sum = 0
+  end
+  sum
+end
+
+class Counter
+  @@instances = 0
+
+  def initialize
+    @@instances += 1
+    @value = 0
+  end
+
+  def bump(by = 1)
+    @value += by
+  end
+end
+
+$counter = Counter.new

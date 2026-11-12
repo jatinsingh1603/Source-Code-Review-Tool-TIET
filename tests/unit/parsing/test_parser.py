@@ -44,14 +44,6 @@ def test_parse_raises_parse_unavailable_for_an_unpinned_language() -> None:
         parse("a.yaml", Language.YAML, "a: 1\n")
 
 
-def test_parse_without_a_registered_spec_extracts_nothing() -> None:
-    """Ruby has a pinned grammar (parses fine) but no registered LanguageSpec yet."""
-    result = parse("a.rb", Language.RUBY, "package main\n")
-    assert result.identifiers() == ()
-    assert result.string_literals() == ()
-    assert result.comments() == ()
-
-
 def test_parse_with_a_registered_spec_extracts_identifiers_strings_and_comments() -> None:
     result = parse("a.py", Language.PYTHON, "x = 'hello'\n# comment\n")
     identifiers = result.identifiers()

@@ -33,7 +33,7 @@ from tree_sitter import Node
 
 from codekavach.core.models import DataClassification, KavachModel, Language, Location
 from codekavach.parsing.models import ParsedFile
-from codekavach.parsing.spec import LanguageSpec
+from codekavach.parsing.spec import REGISTRY, LanguageSpec
 
 FunctionKind = Literal["function", "method"]
 DefinitionKind = Literal["function", "method", "class"]
@@ -357,6 +357,70 @@ def _go_functions(root: Node) -> list[_Raw]:
     return found
 
 
+_BODY_TYPES: Final = frozenset(
+    {
+        "block",
+        "compound_statement",
+        "body_statement",
+        "function_body",
+        "statements",
+        "declaration_list",
+        "field_declaration_list",
+        "class_body",
+        "arrow_expression_clause",
+        "enum_body",
+    }
+)
+
+
+def _body_of(node: Node) -> Node | None:
+    body = node.child_by_field_name("body")
+    if body is not None:
+        return body
+    return next((c for c in node.named_children if c.type in _BODY_TYPES), None)
+
+
+def _table_functions(root: Node, spec: LanguageSpec) -> list[_Raw]:
+    """Functions, methods and types of a table-driven language (Kotlin, PHP, C#, Ruby, C, C++)."""
+    definitions = getattr(spec, "definition_finders", None)
+    if definitions is None:
+        return []
+    types, functions = definitions()
+    found: list[_Raw] = []
+    stack: list[tuple[Node, str, bool]] = [(root, "", False)]
+    while stack:
+        node, prefix, in_class = stack.pop()
+        qualified, child_in_class = prefix, in_class
+        finder = types.get(node.type) or functions.get(node.type)
+        if finder is not None:
+            names = finder(node)
+            name_node = names[0] if names else None
+            name = _text(name_node)
+            body = _body_of(node)
+            if name:
+                qualified = _qualify(prefix, name)
+            if name_node is not None and name and body is not None:
+                is_type = node.type in types
+                found.append(
+                    _Raw(
+                        name=name,
+                        qualified=qualified,
+                        kind="class" if is_type else ("method" if in_class else "function"),
+                        name_start=name_node.start_byte,
+                        header_start=node.start_byte,
+                        header_end=_header_end(body),
+                        # ``end``, ``;`` and similar closers belong to the body, so the
+                        # function always ends with its body.
+                        body=(body.start_byte, node.end_byte),
+                        full=(node.start_byte, node.end_byte),
+                        decorators=[],
+                    )
+                )
+            child_in_class = node.type in types
+        stack.extend((child, qualified, child_in_class) for child in reversed(node.named_children))
+    return found
+
+
 @dataclass(frozen=True, slots=True)
 class Definition:
     """A named function, method or class with byte offsets (used by the call graph)."""
@@ -367,6 +431,18 @@ class Definition:
     name_start: int
     full_start: int
     full_end: int
+
+
+_TABLE_LANGUAGES: Final = frozenset(
+    {
+        Language.KOTLIN,
+        Language.PHP,
+        Language.CSHARP,
+        Language.RUBY,
+        Language.C,
+        Language.CPP,
+    }
+)
 
 
 def _raws_of(parsed: ParsedFile) -> list[_Raw]:
@@ -381,6 +457,8 @@ def _raws_of(parsed: ParsedFile) -> list[_Raw]:
         raws = _java_functions(root)
     elif parsed.language is Language.GO:
         raws = _go_functions(root)
+    elif parsed.language in _TABLE_LANGUAGES:
+        raws = _table_functions(root, REGISTRY.get(parsed.language))
     else:
         return []
     raws.sort(key=lambda raw: (raw.full[0], -raw.full[1]))

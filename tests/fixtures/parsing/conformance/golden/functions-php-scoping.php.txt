@@ -1,0 +1,8 @@
+function 'top' ('top')
+  header 2:1-2:43
+  body   3:1-17:2
+  full   2:1-17:2
+method 'Loggable.log' ('log')
+  header 23:5-23:34
+  body   24:5-26:6
+  full   23:5-26:6

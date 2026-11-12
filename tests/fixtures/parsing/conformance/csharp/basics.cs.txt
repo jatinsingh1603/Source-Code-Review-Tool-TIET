@@ -1,0 +1,53 @@
+using System;
+using System.Data.SqlClient;
+using Alias = System.Text.StringBuilder;
+
+namespace Bank.Web
+{
+    public class Repo : Base, IRepo
+    {
+        private readonly SqlConnection _conn;
+        public int Limit { get; set; }
+        const int Max = 3;
+
+        public Repo(SqlConnection conn)
+        {
+            _conn = conn;
+        }
+
+        public string Find(string id, int n = 3)
+        {
+            var q = "SELECT * FROM t WHERE id = '" + id + "'";
+            var cmd = new SqlCommand(q, _conn);
+            foreach (var x in items)
+            {
+                Console.WriteLine(x);
+            }
+            Func<int, int> f = a => a + Limit;
+            using (var r = cmd.ExecuteReader())
+            {
+            }
+            if (o is Account acc)
+            {
+                return acc.Name;
+            }
+            try
+            {
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+            return this.Name;
+        }
+    }
+
+    public interface IRepo
+    {
+        void M(int x);
+    }
+
+    public enum Level { Low, High }
+
+    public record Person(string Name, int Age);
+}

@@ -1,0 +1,7 @@
+package broken
+
+fun ok(a: Int): Int { return a }
+
+fun bad(a: Int { return a + }
+
+fun later(b: Int): Int { return b }

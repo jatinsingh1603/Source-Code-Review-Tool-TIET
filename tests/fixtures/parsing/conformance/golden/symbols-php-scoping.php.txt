@@ -1,0 +1,70 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+  2 parent=1 block
+  3 parent=1 block
+  4 parent=0 class
+  5 parent=4 function
+  6 parent=0 class
+symbols:
+  scoping.php.txt:2:10 'top' function scope=0 def
+  scoping.php.txt:2:19 'count' parameter scope=1 def
+  scoping.php.txt:2:30 'rest' parameter scope=1 def
+  scoping.php.txt:4:13 'registry' variable scope=-1 ref
+  scoping.php.txt:5:13 'calls' variable scope=1 def
+  scoping.php.txt:6:6 'calls' variable scope=1 ref
+  scoping.php.txt:7:6 'total' variable scope=1 def
+  scoping.php.txt:7:15 'count' parameter scope=1 ref
+  scoping.php.txt:8:15 'rest' parameter scope=1 ref
+  scoping.php.txt:8:24 'index' variable scope=2 def
+  scoping.php.txt:8:34 'value' variable scope=2 def
+  scoping.php.txt:9:10 'total' variable scope=2 def
+  scoping.php.txt:9:20 'value' variable scope=2 ref
+  scoping.php.txt:12:10 'total' variable scope=1 def
+  scoping.php.txt:12:18 'intdiv' variable scope=-1 ref
+  scoping.php.txt:12:26 'total' variable scope=1 ref
+  scoping.php.txt:12:34 'count' parameter scope=1 ref
+  scoping.php.txt:13:14 'DivisionByZeroError' variable scope=-1 ref
+  scoping.php.txt:13:35 'error' variable scope=-1 ref
+  scoping.php.txt:14:10 'total' variable scope=3 def
+  scoping.php.txt:16:25 'total' variable scope=1 ref
+  scoping.php.txt:16:34 'index' variable scope=-1 ref
+  scoping.php.txt:19:7 'Loggable' class scope=0 def
+  scoping.php.txt:21:16 'level' field scope=4 def
+  scoping.php.txt:23:21 'log' method scope=4 def
+  scoping.php.txt:23:26 'message' parameter scope=5 def
+  scoping.php.txt:25:15 'this' variable scope=-1 ref
+  scoping.php.txt:25:21 'level' field scope=-1 ref
+  scoping.php.txt:25:30 'message' parameter scope=5 ref
+  scoping.php.txt:29:6 'Status' class scope=0 def
+  scoping.php.txt:31:10 'Active' constant scope=6 def
+  scoping.php.txt:32:10 'Closed' constant scope=6 def
+extents:
+  'top' scoping.php.txt:2-17
+  'Loggable' scoping.php.txt:19-27
+  'log' scoping.php.txt:23-26
+  'Status' scoping.php.txt:29-33
+references:
+  'top' scope=0: 2
+  'count' scope=1: 2, 7, 12
+  'rest' scope=1: 2, 8
+  'registry' scope=-1: 4
+  'calls' scope=1: 5, 6
+  'total' scope=1: 7, 12, 12, 16
+  'index' scope=2: 8
+  'value' scope=2: 8, 9
+  'total' scope=2: 9
+  'intdiv' scope=-1: 12
+  'DivisionByZeroError' scope=-1: 13
+  'error' scope=-1: 13
+  'total' scope=3: 14
+  'index' scope=-1: 16
+  'Loggable' scope=0: 19
+  'level' scope=4: 21
+  'log' scope=4: 23
+  'message' scope=5: 23, 25
+  'this' scope=-1: 25
+  'level' scope=-1: 25
+  'Status' scope=0: 29
+  'Active' scope=6: 31
+  'Closed' scope=6: 32

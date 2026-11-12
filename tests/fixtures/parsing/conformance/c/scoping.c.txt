@@ -1,0 +1,27 @@
+static int counter;
+
+int next(int step) {
+    int counter = step;
+    {
+        int counter = 2;
+        counter++;
+    }
+    return counter;
+}
+
+union value {
+    int whole;
+    float part;
+};
+
+int read_all(int fd, char *buffer, int size) {
+    int total = 0;
+    while (total < size) {
+        int got = read(fd, buffer + total, size - total);
+        if (got <= 0) {
+            break;
+        }
+        total += got;
+    }
+    return total;
+}

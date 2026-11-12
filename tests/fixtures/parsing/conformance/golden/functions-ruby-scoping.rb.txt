@@ -1,0 +1,12 @@
+function 'total' ('total')
+  header 1:1-1:17
+  body   2:3-13:4
+  full   1:1-13:4
+method 'Counter.initialize' ('initialize')
+  header 18:3-18:17
+  body   19:5-21:6
+  full   18:3-21:6
+method 'Counter.bump' ('bump')
+  header 23:3-23:19
+  body   24:5-25:6
+  full   23:3-25:6

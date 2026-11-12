@@ -68,6 +68,12 @@ SUPPORTED: Final = (
     Language.TYPESCRIPT,
     Language.JAVA,
     Language.GO,
+    Language.KOTLIN,
+    Language.CSHARP,
+    Language.PHP,
+    Language.RUBY,
+    Language.C,
+    Language.CPP,
 )
 NO_SPEC: Final = "no_language_spec"
 
@@ -186,7 +192,7 @@ def _internal_names(files: list[SourceFile]) -> frozenset[str]:
             parts = file.path.split("/")
             names.update(parts[:-1])
             names.add(parts[-1].removesuffix(".pyi").removesuffix(".py"))
-        elif file.language in (Language.JAVA, Language.GO):
+        elif file.language in (Language.JAVA, Language.GO, Language.KOTLIN, Language.CSHARP):
             names.update(file.path.split("/")[:-1])
     names.discard("")
     return frozenset(names)

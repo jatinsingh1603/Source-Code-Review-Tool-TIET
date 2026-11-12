@@ -1,0 +1,14 @@
+identifiers:
+  syntax_error.cs.txt:1:7 'Broken'
+  syntax_error.cs.txt:3:9 'Ok'
+  syntax_error.cs.txt:3:16 'a'
+  syntax_error.cs.txt:3:28 'a'
+  syntax_error.cs.txt:5:9 'Bad'
+  syntax_error.cs.txt:5:17 'a'
+  syntax_error.cs.txt:5:30 'a'
+  syntax_error.cs.txt:7:9 'later'
+  syntax_error.cs.txt:7:19 'b'
+  syntax_error.cs.txt:7:31 'b'
+strings:
+comments:
+error_count: 1

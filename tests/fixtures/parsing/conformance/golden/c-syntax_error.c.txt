@@ -1,0 +1,14 @@
+identifiers:
+  syntax_error.c.txt:1:5 'ok'
+  syntax_error.c.txt:1:12 'a'
+  syntax_error.c.txt:1:24 'a'
+  syntax_error.c.txt:3:5 'bad'
+  syntax_error.c.txt:3:13 'a'
+  syntax_error.c.txt:3:24 'a'
+  syntax_error.c.txt:3:27 ''
+  syntax_error.c.txt:5:5 'later'
+  syntax_error.c.txt:5:15 'b'
+  syntax_error.c.txt:5:27 'b'
+strings:
+comments:
+error_count: 3

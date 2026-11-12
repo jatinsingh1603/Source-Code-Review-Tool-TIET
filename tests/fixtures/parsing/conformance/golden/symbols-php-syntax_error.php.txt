@@ -1,0 +1,28 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+  2 parent=0 function
+  3 parent=0 function
+symbols:
+  syntax_error.php.txt:2:10 'ok' function scope=0 def
+  syntax_error.php.txt:2:14 'a' parameter scope=1 def
+  syntax_error.php.txt:2:27 'a' parameter scope=1 ref
+  syntax_error.php.txt:4:10 'bad' function scope=0 def
+  syntax_error.php.txt:4:15 'a' parameter scope=2 def
+  syntax_error.php.txt:4:27 'a' parameter scope=2 ref
+  syntax_error.php.txt:4:30 '' variable scope=-1 ref
+  syntax_error.php.txt:6:10 'later' function scope=0 def
+  syntax_error.php.txt:6:17 'b' parameter scope=3 def
+  syntax_error.php.txt:6:30 'b' parameter scope=3 ref
+extents:
+  'ok' syntax_error.php.txt:2:1
+  'bad' syntax_error.php.txt:4:1
+  'later' syntax_error.php.txt:6:1
+references:
+  'ok' scope=0: 2
+  'a' scope=1: 2, 2
+  'bad' scope=0: 4
+  'a' scope=2: 4, 4
+  '' scope=-1: 4
+  'later' scope=0: 6
+  'b' scope=3: 6, 6

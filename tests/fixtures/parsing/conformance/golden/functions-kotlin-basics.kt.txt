@@ -1,0 +1,8 @@
+method 'Repo.find' ('find')
+  header 9:5-9:45
+  body   9:46-17:6
+  full   9:5-17:6
+method 'Single.go' ('go')
+  header 25:5-25:13
+  body   25:14-25:17
+  full   25:5-25:17

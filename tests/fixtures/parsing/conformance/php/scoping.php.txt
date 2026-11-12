@@ -1,0 +1,33 @@
+<?php
+function top(int $count, ...$rest): string
+{
+    global $registry;
+    static $calls = 0;
+    $calls++;
+    $total = $count;
+    foreach ($rest as $index => $value) {
+        $total += $value;
+    }
+    try {
+        $total = intdiv($total, $count);
+    } catch (DivisionByZeroError $error) {
+        $total = 0;
+    }
+    return "total: " . $total . $index;
+}
+
+trait Loggable
+{
+    protected $level = "info";
+
+    public function log($message)
+    {
+        echo $this->level . $message;
+    }
+}
+
+enum Status: string
+{
+    case Active = "active";
+    case Closed = "closed";
+}

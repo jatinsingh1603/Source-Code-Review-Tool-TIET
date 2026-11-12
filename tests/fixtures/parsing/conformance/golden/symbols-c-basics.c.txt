@@ -1,0 +1,89 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+  2 parent=0 class
+  3 parent=0 class
+  4 parent=0 function
+  5 parent=4 block
+  6 parent=5 block
+  7 parent=4 class
+  8 parent=0 function
+  9 parent=0 function
+  10 parent=9 function
+symbols:
+  basics.c.txt:4:9 'MAX' constant scope=0 def
+  basics.c.txt:5:9 'SQ' function scope=0 def
+  basics.c.txt:5:12 'x' parameter scope=1 def
+  basics.c.txt:7:16 'acct' class scope=0 def
+  basics.c.txt:8:9 'id' field scope=2 def
+  basics.c.txt:9:11 'name' field scope=2 def
+  basics.c.txt:10:3 'acct_t' class scope=0 def
+  basics.c.txt:12:6 'color' class scope=0 def
+  basics.c.txt:12:14 'RED' constant scope=3 def
+  basics.c.txt:12:19 'GREEN' constant scope=3 def
+  basics.c.txt:14:12 'limit' variable scope=0 def
+  basics.c.txt:16:5 'find' function scope=0 def
+  basics.c.txt:16:22 'id' parameter scope=4 def
+  basics.c.txt:16:30 'n' parameter scope=4 def
+  basics.c.txt:17:10 'q' variable scope=4 def
+  basics.c.txt:18:9 'i' variable scope=4 def
+  basics.c.txt:19:14 'j' variable scope=5 def
+  basics.c.txt:19:21 'j' variable scope=5 ref
+  basics.c.txt:19:25 'n' parameter scope=4 ref
+  basics.c.txt:19:28 'j' variable scope=5 ref
+  basics.c.txt:20:9 'limit' variable scope=0 ref
+  basics.c.txt:20:18 'j' variable scope=5 ref
+  basics.c.txt:22:5 'sprintf' variable scope=-1 ref
+  basics.c.txt:22:13 'q' variable scope=4 ref
+  basics.c.txt:22:29 'id' parameter scope=4 ref
+  basics.c.txt:23:12 'acct' class scope=4 def
+  basics.c.txt:23:17 'a' variable scope=4 def
+  basics.c.txt:24:5 'a' variable scope=4 ref
+  basics.c.txt:24:7 'id' field scope=-1 ref
+  basics.c.txt:25:5 'acct_t' class scope=0 ref
+  basics.c.txt:25:13 'p' variable scope=4 def
+  basics.c.txt:25:18 'a' variable scope=4 ref
+  basics.c.txt:26:5 'p' variable scope=4 ref
+  basics.c.txt:26:8 'id' field scope=-1 ref
+  basics.c.txt:27:12 'strlen' variable scope=-1 ref
+  basics.c.txt:27:19 'q' variable scope=4 ref
+  basics.c.txt:28:1 'lbl' variable scope=-1 ref
+  basics.c.txt:29:10 'lbl' variable scope=-1 ref
+  basics.c.txt:32:7 'fp' function scope=0 def
+  basics.c.txt:33:6 'apply' function scope=0 def
+  basics.c.txt:33:18 'cb' parameter scope=9 def
+  basics.c.txt:33:32 'v' parameter scope=9 def
+extents:
+  'acct' basics.c.txt:7-10
+  'color' basics.c.txt:12:1
+  'find' basics.c.txt:16-30
+  'acct' basics.c.txt:23:5
+references:
+  'MAX' scope=0: 4
+  'SQ' scope=0: 5
+  'x' scope=1: 5
+  'acct' scope=0: 7
+  'id' scope=2: 8
+  'name' scope=2: 9
+  'acct_t' scope=0: 10, 25
+  'color' scope=0: 12
+  'RED' scope=3: 12
+  'GREEN' scope=3: 12
+  'limit' scope=0: 14, 20
+  'find' scope=0: 16
+  'id' scope=4: 16, 22
+  'n' scope=4: 16, 19
+  'q' scope=4: 17, 22, 27
+  'i' scope=4: 18
+  'j' scope=5: 19, 19, 19, 20
+  'sprintf' scope=-1: 22
+  'acct' scope=4: 23
+  'a' scope=4: 23, 24, 25
+  'id' scope=-1: 24, 26
+  'p' scope=4: 25, 26
+  'strlen' scope=-1: 27
+  'lbl' scope=-1: 28, 29
+  'fp' scope=0: 32
+  'apply' scope=0: 33
+  'cb' scope=9: 33
+  'v' scope=9: 33

@@ -1,0 +1,12 @@
+method 'Repo.__construct' ('__construct')
+  header 13:5-13:56
+  body   14:5-16:6
+  full   13:5-16:6
+method 'Repo.find' ('find')
+  header 18:5-18:30
+  body   19:5-31:6
+  full   18:5-31:6
+method 'Repo.helper' ('helper')
+  header 33:5-33:38
+  body   34:5-36:6
+  full   33:5-36:6

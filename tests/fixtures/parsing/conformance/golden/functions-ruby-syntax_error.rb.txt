@@ -1,0 +1,8 @@
+function 'ok' ('ok')
+  header 1:1-1:10
+  body   2:3-3:4
+  full   1:1-3:4
+function 'later' ('later')
+  header 9:1-9:13
+  body   10:3-11:4
+  full   9:1-11:4

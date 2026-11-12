@@ -1,0 +1,8 @@
+method 'Account.deposit' ('deposit')
+  header 5:5-5:29
+  body   5:30-5:52
+  full   5:5-5:52
+function 'sum' ('sum')
+  header 8:1-8:40
+  body   8:41-19:2
+  full   8:1-19:2

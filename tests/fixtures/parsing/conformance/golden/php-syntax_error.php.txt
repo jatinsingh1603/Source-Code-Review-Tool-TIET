@@ -1,0 +1,14 @@
+identifiers:
+  syntax_error.php.txt:2:10 'ok'
+  syntax_error.php.txt:2:14 'a'
+  syntax_error.php.txt:2:27 'a'
+  syntax_error.php.txt:4:10 'bad'
+  syntax_error.php.txt:4:15 'a'
+  syntax_error.php.txt:4:27 'a'
+  syntax_error.php.txt:4:30 ''
+  syntax_error.php.txt:6:10 'later'
+  syntax_error.php.txt:6:17 'b'
+  syntax_error.php.txt:6:30 'b'
+strings:
+comments:
+error_count: 2

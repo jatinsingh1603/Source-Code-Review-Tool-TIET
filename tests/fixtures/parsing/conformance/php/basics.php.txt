@@ -1,0 +1,37 @@
+<?php
+namespace App\Http;
+
+use PDO;
+use App\Models\User as U;
+
+// A repository.
+class Repo extends Base implements Finder
+{
+    private $conn;
+    const MAX = 3;
+
+    public function __construct(PDO $conn, $name = "x")
+    {
+        $this->conn = $conn;
+    }
+
+    public function find($id)
+    {
+        $q = "SELECT * FROM t WHERE id = '$id' " . $id;
+        $r = $this->conn->query($q);
+        foreach ($rows as $k => $v) {
+            echo $v;
+        }
+        $f = function ($a) use ($q) {
+            return $a . $q;
+        };
+        $g = fn($z) => $z + 1;
+        $x = Repo::MAX;
+        return self::helper($r, name: 3);
+    }
+
+    public static function helper($p)
+    {
+        return $_GET['a'];
+    }
+}

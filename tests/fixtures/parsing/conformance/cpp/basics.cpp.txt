@@ -1,0 +1,36 @@
+#include <string>
+
+namespace bank {
+
+template <typename T>
+class Box {
+public:
+    T value;
+    Box(T v) : value(v) {}
+    T get() const { return value; }
+};
+
+class Repo : public Base {
+public:
+    Repo(int n) : limit_(n) {}
+    std::string find(const std::string &id, int n = 3);
+    static int helper(int p) { return p; }
+
+private:
+    int limit_;
+};
+
+std::string Repo::find(const std::string &id, int n) {
+    auto q = "SELECT " + id;
+    for (auto &x : items) {
+        std::cout << x;
+    }
+    auto f = [&q](int a) { return a + limit_; };
+    Repo *r = new Repo(3);
+    r->helper(1);
+    return q;
+}
+
+}  // namespace bank
+
+using namespace std;

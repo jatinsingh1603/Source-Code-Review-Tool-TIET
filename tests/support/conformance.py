@@ -52,6 +52,24 @@ FIXTURES: list[tuple[Language, str]] = [
     (Language.GO, "imports.go.txt"),
     (Language.GO, "consts.go.txt"),
     (Language.GO, "syntax_error.go.txt"),
+    (Language.KOTLIN, "basics.kt.txt"),
+    (Language.KOTLIN, "scoping.kt.txt"),
+    (Language.KOTLIN, "syntax_error.kt.txt"),
+    (Language.PHP, "basics.php.txt"),
+    (Language.PHP, "scoping.php.txt"),
+    (Language.PHP, "syntax_error.php.txt"),
+    (Language.CSHARP, "basics.cs.txt"),
+    (Language.CSHARP, "scoping.cs.txt"),
+    (Language.CSHARP, "syntax_error.cs.txt"),
+    (Language.RUBY, "basics.rb.txt"),
+    (Language.RUBY, "scoping.rb.txt"),
+    (Language.RUBY, "syntax_error.rb.txt"),
+    (Language.C, "basics.c.txt"),
+    (Language.C, "scoping.c.txt"),
+    (Language.C, "syntax_error.c.txt"),
+    (Language.CPP, "basics.cpp.txt"),
+    (Language.CPP, "scoping.cpp.txt"),
+    (Language.CPP, "syntax_error.cpp.txt"),
 ]
 
 
@@ -86,6 +104,32 @@ IDENTIFIER_NODE_TYPES: dict[Language, frozenset[str]] = {
         }
     ),
     Language.JAVA: frozenset({"identifier", "type_identifier"}),
+    Language.KOTLIN: frozenset({"simple_identifier", "type_identifier", "interpolated_identifier"}),
+    Language.PHP: frozenset({"name"}),
+    Language.CSHARP: frozenset({"identifier", "implicit_parameter"}),
+    Language.RUBY: frozenset(
+        {
+            "identifier",
+            "constant",
+            "instance_variable",
+            "class_variable",
+            "global_variable",
+            "simple_symbol",
+            "hash_key_symbol",
+        }
+    ),
+    Language.C: frozenset(
+        {"identifier", "type_identifier", "field_identifier", "statement_identifier"}
+    ),
+    Language.CPP: frozenset(
+        {
+            "identifier",
+            "type_identifier",
+            "field_identifier",
+            "statement_identifier",
+            "namespace_identifier",
+        }
+    ),
     Language.GO: frozenset(
         {"identifier", "type_identifier", "field_identifier", "package_identifier", "label_name"}
     ),

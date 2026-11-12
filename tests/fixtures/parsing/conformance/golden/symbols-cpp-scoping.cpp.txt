@@ -1,0 +1,62 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+  3 parent=0 function
+  4 parent=3 block
+  5 parent=4 block
+  6 parent=3 block
+  7 parent=3 block
+  8 parent=7 block
+  9 parent=0 class
+symbols:
+  scoping.cpp.txt:3:8 'Account' class scope=0 def
+  scoping.cpp.txt:4:9 'balance' field scope=1 def
+  scoping.cpp.txt:5:10 'deposit' method scope=1 def
+  scoping.cpp.txt:5:22 'amount' parameter scope=2 def
+  scoping.cpp.txt:5:32 'balance' field scope=1 ref
+  scoping.cpp.txt:5:43 'amount' parameter scope=2 ref
+  scoping.cpp.txt:8:5 'sum' function scope=0 def
+  scoping.cpp.txt:8:15 'std' variable scope=-1 ref
+  scoping.cpp.txt:8:20 'vector' variable scope=-1 ref
+  scoping.cpp.txt:8:33 'values' parameter scope=3 def
+  scoping.cpp.txt:9:9 'total' variable scope=3 def
+  scoping.cpp.txt:10:14 'value' variable scope=-1 ref
+  scoping.cpp.txt:10:22 'values' parameter scope=3 ref
+  scoping.cpp.txt:11:9 'total' variable scope=3 ref
+  scoping.cpp.txt:11:18 'value' variable scope=-1 ref
+  scoping.cpp.txt:14:9 'total' variable scope=3 ref
+  scoping.cpp.txt:14:18 'values' parameter scope=3 ref
+  scoping.cpp.txt:14:25 'size' field scope=-1 ref
+  scoping.cpp.txt:15:20 'std' variable scope=-1 ref
+  scoping.cpp.txt:15:25 'exception' field scope=-1 ref
+  scoping.cpp.txt:15:36 'error' parameter scope=7 def
+  scoping.cpp.txt:16:9 'total' variable scope=3 ref
+  scoping.cpp.txt:18:12 'total' variable scope=3 ref
+  scoping.cpp.txt:21:12 'Mode' class scope=0 def
+  scoping.cpp.txt:21:19 'Fast' constant scope=9 def
+  scoping.cpp.txt:21:25 'Slow' constant scope=9 def
+  scoping.cpp.txt:23:7 'Handler' class scope=0 def
+extents:
+  'Account' scoping.cpp.txt:3-6
+  'deposit' scoping.cpp.txt:5:5
+  'sum' scoping.cpp.txt:8-19
+  'Mode' scoping.cpp.txt:21:1
+references:
+  'Account' scope=0: 3
+  'balance' scope=1: 4, 5
+  'deposit' scope=1: 5
+  'amount' scope=2: 5, 5
+  'sum' scope=0: 8
+  'std' scope=-1: 8, 15
+  'vector' scope=-1: 8
+  'values' scope=3: 8, 10, 14
+  'total' scope=3: 9, 11, 14, 16, 18
+  'value' scope=-1: 10, 11
+  'size' scope=-1: 14
+  'exception' scope=-1: 15
+  'error' scope=7: 15
+  'Mode' scope=0: 21
+  'Fast' scope=9: 21
+  'Slow' scope=9: 21
+  'Handler' scope=0: 23

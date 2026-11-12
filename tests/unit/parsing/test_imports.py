@@ -155,12 +155,18 @@ def test_a_syntax_error_does_not_stop_extraction_of_the_rest() -> None:
     assert ("os", None, None, "os") in raws
 
 
-def test_other_languages_raise_unsupported_language() -> None:
-    parsed = parse("a.rb", Language.RUBY, "class A {}\n")
+def test_languages_without_import_rules_raise_unsupported_language() -> None:
     with pytest.raises(UnsupportedLanguage):
-        extract_imports(parsed)
-    with pytest.raises(UnsupportedLanguage):
-        DefaultImportResolver(Language.RUBY)
+        DefaultImportResolver(Language.DOCKERFILE)
+
+
+def test_ruby_php_c_and_cpp_have_no_import_rules_and_classify_conservatively(
+    tmp_path: Path,
+) -> None:
+    parsed = parse("a.rb", Language.RUBY, "require 'json'\n")
+    assert extract_imports(parsed) == ()
+    verdict = DefaultImportResolver(Language.RUBY).classify_detailed("json", project_root=tmp_path)
+    assert (verdict.origin, verdict.conservative) == ("internal", True)
 
 
 # --- python classification -----------------------------------------------------------------

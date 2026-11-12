@@ -1,0 +1,25 @@
+package scoping
+
+fun outer(total: Int): Int {
+    var total2 = total
+    val items = listOf(1, 2, 3)
+    for (item in items) {
+        val total = item * 2
+        total2 += total
+    }
+    items.forEach { item -> total2 += item }
+    try {
+        total2 /= 0
+    } catch (e: Exception) {
+        total2 = -1
+    }
+    return total2
+}
+
+enum class Level(val weight: Int) {
+    LOW(1), HIGH(2)
+}
+
+data class Point(val x: Int, val y: Int)
+
+fun Point.shift(dx: Int): Point = Point(x + dx, y)

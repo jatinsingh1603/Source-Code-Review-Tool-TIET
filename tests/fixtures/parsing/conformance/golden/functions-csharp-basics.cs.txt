@@ -1,0 +1,8 @@
+method 'Repo.Repo' ('Repo')
+  header 13:9-13:40
+  body   14:9-16:10
+  full   13:9-16:10
+method 'Repo.Find' ('Find')
+  header 18:9-18:49
+  body   19:9-42:10
+  full   18:9-42:10

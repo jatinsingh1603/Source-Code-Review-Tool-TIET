@@ -1,0 +1,23 @@
+#include <vector>
+
+struct Account {
+    int balance;
+    void deposit(int amount) { balance += amount; }
+};
+
+int sum(const std::vector<int> &values) {
+    int total = 0;
+    for (int value : values) {
+        total += value;
+    }
+    try {
+        total /= values.size();
+    } catch (const std::exception &error) {
+        total = 0;
+    }
+    return total;
+}
+
+enum class Mode { Fast, Slow };
+
+using Handler = int (*)(int);

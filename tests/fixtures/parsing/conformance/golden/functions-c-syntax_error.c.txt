@@ -1,0 +1,4 @@
+function 'ok' ('ok')
+  header 1:1-1:14
+  body   1:15-1:28
+  full   1:1-1:28

@@ -1,0 +1,34 @@
+using System.Collections.Generic;
+
+namespace Scoping;
+
+public class Counter
+{
+    private int total;
+
+    public int Add(int amount)
+    {
+        int total = amount;
+        for (int i = 0; i < amount; i++)
+        {
+            total += i;
+        }
+        this.total += total;
+        return this.total;
+    }
+
+    public static IEnumerable<int> Evens(int limit)
+    {
+        for (var n = 0; n < limit; n += 2)
+        {
+            yield return n;
+        }
+    }
+
+    public string Label(object value) => value switch
+    {
+        int number => "int " + number,
+        string text => text,
+        _ => "other",
+    };
+}

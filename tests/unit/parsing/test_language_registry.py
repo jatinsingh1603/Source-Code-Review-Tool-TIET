@@ -17,13 +17,19 @@ LANGUAGES = list(REGISTRY.languages())
 QUERY_NAMES = ("identifiers", "strings", "comments")
 
 
-def test_the_registry_holds_the_five_shipped_languages() -> None:
+def test_the_registry_holds_the_eleven_shipped_languages() -> None:
     assert set(LANGUAGES) == {
         Language.PYTHON,
         Language.JAVASCRIPT,
         Language.TYPESCRIPT,
         Language.JAVA,
         Language.GO,
+        Language.KOTLIN,
+        Language.PHP,
+        Language.CSHARP,
+        Language.RUBY,
+        Language.C,
+        Language.CPP,
     }
 
 

@@ -1,0 +1,19 @@
+identifiers:
+  syntax_error.kt.txt:1:9 'broken'
+  syntax_error.kt.txt:3:5 'ok'
+  syntax_error.kt.txt:3:8 'a'
+  syntax_error.kt.txt:3:11 'Int'
+  syntax_error.kt.txt:3:17 'Int'
+  syntax_error.kt.txt:3:30 'a'
+  syntax_error.kt.txt:5:5 'bad'
+  syntax_error.kt.txt:5:9 'a'
+  syntax_error.kt.txt:5:12 'Int'
+  syntax_error.kt.txt:5:25 'a'
+  syntax_error.kt.txt:7:5 'later'
+  syntax_error.kt.txt:7:11 'b'
+  syntax_error.kt.txt:7:14 'Int'
+  syntax_error.kt.txt:7:20 'Int'
+  syntax_error.kt.txt:7:33 'b'
+strings:
+comments:
+error_count: 2

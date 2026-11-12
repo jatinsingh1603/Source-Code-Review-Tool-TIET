@@ -16,6 +16,12 @@ EXTENSIONS = {
     Language.TYPESCRIPT: "ts",
     Language.JAVA: "java",
     Language.GO: "go",
+    Language.KOTLIN: "kt",
+    Language.PHP: "php",
+    Language.CSHARP: "cs",
+    Language.RUBY: "rb",
+    Language.C: "c",
+    Language.CPP: "cpp",
 }
 
 

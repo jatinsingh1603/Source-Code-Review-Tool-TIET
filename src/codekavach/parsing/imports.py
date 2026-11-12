@@ -412,6 +412,71 @@ def _go_import_spec(node: Node) -> list[RawImport]:
 _GO_HANDLERS: Final = {"import_spec": _go_import_spec}
 
 
+def _leaf_names(node: Node, types: frozenset[str]) -> list[Node]:
+    if node.type in types:
+        return [node]
+    found: list[Node] = []
+    for child in node.named_children:
+        found.extend(_leaf_names(child, types))
+    return found
+
+
+_KOTLIN_NAMES: Final = frozenset({"simple_identifier"})
+
+
+def _kotlin_import(node: Node) -> list[RawImport]:
+    """``import a.b.C`` is module ``a.b`` taking ``C``; ``import a.b.C as D`` binds ``D``."""
+    path = next((c for c in node.named_children if c.type == "identifier"), None)
+    if path is None:
+        return []
+    leaves = _leaf_names(path, _KOTLIN_NAMES)
+    alias = next(
+        (c for a in node.named_children if a.type == "import_alias" for c in a.named_children),
+        None,
+    )
+    if not leaves:
+        return []
+    if any(not c.is_named and c.type == "*" for c in node.children):
+        return [_import_of(".".join(_text(x) for x in leaves), imported="*", span=node)]
+    if len(leaves) == 1:
+        return [_import_of(_text(leaves[0]), bound=alias or leaves[0], span=node)]
+    module = ".".join(_text(x) for x in leaves[:-1])
+    return [
+        _import_of(
+            module,
+            imported=_text(leaves[-1]),
+            bound=alias or leaves[-1],
+            alias=alias,
+            span=node,
+        )
+    ]
+
+
+_KOTLIN_HANDLERS: Final = {"import_header": _kotlin_import}
+
+_CS_NAMES: Final = frozenset({"identifier"})
+
+
+def _csharp_using(node: Node) -> list[RawImport]:
+    """``using A.B;`` imports a namespace; ``using X = A.B;`` binds the alias ``X``."""
+    alias = node.child_by_field_name("name")
+    target = next((c for c in node.named_children if alias is None or c.id != alias.id), None)
+    if target is None or any(not c.is_named and c.type == "static" for c in node.children):
+        return []
+    module = ".".join(_text(x) for x in _leaf_names(target, _CS_NAMES))
+    if not module:
+        return []
+    if alias is not None:
+        return [_import_of(module, bound=alias, alias=alias, span=node)]
+    return [_import_of(module, imported="*", span=node)]
+
+
+_CSHARP_HANDLERS: Final = {"using_directive": _csharp_using}
+
+
+_NO_IMPORT_RULES: Final = frozenset({Language.PHP, Language.RUBY, Language.C, Language.CPP})
+
+
 def extract_imports(parsed: ParsedFile) -> tuple[RawImport, ...]:
     """Every import of ``parsed`` in source order, from one pass over its syntax tree.
 
@@ -426,6 +491,12 @@ def extract_imports(parsed: ParsedFile) -> tuple[RawImport, ...]:
         handlers = _JAVA_HANDLERS
     elif parsed.language is Language.GO:
         handlers = _GO_HANDLERS
+    elif parsed.language is Language.KOTLIN:
+        handlers = _KOTLIN_HANDLERS
+    elif parsed.language is Language.CSHARP:
+        handlers = _CSHARP_HANDLERS
+    elif parsed.language in _NO_IMPORT_RULES:
+        return ()  # PHP, Ruby, C and C++ imports are left to the name-level classification
     else:
         raise UnsupportedLanguage(parsed.language)
     if parsed.tree is None:
@@ -536,8 +607,25 @@ def _load_js_config(root: Path) -> _JsConfig:
 
 
 _RESOLVABLE: Final = frozenset(
-    {Language.PYTHON, Language.JAVASCRIPT, Language.TYPESCRIPT, Language.JAVA, Language.GO}
+    {
+        Language.PYTHON,
+        Language.JAVASCRIPT,
+        Language.TYPESCRIPT,
+        Language.JAVA,
+        Language.GO,
+        Language.KOTLIN,
+        Language.CSHARP,
+        Language.PHP,
+        Language.RUBY,
+        Language.C,
+        Language.CPP,
+    }
 )
+# The first segment of an import that is the platform's own, for the languages that classify by it.
+_PLATFORM_ROOTS: Final = {
+    Language.KOTLIN: frozenset({"java", "javax", "kotlin", "kotlinx", "android", "androidx"}),
+    Language.CSHARP: frozenset({"System", "Microsoft", "Windows"}),
+}
 _JAVA_NAME: Final = re.compile(r"[^\W\d]\w*(\.[^\W\d]\w*)*")
 _JAVA_PLATFORM: Final = frozenset({"java", "javax", "jdk"})
 _JAVA_ROOTS: Final = ("", "src/main/java", "src/test/java", "src", "app/src/main/java")
@@ -580,7 +668,9 @@ class DefaultImportResolver:
         """``internal``, ``third_party`` or ``stdlib`` for ``module``; never raises."""
         return self.classify_detailed(module, project_root=project_root).origin
 
-    def classify_detailed(self, module: str, *, project_root: Path) -> Classification:
+    def classify_detailed(  # noqa: PLR0911 - one return per language
+        self, module: str, *, project_root: Path
+    ) -> Classification:
         """Like :meth:`classify`, saying whether the answer was a conservative guess."""
         text = module.strip()
         if not text or len(text) > MAX_MODULE_LENGTH or any(ord(c) < 32 for c in text):
@@ -592,6 +682,8 @@ class DefaultImportResolver:
                 return self._java(text, project_root)
             if self.language is Language.GO:
                 return self._go(text, project_root)
+            if self.language in _PLATFORM_ROOTS or self.language in _NO_IMPORT_RULES:
+                return self._platform(text)
             return self._javascript(text, project_root)
         except (OSError, ValueError):
             return Classification("internal", True)
@@ -629,6 +721,17 @@ class DefaultImportResolver:
         if top in self._internal_names or any(
             self._dir_exists(root, base, text.replace(".", "/")) for base in _JAVA_ROOTS
         ):
+            return Classification("internal", False)
+        return Classification("third_party", False)
+
+    def _platform(self, text: str) -> Classification:
+        """Kotlin and C#: the platform's own namespaces, the project's, or a dependency's."""
+        if self.language in _NO_IMPORT_RULES or _JAVA_NAME.fullmatch(text) is None:
+            return Classification("internal", True)
+        top = text.split(".", 1)[0]
+        if top in _PLATFORM_ROOTS[self.language]:
+            return Classification("stdlib", False)
+        if top in self._internal_names:
             return Classification("internal", False)
         return Classification("third_party", False)
 

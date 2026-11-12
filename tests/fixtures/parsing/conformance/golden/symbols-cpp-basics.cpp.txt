@@ -1,0 +1,113 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+  3 parent=1 function
+  4 parent=0 class
+  5 parent=4 function
+  6 parent=4 function
+  7 parent=4 function
+  8 parent=0 function
+  9 parent=8 block
+  10 parent=9 block
+  11 parent=8 function
+  12 parent=11 block
+symbols:
+  basics.cpp.txt:3:11 'bank' module scope=0 def
+  basics.cpp.txt:5:20 'T' class scope=0 def
+  basics.cpp.txt:6:7 'Box' class scope=0 def
+  basics.cpp.txt:8:5 'T' class scope=0 ref
+  basics.cpp.txt:8:7 'value' field scope=1 def
+  basics.cpp.txt:9:5 'Box' method scope=1 def
+  basics.cpp.txt:9:9 'T' class scope=0 ref
+  basics.cpp.txt:9:11 'v' parameter scope=2 def
+  basics.cpp.txt:9:16 'value' field scope=-1 ref
+  basics.cpp.txt:9:22 'v' parameter scope=2 ref
+  basics.cpp.txt:10:5 'T' class scope=0 ref
+  basics.cpp.txt:10:7 'get' method scope=1 def
+  basics.cpp.txt:10:28 'value' field scope=1 ref
+  basics.cpp.txt:13:7 'Repo' class scope=0 def
+  basics.cpp.txt:13:21 'Base' variable scope=-1 ref
+  basics.cpp.txt:15:5 'Repo' method scope=4 def
+  basics.cpp.txt:15:14 'n' parameter scope=5 def
+  basics.cpp.txt:15:19 'limit_' field scope=-1 ref
+  basics.cpp.txt:15:26 'n' parameter scope=5 ref
+  basics.cpp.txt:16:5 'std' variable scope=-1 ref
+  basics.cpp.txt:16:10 'string' field scope=-1 ref
+  basics.cpp.txt:16:17 'find' method scope=4 def
+  basics.cpp.txt:16:28 'std' variable scope=-1 ref
+  basics.cpp.txt:16:33 'string' field scope=-1 ref
+  basics.cpp.txt:16:41 'id' parameter scope=6 def
+  basics.cpp.txt:16:49 'n' parameter scope=6 def
+  basics.cpp.txt:17:16 'helper' method scope=4 def
+  basics.cpp.txt:17:27 'p' parameter scope=7 def
+  basics.cpp.txt:17:39 'p' parameter scope=7 ref
+  basics.cpp.txt:20:9 'limit_' field scope=4 def
+  basics.cpp.txt:23:1 'std' variable scope=-1 ref
+  basics.cpp.txt:23:6 'string' field scope=-1 ref
+  basics.cpp.txt:23:13 'Repo' class scope=0 ref
+  basics.cpp.txt:23:19 'find' field scope=-1 ref
+  basics.cpp.txt:23:30 'std' variable scope=-1 ref
+  basics.cpp.txt:23:35 'string' field scope=-1 ref
+  basics.cpp.txt:23:43 'id' parameter scope=8 def
+  basics.cpp.txt:23:51 'n' parameter scope=8 def
+  basics.cpp.txt:24:10 'q' variable scope=8 def
+  basics.cpp.txt:24:26 'id' parameter scope=8 ref
+  basics.cpp.txt:25:16 'x' variable scope=-1 ref
+  basics.cpp.txt:25:20 'items' variable scope=-1 ref
+  basics.cpp.txt:26:9 'std' variable scope=-1 ref
+  basics.cpp.txt:26:14 'cout' field scope=-1 ref
+  basics.cpp.txt:26:22 'x' variable scope=-1 ref
+  basics.cpp.txt:28:10 'f' variable scope=8 def
+  basics.cpp.txt:28:16 'q' variable scope=8 ref
+  basics.cpp.txt:28:23 'a' parameter scope=11 def
+  basics.cpp.txt:28:35 'a' parameter scope=11 ref
+  basics.cpp.txt:28:39 'limit_' variable scope=-1 ref
+  basics.cpp.txt:29:5 'Repo' class scope=0 ref
+  basics.cpp.txt:29:11 'r' variable scope=8 def
+  basics.cpp.txt:29:19 'Repo' class scope=0 ref
+  basics.cpp.txt:30:5 'r' variable scope=8 ref
+  basics.cpp.txt:30:8 'helper' field scope=-1 ref
+  basics.cpp.txt:31:12 'q' variable scope=8 ref
+  basics.cpp.txt:36:17 'std' variable scope=-1 ref
+extents:
+  'Box' basics.cpp.txt:6-11
+  'Box' basics.cpp.txt:9:5
+  'get' basics.cpp.txt:10:5
+  'Repo' basics.cpp.txt:13-21
+  'Repo' basics.cpp.txt:15:5
+  'helper' basics.cpp.txt:17:5
+  'find' basics.cpp.txt:23-32
+references:
+  'bank' scope=0: 3
+  'T' scope=0: 5, 8, 9, 10
+  'Box' scope=0: 6
+  'value' scope=1: 8, 10
+  'Box' scope=1: 9
+  'v' scope=2: 9, 9
+  'value' scope=-1: 9
+  'get' scope=1: 10
+  'Repo' scope=0: 13, 23, 29, 29
+  'Base' scope=-1: 13
+  'Repo' scope=4: 15
+  'n' scope=5: 15, 15
+  'limit_' scope=-1: 15, 28
+  'std' scope=-1: 16, 16, 23, 23, 26, 36
+  'string' scope=-1: 16, 16, 23, 23
+  'find' scope=4: 16
+  'id' scope=6: 16
+  'n' scope=6: 16
+  'helper' scope=4: 17
+  'p' scope=7: 17, 17
+  'limit_' scope=4: 20
+  'find' scope=-1: 23
+  'id' scope=8: 23, 24
+  'n' scope=8: 23
+  'q' scope=8: 24, 28, 31
+  'x' scope=-1: 25, 26
+  'items' scope=-1: 25
+  'cout' scope=-1: 26
+  'f' scope=8: 28
+  'a' scope=11: 28, 28
+  'r' scope=8: 29, 30
+  'helper' scope=-1: 30

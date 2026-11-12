@@ -1,0 +1,66 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+  2 parent=1 function
+  3 parent=1 function
+  4 parent=0 class
+  5 parent=4 function
+  6 parent=4 function
+symbols:
+  scoping.rb.txt:1:5 'total' function scope=0 def
+  scoping.rb.txt:1:11 'count' parameter scope=1 def
+  scoping.rb.txt:2:3 'sum' variable scope=1 def
+  scoping.rb.txt:3:3 'count' parameter scope=1 ref
+  scoping.rb.txt:3:9 'times' method scope=-1 ref
+  scoping.rb.txt:3:19 'index' parameter scope=2 def
+  scoping.rb.txt:4:5 'sum' variable scope=2 def
+  scoping.rb.txt:4:12 'index' parameter scope=2 ref
+  scoping.rb.txt:6:13 'each' method scope=-1 ref
+  scoping.rb.txt:6:21 'value' parameter scope=3 def
+  scoping.rb.txt:6:28 'sum' variable scope=3 def
+  scoping.rb.txt:6:35 'value' parameter scope=3 ref
+  scoping.rb.txt:8:5 'sum' variable scope=1 def
+  scoping.rb.txt:8:12 'count' parameter scope=1 ref
+  scoping.rb.txt:9:10 'ZeroDivisionError' variable scope=-1 ref
+  scoping.rb.txt:9:31 'error' variable scope=1 def
+  scoping.rb.txt:10:5 'sum' variable scope=1 def
+  scoping.rb.txt:12:3 'sum' variable scope=1 ref
+  scoping.rb.txt:15:7 'Counter' class scope=0 def
+  scoping.rb.txt:16:3 '@@instances' field scope=4 def
+  scoping.rb.txt:18:7 'initialize' method scope=4 def
+  scoping.rb.txt:19:5 '@@instances' variable scope=5 def
+  scoping.rb.txt:20:5 '@value' variable scope=5 def
+  scoping.rb.txt:23:7 'bump' method scope=4 def
+  scoping.rb.txt:23:12 'by' parameter scope=6 def
+  scoping.rb.txt:24:5 '@value' variable scope=6 def
+  scoping.rb.txt:24:15 'by' parameter scope=6 ref
+  scoping.rb.txt:28:1 '$counter' variable scope=0 def
+  scoping.rb.txt:28:12 'Counter' class scope=0 ref
+  scoping.rb.txt:28:20 'new' method scope=-1 ref
+extents:
+  'total' scoping.rb.txt:1-13
+  'Counter' scoping.rb.txt:15-26
+  'initialize' scoping.rb.txt:18-21
+  'bump' scoping.rb.txt:23-25
+references:
+  'total' scope=0: 1
+  'count' scope=1: 1, 3, 8
+  'sum' scope=1: 2, 8, 10, 12
+  'times' scope=-1: 3
+  'index' scope=2: 3, 4
+  'sum' scope=2: 4
+  'each' scope=-1: 6
+  'value' scope=3: 6, 6
+  'sum' scope=3: 6
+  'ZeroDivisionError' scope=-1: 9
+  'error' scope=1: 9
+  'Counter' scope=0: 15, 28
+  '@@instances' scope=4: 16
+  'initialize' scope=4: 18
+  '@@instances' scope=5: 19
+  '@value' scope=5: 20
+  'bump' scope=4: 23
+  'by' scope=6: 23, 24
+  '@value' scope=6: 24
+  '$counter' scope=0: 28
+  'new' scope=-1: 28

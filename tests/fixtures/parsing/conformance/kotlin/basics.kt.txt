@@ -1,0 +1,30 @@
+package com.bank.app
+
+import java.sql.Connection
+import kotlin.io.println as pr
+
+class Repo(private val conn: Connection, val name: String) : Base() {
+    val limit = 5
+
+    fun find(id: String, n: Int = 3): String {
+        val q = "SELECT * FROM t WHERE id = '$id' " + id
+        val r = conn.createStatement().executeQuery(q)
+        for (x in listOf(1, 2)) {
+            println(x)
+        }
+        val f = { a: Int -> a + limit }
+        return this.name
+    }
+
+    companion object {
+        const val MAX = 3
+    }
+}
+
+object Single {
+    fun go() = 1
+}
+
+interface Greeter {
+    fun greet(who: String)
+}

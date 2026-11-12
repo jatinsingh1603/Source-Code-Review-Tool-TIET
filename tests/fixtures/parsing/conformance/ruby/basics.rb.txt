@@ -1,0 +1,27 @@
+require 'sqlite3'
+
+# A repository.
+module Bank
+  class Repo < Base
+    LIMIT = 3
+    attr_accessor :conn
+
+    def initialize(conn, name = "x", *rest, key: 1, **opts, &blk)
+      @conn = conn
+    end
+
+    def find(id)
+      q = "SELECT * FROM t WHERE id = '#{id}'"
+      r = @conn.execute(q)
+      rows.each do |row, i|
+        puts row
+      end
+      f = ->(a) { a + 1 }
+      x = Repo::LIMIT
+      a, b = 1, 2
+      self.helper(key: 2)
+    end
+
+    def self.helper(p) = p
+  end
+end

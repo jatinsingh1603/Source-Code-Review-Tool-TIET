@@ -1,0 +1,8 @@
+class Broken
+{
+    int Ok(int a) { return a; }
+
+    int Bad(int a) { return (a; }
+
+    int later(int b) { return b; }
+}

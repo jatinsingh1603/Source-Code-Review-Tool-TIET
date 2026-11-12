@@ -1,0 +1,26 @@
+scopes:
+  0 parent=None module
+  1 parent=0 function
+  2 parent=0 function
+symbols:
+  syntax_error.rb.txt:1:5 'ok' function scope=0 def
+  syntax_error.rb.txt:1:8 'a' parameter scope=1 def
+  syntax_error.rb.txt:2:3 'a' parameter scope=1 ref
+  syntax_error.rb.txt:5:5 'bad' variable scope=-1 ref
+  syntax_error.rb.txt:5:9 'a' parameter scope=0 def
+  syntax_error.rb.txt:6:3 'a' parameter scope=0 ref
+  syntax_error.rb.txt:7:1 'end' variable scope=-1 ref
+  syntax_error.rb.txt:9:5 'later' function scope=0 def
+  syntax_error.rb.txt:9:11 'b' parameter scope=2 def
+  syntax_error.rb.txt:10:3 'b' parameter scope=2 ref
+extents:
+  'ok' syntax_error.rb.txt:1-3
+  'later' syntax_error.rb.txt:9-11
+references:
+  'ok' scope=0: 1
+  'a' scope=1: 1, 2
+  'bad' scope=-1: 5
+  'a' scope=0: 5, 6
+  'end' scope=-1: 7
+  'later' scope=0: 9
+  'b' scope=2: 9, 10

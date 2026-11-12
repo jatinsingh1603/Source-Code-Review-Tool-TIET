@@ -1,0 +1,6 @@
+<?php
+function ok($a) { return $a; }
+
+function bad($a { return $a + ; }
+
+function later($b) { return $b; }

@@ -1,0 +1,33 @@
+#include <stdio.h>
+#include "bank.h"
+
+#define MAX 3
+#define SQ(x) ((x) * (x))
+
+typedef struct acct {
+    int id;
+    char *name;
+} acct_t;
+
+enum color { RED, GREEN };
+
+static int limit = 5;
+
+int find(const char *id, int n) {
+    char q[100];
+    int i;
+    for (int j = 0; j < n; j++) {
+        limit += j;
+    }
+    sprintf(q, "SELECT %s", id);
+    struct acct a;
+    a.id = 1;
+    acct_t *p = &a;
+    p->id = 2;
+    return strlen(q);
+lbl:
+    goto lbl;
+}
+
+int (*fp)(int) = 0;
+void apply(int (*cb)(int), int v);

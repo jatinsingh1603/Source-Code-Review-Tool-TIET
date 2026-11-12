@@ -1,0 +1,103 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+  3 parent=2 block
+  4 parent=2 function
+  5 parent=1 class
+  6 parent=0 class
+  7 parent=6 function
+  8 parent=0 class
+  9 parent=8 function
+symbols:
+  basics.kt.txt:1:9 'com' module scope=-1 ref
+  basics.kt.txt:1:13 'bank' module scope=-1 ref
+  basics.kt.txt:1:18 'app' module scope=-1 ref
+  basics.kt.txt:3:8 'java' module scope=-1 ref
+  basics.kt.txt:3:13 'sql' module scope=-1 ref
+  basics.kt.txt:3:17 'Connection' module scope=-1 ref
+  basics.kt.txt:4:8 'kotlin' module scope=-1 ref
+  basics.kt.txt:4:15 'io' module scope=-1 ref
+  basics.kt.txt:4:18 'println' module scope=-1 ref
+  basics.kt.txt:4:29 'pr' import scope=0 def
+  basics.kt.txt:6:7 'Repo' class scope=0 def
+  basics.kt.txt:6:24 'conn' field scope=1 def
+  basics.kt.txt:6:30 'Connection' variable scope=-1 ref
+  basics.kt.txt:6:46 'name' field scope=1 def
+  basics.kt.txt:6:52 'String' variable scope=-1 ref
+  basics.kt.txt:6:62 'Base' variable scope=-1 ref
+  basics.kt.txt:7:9 'limit' field scope=1 def
+  basics.kt.txt:9:9 'find' method scope=1 def
+  basics.kt.txt:9:14 'id' parameter scope=2 def
+  basics.kt.txt:9:18 'String' variable scope=-1 ref
+  basics.kt.txt:9:26 'n' parameter scope=2 def
+  basics.kt.txt:9:29 'Int' variable scope=-1 ref
+  basics.kt.txt:9:39 'String' variable scope=-1 ref
+  basics.kt.txt:10:13 'q' variable scope=2 def
+  basics.kt.txt:10:47 'id' parameter scope=2 ref
+  basics.kt.txt:10:55 'id' parameter scope=2 ref
+  basics.kt.txt:11:13 'r' variable scope=2 def
+  basics.kt.txt:11:17 'conn' field scope=1 ref
+  basics.kt.txt:11:22 'createStatement' field scope=-1 ref
+  basics.kt.txt:11:40 'executeQuery' field scope=-1 ref
+  basics.kt.txt:11:53 'q' variable scope=2 ref
+  basics.kt.txt:12:14 'x' variable scope=3 def
+  basics.kt.txt:12:19 'listOf' variable scope=-1 ref
+  basics.kt.txt:13:13 'println' variable scope=-1 ref
+  basics.kt.txt:13:21 'x' variable scope=3 ref
+  basics.kt.txt:15:13 'f' variable scope=2 def
+  basics.kt.txt:15:19 'a' variable scope=4 def
+  basics.kt.txt:15:22 'Int' variable scope=-1 ref
+  basics.kt.txt:15:29 'a' variable scope=4 ref
+  basics.kt.txt:15:33 'limit' field scope=1 ref
+  basics.kt.txt:16:21 'name' field scope=-1 ref
+  basics.kt.txt:20:19 'MAX' constant scope=5 def
+  basics.kt.txt:24:8 'Single' class scope=0 def
+  basics.kt.txt:25:9 'go' method scope=6 def
+  basics.kt.txt:28:11 'Greeter' class scope=0 def
+  basics.kt.txt:29:9 'greet' method scope=8 def
+  basics.kt.txt:29:15 'who' parameter scope=9 def
+  basics.kt.txt:29:20 'String' variable scope=-1 ref
+extents:
+  'Repo' basics.kt.txt:6-22
+  'find' basics.kt.txt:9-17
+  'Single' basics.kt.txt:24-26
+  'go' basics.kt.txt:25:5
+  'Greeter' basics.kt.txt:28-30
+  'greet' basics.kt.txt:29:5
+references:
+  'com' scope=-1: 1
+  'bank' scope=-1: 1
+  'app' scope=-1: 1
+  'java' scope=-1: 3
+  'sql' scope=-1: 3
+  'Connection' scope=-1: 3, 6
+  'kotlin' scope=-1: 4
+  'io' scope=-1: 4
+  'println' scope=-1: 4, 13
+  'pr' scope=0: 4
+  'Repo' scope=0: 6
+  'conn' scope=1: 6, 11
+  'name' scope=1: 6
+  'String' scope=-1: 6, 9, 9, 29
+  'Base' scope=-1: 6
+  'limit' scope=1: 7, 15
+  'find' scope=1: 9
+  'id' scope=2: 9, 10, 10
+  'n' scope=2: 9
+  'Int' scope=-1: 9, 15
+  'q' scope=2: 10, 11
+  'r' scope=2: 11
+  'createStatement' scope=-1: 11
+  'executeQuery' scope=-1: 11
+  'x' scope=3: 12, 13
+  'listOf' scope=-1: 12
+  'f' scope=2: 15
+  'a' scope=4: 15, 15
+  'name' scope=-1: 16
+  'MAX' scope=5: 20
+  'Single' scope=0: 24
+  'go' scope=6: 25
+  'Greeter' scope=0: 28
+  'greet' scope=8: 29
+  'who' scope=9: 29

@@ -27,6 +27,11 @@ class Shapes:
     callee_field: str
     arguments: str
     assignments: frozenset[str]
+    # Additions for the grammars of E07-05b: the concatenation token, argument wrapper nodes
+    # (``argument`` in C# and PHP), further call node types and a receiver field.
+    plus: str = "+"
+    wrappers: frozenset[str] = frozenset()
+    extra_calls: frozenset[str] = frozenset()
 
 
 def _text(node: TSNode | None) -> str | None:
@@ -39,7 +44,9 @@ def _is_plus(node: TSNode, shapes: Shapes) -> bool:
     if node.type != shapes.binary:
         return False
     operator = node.child_by_field_name("operator")
-    return operator is not None and operator.type == "+"
+    if operator is None:  # grammars without field names (Kotlin): look at the anonymous token
+        return any(not child.is_named and child.type == shapes.plus for child in node.children)
+    return operator.type == shapes.plus
 
 
 def _pieces(literal: TSNode, shapes: Shapes) -> list[str]:
@@ -79,14 +86,16 @@ def _top_of_chain(literal: TSNode, shapes: Shapes) -> TSNode:
 def _enclosing(start: TSNode, shapes: Shapes) -> tuple[str | None, str | None]:
     ancestor = start.parent
     while ancestor is not None and (
-        ancestor.type == shapes.parenthesised or _is_plus(ancestor, shapes)
+        ancestor.type == shapes.parenthesised
+        or ancestor.type in shapes.wrappers
+        or _is_plus(ancestor, shapes)
     ):
         ancestor = ancestor.parent
     if ancestor is None:
         return None, None
     if ancestor.type == shapes.arguments:
         call = ancestor.parent
-        if call is not None and call.type == shapes.call:
+        if call is not None and (call.type == shapes.call or call.type in shapes.extra_calls):
             return _callee_text(call, shapes), None
     elif ancestor.type in shapes.assignments:
         return None, _assignment_target(ancestor)
@@ -95,8 +104,13 @@ def _enclosing(start: TSNode, shapes: Shapes) -> tuple[str | None, str | None]:
 
 def _callee_text(call: TSNode, shapes: Shapes) -> str | None:
     callee = call.child_by_field_name(shapes.callee_field)
+    if callee is None:
+        for fallback in ("function", "method", "name"):
+            callee = call.child_by_field_name(fallback)
+            if callee is not None:
+                break
     text = _text(callee)
-    owner = call.child_by_field_name("object")
+    owner = call.child_by_field_name("object") or call.child_by_field_name("receiver")
     if owner is not None and (owner_text := _text(owner)) is not None and text is not None:
         return f"{owner_text}.{text}"  # Java: the receiver and the method name are separate fields
     return text
@@ -105,10 +119,10 @@ def _callee_text(call: TSNode, shapes: Shapes) -> str | None:
 def _assignment_target(node: TSNode) -> str | None:
     for field in ("name", "left"):
         target = node.child_by_field_name(field)
-        if target is not None and target.type in ("identifier", "expression_list"):
+        if target is not None and target.type in ("identifier", "expression_list", "variable_name"):
             if target.type == "expression_list" and target.named_child_count == 1:
                 target = target.named_children[0]
-            if target.type == "identifier":
+            if target.type in ("identifier", "variable_name"):
                 return _text(target)
     return None
 

@@ -1,0 +1,12 @@
+function 'ok' ('ok')
+  header 2:1-2:16
+  body   2:17-2:31
+  full   2:1-2:31
+function 'bad' ('bad')
+  header 4:1-4:16
+  body   4:17-4:34
+  full   4:1-4:34
+function 'later' ('later')
+  header 6:1-6:19
+  body   6:20-6:34
+  full   6:1-6:34

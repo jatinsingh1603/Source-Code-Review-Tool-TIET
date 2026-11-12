@@ -1,0 +1,30 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 function
+  3 parent=1 function
+  4 parent=1 function
+symbols:
+  syntax_error.cs.txt:1:7 'Broken' class scope=0 def
+  syntax_error.cs.txt:3:9 'Ok' method scope=1 def
+  syntax_error.cs.txt:3:16 'a' parameter scope=2 def
+  syntax_error.cs.txt:3:28 'a' parameter scope=2 ref
+  syntax_error.cs.txt:5:9 'Bad' method scope=1 def
+  syntax_error.cs.txt:5:17 'a' parameter scope=3 def
+  syntax_error.cs.txt:5:30 'a' parameter scope=3 ref
+  syntax_error.cs.txt:7:9 'later' method scope=1 def
+  syntax_error.cs.txt:7:19 'b' parameter scope=4 def
+  syntax_error.cs.txt:7:31 'b' parameter scope=4 ref
+extents:
+  'Broken' syntax_error.cs.txt:1-8
+  'Ok' syntax_error.cs.txt:3:5
+  'Bad' syntax_error.cs.txt:5:5
+  'later' syntax_error.cs.txt:7:5
+references:
+  'Broken' scope=0: 1
+  'Ok' scope=1: 3
+  'a' scope=2: 3, 3
+  'Bad' scope=1: 5
+  'a' scope=3: 5, 5
+  'later' scope=1: 7
+  'b' scope=4: 7, 7

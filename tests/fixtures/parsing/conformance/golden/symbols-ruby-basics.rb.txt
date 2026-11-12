@@ -1,0 +1,98 @@
+scopes:
+  0 parent=None module
+  1 parent=0 class
+  2 parent=1 class
+  3 parent=2 function
+  4 parent=2 function
+  5 parent=4 function
+  6 parent=4 function
+  7 parent=6 function
+  8 parent=2 function
+symbols:
+  basics.rb.txt:1:1 'require' variable scope=-1 ref
+  basics.rb.txt:4:8 'Bank' class scope=0 def
+  basics.rb.txt:5:9 'Repo' class scope=1 def
+  basics.rb.txt:5:16 'Base' variable scope=-1 ref
+  basics.rb.txt:6:5 'LIMIT' constant scope=2 def
+  basics.rb.txt:7:5 'attr_accessor' variable scope=-1 ref
+  basics.rb.txt:7:19 ':conn' variable scope=-1 ref
+  basics.rb.txt:9:9 'initialize' method scope=2 def
+  basics.rb.txt:9:20 'conn' parameter scope=3 def
+  basics.rb.txt:9:26 'name' parameter scope=3 def
+  basics.rb.txt:9:39 'rest' parameter scope=3 def
+  basics.rb.txt:9:45 'key' parameter scope=3 def
+  basics.rb.txt:9:55 'opts' parameter scope=3 def
+  basics.rb.txt:9:62 'blk' parameter scope=3 def
+  basics.rb.txt:10:7 '@conn' variable scope=3 def
+  basics.rb.txt:10:15 'conn' parameter scope=3 ref
+  basics.rb.txt:13:9 'find' method scope=2 def
+  basics.rb.txt:13:14 'id' parameter scope=4 def
+  basics.rb.txt:14:7 'q' variable scope=4 def
+  basics.rb.txt:14:42 'id' parameter scope=4 ref
+  basics.rb.txt:15:7 'r' variable scope=4 def
+  basics.rb.txt:15:11 '@conn' variable scope=-1 ref
+  basics.rb.txt:15:17 'execute' method scope=-1 ref
+  basics.rb.txt:15:25 'q' variable scope=4 ref
+  basics.rb.txt:16:7 'rows' variable scope=-1 ref
+  basics.rb.txt:16:12 'each' method scope=-1 ref
+  basics.rb.txt:16:21 'row' parameter scope=5 def
+  basics.rb.txt:16:26 'i' parameter scope=5 def
+  basics.rb.txt:17:9 'puts' variable scope=-1 ref
+  basics.rb.txt:17:14 'row' parameter scope=5 ref
+  basics.rb.txt:19:7 'f' variable scope=4 def
+  basics.rb.txt:19:14 'a' parameter scope=6 def
+  basics.rb.txt:19:19 'a' parameter scope=6 ref
+  basics.rb.txt:20:7 'x' variable scope=4 def
+  basics.rb.txt:20:11 'Repo' variable scope=-1 ref
+  basics.rb.txt:20:17 'LIMIT' field scope=-1 ref
+  basics.rb.txt:21:7 'a' variable scope=4 def
+  basics.rb.txt:21:10 'b' variable scope=4 def
+  basics.rb.txt:22:12 'helper' method scope=-1 ref
+  basics.rb.txt:22:19 'key' field scope=-1 ref
+  basics.rb.txt:25:14 'helper' method scope=2 def
+  basics.rb.txt:25:21 'p' parameter scope=8 def
+  basics.rb.txt:25:26 'p' parameter scope=8 ref
+extents:
+  'Bank' basics.rb.txt:4-27
+  'Repo' basics.rb.txt:5-26
+  'initialize' basics.rb.txt:9-11
+  'find' basics.rb.txt:13-23
+  'helper' basics.rb.txt:25:5
+references:
+  'require' scope=-1: 1
+  'Bank' scope=0: 4
+  'Repo' scope=1: 5
+  'Base' scope=-1: 5
+  'LIMIT' scope=2: 6
+  'attr_accessor' scope=-1: 7
+  ':conn' scope=-1: 7
+  'initialize' scope=2: 9
+  'conn' scope=3: 9, 10
+  'name' scope=3: 9
+  'rest' scope=3: 9
+  'key' scope=3: 9
+  'opts' scope=3: 9
+  'blk' scope=3: 9
+  '@conn' scope=3: 10
+  'find' scope=2: 13
+  'id' scope=4: 13, 14
+  'q' scope=4: 14, 15
+  'r' scope=4: 15
+  '@conn' scope=-1: 15
+  'execute' scope=-1: 15
+  'rows' scope=-1: 16
+  'each' scope=-1: 16
+  'row' scope=5: 16, 17
+  'i' scope=5: 16
+  'puts' scope=-1: 17
+  'f' scope=4: 19
+  'a' scope=6: 19, 19
+  'x' scope=4: 20
+  'Repo' scope=-1: 20
+  'LIMIT' scope=-1: 20
+  'a' scope=4: 21
+  'b' scope=4: 21
+  'helper' scope=-1: 22
+  'key' scope=-1: 22
+  'helper' scope=2: 25
+  'p' scope=8: 25, 25
