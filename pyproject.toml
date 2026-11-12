@@ -36,6 +36,7 @@ eval = []        # E36/E37: dataset and metrics tooling
 
 [project.scripts]
 codekavach = "codekavach.cli.app:main"
+codekavach-mcp = "codekavach.integrations.mcp.server:main"
 
 [project.entry-points."codekavach.engines"]
 opengrep = "codekavach.analysis.engines.adapters.opengrep:OpengrepAdapter"

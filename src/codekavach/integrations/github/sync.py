@@ -47,7 +47,7 @@ def _write_state(path: Path | None, repo: str, items: list[dict[str, Any]]) -> N
         except ValueError:
             previous = {}
     state = {"repo": repo, "issues": {**previous, **current}}
-    path.write_text(json.dumps(state,indent=1, sort_keys=True), encoding="utf-8")
+    path.write_text(json.dumps(state, indent=1, sort_keys=True), encoding="utf-8")
 
 
 def sync_findings(

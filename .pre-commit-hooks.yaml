@@ -1,0 +1,20 @@
+# Hooks exposed to other repositories' .pre-commit-config.yaml:
+#
+#   repos:
+#     - repo: https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET
+#       rev: main
+#       hooks:
+#         - id: codekavach
+#
+# The hook scans the whole project (taint analysis needs context) with deterministic engines only,
+# so nothing leaves the machine, and fails the commit on findings at or above `high`. Edit `args`
+# to change the gate, e.g. args: ["--fail-on", "critical"].
+- id: codekavach
+  name: CodeKavach security scan
+  description: Privacy-preserving secure code review (offline, deterministic engines).
+  entry: codekavach scan . --no-llm --offline
+  language: python
+  pass_filenames: false
+  always_run: false
+  types_or: [python, javascript, ts, java, go]
+  args: ["--fail-on", "high"]
