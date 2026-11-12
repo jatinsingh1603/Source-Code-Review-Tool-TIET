@@ -9,13 +9,14 @@ scan's egress ledger; the payload text and the original slice of ``/ledger/{seq}
 only. ``/reports/{fmt}`` renders through the installed renderers and re-renders after triage.
 """
 
+import json
 import re
 import threading
 from pathlib import Path
 from typing import Any, Final
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -31,6 +32,7 @@ from codekavach.server.db.engine import as_utc
 from codekavach.server.db.models import FindingRow, Project, ScanRow, utcnow
 from codekavach.server.errors import ApiError, not_found
 from codekavach.server.events import stream
+from codekavach.server.finding_query import FindingFilters, list_findings
 from codekavach.server.rbac import Permission
 from codekavach.server.reports import (
     LABELS,
@@ -44,7 +46,6 @@ from codekavach.server.results import (
     SEVERITY_ORDER,
     ScanPaths,
     ScanResults,
-    finding_summary,
     load_scan_settings,
     read_findings,
 )
@@ -63,9 +64,59 @@ _settings_cache: dict[str, Any] = {}
 _cache_lock = threading.Lock()
 
 
-def scan_json(row: ScanRow) -> dict[str, Any]:
-    """The JSON of a scan row."""
+_record_cache: dict[str, tuple[float, dict[str, Any]]] = {}
+
+
+def _scan_record(row: ScanRow) -> dict[str, Any]:
+    """The core scan record (``scan.json``) of a finished scan; ``{}`` when absent."""
+    if not row.workspace:
+        return {}
+    path = ScanPaths(Path(row.workspace)).scan_json
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return {}
+    with _cache_lock:
+        cached = _record_cache.get(row.id)
+    if cached is not None and cached[0] == mtime:
+        return cached[1]
+    try:
+        import json  # noqa: PLC0415
+
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    record = record if isinstance(record, dict) else {}
+    with _cache_lock:
+        _record_cache[row.id] = (mtime, record)
+    return record
+
+
+def scan_engines(row: ScanRow) -> list[dict[str, Any]]:
+    """The analysers the pipeline ran (its ``analyse-*`` stages) and how each ended."""
+    stages = _scan_record(row).get("stages") or []
+    return [
+        {"id": str(stage["name"]).removeprefix("analyse-"), "status": stage.get("status")}
+        for stage in stages
+        if isinstance(stage, dict) and str(stage.get("name", "")).startswith("analyse-")
+    ]
+
+
+def eta_seconds(row: ScanRow) -> int | None:
+    """Seconds left, from the elapsed time and the progress of a running scan."""
+    started = as_utc(row.started_at)
+    if row.status != "running" or started is None or row.progress < 5:
+        return None
+    elapsed = (utcnow() - started).total_seconds()
+    return max(0, int(elapsed * (100 - row.progress) / row.progress))
+
+
+def scan_json(row: ScanRow, project: Project | None = None) -> dict[str, Any]:
+    """The JSON of a scan row (``project`` adds the mode and ref of its source)."""
     counts = {name: int((row.counts or {}).get(name, 0)) for name in SEVERITY_ORDER}
+    privacy = row.privacy or {}
+    record = _scan_record(row)
+    ref = (project.source_ref if project is not None else None) or record.get("git_branch")
     return {
         "id": row.id,
         "project_id": row.project_id,
@@ -87,13 +138,27 @@ def scan_json(row: ScanRow) -> dict[str, Any]:
         "languages": row.languages or [],
         "error": row.error,
         "core_scan_id": row.core_scan_id,
+        "mode": "branch" if project is not None and project.source_type == "git" else "full",
+        "ref": ref,
+        "commit": record.get("git_commit"),
+        "payloads": privacy.get("payloads") if privacy else None,
+        "engines": scan_engines(row),
+        "eta_seconds": eta_seconds(row),
+        "duration_seconds": (
+            int((as_utc(row.finished_at) - as_utc(row.started_at)).total_seconds())  # type: ignore[operator]
+            if row.finished_at is not None and row.started_at is not None
+            else None
+        ),
         "privacy_summary": {
-            key: (row.privacy or {}).get(key)
-            for key in ("payloads", "blocked", "chain_ok", "zero_leak", "tokens_sent")
+            key: privacy.get(key)
+            for key in (
+                "payloads", "blocked", "chain_ok", "zero_leak", "tokens_sent", "bytes_sent",
+                "lines_sent", "privacy_score",
+            )
         }
-        if row.privacy
+        if privacy
         else None,
-    }
+    }  # fmt: skip
 
 
 def start_scan(
@@ -137,7 +202,7 @@ def start_scan(
         "log", {"level": "info", "message": f"Scan queued for {project.name}"}
     )
     state.runner.submit(scan_id)
-    return scan_json(row)
+    return scan_json(row, project)
 
 
 def get_scan_row(session: Session, scan_id: str) -> ScanRow:
@@ -183,15 +248,16 @@ def list_scans(
     query = select(ScanRow).order_by(ScanRow.created_at.desc()).limit(max(1, min(limit, 1000)))
     if project_id:
         query = query.where(ScanRow.project_id == project_id)
-    return [scan_json(row) for row in session.scalars(query)]
+    projects = {project.id: project for project in session.scalars(select(Project))}
+    return [scan_json(row, projects.get(row.project_id)) for row in session.scalars(query)]
 
 
 @router.get("/scans/{scan_id}", dependencies=[ReadDep])
 def get_scan(scan_id: str, session: SessionDep) -> dict[str, Any]:
     """One scan."""
     row = get_scan_row(session, scan_id)
-    data = scan_json(row)
     project = session.get(Project, row.project_id)
+    data = scan_json(row, project)
     data["project_name"] = project.name if project else None
     return data
 
@@ -264,12 +330,14 @@ def cancel_scan(
     audit.record(state.db, actor=principal.username, action="scan.cancel", resource=scan_id,
                  client=client_of(request))  # fmt: skip
     session.refresh(row)
-    return scan_json(row)
+    return scan_json(row, session.get(Project, row.project_id))
 
 
-@router.get("/scans/{scan_id}/findings", dependencies=[ReadDep])
+@router.get("/scans/{scan_id}/findings")
 def scan_findings(
     scan_id: str,
+    response: Response,
+    state: StateDep,
     session: SessionDep,
     severity: str | None = None,
     status: str | None = None,
@@ -277,53 +345,172 @@ def scan_findings(
     q: str | None = None,
     engine: str | None = None,
     path: str | None = None,
+    language: str | None = None,
+    verdict: str | None = None,
+    level: str | None = None,
+    owasp: str | None = None,
+    assignee: str | None = None,
+    baseline_state: str | None = None,
+    baseline: str | None = None,
+    offset: int = 0,
+    limit: int | None = None,
+    principal: Any = ReadDep,
 ) -> list[dict[str, Any]]:
-    """The findings of a scan, most severe first, filtered."""
+    """The findings of a scan, most severe first, filtered; the total is in ``X-Total-Count``."""
     get_scan_row(session, scan_id)
-    query = select(FindingRow).where(FindingRow.scan_id == scan_id)
-    if severity:
-        query = query.where(FindingRow.severity.in_(severity.lower().split(",")))
-    if status:
-        query = query.where(FindingRow.status.in_(status.lower().split(",")))
-    if cwe:
-        number = re.sub(r"(?i)^cwe-", "", cwe.strip())
-        query = query.where(FindingRow.cwe.contains(f"CWE-{number}"))
-    if engine:
-        query = query.where(FindingRow.engine == engine)
-    if path:
-        query = query.where(FindingRow.path.contains(path))
-    if q:
-        pattern = f"%{q.lower()}%"
-        query = query.where(
-            FindingRow.title.ilike(pattern)
-            | FindingRow.path.ilike(pattern)
-            | FindingRow.rule_id.ilike(pattern)
-            | FindingRow.cwe.ilike(pattern)
-        )
-    query = query.order_by(FindingRow.severity_rank.desc(), FindingRow.path, FindingRow.line)
-    return [finding_summary(row) for row in session.scalars(query)]
+    filters = FindingFilters(
+        severity=severity, status=status, cwe=cwe, q=q, engine=engine, path=path,
+        language=language, verdict=verdict, level=level, owasp=owasp, assignee=assignee,
+        baseline_state=baseline_state,
+    )  # fmt: skip
+    page = list_findings(session, [scan_id], filters, settings=state.get_settings(),
+                         offset=offset, limit=limit, baseline=baseline,
+                         me=principal.username)  # fmt: skip
+    response.headers["X-Total-Count"] = str(page["total"])
+    response.headers["X-Offset"] = str(page["offset"])
+    response.headers["X-Limit"] = str(page["limit"])
+    items: list[dict[str, Any]] = page["items"]
+    return items
+
+
+def privacy_extras(state: ServerState, row: ScanRow) -> dict[str, Any]:
+    """Byte and line figures for a scan stored before they were recorded."""
+    data = dict(row.privacy or {})
+    if "bytes_sent" in data:
+        return {}
+    results = scan_results(state, row)
+    extra = {"bytes_sent": 0, "lines_sent": 0, "bytes_recorded": 0, "lines_recorded": 0}
+    for record in results.records():
+        outcome = str(record.outcome.value)
+        size = results.payload_size(record.payload_hash) or (0, 0)
+        if outcome == "sent":
+            extra["bytes_sent"] += size[0]
+            extra["lines_sent"] += size[1]
+        elif outcome == "not_sent_dry_run":
+            extra["bytes_recorded"] += size[0]
+            extra["lines_recorded"] += size[1]
+    row.privacy = {**data, **extra}
+    return extra
 
 
 @router.get("/scans/{scan_id}/privacy", dependencies=[LedgerDep])
-def scan_privacy(scan_id: str, session: SessionDep) -> dict[str, Any]:
+def scan_privacy(scan_id: str, state: StateDep, session: SessionDep) -> dict[str, Any]:
     """The privacy summary of a completed scan."""
     row = get_scan_row(session, scan_id)
     _completed(row)
+    privacy_extras(state, row)
     data = dict(row.privacy or {})
     data.setdefault("level", row.privacy_level)
     data["provider"] = data.get("provider") or row.provider
     data["model"] = row.model or data.get("model")
     data["send"] = row.send
+    data["repo_bytes"] = repo_bytes(row)
+    data["lines_total"] = row.lines
+    data["score_parts"] = [
+        {"label": item.get("name"), "value": item.get("value"), "kind": item.get("kind")}
+        for item in data.get("score_components") or []
+        if isinstance(item, dict)
+    ]
     return data
 
 
-@router.get("/scans/{scan_id}/ledger", dependencies=[LedgerDep])
-def scan_ledger(scan_id: str, state: StateDep, session: SessionDep) -> dict[str, Any]:
-    """The egress ledger entries of the scan (metadata and hashes, no payload text)."""
+def repo_bytes(row: ScanRow) -> int | None:
+    """Total size of the scanned copy of the code (the state directory excluded)."""
+    if not row.workspace:
+        return None
+    source = ScanPaths(Path(row.workspace)).source
+    if not source.is_dir():
+        return None
+    total = 0
+    for item in source.rglob("*"):
+        if ".codekavach" in item.parts or ".git" in item.parts:
+            continue
+        try:
+            if item.is_file() and not item.is_symlink():
+                total += item.stat().st_size
+        except OSError:
+            continue
+    return total
+
+
+def _ledger_filter(
+    entries: list[dict[str, Any]],
+    q: str | None,
+    outcome: str | None,
+    provider: str | None,
+    finding_id: str | None,
+) -> list[dict[str, Any]]:
+    wanted = {item.strip() for item in (outcome or "").split(",") if item.strip()}
+    needle = (q or "").strip().lower()
+    found = []
+    for entry in entries:
+        if wanted and entry["outcome"] not in wanted:
+            continue
+        if provider and entry["provider"] != provider:
+            continue
+        if finding_id and entry["finding_id"] != finding_id:
+            continue
+        if needle:
+            haystack = " ".join(
+                str(entry.get(key) or "")
+                for key in ("seq", "payload_hash", "entry_hash", "candidate_id", "finding_id",
+                            "provider", "model", "task", "outcome", "block_code")
+            ).lower()  # fmt: skip
+            if needle not in haystack:
+                continue
+        found.append(entry)
+    return found
+
+
+@router.get("/scans/{scan_id}/ledger")
+def scan_ledger(
+    scan_id: str,
+    request: Request,
+    state: StateDep,
+    session: SessionDep,
+    q: str | None = None,
+    outcome: str | None = None,
+    provider: str | None = None,
+    finding_id: str | None = None,
+    offset: int = 0,
+    limit: int | None = None,
+    format: str = "json",  # noqa: A002 - the documented query parameter
+    principal: Any = LedgerDep,
+) -> Any:
+    """The egress ledger entries (metadata and hashes, no payload text), paged and filtered.
+
+    ``format=jsonl`` downloads the matching entries as JSON Lines, one record per line.
+    """
     row = get_scan_row(session, scan_id)
     results = scan_results(state, row)
-    entries = results.ledger_rows(finding_map(session, scan_id))
-    return {"scan_id": scan_id, "count": len(entries), "entries": entries}
+    entries = _ledger_filter(
+        results.ledger_rows(finding_map(session, scan_id)), q, outcome, provider, finding_id
+    )
+    if format == "jsonl":
+        audit.record(state.db, actor=principal.username, action="privacy.export_ledger",
+                     resource=scan_id, client=client_of(request),
+                     detail={"entries": len(entries)})  # fmt: skip
+        body = "".join(json.dumps(entry, default=str, sort_keys=True) + "\n" for entry in entries)
+        return Response(
+            body,
+            media_type="application/x-ndjson",
+            headers={"Content-Disposition": f'attachment; filename="ledger-{scan_id}.jsonl"'},
+        )
+    if format != "json":
+        raise ApiError(400, "invalid_format", "format is json or jsonl")
+    total = len(entries)
+    start = max(0, offset)
+    size = max(total, 1) if limit is None else max(1, min(limit, 1000))
+    page = entries[start : start + size]
+    return {
+        "scan_id": scan_id,
+        "count": len(page),
+        "total": total,
+        "offset": start,
+        "limit": size,
+        "bytes_total": sum(int(entry.get("bytes") or 0) for entry in entries),
+        "entries": page,
+    }
 
 
 @router.get("/scans/{scan_id}/ledger/{seq}")
@@ -349,6 +536,50 @@ def scan_ledger_entry(
     return detail
 
 
+def terms_file_for(state: ServerState, session: Session, row: ScanRow) -> Path | None:
+    """The listed-terms file the scan's zero-leak check uses (as the scan job chooses it)."""
+    project = session.get(Project, row.project_id)
+    if project is not None and project.source_type == "sample" and state.config.sample_dir:
+        candidate = state.config.sample_dir / "ground-truth" / "terms.txt"
+        return candidate if candidate.is_file() else None
+    if row.workspace:
+        candidate = ScanPaths(Path(row.workspace)).source / ".codekavach-terms.txt"
+        return candidate if candidate.is_file() else None
+    return None
+
+
+def verification(state: ServerState, session: Session, row: ScanRow) -> dict[str, Any]:
+    """The full ledger verification of a scan: chain, payload hashes, listed terms."""
+    results = scan_results(state, row)
+    steps = results.verify(terms_file_for(state, session, row))
+    chain_ok, entries, reason = results.chain()
+    data = {step.name: step.data if isinstance(step.data, dict) else {} for step in steps}
+    records = results.records()
+    payloads = data.get("payloads", {})
+    terms = data.get("terms", {})
+    return {
+        "scan_id": row.id,
+        "ok": all(step.ok for step in steps if step.name in {"chain", "payloads"}) and chain_ok,
+        "chain_ok": chain_ok,
+        "entries": entries,
+        "reason": reason,
+        "first_bad_seq": (data.get("chain") or {}).get("first_bad_seq"),
+        "hashes_ok": int(payloads.get("checked", 0)) - len(payloads.get("mismatched", [])),
+        "hashes_mismatched": len(payloads.get("mismatched", [])),
+        "payloads_missing": len(payloads.get("missing", [])),
+        "blocked": sum(1 for record in records if str(record.outcome.value) == "blocked"),
+        "terms_checked": int(terms.get("checked", 0)),
+        "terms_found": len(terms.get("hits", [])),
+        "head_hash": records[-1].entry_hash if records else None,
+        "message": "; ".join(str(step.summary or step.message) for step in steps),
+        "steps": [
+            {"name": step.name, "ok": step.ok, "summary": step.summary or step.message}
+            for step in steps
+        ],
+        "verified_at": utcnow(),
+    }
+
+
 @router.post("/scans/{scan_id}/ledger/verify")
 def verify_ledger(
     scan_id: str,
@@ -357,33 +588,118 @@ def verify_ledger(
     session: SessionDep,
     principal: Any = LedgerDep,
 ) -> dict[str, Any]:
-    """Walk the hash chain and re-hash every stored payload now."""
+    """Walk the hash chain, re-hash every stored payload and search for the listed terms now."""
     row = get_scan_row(session, scan_id)
-    results = scan_results(state, row)
-    steps = results.verify(None)
-    chain_ok, entries, reason = results.chain()
+    result = verification(state, session, row)
     audit.record(state.db, actor=principal.username, action="privacy.verify_ledger",
                  resource=scan_id, client=client_of(request))  # fmt: skip
-    return {
-        "ok": all(step.ok for step in steps if step.name in {"chain", "payloads"}) and chain_ok,
-        "chain_ok": chain_ok,
-        "entries": entries,
-        "reason": reason,
-        "first_bad_seq": next(
-            (
-                step.data.get("first_bad_seq")
-                for step in steps
-                if step.name == "chain" and not step.ok and isinstance(step.data, dict)
-            ),
-            None,
-        ),
-        "message": "; ".join(str(step.summary or step.message) for step in steps),
-        "steps": [
-            {"name": step.name, "ok": step.ok, "summary": step.summary or step.message}
-            for step in steps
-        ],
-        "verified_at": utcnow(),
+    return result
+
+
+@router.get("/scans/{scan_id}/ledger-verification")
+def verification_report(
+    scan_id: str,
+    request: Request,
+    state: StateDep,
+    session: SessionDep,
+    format: str = "json",  # noqa: A002 - the documented query parameter
+    principal: Any = LedgerDep,
+) -> Response:
+    """Download the verification report (``json`` or ``txt``)."""
+    row = get_scan_row(session, scan_id)
+    result = verification(state, session, row)
+    audit.record(state.db, actor=principal.username, action="privacy.verification_report",
+                 resource=scan_id, client=client_of(request))  # fmt: skip
+    if format == "txt":
+        lines = [
+            f"CodeKavach egress ledger verification for scan {scan_id}",
+            f"Verified at {result['verified_at'].isoformat()}",
+            f"Result: {'PASS' if result['ok'] else 'FAIL'}",
+            f"Chain: {'intact' if result['chain_ok'] else 'broken'} over {result['entries']} "
+            f"entries; head {result['head_hash'] or '-'}",
+            f"Payload hashes: {result['hashes_ok']} match, {result['hashes_mismatched']} "
+            f"mismatch, {result['payloads_missing']} missing",
+            f"Blocked by the egress guard: {result['blocked']}",
+            f"Listed terms: {result['terms_checked']} checked, {result['terms_found']} found "
+            "(verbatim search only)",
+            "",
+            *[f"[{'ok' if step['ok'] else 'FAIL'}] {step['summary']}" for step in result["steps"]],
+        ]
+        media, body, suffix = "text/plain; charset=utf-8", "\n".join(lines) + "\n", "txt"
+    elif format == "json":
+        media = "application/json"
+        body = json.dumps(result, default=str, indent=2, sort_keys=True) + "\n"
+        suffix = "json"
+    else:
+        raise ApiError(400, "invalid_format", "format is json or txt")
+    return Response(
+        body,
+        media_type=media,
+        headers={"Content-Disposition":
+                 f'attachment; filename="ledger-verification-{scan_id}.{suffix}"'},
+    )  # fmt: skip
+
+
+@router.get("/scans/{scan_id}/privacy/attestation.{fmt}")
+def download_attestation(
+    scan_id: str,
+    fmt: str,
+    request: Request,
+    state: StateDep,
+    session: SessionDep,
+    principal: Any = ReportDep,
+) -> Response:
+    """The structured privacy attestation as JSON, or the PDF report that carries it."""
+    row = get_scan_row(session, scan_id)
+    paths, core_id = _completed(row)
+    if fmt == "pdf":
+        return download_report(scan_id, "pdf", request, state, session, False, principal)
+    if fmt != "json":
+        raise ApiError(404, "format_unavailable", "the attestation is available as json or pdf")
+    from codekavach.core.models.enums import PrivacyLevel  # noqa: PLC0415
+    from codekavach.privacy.attestation import build_attestation  # noqa: PLC0415
+
+    results = scan_results(state, row)
+    settings = results.settings
+    terms = terms_file_for(state, session, row)
+    if terms is not None:
+        privacy = settings.privacy.model_copy(update={"domain_terms_file": terms})
+        settings = settings.model_copy(update={"privacy": privacy})
+    try:
+        attestation = build_attestation(
+            paths.state_dir, core_id, settings, level=PrivacyLevel(row.privacy_level)
+        )
+    except Exception as error:  # noqa: BLE001 - reported as an API error, not a 500
+        raise ApiError(503, "attestation_failed", "the attestation could not be built",
+                       hint=type(error).__name__) from None  # fmt: skip
+    records = results.records()
+    levels: dict[str, int] = {}
+    for record in records:
+        levels[str(record.level.value)] = levels.get(str(record.level.value), 0) + 1
+    privacy_extras(state, row)
+    stored = row.privacy or {}
+    body = {
+        "attestation": attestation.to_api(),
+        "scan_id": scan_id,
+        "core_scan_id": core_id,
+        "levels_used": levels,
+        "bytes_sent": stored.get("bytes_sent"),
+        "lines_sent": stored.get("lines_sent"),
+        "ledger_head_hash": records[-1].entry_hash if records else None,
+        "generated_at": utcnow(),
+        "digest": attestation.digest(),
+        "digest_algorithm": "sha256 over the canonical JSON of the attestation",
+        "signature": None,
+        "signature_note": "the server holds no signing key; verify with the digest and the "
+        "ledger head hash",
     }
+    audit.record(state.db, actor=principal.username, action="privacy.attestation",
+                 resource=scan_id, client=client_of(request))  # fmt: skip
+    return Response(
+        json.dumps(body, default=str, indent=2, sort_keys=True) + "\n",
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="attestation-{scan_id}.json"'},
+    )
 
 
 @router.get("/scans/{scan_id}/reports", dependencies=[ReportDep])
@@ -489,16 +805,16 @@ def sync_github(
 
     row = get_scan_row(session, scan_id)
     _completed(row)
-    findings = list(
-        session.scalars(
-            select(FindingRow)
-            .where(FindingRow.scan_id == scan_id)
-            .order_by(FindingRow.severity_rank.desc())
-        )
-    )
+    query = select(FindingRow).where(FindingRow.scan_id == scan_id)
+    if body.finding_ids:
+        query = query.where(FindingRow.id.in_(body.finding_ids))
+    findings = list(session.scalars(query.order_by(FindingRow.severity_rank.desc())))
+    if body.finding_ids and len(findings) != len(set(body.finding_ids)):
+        raise ApiError(404, "finding_not_in_scan", "a finding id does not belong to this scan")
     result = sync_scan(findings, repo=body.repo, token_ref=body.token_ref, dry_run=body.dry_run)
     audit.record(state.db, actor=principal.username, action="sync.github", resource=scan_id,
                  client=client_of(request),
                  detail={"repo": body.repo, "dry_run": body.dry_run,
+                         "findings": len(findings),
                          "created": result.get("created", 0)})  # fmt: skip
     return result

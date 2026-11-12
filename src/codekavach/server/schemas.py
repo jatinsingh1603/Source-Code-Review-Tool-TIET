@@ -126,3 +126,66 @@ class GithubSyncBody(_Body):
     repo: str = Field(pattern=r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
     token_ref: str | None = Field(default=None, max_length=256)
     dry_run: bool = True
+    finding_ids: list[str] | None = Field(default=None, max_length=500)
+
+
+class ViewCreate(_Body):
+    """``POST /views``: a named set of findings filters."""
+
+    name: str = Field(min_length=1, max_length=128)
+    filters: dict[str, str | None] = Field(default_factory=dict)
+
+
+class TokenCreate(_Body):
+    """``POST /me/tokens``: a personal API token."""
+
+    name: str = Field(min_length=1, max_length=128)
+    expires_in_days: int | None = Field(default=90, ge=1, le=730)
+
+
+class ProfileUpdate(_Body):
+    """``PATCH /me``: the caller's own name and e-mail address."""
+
+    display_name: str | None = Field(default=None, max_length=128)
+    email: str | None = Field(default=None, max_length=256)
+
+
+class PreferencesBody(BaseModel):
+    """``PATCH /me/preferences``: display preferences (unknown keys are refused)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    theme: Literal["light", "dark", "system"] | None = None
+    density: Literal["comfortable", "compact"] | None = None
+    reduce_motion: bool | None = None
+    language: str | None = Field(default=None, max_length=16, pattern=r"^[a-z]{2}(-[A-Z]{2})?$")
+    time_zone: str | None = Field(default=None, max_length=64)
+    date_format: Literal["long", "iso"] | None = None
+
+
+class NotificationsBody(BaseModel):
+    """``PATCH /me/notifications``: event to channel switches (stored only, nothing is sent)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    events: dict[str, dict[str, bool]] = Field(default_factory=dict)
+
+
+class PolicyValidateBody(_Body):
+    """``POST /policy/validate``."""
+
+    toml: str = Field(max_length=200_000)
+    project_id: str | None = Field(default=None, max_length=64)
+
+
+class RoleBody(_Body):
+    """``PUT /users/{id}/role``."""
+
+    role: RoleName
+
+
+class EvaluationRunBody(_Body):
+    """``POST /evaluation/run``."""
+
+    levels: list[LevelName] | None = Field(default=None, max_length=5)
+    limit: int | None = Field(default=None, ge=1, le=10_000)

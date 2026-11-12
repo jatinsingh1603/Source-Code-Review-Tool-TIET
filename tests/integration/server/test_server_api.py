@@ -282,7 +282,7 @@ def test_events_replay_until_done(
     kinds = [line.split(": ", 1)[1] for line in response.text.splitlines()
              if line.startswith("event: ")]  # fmt: skip
     assert {"stage", "progress", "finding", "done"} <= set(kinds)
-    assert set(kinds) <= {"stage", "progress", "log", "finding", "done"}
+    assert set(kinds) <= {"stage", "progress", "log", "finding", "egress", "done"}
     ids = [int(line[4:]) for line in response.text.splitlines() if line.startswith("id: ")]
     resumed = client.get(
         f"/api/v1/scans/{scan['id']}/events", headers={**admin, "Last-Event-ID": str(ids[-3])}

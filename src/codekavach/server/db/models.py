@@ -172,3 +172,42 @@ class AuditEvent(ServerBase):
     detail: Mapped[dict[str, Any]] = mapped_column(default=dict)
     prev_hash: Mapped[str] = mapped_column(String(64), default="")
     entry_hash: Mapped[str] = mapped_column(String(64), default="")
+
+
+class ApiToken(ServerBase):
+    """A named personal API token; only its SHA-256 is stored, the plaintext is shown once."""
+
+    __tablename__ = "api_tokens"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(String(128))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    prefix: Mapped[str] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    expires_at: Mapped[datetime | None] = mapped_column(default=None)
+    last_used_at: Mapped[datetime | None] = mapped_column(default=None)
+    revoked: Mapped[bool] = mapped_column(default=False)
+
+
+class SavedView(ServerBase):
+    """A user's named set of findings filters."""
+
+    __tablename__ = "saved_views"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(String(128))
+    filters: Mapped[dict[str, Any]] = mapped_column(default=dict)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class UserPreference(ServerBase):
+    """Per-user stored preferences (display and notification choices); never a secret."""
+
+    __tablename__ = "user_preferences"
+
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    value: Mapped[dict[str, Any]] = mapped_column(default=dict)

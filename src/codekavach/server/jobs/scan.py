@@ -90,6 +90,7 @@ class _Progress:
         self.total = 10
         self.done = 0
         self.findings_hint = 0
+        self.counts: dict[str, tuple[Any, Any]] = {}
 
     def _update(self, *, stage: str | None = None, progress: int | None = None) -> None:
         with self.job.state.db.transaction() as session:
@@ -115,19 +116,34 @@ class _Progress:
             stages = data.get("stages")
             self.total = len(stages) if isinstance(stages, list) else self.total
         elif kind == "stage.started":
-            self.log.append("stage", {"name": stage, "status": "started", "label": label})
+            self.log.append(
+                "stage",
+                {"name": stage, "status": "started", "label": label, "count": 0, "total": None},
+            )
             self._update(stage=stage)
         elif kind == "stage.progress":
             current, total = data.get("current"), data.get("total")
             unit = data.get("unit", "items")
+            self.counts[stage] = (current, total)
             message = f"{label}: {current}/{total} {unit}" if total else f"{label}: {current}"
-            self.log.append("progress", {"percent": self.percent(), "message": message})
+            self.log.append(
+                "progress",
+                {"percent": self.percent(), "message": message, "stage": stage,
+                 "count": current, "total": total, "unit": unit},
+            )  # fmt: skip
+            if stage == "llm-review":
+                # Live meter: candidates reviewed so far; bytes and checks follow at the end.
+                self.log.append("egress", {"payloads": current, "total": total, "final": False})
         elif kind in {"stage.finished", "stage.failed", "stage.skipped"}:
             self.done += 1
             status = {"stage.finished": "completed", "stage.failed": "failed"}.get(
                 str(kind), "skipped"
             )
-            self.log.append("stage", {"name": stage, "status": status, "label": label})
+            count, total = self.counts.get(stage, (None, None))
+            self.log.append(
+                "stage",
+                {"name": stage, "status": status, "label": label, "count": count, "total": total},
+            )
             if kind == "stage.failed":
                 self.log.append(
                     "log",
@@ -416,8 +432,27 @@ def _store(  # noqa: PLR0917 - the parts of one result
             row.progress = 92
             row.stage = "report"
     log.append(
-        "stage", {"name": "privacy-check", "status": "completed", "label": "Ledger verified"}
+        "egress",
+        {
+            "payloads": privacy.payloads,
+            "total": privacy.payloads,
+            "sent": privacy.sent,
+            "recorded": privacy.recorded,
+            "blocked": privacy.blocked,
+            "bytes": privacy.bytes_sent + privacy.bytes_recorded,
+            "bytes_sent": privacy.bytes_sent,
+            "secrets_checked": int(privacy.placeholders_by_type.get("secret", 0)),
+            "terms_checked": int(privacy.zero_leak.get("checked", 0)),
+            "terms_found": int(privacy.zero_leak.get("occurrences", 0)),
+            "chain_ok": privacy.chain_ok,
+            "final": True,
+        },
     )
+    log.append(
+        "stage",
+        {"name": "privacy-check", "status": "completed", "label": "Ledger verified",
+         "count": privacy.chain_entries, "total": privacy.chain_entries},
+    )  # fmt: skip
     log.append(
         "log",
         {"level": "info" if privacy.chain_ok else "error",
@@ -442,5 +477,9 @@ def _store(  # noqa: PLR0917 - the parts of one result
         except Exception as error:  # noqa: BLE001 - a report can be rendered later on demand
             log.append("log", {"level": "warning", "message": f"{fmt} report not rendered: "
                                f"{type(error).__name__}"})  # fmt: skip
-    log.append("stage", {"name": "report", "status": "completed", "label": "Reports ready"})
+    log.append(
+        "stage",
+        {"name": "report", "status": "completed", "label": "Reports ready",
+         "count": len(formats), "total": len(formats)},
+    )  # fmt: skip
     log.append("progress", {"percent": 100, "message": f"{len(findings)} findings"})

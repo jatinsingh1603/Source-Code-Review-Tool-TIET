@@ -3,7 +3,8 @@
 Owning epic: E32.
 
 The job runner turns pipeline events (E04-05, token fields only) into the dashboard's event types
-``stage``, ``progress``, ``log``, ``finding`` and ``done`` and appends them to an ``EventLog``:
+``stage``, ``progress``, ``log``, ``finding``, ``egress`` and ``done`` and appends them to an
+``EventLog`` (each stamped with ``at``, an ISO 8601 UTC time):
 in memory for live readers and as NDJSON in the scan's workspace so a finished scan can be replayed
 after a restart. Every event has a monotonic ``id`` so a client resumes with ``Last-Event-ID``
 without repeats or gaps. Messages are built from codes and counts, never from source text.
@@ -19,7 +20,7 @@ from pathlib import Path
 from typing import Any, Final
 
 EVENT_FILE: Final = "events.ndjson"
-EVENT_TYPES: Final = frozenset({"stage", "progress", "log", "finding", "done"})
+EVENT_TYPES: Final = frozenset({"stage", "progress", "log", "finding", "egress", "done"})
 HEARTBEAT_SECONDS: Final = 15.0
 POLL_SECONDS: Final = 0.25
 
@@ -60,6 +61,10 @@ class EventLog:
         if kind not in EVENT_TYPES:
             raise ValueError(f"unknown event type {kind!r}")
         stamped = {"at": datetime.now(UTC).isoformat(), **data}
+        if kind == "stage":
+            # Every stage event carries its item counts; null when the stage reports none.
+            stamped.setdefault("count", None)
+            stamped.setdefault("total", None)
         with self._lock:
             event = StreamEvent(len(self._events) + 1, kind, stamped)
             self._events.append(event)

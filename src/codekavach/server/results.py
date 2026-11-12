@@ -87,6 +87,10 @@ class PrivacySummary:
     placeholders_by_type: dict[str, int] = field(default_factory=dict)
     pseudonyms: int = 0
     tokens_sent: int = 0
+    bytes_sent: int = 0
+    lines_sent: int = 0
+    bytes_recorded: int = 0
+    lines_recorded: int = 0
     chain_ok: bool = False
     chain_entries: int = 0
     ledger_head: str | None = None
@@ -434,6 +438,25 @@ class ScanResults:
         self.settings = settings
         self.layout = StateLayout(paths.state_dir)
         self.reader = open_reader(self.layout, settings=settings)
+        self._sizes: dict[str, tuple[int, int] | None] = {}
+
+    def payload_size(self, payload_hash: str) -> tuple[int, int] | None:
+        """``(bytes, lines)`` of a stored payload; ``None`` when it is not stored or pruned.
+
+        Only the size is kept: the text is decrypted, measured and dropped, never returned.
+        """
+        if payload_hash not in self._sizes:
+            try:
+                text = self.reader.payload_text(payload_hash)
+            except Exception as error:  # noqa: BLE001 - an unreadable body has no size
+                _log.info("server_payload_unreadable", error_type=type(error).__name__)
+                text = None
+            if text is None:
+                self._sizes[payload_hash] = None
+            else:
+                body = text.expose()
+                self._sizes[payload_hash] = (len(body.encode("utf-8")), _line_count(body))
+        return self._sizes[payload_hash]
 
     def records(self) -> list[Any]:
         """The ledger records of the scan, in order."""
@@ -492,6 +515,17 @@ class ScanResults:
             for record in records
             if str(record.outcome.value) == "sent"
         )
+        for record in records:
+            outcome = str(record.outcome.value)
+            if outcome not in {"sent", "not_sent_dry_run"}:
+                continue
+            size = self.payload_size(record.payload_hash) or (0, 0)
+            if outcome == "sent":
+                summary.bytes_sent += size[0]
+                summary.lines_sent += size[1]
+            else:
+                summary.bytes_recorded += size[0]
+                summary.lines_recorded += size[1]
         if records:
             summary.ledger_head = records[-1].entry_hash
             if summary.model is None:
@@ -524,6 +558,7 @@ class ScanResults:
         rows = []
         for record in self.records():
             candidate = str(record.candidate_id) if record.candidate_id else None
+            size = self.payload_size(record.payload_hash)
             rows.append(
                 {
                     "seq": record.seq,
@@ -540,6 +575,9 @@ class ScanResults:
                     "tokens_prompt": int(record.token_counts.prompt),
                     "tokens_completion": record.token_counts.completion,
                     "outcome": str(record.outcome.value),
+                    "bytes": size[0] if size else None,
+                    "lines_sent": size[1] if size else None,
+                    "policy_rule_key": record.policy_rule_key,
                     "block_code": record.block_code,
                     "ref_seq": record.ref_seq,
                     "candidate_id": candidate,
@@ -558,6 +596,9 @@ class ScanResults:
         payload_text = text.expose() if text is not None else ""
         original_text = ""
         original_start = None
+        path: str | None = None
+        slice_lines: list[int] = []
+        source_line = sink_line = None
         candidate = row["candidate_id"]
         if candidate:
             for entry in self.entries():
@@ -565,14 +606,52 @@ class ScanResults:
                     segments = entry.slice.segments
                     original_text = "\n...\n".join(segment.text.expose() for segment in segments)
                     original_start = segments[0].region.start_line if segments else None
+                    path = str(segments[0].path) if segments else None
+                    for segment in segments:
+                        lines = range(segment.region.start_line, segment.region.end_line + 1)
+                        slice_lines.extend(lines)
+                        role = str(getattr(segment.role, "value", segment.role))
+                        if role == "taint_step" and source_line is None:
+                            source_line = segment.region.start_line
+                        if role == "primary" and sink_line is None:
+                            sink_line = segment.region.start_line
                     break
+        marks = markup(payload_text, "payload")
+        kinds = Counter(str(item["kind"]) for item in marks)
         return {
             "entry": row,
             "payload_text": payload_text,
             "original_text": original_text,
             "original_start_line": original_start,
-            "markup": markup(payload_text, "payload"),
+            "path": path,
+            "start_line": original_start,
+            "slice_lines": sorted(set(slice_lines)),
+            "source_line": source_line,
+            "sink_line": sink_line,
+            "bytes": row.get("bytes"),
+            "lines_sent": _line_count(payload_text),
+            "lines_original": _line_count(original_text),
+            "lines_total": self._file_lines(path),
+            "replacements": dict(sorted(kinds.items())),
+            "markup": marks,
         }
+
+    def _file_lines(self, path: str | None) -> int | None:
+        """Line count of a scanned file (the count only; the file is not returned)."""
+        if not path:
+            return None
+        root = self.paths.source.resolve()
+        try:
+            target = (root / path).resolve()
+            if root not in target.parents:
+                return None
+            return _line_count(target.read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            return None
+
+
+def _line_count(text: str) -> int:
+    return len(text.splitlines()) if text else 0
 
 
 def attestation(summary: PrivacySummary) -> str:
