@@ -24,7 +24,7 @@ from codekavach.core.pipeline.memo import (
     memo_key,
 )
 from codekavach.core.pipeline.salt import ScanSalt
-from codekavach.core.store.base import ArtefactForbiddenError, ArtefactTypeError
+from codekavach.core.store.base import ArtefactForbiddenError, ArtefactTypeError, encode_artefact
 from codekavach.core.store.layout import StateLayout, StateLayoutError, atomic_write_bytes
 
 NAMESPACE = "parse.symbols.v1"
@@ -562,3 +562,10 @@ def test_json_values_are_returned_on_a_miss_and_equal_on_the_next_hit(
     assert second == value
     assert compute.calls == 1
     assert layout.item_path(NAMESPACE, key).exists()
+
+
+def test_the_single_pass_decode_matches_the_envelope_decode() -> None:
+    raw = encode_artefact(Table(names=["a", "b"])).data
+    assert memo_module.decode_model_entry(raw, Table) == Table(names=["a", "b"])
+    with pytest.raises(ArtefactTypeError):  # another tag takes the precise path
+        memo_module.decode_model_entry(raw, Other)

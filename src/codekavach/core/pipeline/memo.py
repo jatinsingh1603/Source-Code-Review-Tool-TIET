@@ -48,14 +48,16 @@ import threading
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
-from typing import Final, Protocol
+from typing import Any, Final, Protocol
 
-from pydantic import BaseModel, JsonValue
+from pydantic import BaseModel, JsonValue, TypeAdapter, ValidationError, create_model
 
 from codekavach.core.log import get_logger
 from codekavach.core.store.admin import touch
 from codekavach.core.store.base import (
+    ENVELOPE_VERSION,
     ArtefactCorruptError,
     ArtefactError,
     ArtefactTypeError,
@@ -64,6 +66,7 @@ from codekavach.core.store.base import (
     decode_list,
     decode_model,
     encode_artefact,
+    type_tag,
 )
 from codekavach.core.store.layout import StateLayout, atomic_write_bytes
 
@@ -198,6 +201,41 @@ def _as_encoded(raw: bytes) -> EncodedArtefact:
     return EncodedArtefact(shape, tag, raw, hashlib.sha256(raw).hexdigest())
 
 
+@cache
+def _envelope_adapter(model: type[BaseModel]) -> TypeAdapter[Any]:
+    """A validator of a whole ``model`` envelope, straight from its JSON bytes."""
+    envelope = create_model(
+        f"MemoEnvelope{model.__name__}",
+        ck_artefact=(int, ...),
+        shape=(str, ...),
+        type=(str, ...),
+        data=(model, ...),
+    )
+    return TypeAdapter(envelope)
+
+
+def decode_model_entry[M: BaseModel](raw: bytes, model: type[M]) -> M:
+    """Decode a ``model`` memo entry in one pass over its bytes.
+
+    A hit used to parse the JSON twice (once for the shape, once for the data) and then validate
+    the parsed dictionaries; on the parse stage's per-file facts that was most of a warm scan
+    (issue #313). The envelope is written with sorted keys, so it ends with the type tag: an entry
+    whose tail names ``model`` is validated by pydantic-core directly from the bytes. Anything
+    else, and any entry that does not validate, goes through ``decode_model``, which raises the
+    precise error.
+    """
+    tail = b'"shape":"model","type":' + json.dumps(type_tag(model)).encode("utf-8") + b"}"
+    if raw.rstrip().endswith(tail):
+        try:
+            envelope = _envelope_adapter(model).validate_json(raw)
+        except ValidationError:
+            pass
+        else:
+            if envelope.ck_artefact == ENVELOPE_VERSION and isinstance(envelope.data, model):
+                return envelope.data
+    return decode_model("memo", _as_encoded(raw), model)
+
+
 class DiskItemMemo:
     """Memo entries under ``<state>/cache/items``, written atomically."""
 
@@ -225,7 +263,7 @@ class DiskItemMemo:
             namespace,
             item_key,
             compute,
-            lambda encoded: decode_model("memo", encoded, model),
+            lambda raw: decode_model_entry(raw, model),
             check,
         )
 
@@ -244,7 +282,7 @@ class DiskItemMemo:
             namespace,
             item_key,
             lambda: list(compute()),
-            lambda encoded: decode_list("memo", encoded, item),
+            lambda raw: decode_list("memo", _as_encoded(raw), item),
             check,
         )
         return list(result)
@@ -254,7 +292,8 @@ class DiskItemMemo:
     ) -> JsonValue:
         """The stored JSON value, or the computed one stored for next time."""
 
-        def decode(encoded: EncodedArtefact) -> JsonValue:
+        def decode(raw: bytes) -> JsonValue:
+            encoded = _as_encoded(raw)
             # An empty list is stored with the "list" shape and no type tag; it is still JSON.
             if encoded.shape != "json" and not (encoded.shape == "list" and not encoded.type_tag):
                 raise ArtefactTypeError(f"memo entry is a {encoded.shape}, not a JSON value")
@@ -274,7 +313,7 @@ class DiskItemMemo:
         namespace: str,
         item_key: str,
         compute: Callable[[], T],
-        decode: Callable[[EncodedArtefact], T],
+        decode: Callable[[bytes], T],
         check: Callable[[T], None],
     ) -> T:
         check_arguments(namespace, item_key)
@@ -313,9 +352,7 @@ class DiskItemMemo:
         with self._lock:
             self._errors += 1
 
-    def _read[T](
-        self, path: Path, namespace: str, decode: Callable[[EncodedArtefact], T]
-    ) -> T | _Absent:
+    def _read[T](self, path: Path, namespace: str, decode: Callable[[bytes], T]) -> T | _Absent:
         try:
             raw = path.read_bytes()
         except FileNotFoundError:
@@ -327,7 +364,7 @@ class DiskItemMemo:
             )
             return _ABSENT
         try:
-            return decode(_as_encoded(raw))
+            return decode(raw)
         except ArtefactError as error:
             self._count_error()
             _log.warning(
