@@ -213,7 +213,7 @@ LAZY_COMMANDS: tuple[LazyEntry, ...] = (
     LazyEntry("sca", "codekavach.cli.sca:sca_app", "group",
               "Refresh the advisory mirror and list vulnerable dependencies."),
     LazyEntry("sbom", "codekavach.cli.sca:sbom_command", "command",
-              "Generate a CycloneDX or SPDX bill of materials."),
+              "Generate a CycloneDX 1.5 or SPDX 2.3 bill of materials from the manifests of a project."),
 )  # fmt: skip
 
 

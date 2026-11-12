@@ -59,7 +59,8 @@
 │ rules       List, show, validate, test and bundle native rule packs.                             │
 │ serve       Run the REST API server and the web dashboard.                                       │
 │ sca         Refresh the advisory mirror and list vulnerable dependencies.                        │
-│ sbom        Generate a CycloneDX or SPDX bill of materials.                                      │
+│ sbom        Generate a CycloneDX 1.5 or SPDX 2.3 bill of materials from the manifests of a       │
+│             project.                                                                             │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 
  Exit codes:
