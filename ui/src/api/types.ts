@@ -449,6 +449,11 @@ export interface LedgerDetail {
   lines_original?: number | null;
   lines_total?: number | null;
   replacements?: Record<string, number> | null;
+  /** Slice segments taken from files other than the one shown. */
+  other_file_segments?: number | null;
+  /** Preview only: the scan at the other level whose payload this is, and its ledger seq. */
+  source_scan_id?: string | null;
+  source_seq?: number | null;
 }
 
 export interface LedgerVerifyResult {

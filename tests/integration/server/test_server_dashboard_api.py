@@ -178,6 +178,25 @@ def test_ledger_entry_has_lines_path_and_bytes(
     assert detail["slice_lines"]
 
 
+def test_ledger_entry_original_is_numbered_like_the_file_and_preview_needs_a_scan(
+    server: tuple[TestClient, Any], admin: dict[str, str], scan: dict[str, Any]
+) -> None:
+    client = server[0]
+    entries = client.get(f"{API}/scans/{scan['id']}/ledger", headers=admin).json()["entries"]
+    sent = next(entry for entry in entries if entry["outcome"] == "sent" and entry["candidate_id"])
+    detail = client.get(f"{API}/scans/{scan['id']}/ledger/{sent['seq']}", headers=admin).json()
+    start = detail["original_start_line"]
+    shown = range(start, start + len(detail["original_text"].splitlines()))
+    assert set(detail["slice_lines"]) <= set(shown)
+    if detail["sink_line"] is not None:
+        assert detail["sink_line"] in detail["slice_lines"]
+    url = f"{API}/scans/{scan['id']}/ledger/{sent['seq']}/preview"
+    assert client.get(url, params={"level": "L9"}, headers=admin).status_code == 400
+    missing = client.get(url, params={"level": "L1"}, headers=admin)
+    assert missing.status_code == 404
+    assert missing.json()["error"]["code"] == "no_scan_at_level"
+
+
 def test_verify_and_verification_report(
     server: tuple[TestClient, Any],
     admin: dict[str, str],

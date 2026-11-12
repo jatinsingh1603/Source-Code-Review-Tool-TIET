@@ -187,7 +187,7 @@ export default function LedgerPage() {
           <div>
             <div className="xs faint">Payload hashes</div>
             <StatusDot tone={chainOk === false ? "bad" : "ok"} className="sm">
-              {result?.hashes_ok !== undefined ? `${fmtInt(result.hashes_ok)} match` : `${fmtInt(sent)} sent`} · {fmtInt(result?.blocked ?? blocked)} blocked
+              {result?.hashes_ok !== undefined ? `${fmtInt(result.hashes_ok)} unique payloads match` : `${fmtInt(sent)} sent`} · {fmtInt(result?.blocked ?? blocked)} blocked
             </StatusDot>
           </div>
           <div>

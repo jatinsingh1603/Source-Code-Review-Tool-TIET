@@ -617,6 +617,29 @@ class ScanResults:
             )
         return rows
 
+    def fingerprint_of(self, seq: int) -> str | None:
+        """The fingerprint of the candidate behind ledger entry ``seq`` (stable across scans)."""
+        record = next((item for item in self.records() if item.seq == seq), None)
+        if record is None or not record.candidate_id:
+            return None
+        for entry in self.entries():
+            if str(entry.payload.candidate_id) == str(record.candidate_id):
+                return str(entry.candidate.fingerprint) if entry.candidate is not None else None
+        return None
+
+    def seq_of_fingerprint(self, fingerprint: str) -> int | None:
+        """The first sent or dry-run ledger entry of the candidate with ``fingerprint``."""
+        candidates = {
+            str(entry.payload.candidate_id)
+            for entry in self.entries()
+            if entry.candidate is not None and str(entry.candidate.fingerprint) == fingerprint
+        }
+        for record in self.records():
+            outcome = str(record.outcome.value)
+            if outcome in {"sent", "not_sent_dry_run"} and str(record.candidate_id) in candidates:
+                return int(record.seq)
+        return None
+
     def ledger_entry_detail(self, seq: int, finding_of: dict[str, str]) -> dict[str, Any] | None:
         """One entry with its payload text, the original slice and the change markup."""
         rows = {row["seq"]: row for row in self.ledger_rows(finding_of)}
@@ -630,15 +653,22 @@ class ScanResults:
         path: str | None = None
         slice_lines: list[int] = []
         source_line = sink_line = None
+        other_segments = 0
         candidate = row["candidate_id"]
         if candidate:
             for entry in self.entries():
                 if str(entry.payload.candidate_id) == candidate and entry.slice is not None:
                     segments = entry.slice.segments
-                    original_text = "\n...\n".join(segment.text.expose() for segment in segments)
-                    original_start = segments[0].region.start_line if segments else None
-                    path = str(segments[0].path) if segments else None
-                    for segment in segments:
+                    primary = next(
+                        (s for s in segments if str(getattr(s.role, "value", s.role)) == "primary"),
+                        segments[0],
+                    )
+                    path = str(primary.path)
+                    # The original pane shows one file: the primary segment's. Line numbers are
+                    # the file's own, so only that file's segments count towards the slice.
+                    own = [segment for segment in segments if str(segment.path) == path]
+                    other_segments = len(segments) - len(own)
+                    for segment in own:
                         lines = range(segment.region.start_line, segment.region.end_line + 1)
                         slice_lines.extend(lines)
                         role = str(getattr(segment.role, "value", segment.role))
@@ -646,6 +676,12 @@ class ScanResults:
                             source_line = segment.region.start_line
                         if role == "primary" and sink_line is None:
                             sink_line = segment.region.start_line
+                    span = self._file_span(path, min(slice_lines), max(slice_lines))
+                    if span is not None:
+                        original_start, original_text = span
+                    else:
+                        original_text = "\n...\n".join(segment.text.expose() for segment in own)
+                        original_start = own[0].region.start_line
                     # The candidate's own location is the sink; a primary segment that covers a
                     # whole function or file starts above it.
                     located = entry.candidate.locations if entry.candidate is not None else ()
@@ -666,6 +702,7 @@ class ScanResults:
             "slice_lines": sorted(set(slice_lines)),
             "source_line": source_line,
             "sink_line": sink_line,
+            "other_file_segments": other_segments,
             "bytes": row.get("bytes"),
             "lines_sent": _line_count(payload_text),
             "lines_original": _line_count(original_text),
@@ -673,6 +710,26 @@ class ScanResults:
             "replacements": dict(sorted(kinds.items())),
             "markup": marks,
         }
+
+    def _file_span(self, path: str, first: int, last: int) -> tuple[int, str] | None:
+        """Lines ``first - 2`` to ``last + 2`` of the scanned copy of ``path``, with the start line.
+
+        Contiguous, so the original pane can number every line truthfully and tint the slice; the
+        lines between slice segments are shown untinted (they were not sent).
+        """
+        root = self.paths.source.resolve()
+        try:
+            target = (root / path).resolve()
+            if root not in target.parents:
+                return None
+            lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            return None
+        if not lines or first < 1 or last > len(lines):
+            return None
+        start = max(1, first - 2)
+        end = min(len(lines), last + 2)
+        return start, "\n".join(lines[start - 1 : end])
 
     def _file_lines(self, path: str | None) -> int | None:
         """Line count of a scanned file (the count only; the file is not returned)."""

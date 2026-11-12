@@ -551,6 +551,54 @@ def scan_ledger_entry(
     return detail
 
 
+@router.get("/scans/{scan_id}/ledger/{seq}/preview")
+def scan_ledger_preview(
+    scan_id: str,
+    seq: int,
+    level: str,
+    request: Request,
+    state: StateDep,
+    session: SessionDep,
+    principal: Any = OriginalDep,
+) -> dict[str, Any]:
+    """The same finding's payload as another scan of the project prepared it at ``level``.
+
+    Nothing is prepared or sent here: the payload is read from the ledger of a completed scan of
+    the same project at that level, matched by the candidate's fingerprint. 404 when no such scan
+    covered the finding, so the page can say which scan to run.
+    """
+    if level not in {"L1", "L2", "L3", "L4"}:
+        raise ApiError(400, "invalid_level", "level must be L1, L2, L3 or L4")
+    row = get_scan_row(session, scan_id)
+    fingerprint = scan_results(state, row).fingerprint_of(seq)
+    if fingerprint is None:
+        raise not_found("ledger entry")
+    others = session.scalars(
+        select(ScanRow)
+        .where(
+            ScanRow.project_id == row.project_id,
+            ScanRow.status == "completed",
+            ScanRow.privacy_level == level,
+            ScanRow.id != row.id,
+        )
+        .order_by(ScanRow.finished_at.desc())
+    ).all()
+    for other in others:
+        results = scan_results(state, other)
+        other_seq = results.seq_of_fingerprint(fingerprint)
+        if other_seq is None:
+            continue
+        detail = results.ledger_entry_detail(other_seq, finding_map(session, other.id))
+        if detail is None:
+            continue
+        audit.record(state.db, actor=principal.username, action="privacy.read_original",
+                     resource=f"{other.id}#{other_seq}", client=client_of(request),
+                     outcome="allowed", detail={"preview_for": f"{scan_id}#{seq}"})  # fmt: skip
+        return {**detail, "source_scan_id": other.id, "source_seq": other_seq}
+    message = f"no completed scan of this project at {level} prepared this finding"
+    raise ApiError(404, "no_scan_at_level", message)
+
+
 def terms_file_for(state: ServerState, session: Session, row: ScanRow) -> Path | None:
     """The listed-terms file the scan's zero-leak check uses (as the scan job chooses it)."""
     project = session.get(Project, row.project_id)

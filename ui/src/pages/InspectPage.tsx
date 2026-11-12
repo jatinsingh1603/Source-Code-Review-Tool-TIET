@@ -6,7 +6,7 @@ import { useFinding, useLedger, useLedgerEntry, useOptional, usePrivacy, useScan
 import { endpoints } from "@/api/endpoints";
 import type { LedgerDetail, PrivacyLevel } from "@/api/types";
 import { sortScans } from "@/lib/domain";
-import { byteLength, fmtBytesText, fmtInt, fmtSeq, findingLabel, LEVEL_NAME, lineCount, payloadLineCount } from "@/lib/display";
+import { byteLength, fmtBytesText, fmtInt, fmtSeq, findingLabel, LEVEL_NAME, lineCount, payloadLineCount, scanLabel } from "@/lib/display";
 import { MarkedCode, markupCounts, MarkupLegend } from "@/components/Marked";
 import { Content, Empty, ErrorBanner, Hash, Segmented, Skeleton } from "@/components/ui";
 
@@ -60,16 +60,26 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
   const sentLevel = d?.entry.level;
   const level = ((params.get("level") ? `L${params.get("level")}` : sentLevel) ?? "L3") as PrivacyLevel;
   const isSent = level === sentLevel;
-  const preview = useOptional<LedgerDetail>(`preview-${scanId}-${seq}-${level}`, () => endpoints.ledgerPreview(scanId, seq, level), !!d && !isSent);
+  // Another level's payload comes from a completed scan of this project at that level; ask only
+  // when one exists, so a missing level is an empty state rather than a failed request.
+  const { current } = useCurrentProject();
+  const projectScans = useScans(current?.id).data ?? [];
+  const hasLevel = projectScans.some((x) => x.id !== scanId && x.status === "completed" && x.privacy_level === level);
+  const preview = useOptional<LedgerDetail>(`preview-${scanId}-${seq}-${level}`, () => endpoints.ledgerPreview(scanId, seq, level), !!d && !isSent && hasLevel);
   const finding = useFinding(d?.entry.finding_id ?? undefined).data;
-  const privacy = usePrivacy(scanId).data;
+  const privacyOwn = usePrivacy(scanId).data;
   useShell({ levelPill: `${level} · ${LEVEL_NAME[level]}` });
 
   const shown: LedgerDetail | null | undefined = isSent ? d : preview.data;
+  // The leak count belongs to the scan whose payload is shown.
+  const privacyOther = usePrivacy(shown?.source_scan_id ?? undefined).data;
+  const privacy = shown?.source_scan_id ? privacyOther : privacyOwn;
   const counts = shown ? markupCounts(shown.markup) : null;
   const renamed = shown?.replacements?.identifier !== undefined ? shown.replacements.identifier : shown ? new Set(shown.markup.filter((m) => m.side === "payload" && m.kind === "identifier").map((m) => shown.payload_text.slice(m.start, m.end))).size : null;
   const total = d ? d.lines_total ?? lineCount(d.original_text) : 0;
-  const sent = shown ? payloadLineCount(shown.payload_text) : null;
+  // Lines of the original file that left, not payload lines (which add headers and stubs).
+  const sent = shown ? (shown.slice_lines?.length ?? payloadLineCount(shown.payload_text)) : null;
+  const shownTotal = shown?.lines_total ?? total;
   const bytes = shown ? shown.bytes ?? shown.entry?.bytes ?? byteLength(shown.payload_text) : null;
   const start = d?.original_start_line ?? d?.start_line ?? 1;
   const path = d?.path ?? finding?.locations?.[0]?.path ?? finding?.path;
@@ -131,7 +141,7 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
             <div className="kpi-strip sm">
               <div className="kpi">
                 <div className="k-l">Lines sent</div>
-                <div className="k-v">{sent === null ? "—" : `${level === "L4" ? 0 : sent} / ${total}`}</div>
+                <div className="k-v">{sent === null ? "—" : `${level === "L4" ? 0 : Math.min(sent, shownTotal)} / ${shownTotal}`}</div>
               </div>
               <div className="kpi">
                 <div className="k-l">Identifiers renamed</div>
@@ -185,7 +195,8 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
                     <p className="xs faint" style={{ marginTop: 8 }}>
                       Tinted lines are the vulnerability-relevant slice
                       {srcLine ? ` (source on line ${srcLine}` : " ("}
-                      {sinkLine ? `${srcLine ? ", " : ""}sink on line ${sinkLine})` : ")"}.
+                      {sinkLine ? `${srcLine ? ", " : ""}sink on line ${sinkLine})` : ")"}; untinted lines were not sent.
+                      {d.other_file_segments ? ` The slice also takes ${d.other_file_segments} segment${d.other_file_segments === 1 ? "" : "s"} from other files.` : ""}
                     </p>
                   )}
                 </>
@@ -201,8 +212,11 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
                 <span>
                   <b>Payload</b>{" "}
                   <span className="mono muted">
-                    payload #{fmtSeq(seq)}
-                    {isSent ? " · as sent" : ` at ${level} (preview)`}
+                    {isSent
+                      ? `payload #${fmtSeq(seq)} · as sent`
+                      : shown?.source_scan_id
+                        ? `payload #${fmtSeq(shown.source_seq ?? shown.entry.seq)} · as sent at ${level} in ${scanLabel(shown.source_scan_id)}`
+                        : `payload #${fmtSeq(seq)} at ${level}`}
                   </span>
                 </span>
                 <span style={{ color: "var(--high-t)" }}>{d?.entry.outcome?.startsWith("blocked") ? "Blocked · not sent" : "Prepared for the model"}</span>
@@ -225,8 +239,10 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
                 )
               ) : (
                 <div className="code" style={{ padding: "8px 16px", whiteSpace: "normal" }}>
-                  <Empty title={`No ${level} preview`}>
-                    Only the payload as sent ({sentLevel}) is recorded. Previews at other levels need the server preview endpoint; they are never sent or written to the ledger.
+                  <Empty title={`No ${level} payload to compare`}>
+                    {level === "L4"
+                      ? "L4 sends abstract data-flow facts only. It is not delivered in every build and fails closed, so no L4 scan of this project exists to compare with."
+                      : `This finding was prepared at ${sentLevel}. To compare, run a scan of this project at ${level}; its payload for the same finding then appears here. Nothing is prepared or sent from this page.`}
                   </Empty>
                 </div>
               )}
