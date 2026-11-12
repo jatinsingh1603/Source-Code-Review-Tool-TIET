@@ -230,7 +230,6 @@ TABLE = build_table()
 
 def test_the_table_covers_every_command_that_needs_a_back_end() -> None:
     assert {name for name, state, _ in TABLE if state != "yes"} == {
-        "providers test",
         "vault status",
         "vault rotate",
         "vault destroy",

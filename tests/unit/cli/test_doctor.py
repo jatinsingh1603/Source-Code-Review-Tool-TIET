@@ -315,9 +315,10 @@ def test_everything_passes_or_is_skipped_on_a_clean_machine(cli: Cli, project: P
     result = cli(["doctor"], cwd=project)
     assert result.exit_code == 0, result.stdout
     statuses = {line.split()[1]: line.split()[0] for line in result.stdout.splitlines()[:-1]}
-    # the default settings enable the mock provider only; the three shipped engine adapters (E15-01)
-    # are probed and reported as skipped when they are not installed
-    engines = ["engine:bandit", "engine:eslint-security", "engine:opengrep"]
+    # the default settings enable the mock provider only; every shipped engine adapter (E15-01 and
+    # the later CLI adapters) is probed and reported as skipped when it is not installed
+    engines = [name for name in statuses if name.startswith("engine:")]
+    assert {"engine:bandit", "engine:eslint-security", "engine:opengrep"} <= set(engines)
     assert list(statuses) == [
         *LOCAL_NAMES,
         *engines,

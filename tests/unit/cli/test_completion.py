@@ -105,7 +105,7 @@ def test_malformed_project_config_falls_back(tmp_path: Path) -> None:
     (project / "codekavach.toml").write_text("this is [ not toml\n", encoding="utf-8")
     profiles = complete("codekavach scan --profile ", cwd=project)
     assert {"airgapped", "bank-strict", "ci", "demo"} <= set(profiles)
-    assert complete("codekavach sc", cwd=project) == ["scan"]
+    assert sorted(complete("codekavach sc", cwd=project)) == ["sca", "scan"]
 
 
 def test_configured_profiles_are_offered(tmp_path: Path) -> None:
@@ -123,7 +123,7 @@ def test_command_completion_does_not_load_settings(monkeypatch: pytest.MonkeyPat
         raise AssertionError("settings loaded for command-name completion")
 
     monkeypatch.setattr("codekavach.config.load_settings", explode)
-    assert complete("codekavach sc") == ["scan"]
+    assert sorted(complete("codekavach sc")) == ["sca", "scan"]
     assert {"--privacy-level", "--profile"} <= set(complete("codekavach scan --pr"))
 
 

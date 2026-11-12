@@ -20,8 +20,7 @@ This is version 0.1.0.dev0. Some back ends belong to later epics. A command whos
 | Command | In this build | Epic |
 |---------|---------------|------|
 | `doctor`, `init`, `scan`, `providers list`, `privacy notice`, `privacy consent`, `privacy inspect`, `completion`, `config`, `report`, `demo` | yes | |
-| `privacy ledger show`, `privacy ledger verify` | yes | |
-| `providers test` | not in this build | E22 |
+| `privacy ledger show`, `privacy ledger verify`, `providers test` | yes | |
 | `vault status`, `vault rotate`, `vault destroy` | not in this build | E10 |
 
 `scan` runs the pipeline with the stages that are installed. With none installed it finishes with zero findings and the warning `no_stages`, so a clean result in this build says that nothing was analysed. Read the warning before you trust a result.
@@ -161,7 +160,7 @@ $ codekavach providers list --check-secrets
 default: mock (llm.default_provider = "auto")
 ```
 
-The `adapter` column says whether this build has the adapter for the kind (epic E22). `codekavach providers test` sends a constant probe and reports whether the provider answers; it is not in this build yet.
+The `adapter` column says whether this build has the adapter for the kind (epic E22). `codekavach providers test` sends a constant probe and reports whether the provider answers; the probe is recorded in the egress ledger.
 
 A provider and its key belong in your user configuration file, not in the project file. A project file is written by whoever controls the repository, so an untrusted one may not set providers, endpoints or secret references (see "Project trust" in the [configuration guide](../configuration/README.md)). The key is a reference, not a value (the loader refuses a plaintext key, E03-19):
 
@@ -235,7 +234,7 @@ $ codekavach diff scan_01H... latest --target .
 - `secrets scan PATH` runs the secret detectors over the files of a directory and prints one row per hit with the type, the confidence and a mask: at most the first two characters and the length. The value is not printed, logged or put in the JSON result. `--history` (or `secrets.history = true`) also reads the lines added by the last `secrets.history_max_commits` commits and reports credentials that are no longer in the working tree, with the short commit hash. The exit code is 1 when anything is found. A credential found in history is still valid until it is rotated; deleting the line does not revoke it.
 - `diff SCAN_A SCAN_B` compares two stored scans of the project in `--target` (default the current directory) by finding fingerprint and lists what is new in B, what is fixed (only in A) and how many are unchanged. `latest` is accepted for either argument. The exit code is 1 when there are new findings, so a pipeline can gate on regressions.
 
-The `--json` results of these commands use the envelope of section 8; they carry titles, severities and locations of findings and never evidence.
+The `--json` results of these commands use the envelope of section 8; they carry titles, severities and locations of findings, without evidence.
 
 ## 7 CI pipelines
 

@@ -51,7 +51,7 @@
 │ providers   Inspect and test LLM providers.                                                      │
 │ plugins     Inspect installed plugins and check that their stages form a pipeline.               │
 │ sync        Send findings to a client system.                                                    │
-│ findings    Print the findings of a stored scan as JSON or SARIF.                                │
+│ findings    Print the findings of a stored scan (metadata and masked evidence only).             │
 │ eval        Run the detection and leakage evaluations.                                           │
 │ demo        Run the Demo 1 sequence offline on the mock provider.                                │
 │ vault       Manage the local mapping vault. Its contents never appear in any output.             │

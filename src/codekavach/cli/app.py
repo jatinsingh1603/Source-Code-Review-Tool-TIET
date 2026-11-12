@@ -197,7 +197,7 @@ LAZY_COMMANDS: tuple[LazyEntry, ...] = (
     LazyEntry("sync", "codekavach.cli.sync:sync_app", "group",
               "Send findings to a client system."),
     LazyEntry("findings", "codekavach.cli.findings:findings_command", "command",
-              "Print the findings of a stored scan as JSON or SARIF."),
+              "Print the findings of a stored scan (metadata and masked evidence only)."),
     LazyEntry("eval", "codekavach.cli.eval_cmd:eval_app", "group",
               "Run the detection and leakage evaluations."),
     LazyEntry("demo", "codekavach.cli.demo:demo_command", "command",

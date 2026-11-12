@@ -6,7 +6,8 @@
  Creates or updates one issue per finding in the client's repository and places the items on
  the client's Projects v2 board. It does not modify code, open pull requests or push commits.
  The token comes from the secret reference integrations.github.token, never from an option.
- It needs the network and refuses --offline. Delivered by epic E34.
+ A real run needs the network and refuses --offline; with --dry-run it reads the existing
+ issues when a token is set (GET only) and prints what would be created, updated or closed.
 
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │   target      <str>  Project directory. [default: .]                                             │

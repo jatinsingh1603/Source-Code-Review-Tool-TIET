@@ -171,7 +171,8 @@ def test_a_present_back_end_is_called_once_and_its_report_rendered(
     result = cli(case.words, cwd=project)
     assert result.exit_code == 0, result.stderr
     assert len(recorder.calls) == 1
-    assert "synced" in result.stdout
+    # sync github renders its plan (create, update, close); the others print the report as is.
+    assert ("to create" if case.words == ["sync", "github"] else "synced") in result.stdout
     as_json = cli(["--json", *case.words], cwd=project)
     assert as_json.exit_code == 0
     assert as_json.json["data"] == {"synced": 3, "dry_run": False}
