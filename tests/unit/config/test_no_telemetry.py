@@ -21,7 +21,17 @@ ALLOWED_HOSTS: dict[str, dict[str, str]] = {
     "constants.py": {"raw.githubusercontent.com": "base of the schema $id; an identifier"},
     "masking.py": {"host": "the documented shape of a masked URL (docstring)"},
     "models/integrations.py": {"api.github.com": "default API base URL; used by the sync stage"},
-    "models/llm.py": {"127.0.0.1": "the default URL of a local Ollama; loopback"},
+    "models/llm.py": {
+        "127.0.0.1": "the default URL of a local Ollama and of local presets; loopback",
+        # Provider presets (#242): endpoints a user selects with ``preset = "<name>"``; nothing
+        # is contacted unless that provider is chosen for a run and egress is approved.
+        "agentrouter.org": "the agentrouter preset endpoint (#242)",
+        "api.openai.com": "the openai preset endpoint (#242)",
+        "api.anthropic.com": "the anthropic preset endpoint (#242)",
+        "generativelanguage.googleapis.com": "the gemini preset endpoint (#242)",
+        "api.x.ai": "the xai preset endpoint (#242)",
+        "openrouter.ai": "the openrouter preset endpoint (#242)",
+    },
     "schema.py": {"json-schema.org": "the JSON Schema dialect identifier; never fetched"},
     "starter.py": {"127.0.0.1": "a commented example in the starter file; loopback"},
 }

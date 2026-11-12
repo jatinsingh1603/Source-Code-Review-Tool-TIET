@@ -171,8 +171,9 @@ PRESETS: Mapping[str, ProviderPreset] = MappingProxyType(
 )  # fmt: skip
 # Built-in providers, by id, with the variable that holds their key. Such a provider is added from
 # its preset when it is named as ``default_provider`` (``--provider agentrouter``) or when its key
-# variable is set, unless an entry with the same id is configured. ``auto`` never picks one: a
-# key in the environment is not a decision to send code to that provider.
+# variable (or ``<VARIABLE>_FILE``, the path of a file holding the key) is set, unless an entry
+# with the same id is configured. ``auto`` never picks one: a key in the environment is not a
+# decision to send code to that provider.
 BUILTIN_PROVIDERS: Final[Mapping[str, str]] = MappingProxyType(
     {AGENTROUTER: "CODEKAVACH_AGENTROUTER_API_KEY"}
 )
@@ -469,8 +470,16 @@ class LLMSettings(SectionModel):
         if MOCK not in added:
             added[MOCK] = {"kind": ProviderKind.MOCK}
         for builtin, variable in BUILTIN_PROVIDERS.items():
+            if builtin in added:
+                continue
             named = value.get("default_provider") == builtin
-            if builtin not in added and (named or os.environ.get(variable, "").strip()):
+            key_file = os.environ.get(f"{variable}_FILE", "").strip()
+            if os.environ.get(variable, "").strip():
+                added[builtin] = {"preset": builtin}
+            elif key_file:
+                # ``<VARIABLE>_FILE`` names a file holding the key (a ``file:`` reference).
+                added[builtin] = {"preset": builtin, "api_key": f"file:{key_file}"}
+            elif named:
                 added[builtin] = {"preset": builtin}
         if len(added) == len(providers):
             return value

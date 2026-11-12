@@ -1,7 +1,7 @@
 {
   "codekavach_version": "0.0.0-test",
   "created_at": "2026-10-01T09:30:00Z",
-  "fingerprint": "421284be2fe4adf2df00e2919c834fae2a0f055a809e6bf2bd36e9876e98d1e4",
+  "fingerprint": "c72f94eae8fc9948e496cb0234fc1f5ed5eb263ab76f3946462c7889274228e5",
   "org_policies": [],
   "origins": {
     "config_version": {
@@ -415,6 +415,12 @@
       "source": null
     },
     "llm.providers.mock.options": {
+      "contributors": [],
+      "layer": "default",
+      "line": null,
+      "source": null
+    },
+    "llm.providers.mock.preset": {
       "contributors": [],
       "layer": "default",
       "line": null,
@@ -1052,6 +1058,7 @@
           "kind": "mock",
           "model": null,
           "options": {},
+          "preset": null,
           "region": null,
           "trust_tier": null
         }

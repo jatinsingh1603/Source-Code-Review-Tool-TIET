@@ -95,7 +95,7 @@ def test_json_has_the_same_fields(cli: Cli, project: Path, adapters_installed: N
     assert set(data) == {"default", "llm_enabled", "allow_remote", "providers"}
     assert (data["default"], data["llm_enabled"], data["allow_remote"]) == ("lab", True, True)
     rows = by_id(result)
-    assert list(rows) == ["mock", "primary", "lab"]
+    assert list(rows) == ["mock", "primary", "lab", "agentrouter"]
     assert rows["primary"] == {
         "id": "primary",
         "kind": "anthropic",
@@ -195,7 +195,7 @@ def test_llm_disabled_and_all(cli: Cli, project: Path, adapters_installed: None)
     machine = listing(cli, project, "--set", "llm.enabled=false", "--json")
     assert (machine.json["data"]["default"], machine.json["data"]["llm_enabled"]) == (None, False)
     everything = by_id(listing(cli, project, "--all", "--json"))
-    assert list(everything) == ["mock", "primary", "lab", "gateway"]
+    assert list(everything) == ["mock", "primary", "lab", "gateway", "agentrouter"]
     gateway = everything["gateway"]
     assert (gateway["enabled"], gateway["host"]) == (False, "llm.internal.example")
     shown = listing(cli, project, "--all")

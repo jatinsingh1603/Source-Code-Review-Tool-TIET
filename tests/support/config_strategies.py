@@ -65,6 +65,8 @@ def provider_settings(draw: st.DrawFn) -> dict[str, Any]:
         data["cassette_dir"] = "tests/cassettes"
     if kind is ProviderKind.CLI_BRIDGE:
         data["command"] = ["bridge", "--stdio"]
+    if kind is ProviderKind.VERTEX:
+        data["options"] = {"project": "synthetic-project", "location": "europe-west4"}
     if draw(st.booleans()) and kind not in (ProviderKind.MOCK, ProviderKind.REPLAY):
         data["api_key"] = draw(secret_refs())
     data["enabled"] = draw(st.booleans())

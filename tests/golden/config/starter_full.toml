@@ -237,6 +237,7 @@ level = "L3"
 #~ example: llm.providers
 #~ Named providers; mock is always present.
 #~ kind: Adapter kind.
+#~ preset: Named preset that fills base_url, model, key reference and options.
 #~ enabled: Whether the provider may be selected.
 #~ model: Model identifier sent to the provider.
 #~ base_url: Endpoint URL; where payloads and the API key are sent.

@@ -162,6 +162,36 @@ def default_provider(cli_ctx: CliContext, out: Output) -> str | None:
     return str(resolve(cli_ctx.settings))
 
 
+def _listed_providers(
+    settings: "Settings",
+) -> list[tuple[str, "ProviderSettings", bool]]:
+    """Configured providers, then each built-in one not configured yet (flagged ``True``)."""
+    from codekavach.config.models.llm import (  # noqa: PLC0415
+        BUILTIN_PROVIDERS,
+        ProviderSettings,
+    )
+
+    listed = [(name, provider, False) for name, provider in settings.llm.providers.items()]
+    for builtin in BUILTIN_PROVIDERS:
+        if builtin not in settings.llm.providers:
+            preset = ProviderSettings.model_validate({"preset": builtin})
+            listed.append((builtin, preset, True))
+    return listed
+
+
+def builtin_key_hint(provider_id: str) -> str | None:
+    """How to enable a built-in provider that is not configured; ``None`` for any other id."""
+    from codekavach.config.models.llm import BUILTIN_PROVIDERS  # noqa: PLC0415
+
+    variable = BUILTIN_PROVIDERS.get(provider_id)
+    if variable is None:
+        return None
+    return (
+        f"set {variable} to the API key, or {variable}_FILE to the path of a file holding it; "
+        "the key value is never shown"
+    )
+
+
 def provider_rows(
     cli_ctx: CliContext, *, default: str | None, check_secrets: bool, include_disabled: bool
 ) -> list[dict[str, Any]]:
@@ -169,12 +199,16 @@ def provider_rows(
     settings = cli_ctx.settings
     installed = adapters(settings)
     rows: list[dict[str, Any]] = []
-    for provider_id, provider in settings.llm.providers.items():
+    for provider_id, provider, builtin in _listed_providers(settings):
         if not provider.enabled and not include_disabled:
             continue
         kind = str(provider.kind)
         tier = provider.effective_trust_tier
-        state, refs = credential_state(provider, cli_ctx, check=check_secrets)
+        if builtin:
+            # Not configured: shown so that it can be found, with the variable that enables it.
+            state, refs = "not-set", list(keys.effective_key_refs(kind, provider.api_key))
+        else:
+            state, refs = credential_state(provider, cli_ctx, check=check_secrets)
         adapter = installed.get(kind)
         rows.append(
             {
@@ -395,6 +429,12 @@ def preflight(
     """
     llm = cli_ctx.settings.llm
     provider = llm.providers.get(provider_id)
+    if provider is None and (hint := builtin_key_hint(provider_id)) is not None:
+        raise UsageError(
+            f"provider '{provider_id}' is built in but its API key is not set",
+            code="credential_missing",
+            hint=hint,
+        )
     if provider is None:
         raise UsageError(
             f"unknown provider '{provider_id}'",
