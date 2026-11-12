@@ -18,6 +18,13 @@ describe("SseParser", () => {
       message: "m",
     });
     expect(toScanEvent({ event: "unknown", data: "{}" })).toBeNull();
+    expect(toScanEvent({ event: "finding", data: '{"id":"f1","severity":"high","title":"t"}' })).toEqual({
+      type: "finding",
+      id: "f1",
+      severity: "high",
+      title: "t",
+    });
+    expect(toScanEvent({ event: "finding", data: '{"id":"f2","severity":"bogus","title":"t"}' })).toMatchObject({ severity: "info" });
   });
 });
 

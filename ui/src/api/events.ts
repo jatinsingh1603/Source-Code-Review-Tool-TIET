@@ -7,7 +7,7 @@
  * reports `fallback` so the caller can switch to polling the scan summary.
  */
 import { api } from "./client";
-import type { ScanEvent } from "./types";
+import { SEVERITIES, type ScanEvent, type Severity } from "./types";
 
 export interface SseMessage {
   id?: string;
@@ -90,7 +90,7 @@ function toTyped(type: string, data: Record<string, unknown>): ScanEvent | null 
       return {
         type,
         id: String(data.id ?? ""),
-        severity: (data.severity as ScanEvent & { type: "finding" })["severity"] ?? "info",
+        severity: SEVERITIES.includes(data.severity as Severity) ? (data.severity as Severity) : "info",
         title: String(data.title ?? ""),
         ...(data.phase === "verdict" ? { phase: "verdict" as const } : {}),
       };
