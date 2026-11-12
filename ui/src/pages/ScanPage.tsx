@@ -122,9 +122,9 @@ function stageCount(n: string, state: StageState, scan: Scan | undefined, events
   const fallback = state === "run" ? "running" : "done";
   switch (n) {
     case "01":
-      return c ? `${fmtInt(c)} files` : scan?.files ? `${fmtInt(scan.files)} files` : fallback;
+      return c ? filesText(c) : scan?.files ? filesText(scan.files) : fallback;
     case "02":
-      return c ? `${fmtInt(c)} files` : fallback;
+      return c ? filesText(c) : fallback;
     case "03":
       return state === "done" && (findings || scan?.findings_total) ? `${fmtInt(findings || scan?.findings_total)} found` : fallback;
     case "04":
@@ -549,4 +549,8 @@ function LaunchSummary({
       </Link>
     </form>
   );
+}
+
+function filesText(n: number): string {
+  return `${fmtInt(n)} file${n === 1 ? "" : "s"}`;
 }
