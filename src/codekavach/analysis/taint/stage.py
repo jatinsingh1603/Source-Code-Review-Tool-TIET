@@ -19,6 +19,7 @@ the step cap carries ``taint.path_trimmed=true``; a sink recognised only by meth
 """
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
@@ -27,13 +28,16 @@ from codekavach.analysis.rules.pack import Catalogue, RulePack
 from codekavach.analysis.taint.cache import lower_cached
 from codekavach.analysis.taint.catalogue import Binding
 from codekavach.analysis.taint.explain import Trace, write_dump
+from codekavach.analysis.taint.frameworks import entry_seeds
+from codekavach.analysis.taint.interproc import ProjectIndex, compute_summaries, make_lookup
 from codekavach.analysis.taint.ir import IRFunction, IRModule
 from codekavach.analysis.taint.lowering import LoweringUnavailable, get_lowering
-from codekavach.analysis.taint.path import PathResult, build_path_result, cap_per_sink
+from codekavach.analysis.taint.path import PathResult, build_path_result
 from codekavach.analysis.taint.propagate import (
     Budget,
     BudgetExceededError,
     FlowWitness,
+    SummaryLookup,
     propagate_bound,
 )
 from codekavach.core.log import get_logger
@@ -106,6 +110,11 @@ def candidate_properties(flow: FlowWitness, result: PathResult) -> tuple[tuple[s
         properties.append(("taint.path_trimmed", "true"))
     if not flow.sink.exact:
         properties.append(("taint.sink_match", "method"))
+    if flow.depth:
+        properties.append(("taint.interprocedural", "true"))
+        properties.append(("taint.depth", str(flow.depth)))
+    if flow.uncertain:
+        properties.append(("taint.unknown_callee", "propagate"))
     if flow.guards:
         properties.append(("taint.guards", ",".join(str(line) for line in flow.guards)[:400]))
     if result.path.is_sanitised:
@@ -120,6 +129,7 @@ def candidates_for(  # noqa: PLR0917 - the arguments are the facts of one file a
     language: Language,
     path: str,
     max_steps: int,
+    lines_by_path: Mapping[str, list[str]] | None = None,
 ) -> list[Candidate]:
     """One candidate per flow whose path is valid; the flows are already capped per sink."""
     built: list[tuple[FlowWitness, PathResult]] = []
@@ -127,14 +137,19 @@ def candidates_for(  # noqa: PLR0917 - the arguments are the facts of one file a
         result = build_path_result(flow, function, max_steps)
         if result is not None:
             built.append((flow, result))
+    lines_of = lines_by_path or {}
     parts = [
         FingerprintParts(
             engine=TAINT_ENGINE,
             rule_id=rule_id_of(flow),
-            path=path,
+            path=flow.sink_location.path if flow.depth else path,
             symbol=result.path.sink.location.symbol,
             snippet_hash=snippet_hash(
-                parsed_lines[flow.sink_location.start_line - 1 : flow.sink_location.end_line]
+                (
+                    lines_of.get(flow.sink_location.path, parsed_lines)
+                    if flow.depth
+                    else parsed_lines
+                )[flow.sink_location.start_line - 1 : flow.sink_location.end_line]
             ),
             start_line=flow.sink_location.start_line,
         )
@@ -163,6 +178,16 @@ def candidates_for(  # noqa: PLR0917 - the arguments are the facts of one file a
     return found
 
 
+@dataclass(frozen=True)
+class _Loaded:
+    """One lowered file with its source lines and bound catalogues."""
+
+    file: SourceFile
+    module: IRModule
+    lines: list[str]
+    binding: Binding
+
+
 class AnalyseTaintStage:
     """Intraprocedural taint analysis of Python, JavaScript and TypeScript (E17-02)."""
 
@@ -189,16 +214,14 @@ class AnalyseTaintStage:
         )
         symbols = ctx.artefacts.get(keys.SYMBOLS, SymbolsArtefact)
         ast = self._ast(ctx)
-        candidates: list[Candidate] = []
+        loaded: list[_Loaded] = []
         unavailable: set[Language] = set()
         for done, file in enumerate(files, start=1):
             ctx.check_cancelled()
             if file.path in symbols.skipped:
                 continue
             try:
-                candidates.extend(
-                    self._file(ctx, file, ast, symbols.tables.get(file.path), catalogues)
-                )
+                loaded.append(self._load(ctx, file, ast, symbols.tables.get(file.path), catalogues))
             except LoweringUnavailable:
                 unavailable.add(file.language)
             except Exception:  # noqa: BLE001 - a broken file must not lose the others
@@ -208,6 +231,7 @@ class AnalyseTaintStage:
                 ctx.emit_progress(done, len(files), "files")
         for language in sorted(unavailable, key=lambda item: item.value):
             _log.info("taint_language_unavailable", language=language.value)
+        candidates = self._analyse(ctx, loaded)
         ctx.emit_progress(len(files), len(files), "files")
         ctx.artefacts.put_part(keys.CANDIDATES_RAW, self.name, candidates)
 
@@ -215,14 +239,14 @@ class AnalyseTaintStage:
         packs = self._packs if self._packs is not None else load_packs(ctx.config)
         return tuple(catalogue for pack in packs for catalogue in pack.catalogues)
 
-    def _file(
+    def _load(
         self,
         ctx: RunContext,
         file: SourceFile,
         ast: Mapping[str, ParsedFile] | None,
         table: SymbolTable | None,
         catalogues: tuple[Catalogue, ...],
-    ) -> list[Candidate]:
+    ) -> "_Loaded":
         settings = ctx.config.taint
         lowering = get_lowering(file.language, settings)
         parsed = _parsed(file, ast, ctx.source_root, ctx)
@@ -236,23 +260,85 @@ class AnalyseTaintStage:
         )
         lines = split_lines(parsed.source.expose())
         binding = Binding(catalogues, module.aliases, file.language.value)
-        found: list[Candidate] = []
-        for index, function in enumerate(module.functions):
-            found.extend(self._function(ctx, file, module, function, index, binding, lines))
-        return found
+        return _Loaded(file, module, lines, binding)
+
+    def _analyse(self, ctx: RunContext, loaded: list["_Loaded"]) -> list[Candidate]:
+        """Summaries over the whole project first, then every function with them."""
+        settings = ctx.config.taint
+        block = getattr(settings, "unknown_callee", "propagate") == "block"
+        index = ProjectIndex()
+        by_path = {item.module.path: item for item in loaded}
+        for item in loaded:
+            index.add(item.module)
+        try:
+            summaries = compute_summaries(
+                index, lambda path: by_path[path].binding, settings, block_unknown=block
+            )
+        except Exception:  # noqa: BLE001 - fall back to intraprocedural analysis
+            _log.warning("taint_summaries_failed")
+            summaries = {}
+        lines_by_path = {item.module.path: item.lines for item in loaded}
+        found: list[tuple[_Loaded, IRFunction, int, FlowWitness]] = []
+        for item in loaded:
+            ctx.check_cancelled()
+            lookup = make_lookup(index, summaries, item.module.path)
+            for position, function in enumerate(item.module.functions):
+                flows = self._function(ctx, item, function, position, lookup, block)
+                found.extend((item, function, position, flow) for flow in flows)
+        kept = self._cap(found, settings.max_paths_per_sink)
+        candidates: list[Candidate] = []
+        grouped: dict[tuple[str, int], list[FlowWitness]] = {}
+        owners: dict[tuple[str, int], tuple[_Loaded, IRFunction]] = {}
+        for item, function, position, flow in kept:
+            key = (item.module.path, position)
+            grouped.setdefault(key, []).append(flow)
+            owners[key] = (item, function)
+        for key in sorted(grouped):
+            item, function = owners[key]
+            candidates.extend(
+                candidates_for(
+                    grouped[key],
+                    function,
+                    item.lines,
+                    item.file.language,
+                    item.module.path,
+                    settings.max_path_steps,
+                    lines_by_path,
+                )
+            )
+        return candidates
+
+    @staticmethod
+    def _cap(
+        found: list[tuple["_Loaded", IRFunction, int, FlowWitness]], limit: int
+    ) -> list[tuple["_Loaded", IRFunction, int, FlowWitness]]:
+        """At most ``limit`` flows per sink occurrence across the project, the shortest first."""
+        groups: dict[
+            tuple[str, int, int, str], list[tuple[_Loaded, IRFunction, int, FlowWitness]]
+        ] = {}
+        for entry in found:
+            loc = entry[3].sink_location
+            groups.setdefault(
+                (loc.path, loc.start_line, loc.start_col or 0, entry[3].sink.entry.id), []
+            ).append(entry)
+        kept: list[tuple[_Loaded, IRFunction, int, FlowWitness]] = []
+        for key in sorted(groups):
+            ranked = sorted(groups[key], key=lambda e: (e[3].sort_key, e[0].module.path, e[2]))
+            kept.extend(ranked[:limit])
+        return kept
 
     @staticmethod
     def _function(  # noqa: PLR0917 - one call site; a bundle type would only rename the list
         ctx: RunContext,
-        file: SourceFile,
-        module: IRModule,
+        item: "_Loaded",
         function: IRFunction,
         index: int,
-        binding: Binding,
-        lines: list[str],
-    ) -> list[Candidate]:
+        lookup: SummaryLookup,
+        block: bool,
+    ) -> list[FlowWitness]:
         settings = ctx.config.taint
-        item = f"file:{file.sha256[:16]}:fn{index}"
+        file = item.file
+        label = f"file:{file.sha256[:16]}:fn{index}"
         if not function.is_analysed:
             _log.info("taint_function_skipped", reason=function.skipped_reason)
             return []
@@ -260,22 +346,22 @@ class AnalyseTaintStage:
         try:
             flows = propagate_bound(
                 function,
-                binding,
+                item.binding,
                 budget=Budget.of(settings.timeout_seconds),
                 settings=settings,
                 observe=trace.record if settings.explain else None,
+                seeds=entry_seeds(function),
+                lookup=lookup,
+                block_unknown=block,
             )
-            flows = cap_per_sink(flows, settings.max_paths_per_sink)
             if settings.explain and ctx.state_dir is not None:
                 write_dump(ctx.state_dir, file.sha256, function, flows, trace)
-            return candidates_for(
-                flows, function, lines, file.language, module.path, settings.max_path_steps
-            )
+            return flows
         except BudgetExceededError:
-            ctx.fail_item(item, TAINT_TIMEOUT)
+            ctx.fail_item(label, TAINT_TIMEOUT)
         except Exception:  # noqa: BLE001 - one pathological function must not fail the stage
             _log.warning("taint_function_failed", file=file.sha256[:16], index=index)
-            ctx.fail_item(item, TAINT_ERROR)
+            ctx.fail_item(label, TAINT_ERROR)
         return []
 
     @staticmethod

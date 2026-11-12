@@ -71,6 +71,7 @@ class Step:
     location: Location
     note: str | None = None
     covers: frozenset[str] = frozenset()
+    symbol: str | None = None  # the function the step is in, when it is not the analysed one
 
 
 @dataclass(frozen=True, slots=True)
@@ -197,6 +198,19 @@ class TaintState:
                 continue
             tested = with_guard({o: f for o, f in facts.items() if o in origins}, line)
             self.entries[name] = (stored, {o: tested.get(o, f) for o, f in facts.items()})
+
+    def clear_origins(self, origins: frozenset[str], contexts: frozenset[str]) -> None:
+        """Mark every fact of these origins as cleared for ``contexts`` (a validated value)."""
+        for name, (stored, facts) in list(self.entries.items()):
+            if origins.isdisjoint(facts):
+                continue
+            self.entries[name] = (
+                stored,
+                {
+                    o: replace(f, cleared=f.cleared | contexts) if o in origins else f
+                    for o, f in facts.items()
+                },
+            )
 
     def join(self, other: "TaintState") -> "TaintState":
         """The state holding the facts of both."""

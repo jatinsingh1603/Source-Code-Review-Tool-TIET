@@ -75,7 +75,7 @@ def _taint_step(step: Step, witness: FlowWitness, symbol: str | None) -> TaintSt
     else:
         note = step.note
     return TaintStep(
-        location=_located(step.location, symbol),
+        location=_located(step.location, step.symbol or symbol),
         role=step.role,
         note=None if note is None else note[:MAX_NOTE_LENGTH],
     )
@@ -85,7 +85,7 @@ def _steps(witness: FlowWitness, symbol: str | None) -> list[TaintStep]:
     steps = [_taint_step(step, witness, symbol) for step in witness.steps]
     steps.append(
         TaintStep(
-            location=_located(witness.sink_location, symbol),
+            location=_located(witness.sink_location, witness.sink_symbol or symbol),
             role=TaintRole.SINK,
             note=_sink_note(witness)[:MAX_NOTE_LENGTH],
         )
@@ -132,9 +132,10 @@ def build_path(witness: FlowWitness, function: IRFunction, max_steps: int = 64) 
 
 def cap_per_sink(witnesses: list[FlowWitness], limit: int) -> list[FlowWitness]:
     """At most ``limit`` witnesses per sink call, the shortest first, in a deterministic order."""
-    grouped: dict[tuple[int, int, str], list[FlowWitness]] = {}
+    grouped: dict[tuple[str, int, int, str], list[FlowWitness]] = {}
     for witness in witnesses:
         key = (
+            witness.sink_location.path,
             witness.sink_location.start_line,
             witness.sink_location.start_col or 0,
             witness.sink.entry.id,

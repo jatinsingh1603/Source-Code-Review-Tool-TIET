@@ -23,9 +23,9 @@ The flows are raw client data (invariant I2): they hold locations and symbols an
 """
 
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from codekavach.analysis.rules.pack import Catalogue, CatalogueEntry
 from codekavach.analysis.taint.catalogue import UNKNOWN_SOURCE, Binding, SinkMatch
@@ -40,6 +40,7 @@ from codekavach.analysis.taint.ir import (
     IRFunction,
     Op,
     Place,
+    Raise,
     Return,
     Stmt,
     Unknown,
@@ -64,7 +65,17 @@ from codekavach.analysis.taint.strings import (
 from codekavach.config.models.taint import TaintSettings
 from codekavach.core.models import Location, TaintRole
 
+if TYPE_CHECKING:
+    from codekavach.analysis.taint.summary import FunctionSummary
+
 CLOCK_EVERY: Final = 64
+MAX_DEPTH: Final = 5
+ANY_CONTEXT: Final = "*"
+VALIDATORS: Final = frozenset({"includes", "has", "contains", "__contains__"})
+PARAM_PREFIX: Final = "param:"
+SummaryLookup = Callable[[Call], "FunctionSummary | None"]
+# A seeded parameter: (origin key, label, note). The origin key is completed with the location.
+Seed = tuple[str, str, str]
 
 
 class BudgetExceededError(Exception):
@@ -105,6 +116,8 @@ class FlowWitness:
     uncertain: bool
     guards: tuple[int, ...] = ()
     covered: frozenset[str] = frozenset()
+    depth: int = 0
+    sink_symbol: str | None = None
 
     @property
     def sort_key(self) -> tuple[int, int, str]:
@@ -119,7 +132,13 @@ class _Run:
     settings: TaintSettings
     budget: Budget
     flows: list[FlowWitness] = field(default_factory=list)
-    seen: set[tuple[str, str, int]] = field(default_factory=set)
+    seen: set[tuple[str, str, int | str]] = field(default_factory=set)
+    seeds: Mapping[str, Seed] = field(default_factory=dict)
+    lookup: SummaryLookup | None = None
+    returns: Facts = field(default_factory=dict)
+    block_unknown: bool = False
+    max_depth: int = MAX_DEPTH
+    validators: dict[str, frozenset[str]] = field(default_factory=dict)
 
 
 def propagate(
@@ -147,18 +166,75 @@ def propagate_bound(
     budget: Budget,
     settings: TaintSettings | None = None,
     observe: Callable[[dict[int, TaintState]], None] | None = None,
+    seeds: Mapping[str, Seed] | None = None,
+    lookup: SummaryLookup | None = None,
+    block_unknown: bool = False,
 ) -> list[FlowWitness]:
     """``propagate`` with the catalogues already bound (the stage binds once per file).
 
     ``observe`` receives the settled state after each block (the explain dump uses it).
+    ``seeds`` taints the named parameters at entry, ``lookup`` supplies callee summaries.
     """
+    return analyse(
+        function,
+        binding,
+        budget=budget,
+        settings=settings,
+        observe=observe,
+        seeds=seeds,
+        lookup=lookup,
+        block_unknown=block_unknown,
+    ).flows
+
+
+@dataclass(frozen=True, slots=True)
+class Analysis:
+    """The flows of one function and the facts of the values it returns."""
+
+    flows: list[FlowWitness]
+    returns: Facts
+
+
+def analyse(
+    function: IRFunction,
+    binding: Binding,
+    *,
+    budget: Budget,
+    settings: TaintSettings | None = None,
+    observe: Callable[[dict[int, TaintState]], None] | None = None,
+    seeds: Mapping[str, Seed] | None = None,
+    lookup: SummaryLookup | None = None,
+    block_unknown: bool = False,
+) -> Analysis:
+    """Propagate through ``function``; the building block of summaries and of the stage."""
     if not function.blocks:
-        return []
+        return Analysis([], {})
     run = _Run(function, binding, settings or TaintSettings(), budget)
+    run.seeds = seeds or {}
+    run.lookup = lookup
+    run.block_unknown = block_unknown
     states = _solve(run)
     if observe is not None:
         observe(states)
-    return sorted(run.flows, key=lambda flow: (flow.sink_location.start_line, flow.sort_key))
+    flows = sorted(run.flows, key=lambda flow: (flow.sink_location.start_line, flow.sort_key))
+    return Analysis(flows, run.returns)
+
+
+def _initial_state(run: _Run) -> TaintState:
+    """The entry state: every seeded parameter holds one fact with its own origin."""
+    state = TaintState()
+    location = run.function.location
+    for name, (key, label, note) in run.seeds.items():
+        origin = f"{key}@{location.start_line}:{location.start_col}"
+        step = Step(
+            TaintRole.SOURCE,
+            location.model_copy(update={"symbol": run.function.qualname}),
+            note[:120],
+            symbol=run.function.qualname,
+        )
+        fact = Fact(value=Tainted(frozenset({label})), chain=(step,))
+        state.write(Place(base=name), {origin: fact})
+    return state
 
 
 def _solve(run: _Run) -> dict[int, TaintState]:
@@ -167,11 +243,15 @@ def _solve(run: _Run) -> dict[int, TaintState]:
     passes = 1 + (run.settings.loop_iterations if cfg.back_edges else 0)
     out: dict[int, TaintState] = {}
     ins: dict[int, TaintState] = {}
+    initial = _initial_state(run) if run.seeds else None
+    entry = cfg.order[0] if cfg.order else None
     for _ in range(passes):
         changed = False
         for block_id in cfg.order:
             run.budget.check()
             state = _incoming(cfg.predecessors[block_id], out)
+            if initial is not None and block_id == entry:
+                state = state.join(initial)
             ins[block_id] = state.copy()
             for stmt in blocks[block_id].stmts:
                 _transfer(run, stmt, state, record=False)
@@ -182,6 +262,8 @@ def _solve(run: _Run) -> dict[int, TaintState]:
             break
     for block_id in cfg.order:
         state = _incoming(cfg.predecessors[block_id], out)
+        if initial is not None and block_id == entry:
+            state = state.join(initial)
         for stmt in blocks[block_id].stmts:
             _transfer(run, stmt, state, record=True)
     return out
@@ -212,7 +294,9 @@ def _transfer(run: _Run, stmt: Stmt, state: TaintState, *, record: bool) -> None
     elif isinstance(stmt, Unknown):
         _unknown(run, stmt, state)
     elif isinstance(stmt, Return):
-        return
+        if record and stmt.value is not None:
+            location = stmt.location or run.function.location
+            run.returns = merge(run.returns, _eval(run, stmt.value, location, state))
 
 
 def _note(value: Expr) -> str:
@@ -231,6 +315,45 @@ def _guard(run: _Run, stmt: Branch, state: TaintState) -> None:
         origins.update(state.read(place))
     if origins:
         state.guard(origins, line)
+        validated = _validated(run, stmt, state)
+        if validated and _bails_out(run, stmt):
+            state.clear_origins(validated, frozenset({ANY_CONTEXT}))
+
+
+def _validated(run: _Run, stmt: Branch, state: TaintState) -> frozenset[str]:
+    """Origins an allow-list test in the condition vouches for (``x in ALLOWED``, ``.includes``)."""
+    found: set[str] = set()
+    for place in places_in(stmt.condition):
+        found.update(run.validators.get(place.text, ()))
+    for node in _compares(stmt.condition):
+        listed = any(isinstance(o, Place) and o.base.isupper() for o in node.operands)
+        if listed:
+            for operand in node.operands:
+                if isinstance(operand, Place) and not operand.base.isupper():
+                    found.update(state.read(operand))
+    return frozenset(found)
+
+
+def _compares(expr: Expr) -> list[Op]:
+    if not isinstance(expr, Op):
+        return []
+    here = [expr] if expr.style == "compare" else []
+    return here + [node for operand in expr.operands for node in _compares(operand)]
+
+
+def _bails_out(run: _Run, stmt: Branch) -> bool:
+    """Whether one arm of the branch only raises or returns a constant (a rejection)."""
+    blocks = {block.id: block for block in run.function.blocks}
+    for target in (stmt.then_block, stmt.else_block):
+        block = blocks.get(target)
+        if block is None or not block.stmts or len(block.stmts) > 4:
+            continue
+        last = block.stmts[-1]
+        if isinstance(last, Raise):
+            return True
+        if isinstance(last, Return) and (last.value is None or isinstance(last.value, Const)):
+            return True
+    return False
 
 
 def _unknown(run: _Run, stmt: Unknown, state: TaintState) -> None:
@@ -288,11 +411,18 @@ def _call(run: _Run, call: Call, state: TaintState, *, record: bool) -> None:
     args = [_eval(run, arg, call.location, state) for arg in call.args]
     kwargs = [(key, _eval(run, value, call.location, state)) for key, value in call.kwargs]
     receiver = _read(run, call.receiver, call.location, state) if call.receiver is not None else {}
+    if method in VALIDATORS and call.result is not None:
+        tested = frozenset().union(*(facts.keys() for facts in args))
+        if tested:
+            run.validators[call.result.text] = tested
     if record:
         _record(run, call, args, kwargs)
     result: Facts
+    summary = run.lookup(call) if run.lookup is not None and source is None else None
     if source is not None:
         result = _source_fact(source, call.location, name)
+    elif summary is not None:
+        result = _apply_summary(run, call, summary, args, kwargs, record=record)
     else:
         inputs = merge(receiver, *args, *(facts for _, facts in kwargs))
         result = _result(run, call, method, inputs)
@@ -322,9 +452,85 @@ def _result(run: _Run, call: Call, method: str, inputs: Facts) -> Facts:
         operation = READ_METHODS.get(method)
     if operation is not None:
         return with_step(inputs, Step(TaintRole.PROPAGATOR, where, f"{operation} {method}"[:120]))
+    if run.block_unknown:  # taint.unknown_callee = block: an unmodelled callee returns clean data
+        return {}
     return with_step(
         inputs, Step(TaintRole.PROPAGATOR, where, f"call {method}"[:120]), uncertain=True
     )
+
+
+def _apply_summary(
+    run: _Run,
+    call: Call,
+    summary: "FunctionSummary",
+    args: list[Facts],
+    kwargs: list[tuple[str, Facts]],
+    *,
+    record: bool,
+) -> Facts:
+    """The result facts of a call to a function with a summary, and the flows it reaches."""
+    method = last_segment(call.callee.text.removeprefix("new "))
+    by_index: dict[int, Facts] = dict(enumerate(args))
+    for key, facts in kwargs:
+        if key in summary.params:
+            by_index[summary.params.index(key)] = facts
+    caller = run.function.qualname
+    note = f"call {method}"[:120]
+    if record:
+        for reach in summary.param_to_sink:
+            facts = by_index.get(reach.param, {})
+            if not facts or reach.depth + 1 > run.max_depth:
+                continue
+            for origin, fact in sorted(facts.items()):
+                if reach.sink.context is not None and (
+                    reach.sink.context in fact.cleared or ANY_CONTEXT in fact.cleared
+                ):
+                    continue
+                seen_key = (
+                    origin,
+                    f"{call.location.start_line}:{call.location.start_col}",
+                    reach.key,
+                )
+                if seen_key in run.seen:
+                    continue
+                run.seen.add(seen_key)
+                crossing = Step(TaintRole.PROPAGATOR, call.location, f"{note} arg {reach.param}")
+                steps = (*fact.chain, crossing, *reach.steps)
+                run.flows.append(
+                    FlowWitness(
+                        origin=origin,
+                        label=sorted(fact.labels)[0] if fact.labels else UNKNOWN_SOURCE,
+                        source_id=origin.split("@", 1)[0],
+                        steps=steps,
+                        sink=reach.sink,
+                        sink_location=reach.location,
+                        sink_callee=reach.callee,
+                        arg_index=reach.arg_index,
+                        uncertain=fact.uncertain or reach.uncertain,
+                        guards=fact.guards,
+                        covered=frozenset().union(*(st.covers for st in steps)),
+                        depth=reach.depth + 1,
+                        sink_symbol=reach.symbol,
+                    )
+                )
+    result: Facts = {}
+    for index in sorted(summary.param_to_return):
+        facts = by_index.get(index, {})
+        if not facts:
+            continue
+        stepped = with_step(
+            facts,
+            Step(TaintRole.PROPAGATOR, call.location, note),
+            uncertain=summary.degraded,
+        )
+        cleared = frozenset(ctx for i, ctx in summary.sanitises if i == index)
+        result = merge(result, with_cleared(stepped, cleared) if cleared else stepped)
+    for label in sorted(summary.source_to_return):
+        origin = f"summary.{label}@{call.location.start_line}:{call.location.start_col}"
+        step = Step(TaintRole.SOURCE, call.location, f"source via {method}"[:120])
+        result = merge(result, {origin: Fact(Tainted(frozenset({label})), (step,))})
+    del caller
+    return result
 
 
 def _record(run: _Run, call: Call, args: list[Facts], kwargs: list[tuple[str, Facts]]) -> None:
@@ -338,7 +544,9 @@ def _record(run: _Run, call: Call, args: list[Facts], kwargs: list[tuple[str, Fa
         wanted.extend((-1, facts) for _, facts in kwargs)
     for index, facts in wanted:
         for origin, fact in sorted(facts.items()):
-            if sink.context is not None and sink.context in fact.cleared:
+            if sink.context is not None and (
+                sink.context in fact.cleared or ANY_CONTEXT in fact.cleared
+            ):
                 continue
             key = (origin, f"{call.location.start_line}:{call.location.start_col}", index)
             if key in run.seen:

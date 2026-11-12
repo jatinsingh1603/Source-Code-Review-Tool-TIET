@@ -90,3 +90,17 @@ def create_transfer():
 def archive():
     body = request.get_json()
     return jsonify(archive=reports.archive_statements_safely(body["folder"], body["name"]))
+
+
+@app.route("/api/premium/<account_id>")
+@require_auth
+def premium_account(account_id):
+    conn = db.connect()
+    return jsonify(accounts.find_premium_account(conn, account_id))
+
+
+@app.route("/api/statements/archive/legacy", methods=["POST"])
+@require_auth
+def archive_legacy():
+    body = request.get_json()
+    return jsonify(archive=reports.archive_statements(body["folder"], body["name"]))
