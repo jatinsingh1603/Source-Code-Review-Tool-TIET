@@ -219,6 +219,25 @@ def split_formats(values: Sequence[str]) -> tuple[str, ...]:
     return tuple(part.strip() for value in values for part in value.split(",") if part.strip())
 
 
+def _check_provider_key(out: Output, cli_ctx: "CliContext", provider_id: str) -> None:
+    """Warn, before any work, that a hosted provider's key reference does not resolve (E22).
+
+    The scan still runs: the deterministic engines need no key, and the LLM stage then fails
+    closed with ``api_key_not_available``; the warning says why before the run starts.
+    """
+    from codekavach.config.models.llm import key_available  # noqa: PLC0415
+
+    provider = cli_ctx.settings.llm.providers[provider_id]
+    if not provider.is_remote or key_available(provider):
+        return
+    where = provider.api_key or "the provider's default key variable"
+    out.warn(
+        "provider_key_missing",
+        f"provider '{provider_id}' has no API key ({where} is not set); "
+        "the scan continues without LLM review",
+    )
+
+
 def resolve_provider(cli_ctx: "CliContext") -> ProviderChoice:
     """The provider of this run, by the rule the ``llm-review`` stage applies (E22-01)."""
     llm = cli_ctx.settings.llm
@@ -646,6 +665,8 @@ def scan_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         )
     if consent.source != "not-required":
         out.info(f"remote egress to {provider.id} accepted via {consent.source}")
+    if provider.id is not None and not no_llm:
+        _check_provider_key(out, cli_ctx, provider.id)
     result = execute_scan(
         cli_ctx,
         target,
