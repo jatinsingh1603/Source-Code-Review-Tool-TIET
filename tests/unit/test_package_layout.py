@@ -118,6 +118,7 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
         "codekavach.server.routers.admin",
         "codekavach.server.routers.auth",
         "codekavach.server.routers.evaluation",
+        "codekavach.server.routers.finding_review",
         "codekavach.server.routers.findings",
         "codekavach.server.routers.me",
         "codekavach.server.routers.platform",

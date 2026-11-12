@@ -368,7 +368,12 @@ def test_cancel_a_queued_scan(server: tuple[TestClient, Any], admin: dict[str, s
     cancelled = client.post(f"/api/v1/scans/{created['id']}/cancel", headers=admin)
     assert cancelled.status_code == 200
     state.runner.wait(created["id"], timeout=300)
+    # The runner can return before the job thread records the final status (seen on macOS CI).
+    deadline = time.time() + 30
     final = client.get(f"/api/v1/scans/{created['id']}", headers=admin).json()
+    while final["status"] == "queued" and time.time() < deadline:
+        time.sleep(0.2)
+        final = client.get(f"/api/v1/scans/{created['id']}", headers=admin).json()
     assert final["status"] == "cancelled"
 
 
