@@ -1,0 +1,24 @@
+# Pull-request review in two steps of trust. Analysis runs on `pull_request` with a read-only
+# token and no secrets, so an untrusted fork cannot reach anything. Publish results from a
+# separate `workflow_run` job that treats the artifact as data. Pin third-party actions to a
+# commit hash in production.
+name: CodeKavach
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jatinsingh1603/Source-Code-Review-Tool-TIET/action@main
+        id: ck
+        with:
+          provider: none          # deterministic analysis; no key is present on this trigger
+          fail-on: high
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codekavach-sarif
+          path: ${{ steps.ck.outputs.sarif-path }}

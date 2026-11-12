@@ -1,0 +1,85 @@
+name: "CodeKavach secure code review"
+description: "Privacy-preserving, LLM-assisted security review of your repository. Runs the CodeKavach CLI in your own CI."
+author: "CodeKavach (Thapar Institute)"
+branding:
+  icon: "shield"
+  color: "blue"
+
+inputs:
+  target:
+    description: "Directory to scan."
+    default: "."
+  privacy-level:
+    description: "Privacy level L0 to L4 (L3 is the default of the tool)."
+    default: "L3"
+  provider:
+    description: "LLM provider id (mock, replay, agentrouter, openai, anthropic, ollama, ...). Use 'none' for deterministic analysis only."
+    default: "none"
+  model:
+    description: "Model name for the provider (optional)."
+    default: ""
+  fail-on:
+    description: "Fail the job when an open finding at or above this severity exists: none, info, low, medium, high, critical."
+    default: "high"
+  upload-sarif:
+    description: "Upload findings to GitHub code scanning (needs security-events: write)."
+    default: "false"
+  sarif-category:
+    description: "Category for the SARIF upload."
+    default: "codekavach"
+  sync-issues:
+    description: "Create one issue per finding (needs issues: write). Honours the minimum severity of codekavach.toml."
+    default: "false"
+  python-version:
+    description: "Python version used to run CodeKavach (3.12 or newer)."
+    default: "3.12"
+
+outputs:
+  scan-id:
+    description: "Id of the scan."
+    value: ${{ steps.scan.outputs.scan-id }}
+  findings-count:
+    description: "Number of findings."
+    value: ${{ steps.scan.outputs.findings-count }}
+  highest-severity:
+    description: "Highest severity found, or none."
+    value: ${{ steps.scan.outputs.highest-severity }}
+  sarif-path:
+    description: "Path of the SARIF file."
+    value: ${{ steps.scan.outputs.sarif-path }}
+  outcome:
+    description: "passed or failed (the fail-on gate)."
+    value: ${{ steps.scan.outputs.outcome }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Install CodeKavach
+      shell: bash
+      run: python -m pip install --quiet "${{ github.action_path }}/.."
+    - name: Scan
+      id: scan
+      shell: bash
+      env:
+        CK_TARGET: ${{ inputs.target }}
+        CK_LEVEL: ${{ inputs.privacy-level }}
+        CK_PROVIDER: ${{ inputs.provider }}
+        CK_MODEL: ${{ inputs.model }}
+        CK_FAIL_ON: ${{ inputs.fail-on }}
+        CK_SYNC_ISSUES: ${{ inputs.sync-issues }}
+      run: bash "${{ github.action_path }}/run.sh"
+    - name: Upload SARIF
+      if: ${{ inputs.upload-sarif == 'true' && always() && steps.scan.outputs.sarif-path != '' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ steps.scan.outputs.sarif-path }}
+        category: ${{ inputs.sarif-category }}
+    - name: Gate
+      if: ${{ steps.scan.outputs.outcome == 'failed' }}
+      shell: bash
+      run: |
+        echo "::error::CodeKavach found findings at or above '${{ inputs.fail-on }}'."
+        exit 1

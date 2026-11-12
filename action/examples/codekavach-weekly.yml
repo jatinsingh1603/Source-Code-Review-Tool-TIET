@@ -1,0 +1,27 @@
+# Weekly scan of the default branch with an LLM at privacy level L3, SARIF in the Security tab and
+# one issue per finding. The provider key comes from a repository secret, never from an input.
+name: CodeKavach weekly
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jatinsingh1603/Source-Code-Review-Tool-TIET/action@main
+        env:
+          CODEKAVACH_AGENTROUTER_API_KEY: ${{ secrets.CODEKAVACH_AGENTROUTER_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CODEKAVACH_ACCEPT_EGRESS: "1"   # a deliberate, visible consent decision by the operator
+        with:
+          provider: agentrouter
+          privacy-level: L3
+          fail-on: none
+          upload-sarif: "true"
+          sync-issues: "true"
