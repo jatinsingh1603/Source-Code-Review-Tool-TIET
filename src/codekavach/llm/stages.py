@@ -15,6 +15,7 @@ other candidates go on. ``llm.enabled = false`` publishes an empty list and open
 """
 
 import importlib
+import json
 import os
 import queue
 from collections.abc import Callable
@@ -82,6 +83,27 @@ _FAILURE_CODES: Final = {
     "refused": LLM_REFUSED,
     "invalid": LLM_OUTPUT_INVALID,
 }
+
+
+USAGE_FILE: Final = "llm-usage.json"
+
+
+def _write_usage(ctx: RunContext, provider_id: str, usage: dict[str, object], retries: int) -> None:
+    """Keep the scan's request, token and cache-hit counts for the summary (E22-03).
+
+    Metadata only: counts and the provider id, never a payload or a response.
+    """
+    if ctx.state_dir is None:
+        return
+    from codekavach.core.store.layout import StateLayout, atomic_write_bytes  # noqa: PLC0415
+
+    document = {"provider": provider_id, "retries": retries, **usage}
+    try:
+        target = StateLayout(ctx.state_dir).scan_dir(str(ctx.scan_id)) / USAGE_FILE
+        target.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_bytes(target, json.dumps(document, sort_keys=True).encode("utf-8"))
+    except Exception as error:  # noqa: BLE001 - the summary line is a convenience, not a result
+        _log.info("llm_usage_not_written", error_type=type(error).__name__)
 
 
 def _read[Model: BaseModel](ctx: RunContext, key: str, model: type[Model]) -> list[Model]:
@@ -227,4 +249,5 @@ class LlmReviewStage:
             usage=managed.budget.summary(),
             retries=managed.retries,
         )
+        _write_usage(ctx, provider.id, managed.budget.summary(), managed.retries)
         ctx.artefacts.put(keys.VERDICTS_RAW, verdicts)

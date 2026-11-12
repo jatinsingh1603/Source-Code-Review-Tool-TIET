@@ -104,6 +104,7 @@ class CliScanResult:
     state_dir: Path
     stages_run: int
     findings: "tuple[Finding, ...]" = ()
+    llm_usage: "dict[str, Any] | None" = None
 
 
 @dataclass(frozen=True)
@@ -323,7 +324,36 @@ def to_cli_result(outcome: Any) -> CliScanResult:
         state_dir=Path(outcome.state_dir),
         stages_run=len(result.order),
         findings=_findings(outcome),
+        llm_usage=_llm_usage(Path(outcome.state_dir), str(scan.id)),
     )
+
+
+def _llm_usage(state_dir: Path, scan_id: str) -> "dict[str, Any] | None":
+    """The LLM request, token and cache-hit counts the review stage kept, if any (E22-03)."""
+    import json  # noqa: PLC0415
+
+    try:
+        text = (state_dir / "scans" / scan_id / "llm-usage.json").read_text(encoding="utf-8")
+        document = json.loads(text)
+    except (OSError, ValueError):
+        return None
+    return document if isinstance(document, dict) else None
+
+
+def usage_line(usage: "Mapping[str, Any] | None") -> str | None:
+    """One summary line about LLM usage, or ``None`` when the review did not run."""
+    if not usage or not (usage.get("requests") or usage.get("cache_hits")):
+        return None  # the review did not run, or a local double answered in-process
+    parts = [
+        f"LLM requests: {usage.get('requests', 0)}",
+        f"cache hits: {usage.get('cache_hits', 0)}",
+        f"tokens: {usage.get('input_tokens', 0)} in / {usage.get('output_tokens', 0)} out",
+    ]
+    if usage.get("retries"):
+        parts.append(f"retries: {usage['retries']}")
+    cost = usage.get("cost_usd")
+    parts.append("cost unknown" if cost is None else f"cost about ${cost:.4f}")
+    return ", ".join(parts)
 
 
 def execute_scan(
@@ -440,6 +470,7 @@ def scan_data(
             "by_severity": _counts(result.summary),
         },
         "egress": {"recorded": result.egress_sent, "blocked": result.egress_blocked},
+        "llm_usage": result.llm_usage,
         "consent": {"source": consent_source},
         "degraded_stages": list(result.degraded_stages),
         "report_files": [str(path) for path in result.report_files],
@@ -488,6 +519,9 @@ def _renderer(
             f"{result.egress_sent}, blocked by guard: {result.egress_blocked}",
             markup=False,
         )
+        usage = usage_line(result.llm_usage)
+        if usage is not None:
+            console.print(usage, markup=False, soft_wrap=True)
         if provider.kind in LOCAL_KINDS:
             console.print(
                 "provider is local/mock: payloads were recorded but not transmitted", markup=False
