@@ -49,6 +49,7 @@ const STAGE_LABEL: Record<string, string> = {
   "llm-review": "Model review",
   restore: "Restore",
   rate: "Rate",
+  "privacy-check": "Ledger check",
   report: "Report",
   sync: "Sync",
 };
@@ -62,6 +63,7 @@ const STAGE_HINT: Record<string, string> = {
   "llm-review": "Sanitised model review",
   restore: "Map pseudonyms back locally",
   rate: "CVSS, risk, compliance",
+  "privacy-check": "Verify hash chain",
   report: "Render reports",
   sync: "Optional integrations",
 };
@@ -129,11 +131,9 @@ export default function ScanPage() {
     return live.stages.map((s) => ({
       ...s,
       state: (doneAll
-        ? (s.name === "llm-review" || s.name === "restore") && llmOff
+        ? (s.name === "llm-review" || s.name === "restore" || s.name === "privacy-check") && llmOff
           ? "skipped"
-          : s.name === "sync"
-            ? "skipped"
-            : "done"
+          : "done"
         : s.name === scan?.stage
           ? "failed"
           : "pending") as StageState,
@@ -247,7 +247,7 @@ export default function ScanPage() {
                   {s.state === "skipped"
                     ? "skipped"
                     : s.startedAt && s.endedAt
-                      ? `${((s.endedAt - s.startedAt) / 1000).toFixed(1)}s`
+                      ? `${((s.endedAt - s.startedAt) / 1000).toFixed(1)}s${s.members.length > 1 ? ` · ${s.members.length} steps` : ""}`
                       : (STAGE_HINT[s.name] ?? "")}
                 </span>
                 <span className="sr-only">{s.state}</span>

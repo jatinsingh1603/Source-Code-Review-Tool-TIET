@@ -628,8 +628,8 @@ export const PIPELINE_STAGES = [
   "llm-review",
   "restore",
   "rate",
+  "privacy-check",
   "report",
-  "sync",
 ];
 
 export function buildFinding(

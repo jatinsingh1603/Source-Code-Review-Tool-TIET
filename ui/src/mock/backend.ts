@@ -328,7 +328,7 @@ function simulateScan(scan: Scan) {
   state.findings.set(scan.id, []);
   const steps: { at: number; fn: () => void }[] = [];
   let t = 400;
-  const stageMs: Record<string, number> = { ingest: 900, parse: 1300, analyse: 2600, aggregate: 700, "privacy-prepare": 1800, "llm-review": 5200, restore: 600, rate: 800, report: 1200, sync: 300 };
+  const stageMs: Record<string, number> = { ingest: 900, parse: 1300, analyse: 2600, aggregate: 700, "privacy-prepare": 1800, "llm-review": 5200, restore: 600, rate: 800, "privacy-check": 500, report: 1200 };
   const step = (ms: number, fn: () => void) => {
     t += ms;
     steps.push({ at: t, fn });
@@ -339,13 +339,12 @@ function simulateScan(scan: Scan) {
     emit(scan.id, { type: "log", level: "info", message: `Scan ${scan.id} started at level ${scan.privacy_level}` });
   });
   PIPELINE_STAGES.forEach((name, i) => {
-    const skip = (name === "llm-review" || name === "restore") && !withLlm;
-    const skipSync = name === "sync";
+    const skip = (name === "llm-review" || name === "restore" || name === "privacy-check") && !withLlm;
     step(80, () => {
       scan.stage = name;
-      emit(scan.id, { type: "stage", name, status: skip || skipSync ? "skipped" : "started" });
+      emit(scan.id, { type: "stage", name, status: skip ? "skipped" : "started" });
     });
-    if (skip || skipSync) return;
+    if (skip) return;
     const dur = stageMs[name] ?? 800;
     if (name === "ingest") step(dur / 2, () => emit(scan.id, { type: "log", level: "info", message: `Ingested ${scan.files} files (${scan.languages?.join(", ")})` }));
     if (name === "parse") step(dur / 2, () => emit(scan.id, { type: "log", level: "info", message: "Parsed 214 functions; 0 parse errors" }));
