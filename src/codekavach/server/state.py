@@ -37,7 +37,7 @@ POLICY_KEY: Final = "policy"
 DEFAULT_SETTINGS: Final[dict[str, Any]] = {
     "default_provider": "mock",
     "default_model": None,
-    "default_privacy_level": "L2",
+    "default_privacy_level": "L3",
     "org_name": "Thapar Institute of Engineering and Technology",
     "report_title": "Secure Source Code Review Report",
     "classification": "Confidential",

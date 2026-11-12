@@ -374,6 +374,16 @@ def _safe_message(error: Exception) -> str:
     return name
 
 
+def _zero_leak_words(zero_leak: dict[str, Any]) -> str:
+    """The zero-leak result for the log: passed, failed, or not run (no listed terms)."""
+    checked = int(zero_leak.get("checked") or 0)
+    if not checked:
+        return "zero-leak check not run (no listed project terms)"
+    if zero_leak.get("passed"):
+        return f"zero-leak passed ({checked} listed terms)"
+    return f"zero-leak FAILED ({zero_leak.get('occurrences', 0)} occurrence(s))"
+
+
 def _run_pipeline(
     job: ScanJob, scan: dict[str, Any], paths: ScanPaths, progress: _Progress
 ) -> tuple[Any, Any]:
@@ -519,8 +529,8 @@ def _store(  # noqa: PLR0917 - the parts of one result
         "log",
         {"level": "info" if privacy.chain_ok else "error",
          "message": f"Ledger chain {'intact' if privacy.chain_ok else 'BROKEN'}; "
-         f"{privacy.payloads} payloads, {privacy.blocked} blocked; zero-leak "
-         f"{'passed' if privacy.zero_leak.get('passed') else 'not passed'}"},
+         f"{privacy.payloads} payloads, {privacy.blocked} blocked; "
+         f"{_zero_leak_words(privacy_json.get('zero_leak') or privacy.zero_leak)}"},
     )  # fmt: skip
     log.append("stage", {"name": "report", "status": "started", "label": STAGE_LABELS["report"]})
     formats = [fmt for fmt in EAGER_FORMATS if fmt in available_formats(settings)]

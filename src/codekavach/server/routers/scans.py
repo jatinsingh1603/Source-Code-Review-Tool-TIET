@@ -172,7 +172,7 @@ def start_scan(
     """Create the scan row, commit it and queue the job."""
     defaults = state.get_settings()
     provider = body.provider or str(defaults.get("default_provider") or "mock")
-    level = body.privacy_level or str(defaults.get("default_privacy_level") or "L2")
+    level = body.privacy_level or str(defaults.get("default_privacy_level") or "L3")
     if level not in LEVELS:
         raise ApiError(400, "invalid_level", f"unknown privacy level {level}")
     if not re.fullmatch(r"[A-Za-z0-9_.:-]{1,64}", provider):
