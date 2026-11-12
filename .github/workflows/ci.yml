@@ -142,10 +142,11 @@ jobs:
   test:
     name: test (${{ matrix.os }}, ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
-    # The Linux jobs ran every test, the perf budgets and coverage in one process: about 14.5
-    # minutes at 6 500 tests, so 15 left no room (a run on 2026-11-05 was cancelled at the limit).
-    # The perf budgets now run in their own step without coverage (see docs/process/testing.md).
-    timeout-minutes: 30
+    # Issue #313: the Linux job ran every test, the perf budgets and branch coverage in one process
+    # (14.5 minutes at 6 500 tests). The tests now run on every core with pytest-xdist
+    # (pytest-cov merges the workers' coverage data, so the total and the 85 % gate are unchanged)
+    # and the perf budgets moved to the perf job below, which has no parallel workers.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -166,16 +167,13 @@ jobs:
       - run: uv run python --version
         env:
           UV_NO_SYNC: "1"
-      - name: Tests with coverage (the perf budgets run in their own step on Linux)
+      - name: Tests with coverage on every core (the perf budgets run in the perf job)
         run: make cov
         env:
           UV_NO_SYNC: "1"
-          PYTEST_ARGS: -m "not network and not perf" --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml
-      - name: Performance budgets without coverage (Linux)
-        if: runner.os == 'Linux'
-        run: make perf
-        env:
-          UV_NO_SYNC: "1"
+          PYTEST_ARGS: >-
+            -n auto --dist worksteal -m "not network and not perf" --durations=30
+            --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml
       - name: Coverage total in the job summary
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         run: |
@@ -198,6 +196,88 @@ jobs:
           path: junit-${{ matrix.os }}-${{ matrix.python }}.xml
           retention-days: 14
           if-no-files-found: ignore
+
+  perf:
+    # The performance budgets (marker perf) on an unloaded runner: one process, no xdist workers,
+    # no coverage tracing (see docs/process/testing.md). Linux only, as before.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked --all-extras
+      - name: Performance budgets without coverage
+        run: make perf
+        env:
+          UV_NO_SYNC: "1"
+          PYTEST_ARGS: --durations=10
+
+  ui:
+    # The web dashboard (ui/, React + Vite): install from the lock file, type-check and build,
+    # then run the unit tests. Skipped (and green) while ui/package.json does not exist.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Look for the dashboard
+        id: present
+        run: |
+          if [ -f ui/package.json ]; then echo "ui=true" >> "$GITHUB_OUTPUT"; else echo "ui=false" >> "$GITHUB_OUTPUT"; echo "no ui/package.json; nothing to build"; fi
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.present.outputs.ui == 'true'
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - name: Install (npm ci)
+        if: steps.present.outputs.ui == 'true'
+        working-directory: ui
+        run: npm ci --no-audit --no-fund
+      - name: Build (npm run build)
+        if: steps.present.outputs.ui == 'true'
+        working-directory: ui
+        run: npm run build
+      - name: Unit tests (npm test)
+        if: steps.present.outputs.ui == 'true'
+        working-directory: ui
+        run: npm test
+
+  docker:
+    # Smoke build of the server image (build only, never pushed; the Container workflow publishes).
+    # Skipped (and green) while no Dockerfile exists.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Look for the Dockerfile
+        id: present
+        run: |
+          for f in deploy/docker/Dockerfile Dockerfile; do
+            if [ -f "$f" ]; then echo "dockerfile=$f" >> "$GITHUB_OUTPUT"; exit 0; fi
+          done
+          echo "no Dockerfile; nothing to build"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        if: steps.present.outputs.dockerfile != ''
+      - name: Build the image (linux/amd64, no push)
+        if: steps.present.outputs.dockerfile != ''
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: ${{ steps.present.outputs.dockerfile }}
+          platforms: linux/amd64
+          push: false
+          tags: codekavach:ci-smoke
+          cache-from: type=gha,scope=ci-smoke
+          cache-to: type=gha,scope=ci-smoke,mode=max
 
   build:
     runs-on: ubuntu-latest
@@ -316,7 +396,7 @@ jobs:
 
   ci-ok:
     if: always()
-    needs: [lint, typecheck, contracts, hooks, commits, test, build, licences, demo, detector-eval]
+    needs: [lint, typecheck, contracts, hooks, commits, test, perf, ui, docker, build, licences, demo, detector-eval]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
