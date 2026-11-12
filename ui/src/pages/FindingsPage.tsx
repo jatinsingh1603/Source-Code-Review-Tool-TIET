@@ -7,7 +7,7 @@ import type { Finding, FindingPatch, Severity } from "@/api/types";
 import { useSelectedScan } from "@/app/useSelectedScan";
 import { useSession } from "@/app/session";
 import { useCurrentProject } from "@/app/project-context";
-import { bySeverity, isOpen, locationOf, sortScans, verdictOf } from "@/lib/domain";
+import { bySeverity, enginesOf, isOpen, locationOf, sortScans, verdictOf } from "@/lib/domain";
 import { confidenceFraction, SEVERITY_LABEL, STATUS_LABEL } from "@/lib/format";
 import { engineLabel, findingLabel, LEVEL_NAME, riskLevel, scanLabel } from "@/lib/display";
 import { parseOwasp } from "@/lib/taxonomy";
@@ -414,8 +414,7 @@ export default function FindingsPage() {
                   const st = stateOf(f);
                   const v = verdictOf(f);
                   const conf = confidenceFraction(f.llm?.confidence ?? f.confidence);
-                  const engines = f.engines?.length ? f.engines : f.provenance?.engines?.map((e) => e.engine) ?? [f.engine ?? ""];
-                  const engNames = [...new Set(engines.map(engineLabel))];
+                  const engNames = enginesOf(f);
                   return (
                     <tr key={f.id} className={selected.has(f.id) ? "sel" : undefined}>
                       {triage && (

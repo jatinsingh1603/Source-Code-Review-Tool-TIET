@@ -96,7 +96,37 @@ export interface EvaluationData {
   note?: string;
 }
 
+interface ServerEvaluation {
+  available?: boolean;
+  sample?: boolean;
+  benchmarks?: { dataset: string; arm: string; level?: string | null; provider?: string | null; precision?: number | null; recall?: number | null; f1?: number | null; f1_ci?: [number, number] | null; skipped_reason?: string | null }[];
+  attacks?: { experiment: string; description?: string; by_level?: Record<string, number | null>; reading?: string }[];
+  leakage?: { levels?: Record<string, { detection_f1?: number; identifier?: { exact_rate?: number } }> } | null;
+}
+
+/** The server's `GET /evaluation`, or null when it has no results yet (`available: false`). */
 export function asEvaluation(d: unknown): EvaluationData | null {
   if (!d || typeof d !== "object") return null;
-  return d as EvaluationData;
+  const s = d as ServerEvaluation;
+  if (s.available === false) return null;
+  const benchmarks = (s.benchmarks ?? [])
+    .filter((b) => typeof b.f1 === "number")
+    .map((b) => ({
+      dataset: b.dataset,
+      arm: b.arm === "engines-only" ? "SAST only" : b.level ? `SAST + LLM · ${b.level}${b.provider ? ` (${b.provider})` : ""}` : b.arm,
+      precision: b.precision ?? 0,
+      recall: b.recall ?? 0,
+      f1: b.f1 ?? 0,
+      f1_ci: b.f1_ci ?? undefined,
+    }));
+  const levels = s.leakage?.levels ?? {};
+  const frontier = Object.entries(levels).map(([lvl, v]) => ({ arm: lvl, f1: v.detection_f1 ?? 0, recovery: v.identifier?.exact_rate ?? 0 }));
+  const base = benchmarks.find((b) => b.arm === "SAST only");
+  return {
+    sample: s.sample ?? false,
+    benchmarks,
+    frontier: base ? [{ arm: "SAST only", f1: base.f1, recovery: 0 }, ...frontier] : frontier,
+    attacks: s.attacks ?? [],
+    leakage: Object.entries(levels).map(([level, v]) => ({ level, recovery: v.identifier?.exact_rate ?? 0 })),
+  };
 }

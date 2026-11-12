@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/app/session";
-import { useProviders, useSaveSettings, useSettings, useUpdateUser } from "@/api/queries";
-import { PRIVACY_LEVELS, type PrivacyLevel, type Settings } from "@/api/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { useOptional, useProviders, useSaveSettings, useSettings } from "@/api/queries";
+import { endpoints } from "@/api/endpoints";
+import { PRIVACY_LEVELS, type PersonalToken, type PrivacyLevel, type Settings } from "@/api/types";
 import { roleLabel } from "@/lib/permissions";
-import { LEVEL_NAME } from "@/lib/display";
+import { fmtDate, LEVEL_NAME } from "@/lib/display";
 import { readPrefs, writePrefs, type Prefs } from "@/lib/prefs";
 import { Avatar, Button, Content, Segmented, Skeleton, useToast } from "@/components/ui";
 
@@ -16,11 +18,11 @@ const SECTIONS: [string, string][] = [
 ];
 
 const EVENTS: [string, string][] = [
-  ["crit", "New Critical or High finding"],
-  ["assigned", "Finding assigned to me"],
-  ["privacy", "Privacy step failed or payload blocked"],
-  ["budget", "Exposure budget above 80%"],
-  ["scan", "Scan completed"],
+  ["critical_finding", "New Critical or High finding"],
+  ["finding_assigned", "Finding assigned to me"],
+  ["scan_failed", "Privacy step failed or scan aborted"],
+  ["ledger_verification_failed", "Ledger verification failed"],
+  ["scan_completed", "Scan completed"],
 ];
 
 const NOTIF_KEY = "ck-notifications";
@@ -37,12 +39,33 @@ function readNotif(): Notif {
 export default function SettingsPage() {
   const { user, can } = useSession();
   const toast = useToast();
-  const update = useUpdateUser();
+  const qc = useQueryClient();
+  const serverPrefs = useOptional("me-prefs", endpoints.myPreferences).data;
+  const serverNotif = useOptional("me-notif", endpoints.myNotifications).data;
+  const tokensQ = useOptional("me-tokens", endpoints.myTokens);
+  const [newToken, setNewToken] = useState<string | null>(null);
+  const [tokenName, setTokenName] = useState("");
+  const [busy, setBusy] = useState(false);
   const [active, setActive] = useState("profile");
   const [prefs, setPrefs] = useState<Prefs>(readPrefs);
   const [name, setName] = useState(user?.display_name ?? user?.full_name ?? "");
   const [notif, setNotif] = useState<Notif>(readNotif);
   const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (!serverPrefs) return;
+    setPrefs((p) => ({
+      ...p,
+      density: serverPrefs.density === "comfortable" || serverPrefs.density === "compact" ? serverPrefs.density : p.density,
+      reduceMotion: typeof serverPrefs.reduce_motion === "boolean" ? serverPrefs.reduce_motion : p.reduceMotion,
+      timeZone: typeof serverPrefs.time_zone === "string" ? serverPrefs.time_zone : p.timeZone,
+      dateFormat: serverPrefs.date_format === "iso" ? "iso" : p.dateFormat,
+    }));
+  }, [serverPrefs]);
+  useEffect(() => {
+    if (!serverNotif?.events) return;
+    setNotif(Object.fromEntries(Object.entries(serverNotif.events).map(([k, v]) => [k, { app: v.in_app, email: v.email }])));
+  }, [serverNotif]);
 
   useEffect(() => {
     const els = SECTIONS.map(([id]) => document.getElementById(id)).filter((x): x is HTMLElement => !!x);
@@ -59,28 +82,52 @@ export default function SettingsPage() {
 
   const save = async () => {
     writePrefs(prefs);
+    setBusy(true);
     try {
       localStorage.setItem(NOTIF_KEY, JSON.stringify(notif));
     } catch {
       /* storage unavailable */
     }
-    if (user && can("users:admin") && name.trim() && name !== (user.display_name ?? "")) {
-      try {
-        await update.mutateAsync({ id: user.id, body: { display_name: name.trim() } });
-      } catch (e) {
-        toast.error("Name not saved", e instanceof Error ? e.message : undefined);
-        return;
+    try {
+      if (user && name.trim() && name !== (user.display_name ?? "")) await endpoints.patchMe({ display_name: name.trim() });
+      if (serverPrefs) {
+        await endpoints.patchPreferences({
+          density: prefs.density,
+          reduce_motion: prefs.reduceMotion,
+          time_zone: prefs.timeZone,
+          date_format: prefs.dateFormat,
+        });
       }
+      if (serverNotif) {
+        await endpoints.patchMyNotifications({
+          events: Object.fromEntries(Object.entries(notif).map(([k, v]) => [k, { in_app: v.app, email: v.email }])),
+        });
+      }
+      setDirty(false);
+      toast.success("Settings saved");
+    } catch (e) {
+      toast.error("Settings not saved", e instanceof Error ? e.message : undefined);
+    } finally {
+      setBusy(false);
     }
-    setDirty(false);
-    toast.success("Settings saved", "Display preferences are kept in this browser.");
+  };
+
+  const createToken = async () => {
+    try {
+      const t = await endpoints.createMyToken(tokenName.trim() || "cli");
+      setNewToken(t.token);
+      setTokenName("");
+      void qc.invalidateQueries({ queryKey: ["optional", "me-tokens"] });
+    } catch (e) {
+      toast.error("Token not created", e instanceof Error ? e.message : undefined);
+    }
   };
 
   const set = (p: Partial<Prefs>) => {
     setPrefs((x) => ({ ...x, ...p }));
     setDirty(true);
   };
-  const ev = (k: string) => notif[k] ?? { app: true, email: k !== "budget" && k !== "scan" };
+  const ev = (k: string) => notif[k] ?? { app: true, email: false };
 
   return (
     <Content maxWidth={1100}>
@@ -88,7 +135,7 @@ export default function SettingsPage() {
         <div>
           <h1>Settings</h1>
         </div>
-        <Button variant="primary" onClick={() => void save()} loading={update.isPending}>
+        <Button variant="primary" onClick={() => void save()} loading={busy}>
           Save changes{dirty ? " ·" : ""}
         </Button>
       </div>
@@ -116,8 +163,6 @@ export default function SettingsPage() {
                   id="st-n"
                   className="inp"
                   value={name}
-                  disabled={!can("users:admin")}
-                  title={can("users:admin") ? undefined : "Ask an administrator to change your name."}
                   onChange={(e) => {
                     setName(e.target.value);
                     setDirty(true);
@@ -200,23 +245,63 @@ export default function SettingsPage() {
               </table>
             </div>
             <p className="xs faint" style={{ marginTop: 8 }}>
-              Kept in this browser. Email delivery needs a mail relay configured on the server.
+              {serverNotif ? "Stored on the server. In-app notifications appear under the bell; the server sends no e-mail." : "Kept in this browser."}
             </p>
           </div>
 
           <div className="card stack" id="tokens">
             <div className="row between">
               <h2>CLI and API tokens</h2>
-              <button className="btn sm" type="button" disabled title="Personal tokens need server support; sign in from the CLI with your account.">
-                + New personal token
-              </button>
+              <div className="row">
+                <input
+                  className="inp sm"
+                  style={{ width: 160 }}
+                  placeholder="laptop-cli"
+                  aria-label="Token name"
+                  value={tokenName}
+                  onChange={(e) => setTokenName(e.target.value)}
+                />
+                <Button size="sm" onClick={() => void createToken()} disabled={!tokensQ.data && !tokensQ.isLoading}>
+                  + New personal token
+                </Button>
+              </div>
             </div>
-            <p className="sm muted">
-              The command line runs scans on this machine without a token. To use the REST API from a script, sign in with{" "}
-              <span className="mono">POST /api/v1/auth/login</span> and send the token as a bearer header.
-            </p>
+            {newToken && (
+              <div className="banner sm" role="status">
+                <span>
+                  <b>Copy this token now; it is shown once.</b> <span className="mono" style={{ wordBreak: "break-all" }}>{newToken}</span>
+                </span>
+              </div>
+            )}
+            {((Array.isArray(tokensQ.data) ? tokensQ.data : []) as PersonalToken[])
+              .filter((t) => !t.revoked)
+              .map((t) => (
+                <div className="guard" key={t.id}>
+                  <span className="gt">
+                    <b className="sm" style={{ color: "var(--text)" }}>
+                      {t.name}
+                    </b>
+                    <br />
+                    <span className="xs">
+                      {t.prefix ? `${t.prefix}… · ` : ""}created {fmtDate(t.created_at)}
+                      {t.expires_at ? ` · expires ${fmtDate(t.expires_at)}` : ""}
+                    </span>
+                  </span>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      void endpoints.deleteMyToken(t.id).then(
+                        () => void qc.invalidateQueries({ queryKey: ["optional", "me-tokens"] }),
+                        (e: Error) => toast.error("Not revoked", e.message),
+                      )
+                    }
+                  >
+                    Revoke
+                  </Button>
+                </div>
+              ))}
             <div className="code cmd" style={{ padding: "10px 14px", fontSize: 12, whiteSpace: "pre-wrap" }}>
-              {"codekavach scan . --privacy-level L3 --provider mock\ncodekavach privacy ledger --help"}
+              {"curl -H 'Authorization: Bearer <token>' " + (typeof window !== "undefined" ? window.location.origin : "") + "/api/v1/stats\ncodekavach scan . --privacy-level L3 --provider mock"}
             </div>
           </div>
 

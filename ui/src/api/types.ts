@@ -104,6 +104,12 @@ export interface Stats {
   /** API gaps (optional). */
   mttr_days?: number | null;
   mttr_delta_days?: number | null;
+  mttr_samples?: number | null;
+  findings_by_status?: Record<string, number>;
+  risk_matrix?: { likelihood: number; impact: number; count: number }[];
+  owasp_by_engine?: { owasp: string; title?: string; engine: string; count: number }[];
+  top_cwes?: { cwe: string; name?: string | null; count: number }[];
+  scope?: { scan_ids?: string[] };
 }
 
 export type SourceType = "path" | "git" | "upload" | "sample";
@@ -168,15 +174,19 @@ export interface Scan {
   mode?: "branch" | "diff" | string | null;
   ref?: string | null;
   payloads?: number | null;
-  engines?: string[] | null;
+  engines?: { id: string; status: string }[] | string[] | null;
   eta_seconds?: number | null;
+  commit?: string | null;
+  duration_seconds?: number | null;
   privacy_summary?: {
     payloads: number;
     blocked: number;
     chain_ok: boolean;
     zero_leak?: { checked: number; occurrences: number; passed: boolean };
     tokens_sent?: number;
-    bytes_sent?: number;
+    bytes_sent?: number | null;
+    lines_sent?: number | null;
+    privacy_score?: number | null;
   } | null;
 }
 
@@ -227,7 +237,20 @@ export interface LlmVerdict {
   /** API gaps (optional). */
   exploit_scenario?: string | null;
   temperature?: number | null;
-  runs?: { verdict?: string; is_vulnerable?: boolean; confidence?: number | string; ledger_seq?: number }[] | null;
+  runs?: {
+    source?: string;
+    task?: string;
+    provider?: string;
+    model?: string;
+    level?: string;
+    verdict?: string;
+    is_vulnerable?: boolean | null;
+    confidence?: number | string | null;
+    ledger_seq?: number | null;
+    outcome?: string;
+  }[] | null;
+  consensus?: { samples: number; votes_vulnerable: number; votes_safe: number; abstained?: number; agreement?: number | null } | null;
+  remediation_example?: { language?: string; code: string } | null;
 }
 
 export interface ComplianceRef {
@@ -300,9 +323,17 @@ export interface Finding {
   history?: FindingHistoryEntry[];
   /** API gaps (optional). */
   baseline_state?: "new" | "unchanged" | "fixed" | string | null;
-  engines?: string[] | null;
+  baseline_scan_id?: string | null;
+  engines?: { engine: string; rule_id?: string | null; merged?: boolean }[] | string[] | null;
+  merged_from?: number | null;
+  verdict?: "vulnerable" | "not_vulnerable" | "uncertain" | "unreviewed" | string | null;
+  privacy_level?: PrivacyLevel | null;
+  sla_days?: number | null;
+  sla_state?: "on_track" | "due_soon" | "overdue" | string | null;
   due_at?: string | null;
   remediation_diff?: string | null;
+  exploit_scenario?: string | null;
+  remediation_example?: { language?: string; code: string } | null;
 }
 
 export interface FindingPatch {
@@ -357,6 +388,12 @@ export interface PrivacySummary {
   disclosure?: Record<string, string | number>;
   /** API gap (optional): bytes of payload sent. */
   bytes_sent?: number | null;
+  lines_sent?: number | null;
+  bytes_recorded?: number | null;
+  lines_recorded?: number | null;
+  repo_bytes?: number | null;
+  lines_total?: number | null;
+  score_parts?: { label: string; value: number | null; kind?: string }[];
 }
 
 export interface LedgerEntry {
@@ -379,6 +416,8 @@ export interface LedgerEntry {
   tokens_completion?: number | null;
   /** API gap (optional). */
   bytes?: number | null;
+  lines_sent?: number | null;
+  policy_rule_key?: string | null;
 }
 
 export type MarkupKind = "secret" | "pii" | "identifier" | "literal";
@@ -403,6 +442,11 @@ export interface LedgerDetail {
   slice_lines?: number[] | null;
   source_line?: number | null;
   sink_line?: number | null;
+  bytes?: number | null;
+  lines_sent?: number | null;
+  lines_original?: number | null;
+  lines_total?: number | null;
+  replacements?: Record<string, number> | null;
 }
 
 export interface LedgerVerifyResult {
@@ -412,6 +456,8 @@ export interface LedgerVerifyResult {
   message?: string;
   verified_at?: string;
   hashes_ok?: number;
+  hashes_mismatched?: number;
+  payloads_missing?: number;
   blocked?: number;
   terms_checked?: number;
   terms_found?: number;
@@ -440,6 +486,10 @@ export interface ProviderInfo {
   trust_tier?: string | null;
   host?: string | null;
   key_refs?: string[];
+  wire?: string | null;
+  endpoint?: string | null;
+  preset?: string | null;
+  key_ref_status?: { ref: string; state: string; present: boolean }[];
 }
 
 export interface ProviderTestResult {
@@ -493,7 +543,7 @@ export interface GithubSyncResult {
 
 /** Server-sent event payloads of `GET /scans/{id}/events`. */
 export type ScanEvent = (
-  | { type: "stage"; name: string; status: "started" | "completed" | "skipped" | "failed" | string }
+  | { type: "stage"; name: string; status: "started" | "completed" | "skipped" | "failed" | string; count?: number | null; total?: number | null }
   | { type: "progress"; percent: number; message?: string }
   | { type: "log"; level: string; message: string }
   | {
@@ -505,4 +555,184 @@ export type ScanEvent = (
       phase?: "verdict";
     }
   | { type: "done"; status: ScanStatus }
+  | {
+      type: "egress";
+      payloads?: number;
+      total?: number;
+      sent?: number;
+      recorded?: number;
+      blocked?: number;
+      bytes?: number;
+      bytes_sent?: number;
+      secrets_checked?: number;
+      terms_checked?: number;
+      terms_found?: number;
+      chain_ok?: boolean;
+      final?: boolean;
+    }
 ) & { /** Server timestamp of the event (ISO 8601), when sent. */ at?: string };
+
+
+// ---- Routes added for the dashboard design (docs/reference/api.md) ----------
+
+export interface NotificationItem {
+  id: string;
+  event: string;
+  at: string;
+  title: string;
+  link?: string | null;
+  read: boolean;
+}
+export interface NotificationFeed {
+  items: NotificationItem[];
+  unread: number;
+}
+
+export interface InvariantResult {
+  id: string;
+  title: string;
+  status: "passed" | "failed" | "not_recorded" | string;
+  passed: boolean | null;
+  tests?: { passed: number; failed: number; skipped: number; modules?: string[] };
+  guard?: Record<string, unknown> | null;
+}
+export interface InvariantReport {
+  recorded: boolean;
+  run_at?: string | null;
+  source?: string | null;
+  how_to_record?: string | null;
+  invariants: InvariantResult[];
+}
+
+export interface Budget {
+  id: string;
+  label: string;
+  unit: string;
+  limit: number | null;
+  used: number | null;
+  usage_pct: number | null;
+  source?: string;
+  note?: string;
+}
+export interface Budgets {
+  scan_id: string;
+  bytes_sent?: number | null;
+  budgets: Budget[];
+}
+
+export interface PolicyTemplate {
+  id: string;
+  name: string;
+  kind: "project" | "organisation" | string;
+  editor: boolean;
+  toml: string;
+  source?: string;
+}
+export interface PolicyValidation {
+  valid: boolean;
+  schema?: string;
+  hash?: string;
+  errors: { code: string; message: string; line?: number | null }[];
+  notes?: string[];
+  rules?: unknown;
+  matches?: Record<string, number>;
+  files_resolved?: number;
+  levels?: Record<string, number>;
+  provider_tier?: string;
+  preview?: { path: string; level: string; decided_by?: string }[];
+}
+export interface PolicyExplain {
+  path: string;
+  level: PrivacyLevel | null;
+  never_send: boolean;
+  classifications?: string[];
+  rule_key?: string | null;
+  decided_by?: string | null;
+  contributions: { axis: string; key: string; level: string | null; source?: string; winner?: boolean }[];
+  explanation?: string;
+  provider?: string | null;
+  provider_tier?: string | null;
+  in_inventory?: boolean;
+}
+
+export interface EngineStatus {
+  id: string;
+  name: string;
+  kind: "builtin" | "external";
+  installed: boolean;
+  status: string;
+  summary?: string;
+  version?: string | null;
+  languages?: string[];
+  default_enabled?: boolean;
+}
+
+export interface Inventory {
+  project_id: string;
+  scan_id?: string | null;
+  scanned_at?: string | null;
+  languages: { language: string; files: number; lines: number; bytes?: number; support: string; features?: string[] }[];
+  totals?: { files?: number; lines?: number; bytes?: number };
+}
+
+export interface ProviderUsage {
+  month: string;
+  source?: string;
+  usage: { provider: string; month: string; models?: string[]; requests: number; input_tokens: number; output_tokens: number; blocked?: number; recorded?: number; scans?: number }[];
+}
+
+export interface SystemHealth {
+  status: string;
+  checks: { name: string; status: string; summary?: string; details?: unknown }[];
+  invariants?: unknown;
+  uptime_seconds?: number;
+}
+
+export interface VaultInfo {
+  vaults: { scan_id: string; project_id?: string; records: number; created_at?: string; last_write_at?: string; rotated_at?: string | null; rotations?: number; size_bytes?: number; key_source?: string }[];
+  count: number;
+  records: number;
+  retention_days?: number | null;
+  key_source?: string | null;
+  note?: string;
+}
+
+export interface Retention {
+  scans: number;
+  oldest_scan_at?: string | null;
+  newest_scan_at?: string | null;
+  scans_bytes?: number;
+  uploads_bytes?: number;
+  database_bytes?: number;
+  vault_retention_days?: number | null;
+  ledger_payloads?: number;
+  automatic_purge?: boolean;
+  how_to_purge?: string;
+}
+
+export interface PersonalToken {
+  id: string;
+  name: string;
+  prefix?: string;
+  user_id?: string;
+  username?: string;
+  created_at?: string;
+  expires_at?: string | null;
+  last_used_at?: string | null;
+  revoked?: boolean;
+  scopes?: string[];
+}
+
+export interface MyNotifications {
+  events: Record<string, { in_app: boolean; email: boolean }>;
+  delivery?: unknown;
+}
+
+export interface SavedView {
+  id: string;
+  name: string;
+  filters: Record<string, string>;
+  builtin: boolean;
+  created_at?: string;
+  count?: number;
+}

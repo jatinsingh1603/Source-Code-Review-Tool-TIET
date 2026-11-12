@@ -67,10 +67,10 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
 
   const shown: LedgerDetail | null | undefined = isSent ? d : preview.data;
   const counts = shown ? markupCounts(shown.markup) : null;
-  const renamed = shown ? new Set(shown.markup.filter((m) => m.side === "payload" && m.kind === "identifier").map((m) => shown.payload_text.slice(m.start, m.end))).size : null;
-  const total = d ? lineCount(d.original_text) : 0;
+  const renamed = shown?.replacements?.identifier !== undefined ? shown.replacements.identifier : shown ? new Set(shown.markup.filter((m) => m.side === "payload" && m.kind === "identifier").map((m) => shown.payload_text.slice(m.start, m.end))).size : null;
+  const total = d ? d.lines_total ?? lineCount(d.original_text) : 0;
   const sent = shown ? payloadLineCount(shown.payload_text) : null;
-  const bytes = shown ? shown.entry?.bytes ?? byteLength(shown.payload_text) : null;
+  const bytes = shown ? shown.bytes ?? shown.entry?.bytes ?? byteLength(shown.payload_text) : null;
   const start = d?.original_start_line ?? d?.start_line ?? 1;
   const path = d?.path ?? finding?.locations?.[0]?.path ?? finding?.path;
   const taint = finding?.evidence?.taint_path ?? [];

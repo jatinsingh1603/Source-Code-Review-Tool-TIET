@@ -27,6 +27,21 @@ import type {
   UserCreate,
   VersionInfo,
   AuditLog,
+  Budgets,
+  EngineStatus,
+  Inventory,
+  InvariantReport,
+  MyNotifications,
+  NotificationFeed,
+  PersonalToken,
+  PolicyExplain,
+  PolicyTemplate,
+  PolicyValidation,
+  ProviderUsage,
+  Retention,
+  SavedView,
+  SystemHealth,
+  VaultInfo,
 } from "./types";
 
 /** Lists may come back bare or wrapped (`{items: [...]}`); accept both. */
@@ -59,16 +74,43 @@ export async function optional<T>(p: Promise<T>): Promise<T | null> {
 
 export const endpoints = {
   audit: (limit = 50) => api.get<AuditLog>("/audit", { limit }),
-  notifications: () => optional(api.get<unknown>("/notifications")),
+  notifications: () => optional(api.get<NotificationFeed>("/notifications", { limit: 20 })),
+  markNotificationsRead: () => api.post<unknown>("/notifications/read"),
   evaluation: () => optional(api.get<unknown>("/evaluation")),
+  evaluationRun: () => api.post<{ id: string; status: string }>("/evaluation/run", {}),
   integrationsGithub: () => optional(api.get<unknown>("/integrations/github")),
-  policyTemplates: () => optional(api.get<unknown>("/policy/templates")),
-  policyValidate: (toml: string) => optional(api.post<unknown>("/policy/validate", { toml })),
-  policyExplain: (path: string) => optional(api.get<unknown>("/policy/explain", { path })),
+  policyTemplates: () => optional(api.get<PolicyTemplate[]>("/policy/templates")),
+  policyValidate: (toml: string, projectId?: string) =>
+    optional(api.post<PolicyValidation>("/policy/validate", { toml, project_id: projectId })),
+  policyExplain: (path: string, projectId?: string) =>
+    optional(api.get<PolicyExplain>("/policy/explain", { path, project_id: projectId })),
   ledgerPreview: (scanId: string, seq: number, level: string) =>
     optional(api.get<LedgerDetail>(`/scans/${enc(scanId)}/ledger/${seq}/preview`, { level })),
   tokens: () => optional(api.get<unknown>("/tokens")),
-  engines: () => optional(api.get<unknown>("/engines")),
+  revokeToken: (id: string) => api.delete<void>(`/tokens/${enc(id)}`),
+  engines: () => optional(api.get<EngineStatus[]>("/engines")),
+  inventory: (projectId: string) => optional(api.get<Inventory>(`/projects/${enc(projectId)}/inventory`)),
+  invariants: () => optional(api.get<InvariantReport>("/privacy/invariants")),
+  budgets: (scanId: string) => optional(api.get<Budgets>("/privacy/budgets", { scan_id: scanId })),
+  providerUsage: (month: string) => optional(api.get<ProviderUsage>("/providers/usage", { month })),
+  systemHealth: () => optional(api.get<SystemHealth>("/system/health")),
+  vault: () => optional(api.get<VaultInfo>("/vault")),
+  retention: () => optional(api.get<Retention>("/retention")),
+  setRole: (id: string, role: string) => api.put<User>(`/users/${enc(id)}/role`, { role }),
+  revokeUser: (id: string) => api.post<unknown>(`/users/${enc(id)}/revoke?disable=true`),
+  myProfile: () => optional(api.get<User & { preferences?: Record<string, unknown> }>("/me")),
+  patchMe: (body: { display_name?: string; email?: string }) => api.patch<User>("/me", body),
+  myPreferences: () => optional(api.get<Record<string, unknown>>("/me/preferences")),
+  patchPreferences: (body: Record<string, unknown>) => api.patch<Record<string, unknown>>("/me/preferences", body),
+  myNotifications: () => optional(api.get<MyNotifications>("/me/notifications")),
+  patchMyNotifications: (body: MyNotifications) => api.patch<MyNotifications>("/me/notifications", body),
+  myTokens: () => optional(api.get<unknown>("/me/tokens")),
+  createMyToken: (name: string, expiresInDays = 90) =>
+    api.post<{ token: string } & PersonalToken>("/me/tokens", { name, expires_in_days: expiresInDays }),
+  deleteMyToken: (id: string) => api.delete<void>(`/me/tokens/${enc(id)}`),
+  views: (scanId?: string) => optional(api.get<unknown>("/views", { scan_id: scanId })),
+  createView: (name: string, filters: Record<string, string>) => api.post<SavedView>("/views", { name, filters }),
+  deleteView: (id: string) => api.delete<void>(`/views/${enc(id)}`),
 
   // auth
   login: (username: string, password: string) =>
@@ -204,6 +246,17 @@ export async function fetchReport(
   const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
   const filename = m?.[1] ? decodeURIComponent(m[1]) : `codekavach-${scanId}.${fmt === "md" ? "md" : fmt}`;
   return { blob, filename };
+}
+
+/** Download any authenticated API file (ledger JSONL, verification report, attestation). */
+export async function downloadApiFile(path: string, query: Record<string, string>, fallbackName: string): Promise<void> {
+  const qs = new URLSearchParams(query).toString();
+  const res = await api.request<Response>("GET", `${path}${qs ? `?${qs}` : ""}`, { raw: true });
+  if (res instanceof Blob) return saveBlob(res, fallbackName);
+  const blob = await res.blob();
+  const cd = res.headers.get("Content-Disposition") ?? "";
+  const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
+  saveBlob(blob, m?.[1] ? decodeURIComponent(m[1]) : fallbackName);
 }
 
 export function saveBlob(blob: Blob, filename: string): void {

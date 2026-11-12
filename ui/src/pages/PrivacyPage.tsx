@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSelectedScan } from "@/app/useSelectedScan";
-import { useFindings, useHealth, useOptional, usePolicy, usePrivacy, useProviders } from "@/api/queries";
-import { endpoints, fetchReport, saveBlob } from "@/api/endpoints";
-import type { PrivacyLevel, PrivacySummary } from "@/api/types";
+import { useFindings, useOptional, usePolicy, usePrivacy, useProviders } from "@/api/queries";
+import { downloadApiFile, endpoints, fetchReport, saveBlob } from "@/api/endpoints";
+import type { Budgets, PrivacyLevel, PrivacySummary } from "@/api/types";
 import { locationOf, sortScans } from "@/lib/domain";
-import { fmtInt, fmtLong, LEVEL_NAME, scanLabel } from "@/lib/display";
+import { fmtBytesText, fmtInt, fmtLong, LEVEL_NAME, scanLabel } from "@/lib/display";
 import { matches, policyDoc, strictest } from "@/lib/policy";
 import { asEvaluation, Frontier } from "@/components/Frontier";
 import { sampleEvaluation } from "@/lib/sampleEval";
@@ -56,7 +56,8 @@ export default function PrivacyPage() {
   const privacyQ = usePrivacy(scanId);
   const prevPrivacy = usePrivacy(prev?.id).data;
   const policy = usePolicy().data;
-  const health = useHealth().data;
+  const invariants = useOptional("invariants", endpoints.invariants).data;
+  const budgets = useOptional(`budgets-${scanId}`, () => endpoints.budgets(scanId!), !!scanId).data;
   const findings = useFindings(scanId).data;
   const providers = useProviders().data;
   const evalQ = useOptional("evaluation", endpoints.evaluation);
@@ -128,7 +129,9 @@ export default function PrivacyPage() {
                       <div key={c.name} title={c.basis}>
                         <div className="row between sm">
                           <span className="muted">
-                            {PART_LABEL[c.name] ?? c.name}
+                            {p.score_parts?.find((x) => x.label && x.label.toLowerCase().includes((PART_LABEL[c.name] ?? c.name).toLowerCase().split(" ")[0]!))?.label ??
+                              PART_LABEL[c.name] ??
+                              c.name}
                             {c.raw ? ` · ${c.raw}` : ""}
                           </span>
                           <span className="mono">{c.value === null ? <span className="faint">n/a</span> : Math.round(c.value)}</span>
@@ -153,39 +156,35 @@ export default function PrivacyPage() {
               {!p ? (
                 <Skeleton rows={2} />
               ) : (
-                <ExposureBudget p={p} />
+                <ExposureBudget p={p} budgets={budgets} />
               )}
             </div>
 
             <div className="card">
               <div className="card-h">
                 <h2>Invariant suite</h2>
-                <span className="xs faint">{health?.invariants?.length ? `${health.invariants.length} checks` : "this scan"}</span>
+                <span className="xs faint">
+                  {invariants?.recorded
+                    ? `${invariants.run_at ? `CI · ${fmtLong(invariants.run_at)} · ` : ""}${invariants.invariants.reduce((a, r) => a + (r.tests?.passed ?? 0) + (r.tests?.failed ?? 0), 0)} tests`
+                    : "not recorded on this server"}
+                </span>
               </div>
-              {health?.invariants?.length ? (
-                INVARIANTS_LONG.map(([id, t]) => {
-                  const r = health.invariants!.find((x) => x.id === id);
-                  return (
-                    <Guard key={id} id={id} result={r?.passed ? "pass" : <span className="note-w">{r ? "Fail" : "Not run"}</span>}>
-                      {t}
-                    </Guard>
-                  );
-                })
-              ) : p ? (
-                <>
-                  <Guard id="I6" result={p.zero_leak.passed ? "pass" : <span className="note-w">{p.zero_leak.checked ? "Fail" : "Not run"}</span>}>
-                    No listed term of 4+ chars in payloads
+              {INVARIANTS_LONG.map(([id, t]) => {
+                const r = invariants?.invariants.find((x) => x.id === id);
+                let res: React.ReactNode = <span className="xs faint">not recorded</span>;
+                if (r && invariants?.recorded) res = r.passed ? "pass" : <span className="note-w">Fail</span>;
+                else if (id === "I6" && p) res = p.zero_leak.passed ? "pass" : <span className="note-w">{p.zero_leak.checked ? "Fail" : "Not run"}</span>;
+                else if (id === "I4" && p) res = <span className="xs faint">{fmtInt(p.blocked)} blocked</span>;
+                return (
+                  <Guard key={id} id={id} result={res}>
+                    {t}
                   </Guard>
-                  <Guard id="I4" result={<span className="xs faint">{fmtInt(p.blocked)} blocked</span>}>
-                    Privacy-step failure aborts the request
-                  </Guard>
-                  <Guard result={p.chain_ok ? "pass" : <span className="note-w">Broken</span>}>Ledger hash chain intact</Guard>
-                  <p className="xs faint" style={{ marginTop: 8 }}>
-                    Results for this scan. The I1 to I6 suite runs in CI; its results appear here when the server reports them.
-                  </p>
-                </>
-              ) : (
-                <Skeleton rows={2} />
+                );
+              })}
+              {invariants && !invariants.recorded && invariants.how_to_record && (
+                <p className="xs faint" style={{ marginTop: 8 }}>
+                  I4 and I6 show this scan&apos;s evidence. To show the CI results, run <span className="mono">{invariants.how_to_record}</span> on the server.
+                </p>
               )}
             </div>
           </section>
@@ -367,7 +366,16 @@ export default function PrivacyPage() {
                   >
                     Download PDF
                   </Button>
-                  <Button size="sm" disabled={!p} onClick={() => p && downloadAttestation(scanId!, p)}>
+                  <Button
+                    size="sm"
+                    disabled={!p}
+                    onClick={() =>
+                      p &&
+                      void downloadApiFile(`/scans/${scanId}/privacy/attestation.json`, {}, `codekavach-attestation-${scanId}.json`).catch(() =>
+                        downloadAttestation(scanId!, p),
+                      )
+                    }
+                  >
                     JSON
                   </Button>
                 </div>
@@ -426,12 +434,31 @@ export default function PrivacyPage() {
   );
 }
 
-function ExposureBudget({ p }: { p: PrivacySummary }) {
+function ExposureBudget({ p, budgets }: { p: PrivacySummary; budgets?: Budgets | null }) {
   const pct = Number(p.disclosure?.repository_fraction_pct ?? NaN);
-  const budget = p.score_components?.find((c) => c.name === "budget_usage");
+  const rows = (budgets?.budgets ?? []).filter((b) => b.limit !== null);
+  const fmtVal = (v: number | null, unit: string) =>
+    v === null ? "—" : unit === "percent" ? `${v}%` : unit === "bytes" ? fmtBytesText(v) : fmtInt(v);
   return (
     <div className="stack s16">
-      {!Number.isNaN(pct) && (
+      {rows.length ? (
+        rows.slice(0, 3).map((b) => (
+          <div key={b.id} title={b.source}>
+            <div className="row between sm">
+              <span>{b.label}</span>
+              <span className="mono">
+                {fmtVal(b.used, b.unit)} / {fmtVal(b.limit, b.unit)}
+              </span>
+            </div>
+            <div className="bar ink" style={{ marginTop: 6 }}>
+              <i style={{ width: `${Math.min(100, b.usage_pct ?? 0)}%` }} />
+            </div>
+            <div className="xs faint" style={{ marginTop: 4 }}>
+              {b.usage_pct === null ? b.note ?? "not measured" : `${b.usage_pct}% used`}
+            </div>
+          </div>
+        ))
+      ) : !Number.isNaN(pct) ? (
         <div>
           <div className="row between sm">
             <span>This scan</span>
@@ -440,22 +467,11 @@ function ExposureBudget({ p }: { p: PrivacySummary }) {
           <div className="bar ink" style={{ marginTop: 6 }}>
             <i style={{ width: `${Math.min(100, pct)}%` }} />
           </div>
-          <div className="xs faint" style={{ marginTop: 4 }}>
-            {fmtInt(Number(p.disclosure?.lines_disclosed ?? 0))} of {fmtInt(Number(p.disclosure?.lines_prepared_total ?? 0))} prepared lines in{" "}
-            {fmtInt(Number(p.disclosure?.slices ?? p.payloads))} slices
-          </div>
         </div>
-      )}
-      <div>
-        <div className="row between sm">
-          <span>Tokens sent</span>
-          <span className="mono">{fmtInt(p.tokens_sent)}</span>
-        </div>
-      </div>
+      ) : null}
       <p className="xs faint">
-        {budget?.value !== null && budget?.value !== undefined
-          ? `Budget headroom ${Math.round(budget.value)} / 100.`
-          : `No exposure ceiling is configured${budget?.basis ? ` (${budget.basis})` : ""}. A scan stops at 100% once one is set.`}
+        {p.bytes_sent !== undefined && p.bytes_sent !== null ? `${fmtBytesText(p.bytes_sent)} sent in this scan. ` : ""}
+        Limits come from the privacy configuration on the server.
       </p>
     </div>
   );

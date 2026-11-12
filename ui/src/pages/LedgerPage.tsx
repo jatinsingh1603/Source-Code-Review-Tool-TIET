@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useSelectedScan } from "@/app/useSelectedScan";
 import { useLedger, useLedgerEntry, usePrivacy, useProviders, useVerifyLedger } from "@/api/queries";
+import { downloadApiFile } from "@/api/endpoints";
 import type { LedgerEntry, LedgerVerifyResult } from "@/api/types";
 import { providerName } from "@/lib/domain";
 import { byteLength, fmtHash, fmtInt, fmtSeq, fmtTime, findingLabel, scanLabel } from "@/lib/display";
@@ -134,10 +135,12 @@ export default function LedgerPage() {
           <Button
             disabled={!entries.length}
             onClick={() =>
-              download(
-                `codekavach-ledger-${scanId}.jsonl`,
-                [...entries].reverse().map((e) => JSON.stringify(e)).join("\n") + "\n",
-                "application/x-ndjson",
+              void downloadApiFile(`/scans/${scanId}/ledger`, { format: "jsonl" }, `codekavach-ledger-${scanId}.jsonl`).catch(() =>
+                download(
+                  `codekavach-ledger-${scanId}.jsonl`,
+                  [...entries].reverse().map((e) => JSON.stringify(e)).join("\n") + "\n",
+                  "application/x-ndjson",
+                ),
               )
             }
           >
@@ -146,24 +149,12 @@ export default function LedgerPage() {
           <Button
             disabled={!privacy}
             onClick={() =>
-              download(
-                `codekavach-verification-${scanId}.json`,
-                JSON.stringify(
-                  {
-                    scan_id: scanId,
-                    verified: result ?? null,
-                    chain_ok: privacy?.chain_ok,
-                    entries: entries.length,
-                    head,
-                    zero_leak: privacy?.zero_leak,
-                    blocked: privacy?.blocked,
-                    attestation_digest: privacy?.attestation_digest ?? null,
-                    exported_at: new Date().toISOString(),
-                  },
-                  null,
-                  2,
+              void downloadApiFile(`/scans/${scanId}/ledger-verification`, { format: "txt" }, `codekavach-verification-${scanId}.txt`).catch(() =>
+                download(
+                  `codekavach-verification-${scanId}.json`,
+                  JSON.stringify({ scan_id: scanId, verified: result ?? null, chain_ok: privacy?.chain_ok, entries: entries.length, head, zero_leak: privacy?.zero_leak }, null, 2),
+                  "application/json",
                 ),
-                "application/json",
               )
             }
           >
@@ -178,7 +169,7 @@ export default function LedgerPage() {
             <div className="sm" style={{ fontWeight: 600 }}>
               {chainOk === false
                 ? `Chain broken${result?.first_bad_seq ? ` at record ${fmtSeq(result.first_bad_seq)}` : ""}`
-                : `Chain verified · ${fmtInt(result?.entries ?? privacy.chain_entries ?? entries.length)} records · ${fmtInt(z?.occurrences)} listed terms found`}
+                : `Chain verified · ${fmtInt(result?.entries ?? privacy.chain_entries ?? entries.length)} records · ${fmtInt(result?.terms_found ?? z?.occurrences)} listed terms found`}
             </div>
             <div className="xs faint" style={{ marginTop: 2 }}>
               {result?.verified_at ? `Verified offline at ${fmtTime(result.verified_at)} IST` : "Checked when the scan finished"}
@@ -194,13 +185,17 @@ export default function LedgerPage() {
           <div>
             <div className="xs faint">Payload hashes</div>
             <StatusDot tone={chainOk === false ? "bad" : "ok"} className="sm">
-              {fmtInt(result?.hashes_ok ?? sent)} sent · {fmtInt(result?.blocked ?? blocked)} blocked
+              {result?.hashes_ok !== undefined ? `${fmtInt(result.hashes_ok)} match` : `${fmtInt(sent)} sent`} · {fmtInt(result?.blocked ?? blocked)} blocked
             </StatusDot>
           </div>
           <div>
             <div className="xs faint">Zero-leak check</div>
             <StatusDot tone={z?.passed ? "ok" : z?.checked ? "bad" : "neutral"} className="sm">
-              {z?.checked ? `${fmtInt(z.occurrences)} of ${fmtInt(z.checked)} terms, verbatim` : "no listed terms"}
+              {result?.terms_checked !== undefined
+                ? `${fmtInt(result.terms_found ?? 0)} of ${fmtInt(result.terms_checked)} terms, verbatim`
+                : z?.checked
+                  ? `${fmtInt(z.occurrences)} of ${fmtInt(z.checked)} terms, verbatim`
+                  : "no listed terms"}
             </StatusDot>
           </div>
         </div>

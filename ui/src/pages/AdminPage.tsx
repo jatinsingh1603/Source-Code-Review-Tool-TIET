@@ -2,10 +2,13 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSession } from "@/app/session";
 import { useShell } from "@/app/shell-context";
-import { useAudit, useCreateUser, useDeleteUser, useHealth, useProviders, useSettings, useUpdateUser, useUsers, useVersion } from "@/api/queries";
-import { ROLES, type AuditEvent, type Role, type User } from "@/api/types";
+import { Link } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAudit, useCreateUser, useHealth, useOptional, useProviders, useSettings, useUsers, useVersion } from "@/api/queries";
+import { endpoints } from "@/api/endpoints";
+import { ROLES, type AuditEvent, type PersonalToken, type Role, type User } from "@/api/types";
 import { roleLabel } from "@/lib/permissions";
-import { fmtShort, LEVEL_NAME } from "@/lib/display";
+import { fmtBytesText, fmtDate, fmtInt, fmtShort, LEVEL_NAME } from "@/lib/display";
 import {
   Avatar,
   Button,
@@ -93,8 +96,15 @@ export default function AdminPage() {
 
 function UsersTable() {
   const q = useUsers();
-  const update = useUpdateUser();
-  const del = useDeleteUser();
+  const qc = useQueryClient();
+  const setRole = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: Role }) => endpoints.setRole(id, role),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+  const revokeM = useMutation({
+    mutationFn: (id: string) => endpoints.revokeUser(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["users"] }),
+  });
   const { user: me } = useSession();
   const toast = useToast();
   const [revoke, setRevoke] = useState<User | null>(null);
@@ -135,11 +145,11 @@ function UsersTable() {
                       aria-label={`Role of ${name}`}
                       style={{ width: 120 }}
                       value={u.role}
-                      disabled={u.id === me?.id || update.isPending}
+                      disabled={u.id === me?.id || setRole.isPending}
                       title={u.id === me?.id ? "You cannot change your own role." : undefined}
                       onChange={(e) =>
-                        update.mutate(
-                          { id: u.id, body: { role: e.target.value as Role } },
+                        setRole.mutate(
+                          { id: u.id, role: e.target.value as Role },
                           {
                             onSuccess: () => toast.success("Role changed", `${name} is now ${roleLabel(e.target.value as Role)}.`),
                             onError: (err) => toast.error("Role not changed", err.message),
@@ -174,7 +184,7 @@ function UsersTable() {
         open={!!revoke}
         onClose={() => setRevoke(null)}
         title="Revoke access?"
-        description={revoke ? `${revoke.display_name || revoke.username} will no longer be able to sign in. Their triage history stays.` : undefined}
+        description={revoke ? `${revoke.display_name || revoke.username} is signed out everywhere and the account is disabled. Their triage history stays.` : undefined}
         footer={
           <>
             <Button variant="ghost" onClick={() => setRevoke(null)}>
@@ -182,10 +192,10 @@ function UsersTable() {
             </Button>
             <Button
               variant="danger"
-              loading={del.isPending}
+              loading={revokeM.isPending}
               onClick={() =>
                 revoke &&
-                del.mutate(revoke.id, {
+                revokeM.mutate(revoke.id, {
                   onSuccess: () => {
                     toast.success("Access revoked");
                     setRevoke(null);
@@ -204,15 +214,56 @@ function UsersTable() {
 }
 
 function TokensCard() {
+  const q = useOptional("admin-tokens", endpoints.tokens);
+  const qc = useQueryClient();
+  const toast = useToast();
+  const tokens = (Array.isArray(q.data) ? q.data : []) as PersonalToken[];
   return (
     <div className="card">
       <div className="card-h">
         <h2>API tokens</h2>
-        <button className="btn sm" type="button" disabled title="Long-lived API tokens need server support.">
+        <Link className="btn sm" to="/settings#tokens">
           + New token
-        </button>
+        </Link>
       </div>
-      <Empty title="No API tokens">Scripts sign in with a user account; sessions expire on their own.</Empty>
+      {q.isLoading ? (
+        <Skeleton />
+      ) : tokens.filter((t) => !t.revoked).length === 0 ? (
+        <Empty title="No API tokens">Users create personal tokens in Settings; they appear here.</Empty>
+      ) : (
+        tokens
+          .filter((t) => !t.revoked)
+          .map((t) => (
+            <div className="guard" key={t.id}>
+              <span className="gt">
+                <b className="sm" style={{ color: "var(--text)" }}>
+                  {t.name}
+                </b>
+                <br />
+                <span className="xs">
+                  {t.username ?? ""} · {t.expires_at ? `expires ${fmtDate(t.expires_at)}` : "no expiry"}
+                  {t.last_used_at ? ` · used ${fmtShort(t.last_used_at)}` : ""}
+                </span>
+              </span>
+              <span className="mono xs faint">{t.prefix ? `${t.prefix}…` : ""}</span>
+              <button
+                className="btn sm ghost"
+                type="button"
+                onClick={() =>
+                  void endpoints.revokeToken(t.id).then(
+                    () => {
+                      toast.success("Token revoked");
+                      void qc.invalidateQueries({ queryKey: ["optional", "admin-tokens"] });
+                    },
+                    (e: Error) => toast.error("Not revoked", e.message),
+                  )
+                }
+              >
+                Revoke
+              </button>
+            </div>
+          ))
+      )}
     </div>
   );
 }
@@ -321,52 +372,77 @@ function AuditPanel({ limit }: { limit?: number }) {
 }
 
 function RetentionCard() {
+  const vault = useOptional("vault", endpoints.vault).data;
+  const ret = useOptional("retention", endpoints.retention).data;
+  const rotated = vault?.vaults.map((v) => v.rotated_at).filter((x): x is string => !!x).sort().pop();
   return (
     <div className="card stack">
       <h2>Data retention and vault</h2>
-      <p className="sm muted">
-        Scans, findings and ledgers are kept until a project is deleted. The pseudonym vault stays on this machine and is managed with the
-        command line:
-      </p>
-      <div className="code cmd" style={{ whiteSpace: "pre-wrap" }}>
-        {"codekavach vault --help"}
-      </div>
+      {!vault && !ret ? (
+        <p className="sm muted">Scans, findings and ledgers are kept until a project is deleted.</p>
+      ) : (
+        <dl className="dl sm">
+          {ret && (
+            <>
+              <dt>Scans kept</dt>
+              <dd>
+                {fmtInt(ret.scans)} · {fmtBytesText((ret.scans_bytes ?? 0) + (ret.uploads_bytes ?? 0) + (ret.database_bytes ?? 0))}
+              </dd>
+              <dt>Oldest scan</dt>
+              <dd>{fmtDate(ret.oldest_scan_at)}</dd>
+              <dt>Vault retention</dt>
+              <dd>{ret.vault_retention_days ? `${ret.vault_retention_days} days, then purge` : "kept with each scan"}</dd>
+            </>
+          )}
+          {vault && (
+            <>
+              <dt>Vault key</dt>
+              <dd className="mono xs">{vault.key_source ?? vault.vaults[0]?.key_source ?? "—"} · AES-256-GCM</dd>
+              <dt>Last rotated</dt>
+              <dd>{rotated ? fmtDate(rotated) : "never"}</dd>
+              <dt>Vault size</dt>
+              <dd>
+                {fmtInt(vault.records)} mappings · {fmtInt(vault.count)} scans
+              </dd>
+            </>
+          )}
+        </dl>
+      )}
       <p className="xs faint">
-        Purging the vault means old verdicts can no longer be mapped back to real names. Reports already generated are unaffected.
+        {ret?.how_to_purge ? `To purge: ${ret.how_to_purge}. ` : ""}Purging a vault means old verdicts can no longer be mapped back to real names.
+        Reports already generated are unaffected.
       </p>
     </div>
   );
 }
 
 function HealthCard() {
+  const sys = useOptional("system-health", endpoints.systemHealth);
   const h = useHealth();
   const v = useVersion().data;
+  const checks = (sys.data?.checks ?? []).filter((c) => c.status !== "skip");
   return (
     <div className="card">
       <div className="card-h">
         <h2>System health</h2>
-        <span className="mono xs faint">GET /health{v ? ` · v${v.version}` : ""}</span>
+        <span className="mono xs faint">codekavach doctor{v ? ` · v${v.version}` : ""}</span>
       </div>
-      {h.isLoading ? (
+      {sys.isLoading || h.isLoading ? (
         <Skeleton />
-      ) : h.isError || !h.data ? (
-        <ErrorBanner what="Health could not be read." error={h.error} />
-      ) : (
+      ) : checks.length ? (
+        checks.slice(0, 10).map((c) => (
+          <Guard key={c.name} result={c.status === "pass" ? "pass" : <span className="note-w">{c.status === "warn" ? "Low" : c.status}</span>}>
+            {c.name.replace(/^server:/, "").replace(/_/g, " ")}
+            {c.summary ? ` · ${c.summary}` : ""}
+          </Guard>
+        ))
+      ) : h.data ? (
         <>
           <Guard result={h.data.status === "ok" ? "pass" : <span className="note-w">{h.data.status}</span>}>API server</Guard>
-          <Guard result={h.data.database === "ok" ? "pass" : <span className="note-w">{String(h.data.database ?? "unknown")}</span>}>
-            Database and migrations
-          </Guard>
-          <Guard result={<span className="xs faint">{h.data.active_scans ?? 0} running</span>}>Scan workers</Guard>
-          {(h.data.checks ?? []).map((c) => (
-            <Guard key={c.name} result={c.ok ? "pass" : <span className="note-w">{c.detail ?? "Check"}</span>}>
-              {c.name}
-            </Guard>
-          ))}
-          <p className="xs faint" style={{ marginTop: 8 }}>
-            Engine, mirror and disk checks: run <span className="mono">codekavach doctor</span> on the server.
-          </p>
+          <Guard result={h.data.database === "ok" ? "pass" : <span className="note-w">{String(h.data.database ?? "unknown")}</span>}>Database and migrations</Guard>
         </>
+      ) : (
+        <ErrorBanner what="Health could not be read." error={h.error} />
       )}
     </div>
   );

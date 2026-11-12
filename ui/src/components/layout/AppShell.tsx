@@ -9,7 +9,9 @@ import type { PrivacyLevel } from "@/api/types";
 import type { Permission } from "@/lib/permissions";
 import { roleLabel } from "@/lib/permissions";
 import { cn } from "@/lib/format";
-import { LEVEL_NAME } from "@/lib/display";
+import { fmtShort, LEVEL_NAME } from "@/lib/display";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { endpoints } from "@/api/endpoints";
 import { pickDefault } from "@/app/useSelectedScan";
 import { Avatar, Icon, Logo, Skeleton, type IconName } from "@/components/ui";
 import { CommandPalette } from "./CommandPalette";
@@ -236,18 +238,55 @@ function ProviderPill() {
 function Bell() {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const feed = useQuery({ queryKey: ["notifications"], queryFn: endpoints.notifications, refetchInterval: 60_000, retry: false }).data;
+  const unread = feed?.unread ?? 0;
+  const toggle = () => {
+    setOpen((x) => !x);
+    if (!open && unread) {
+      void endpoints.markNotificationsRead().then(() => qc.invalidateQueries({ queryKey: ["notifications"] }), () => undefined);
+    }
+  };
   return (
     <div className="ck-pop" ref={ref}>
-      <button className="iconbtn" type="button" aria-label="Notifications, none unread" aria-expanded={open} onClick={() => setOpen((x) => !x)}>
+      <button
+        className="iconbtn"
+        type="button"
+        aria-label={`Notifications, ${unread ? `${unread} unread` : "none unread"}`}
+        aria-expanded={open}
+        onClick={toggle}
+      >
         <Icon name="bell" />
+        {unread > 0 && <span className="badge-n">{unread}</span>}
       </button>
       {open && (
-        <div className="ck-menu right" style={{ width: 280 }}>
+        <div className="ck-menu right" style={{ width: 320 }}>
           <div className="mh">Notifications</div>
-          <div className="empty" style={{ padding: "16px 8px" }}>
-            <b style={{ color: "var(--text)" }}>No notifications</b>
-            <span className="sm">Scan, privacy and assignment events will appear here.</span>
-          </div>
+          {feed?.items.length ? (
+            feed.items.slice(0, 8).map((n) => (
+              <button
+                key={n.id}
+                type="button"
+                className="mi"
+                style={{ whiteSpace: "normal", alignItems: "flex-start", flexDirection: "column", gap: 2 }}
+                onClick={() => {
+                  setOpen(false);
+                  if (n.link) navigate(n.link);
+                }}
+              >
+                <span className="sm" style={{ fontWeight: n.read ? 400 : 600 }}>
+                  {n.title}
+                </span>
+                <span className="xs faint">{fmtShort(n.at)}</span>
+              </button>
+            ))
+          ) : (
+            <div className="empty" style={{ padding: "16px 8px" }}>
+              <b style={{ color: "var(--text)" }}>No notifications</b>
+              <span className="sm">Finished scans and findings assigned to you appear here.</span>
+            </div>
+          )}
         </div>
       )}
     </div>

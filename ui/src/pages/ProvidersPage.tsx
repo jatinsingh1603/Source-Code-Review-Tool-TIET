@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { useProviders, useScans, useSettings, useTestProvider } from "@/api/queries";
+import { useOptional, useProviders, useScans, useSettings, useTestProvider } from "@/api/queries";
+import { endpoints } from "@/api/endpoints";
 import type { ProviderInfo, ProviderTestResult } from "@/api/types";
 import { useSession } from "@/app/session";
 import { fmtInt } from "@/lib/display";
@@ -64,6 +65,8 @@ export default function ProvidersPage() {
   };
 
   const month = new Date().toISOString().slice(0, 7);
+  const month0 = month;
+  const usageQ = useOptional(`usage-${month0}`, () => endpoints.providerUsage(month0));
   const usage = useMemo(() => {
     const m = new Map<string, number>();
     for (const s of scans ?? []) {
@@ -120,7 +123,7 @@ export default function ProvidersPage() {
                       <span className="provlogo">{logo(p.name)}</span>
                       <div>
                         <b>{p.name}</b>
-                        <div className="xs faint mono">wire: {WIRE[p.kind] ?? p.kind}</div>
+                        <div className="xs faint mono">wire: {p.wire ?? WIRE[p.kind] ?? p.kind}</div>
                       </div>
                     </div>
                     <span title={h && h !== "running" ? h.message : undefined}>
@@ -140,7 +143,13 @@ export default function ProvidersPage() {
                   <dl className="dl sm">
                     <dt>Key</dt>
                     <dd>
-                      {p.key_refs?.length
+                      {p.key_ref_status?.length
+                        ? p.key_ref_status.map((k) => (
+                            <div key={k.ref}>
+                              <span className="mono xs">{k.ref}</span> · {k.present ? "present" : k.state === "not-set" ? "missing" : k.state}
+                            </div>
+                          ))
+                        : p.key_refs?.length
                         ? p.key_refs.map((r) => (
                             <span key={r}>
                               <span className="mono xs">{r}</span> · {p.configured ? "present" : "missing"}
@@ -156,10 +165,12 @@ export default function ProvidersPage() {
                         <dd className="mono xs">{p.models.join(" · ")}</dd>
                       </>
                     )}
-                    {p.host && (
+                    {(p.endpoint || p.host) && (
                       <>
                         <dt>Endpoint</dt>
-                        <dd className="mono xs">{p.host}</dd>
+                        <dd className="mono xs" style={{ wordBreak: "break-all" }}>
+                          {p.endpoint ?? p.host}
+                        </dd>
                       </>
                     )}
                     <dt>Trust tier</dt>
@@ -216,10 +227,43 @@ export default function ProvidersPage() {
           <div className="card-h">
             <div>
               <h2>Token usage, {monthName}</h2>
-              <p className="sub">Input tokens recorded in the egress ledger, by provider</p>
+              <p className="sub">Input and output tokens recorded in the egress ledger</p>
             </div>
           </div>
-          {usage.length === 0 ? (
+          {usageQ.data?.usage.length ? (
+            <div className="stack" style={{ gap: 12 }}>
+              <div className="legend">
+                <span>
+                  <i style={{ background: "var(--text)" }} />
+                  Input
+                </span>
+                <span>
+                  <i style={{ background: "var(--accent)" }} />
+                  Output
+                </span>
+              </div>
+              {(() => {
+                const max = Math.max(1, ...usageQ.data.usage.map((u) => u.input_tokens + u.output_tokens));
+                return usageQ.data.usage.map((u) => (
+                  <div key={u.provider}>
+                    <div className="row between sm">
+                      <span>
+                        {q.data?.find((p) => p.id === u.provider)?.name ?? u.provider}
+                        <span className="xs faint"> · {fmtInt(u.requests)} requests</span>
+                      </span>
+                      <span className="mono">
+                        {fmtInt(u.input_tokens)} · {fmtInt(u.output_tokens)}
+                      </span>
+                    </div>
+                    <div className="tokbar">
+                      <i style={{ width: `${(u.input_tokens / max) * 100}%` }} />
+                      <i className="out" style={{ width: `${(u.output_tokens / max) * 100}%` }} />
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          ) : usage.length === 0 ? (
             <Empty title="No usage this month">Payloads sent this month appear here.</Empty>
           ) : (
             <div className="stack" style={{ gap: 12 }}>

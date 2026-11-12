@@ -69,7 +69,15 @@ export function toScanEvent(msg: SseMessage): ScanEvent | null {
 function toTyped(type: string, data: Record<string, unknown>): ScanEvent | null {
   switch (type) {
     case "stage":
-      return { type, name: String(data.name ?? data.stage ?? ""), status: String(data.status ?? "") };
+      return {
+        type,
+        name: String(data.name ?? data.stage ?? ""),
+        status: String(data.status ?? ""),
+        count: typeof data.count === "number" ? data.count : null,
+        total: typeof data.total === "number" ? data.total : null,
+      };
+    case "egress":
+      return { type, ...(data as Record<string, number | boolean>) } as ScanEvent;
     case "progress":
       return {
         type,

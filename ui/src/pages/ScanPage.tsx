@@ -5,7 +5,7 @@ import { subscribeScanEvents, type StreamState } from "@/api/events";
 import { qk, useCancelScan, usePrivacy, useProject, useProviders, useScan } from "@/api/queries";
 import type { PrivacySummary, Scan, ScanEvent } from "@/api/types";
 import { useSession } from "@/app/session";
-import { fmtClock, fmtElapsed, fmtInt, fmtTime, findingLabel, LEVEL_NAME, scanLabel, secondsBetween } from "@/lib/display";
+import { fmtBytes, fmtClock, fmtElapsed, fmtInt, fmtTime, findingLabel, LEVEL_NAME, scanLabel, secondsBetween } from "@/lib/display";
 import { providerName } from "@/lib/domain";
 import {
   Button,
@@ -24,6 +24,15 @@ import {
 import { ENGINE_GROUPS, STAGES } from "@/lib/pipeline";
 
 type Ev = ScanEvent & { t: number };
+
+const ENGINE_NAME: Record<string, string> = {
+  rules: "Rules (SAST)",
+  taint: "Taint engine",
+  secrets: "Secrets",
+  iac: "IaC checks",
+  sca: "SCA · OSV",
+  engines: "External engines (Opengrep, Bandit, ESLint)",
+};
 
 /** Collect a scan's events: the server replays history, then streams until `done`. */
 function useScanTimeline(scanId: string | undefined, enabled: boolean) {
@@ -91,22 +100,44 @@ function deriveStages(events: Ev[], scan: Scan | undefined) {
   });
 }
 
-function stageCount(n: string, state: StageState, scan: Scan | undefined, events: Ev[], privacy?: PrivacySummary): string {
+type EgressEv = Extract<ScanEvent, { type: "egress" }>;
+
+/** The largest count a server stage of this group reported. */
+function groupCount(n: string, events: Ev[]): number | null {
+  const g = STAGES.find((x) => x.n === n);
+  let best: number | null = null;
+  for (const e of events) {
+    if (e.type === "stage" && g?.members(e.name) && typeof e.count === "number" && e.count > 0) best = Math.max(best ?? 0, e.count);
+  }
+  return best;
+}
+
+function stageCount(n: string, state: StageState, scan: Scan | undefined, events: Ev[], egress: EgressEv | undefined, privacy?: PrivacySummary): string {
   if (state === "wait") return "waiting";
   if (state === "skip") return n === "09" ? "off" : "skipped";
   if (state === "fail") return "failed";
+  const c = groupCount(n, events);
   const findings = events.filter((e) => e.type === "finding" && !e.phase).length;
+  const fallback = state === "run" ? "running" : "done";
   switch (n) {
     case "01":
-      return scan?.files ? `${fmtInt(scan.files)} files` : state === "run" ? "running" : "done";
+      return c ? `${fmtInt(c)} files` : scan?.files ? `${fmtInt(scan.files)} files` : fallback;
+    case "02":
+      return c ? `${fmtInt(c)} files` : fallback;
     case "03":
-      return state === "done" && (findings || scan?.findings_total) ? `${fmtInt(findings || scan?.findings_total)} found` : state === "run" ? "running" : "done";
+      return state === "done" && (findings || scan?.findings_total) ? `${fmtInt(findings || scan?.findings_total)} found` : fallback;
     case "04":
-      return privacy ? `${fmtInt(privacy.payloads + (privacy.blocked ?? 0))} slices` : state === "run" ? "running" : "done";
+      if (egress?.total !== undefined) return `${fmtInt(egress.total)} slices`;
+      return privacy ? `${fmtInt(privacy.payloads + (privacy.blocked ?? 0))} slices` : c ? `${fmtInt(c)} cand.` : fallback;
     case "05":
-      return privacy ? `${fmtInt(privacy.payloads)} / ${fmtInt(privacy.payloads + (privacy.blocked ?? 0))} sent` : state === "run" ? "running" : "done";
+      if (egress?.payloads !== undefined && egress.total !== undefined) return `${fmtInt(egress.payloads)} / ${fmtInt(egress.total)} sent`;
+      return privacy ? `${fmtInt(privacy.payloads)} sent` : fallback;
+    case "06":
+      return c ? `${fmtInt(c)} verdicts` : fallback;
+    case "08":
+      return c ? `${fmtInt(c)} records` : fallback;
     default:
-      return state === "run" ? "running" : "done";
+      return c ? fmtInt(c) : fallback;
   }
 }
 
@@ -154,6 +185,8 @@ export default function ScanPage() {
   }, [doneEv, running, id, qc, toast]);
 
   const stages = useMemo(() => deriveStages(events, scan), [events, scan]);
+  const egress = useMemo(() => [...events].reverse().find((e) => e.type === "egress") as EgressEv | undefined, [events]);
+  const egressFinal = useMemo(() => events.find((e) => e.type === "egress" && e.final) as EgressEv | undefined, [events]);
   const progress = useMemo(() => {
     const p = [...events].reverse().find((e) => e.type === "progress") as (Ev & { type: "progress" }) | undefined;
     if (finished) return 100;
@@ -172,7 +205,8 @@ export default function ScanPage() {
         const warn = /warn|error/.test(e.level) || /failed/.test(e.message);
         out.push({ t: e.t, stage, text: e.message, cls: pol ? "acl" : warn ? "wl" : undefined });
       } else if (e.type === "finding") {
-        out.push({ t: e.t, stage: "finding", text: `${findingLabel(e.id)} ${e.severity} · ${e.title}` });
+        if (e.phase === "verdict") out.push({ t: e.t, stage: "verdict", text: e.title, cls: "okl" });
+        else out.push({ t: e.t, stage: "finding", text: `${findingLabel(e.id)} ${e.severity} · ${e.title}` });
       } else if (e.type === "done") {
         out.push({ t: e.t, stage: "done", text: `scan ${e.status}`, cls: e.status === "completed" ? "okl" : "wl" });
       }
@@ -294,7 +328,7 @@ export default function ScanPage() {
                       {s.state === "run" ? " running" : ""}
                     </span>
                     <span className="st-t">{s.title}</span>
-                    <span className={`cnt${s.state === "fail" ? " badc" : ""}`}>{stageCount(s.n, s.state, scan, events, p)}</span>
+                    <span className={`cnt${s.state === "fail" ? " badc" : ""}`}>{stageCount(s.n, s.state, scan, events, egress, p)}</span>
                   </div>
                 ))}
               </div>
@@ -311,6 +345,29 @@ export default function ScanPage() {
             </div>
             {scan.privacy_level === "L0" ? (
               <Empty title="Nothing leaves at L0">This scan uses local engines only; no payload is prepared.</Empty>
+            ) : !p && egress ? (
+              <div className="kpi-strip boxed">
+                <div className="kpi">
+                  <div className="k-l">Payloads</div>
+                  <div className="k-v">
+                    {fmtInt(egress.payloads)} <small>/ {fmtInt(egress.total)}</small>
+                  </div>
+                </div>
+                <div className="kpi">
+                  <div className="k-l">Bytes out</div>
+                  <div className="k-v">{egressFinal?.bytes_sent !== undefined ? fmtBytes(egressFinal.bytes_sent).v : "—"} <small>{egressFinal?.bytes_sent !== undefined ? fmtBytes(egressFinal.bytes_sent).unit : ""}</small></div>
+                </div>
+                <div className="kpi">
+                  <div className="k-l">Secrets checked</div>
+                  <div className="k-v">{egressFinal?.secrets_checked !== undefined ? fmtInt(egressFinal.secrets_checked) : "—"}</div>
+                  <div className="k-d">checked as each payload left</div>
+                </div>
+                <div className="kpi">
+                  <div className="k-l">Domain terms in payloads</div>
+                  <div className="k-v">{egressFinal?.terms_found !== undefined ? fmtInt(egressFinal.terms_found) : "—"}</div>
+                  <div className="k-d">{egressFinal?.terms_checked !== undefined ? `${fmtInt(egressFinal.terms_checked)} listed terms` : "after the ledger check"}</div>
+                </div>
+              </div>
             ) : !p ? (
               running ? (
                 <p className="sm muted">Counts appear here as soon as the privacy step has written the ledger.</p>
@@ -331,9 +388,10 @@ export default function ScanPage() {
                 <div className="kpi">
                   <div className="k-l">{p.bytes_sent !== undefined && p.bytes_sent !== null ? "Bytes out" : "Tokens out"}</div>
                   <div className="k-v">
-                    {p.bytes_sent !== undefined && p.bytes_sent !== null ? (p.bytes_sent / 1000).toFixed(1) : (p.tokens_sent / 1000).toFixed(1)}{" "}
-                    <small>{p.bytes_sent !== undefined && p.bytes_sent !== null ? "KB" : "k"}</small>
+                    {p.bytes_sent !== undefined && p.bytes_sent !== null ? fmtBytes(p.bytes_sent).v : (p.tokens_sent / 1000).toFixed(1)}{" "}
+                    <small>{p.bytes_sent !== undefined && p.bytes_sent !== null ? fmtBytes(p.bytes_sent).unit : "k"}</small>
                   </div>
+                  {p.lines_sent !== undefined && p.lines_sent !== null && <div className="k-d">{fmtInt(p.lines_sent)} lines</div>}
                 </div>
                 <div className="kpi">
                   <div className="k-l">Secrets redacted</div>
@@ -470,7 +528,10 @@ function LaunchSummary({
       </div>
       <div className="stack s6">
         <span className="lbl">Engines</span>
-        {ENGINE_GROUPS.map((g) => (
+        {(Array.isArray(scan.engines) && scan.engines.length && typeof scan.engines[0] === "object"
+          ? (scan.engines as { id: string; status: string }[]).map((e) => `${ENGINE_NAME[e.id] ?? e.id}${e.status === "succeeded" ? "" : ` · ${e.status}`}`)
+          : ENGINE_GROUPS
+        ).map((g) => (
           <label key={g} className="swrow">
             <input type="checkbox" className="chk" checked readOnly aria-readonly="true" tabIndex={-1} onClick={(e) => e.preventDefault()} /> {g}
           </label>

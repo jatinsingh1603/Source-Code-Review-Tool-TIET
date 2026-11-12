@@ -3,8 +3,8 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useFinding, useFindingHistory, useLedgerEntry, usePatchFinding, useUsers } from "@/api/queries";
 import { FINDING_STATUSES, type Finding, type FindingStatus, type PrivacyLevel, type TaintStep } from "@/api/types";
 import { useSession } from "@/app/session";
-import { locationOf, verdictOf } from "@/lib/domain";
-import { capitalise, byteLength, engineLabel, fmtDate, fmtHash, fmtInt, fmtSeq, fmtShort, findingLabel, LEVEL_NAME, lineCount, payloadLineCount, scanLabel } from "@/lib/display";
+import { enginesOf, locationOf, verdictOf } from "@/lib/domain";
+import { capitalise, byteLength, fmtDate, fmtHash, fmtInt, fmtSeq, fmtShort, findingLabel, LEVEL_NAME, lineCount, payloadLineCount, scanLabel } from "@/lib/display";
 import { confidenceFraction, frameworkLabel, STATUS_LABEL } from "@/lib/format";
 import { cvssRating, parseVector } from "@/lib/cvss";
 import { MarkedCode } from "@/components/Marked";
@@ -155,7 +155,7 @@ export default function FindingDetailPage() {
   const files = new Set(taint.map((t) => t.path)).size;
   const { impact } = splitImpact(f.llm?.impact ?? f.impact_detail?.narrative ?? null);
   const level = (ledger.data?.entry.level ?? f.scan?.privacy_level ?? reviews[0]?.level) as PrivacyLevel | undefined;
-  const engines = [...new Set((f.engines?.length ? f.engines : f.provenance?.engines?.map((e) => e.engine) ?? [f.engine ?? ""]).map(engineLabel))];
+  const engines = enginesOf(f);
   const sinkLine = taint.find((t) => t.kind === "sink" && t.path === f.evidence?.code?.path)?.line ?? loc?.line;
   const srcLine = taint.find((t) => t.kind === "source" && t.path === f.evidence?.code?.path)?.line;
   const assigneeName = f.assignee
@@ -327,6 +327,12 @@ export default function FindingDetailPage() {
             ) : (
               <p className="sm muted">No remediation guidance for this rule yet.</p>
             )}
+            {f.remediation_example && !(f.remediation ?? "").includes("```") && (
+              <CodeBlock
+                title={<span className="mono">Secure example · {f.remediation_example.language ?? f.language ?? ""}</span>}
+                code={f.remediation_example.code}
+              />
+            )}
             {f.remediation_diff && <CodeBlock title={<span className="mono">{loc?.path}</span>} code={f.remediation_diff} />}
           </div>
 
@@ -387,6 +393,12 @@ export default function FindingDetailPage() {
                 <Link to={`/scans/${f.scan_id}`} title={f.scan_id} style={{ textDecoration: "none" }}>
                   {scanLabel(f.scan_id)}
                 </Link>
+                {f.baseline_state && f.baseline_scan_id && (
+                  <span>
+                    {" "}
+                    · {f.baseline_state === "new" ? "New since" : f.baseline_state === "fixed" ? "Fixed since" : "Unchanged since"} {scanLabel(f.baseline_scan_id)}
+                  </span>
+                )}
               </dd>
               <dt>Engines</dt>
               <dd>
@@ -411,7 +423,11 @@ export default function FindingDetailPage() {
               {f.due_at && (
                 <>
                   <dt>Due</dt>
-                  <dd className="sm">{fmtDate(f.due_at)}</dd>
+                  <dd className="sm">
+                    {fmtDate(f.due_at)}
+                    {f.sla_days ? ` · ${f.sla_days}-day SLA` : ""}
+                    {f.sla_state === "overdue" ? <span className="badc"> · overdue</span> : f.sla_state === "due_soon" ? <span className="up"> · due soon</span> : null}
+                  </dd>
                 </>
               )}
             </dl>
@@ -601,7 +617,7 @@ function SawTab({ f, seq, ledger }: { f: Finding; seq: number | null; ledger: Re
     return <div className="banner bad sm">Blocked by policy · {d.entry.block_code ?? "never-send"}. Nothing was sent.</div>;
   }
   const sent = payloadLineCount(d.payload_text);
-  const total = lineCount(d.original_text);
+  const total = d.lines_total ?? lineCount(d.original_text);
   const bytes = d.entry.bytes ?? byteLength(d.payload_text);
   return (
     <div className="stack">
@@ -626,12 +642,14 @@ function SawTab({ f, seq, ledger }: { f: Finding; seq: number | null; ledger: Re
 
 function ReasonTab({ f, conf }: { f: Finding; conf: number | null }) {
   const reviews = f.provenance?.llm_reviews ?? [];
-  const runs = f.llm?.runs?.length ? f.llm.runs : reviews;
+  const runs = f.llm?.runs?.length ? f.llm.runs.filter((r) => r.source !== "ledger" || r.verdict) : reviews;
   if (!f.llm && !reviews.length) {
     return <Empty title="No model review">This finding was not sent to a model.</Empty>;
   }
   const v = verdictOf(f);
-  const agree = reviews.filter((r) => r.is_vulnerable === f.llm?.is_vulnerable).length;
+  const cons = f.llm?.consensus;
+  const agree = cons ? (f.llm?.is_vulnerable === false ? cons.votes_safe : cons.votes_vulnerable) : reviews.filter((r) => r.is_vulnerable === f.llm?.is_vulnerable).length;
+  const samples = cons?.samples ?? reviews.length;
   const { scenario } = splitImpact(f.llm?.impact ?? null);
   return (
     <div className="stack s16">
@@ -647,7 +665,7 @@ function ReasonTab({ f, conf }: { f: Finding; conf: number | null }) {
         <div>
           <div className="xs faint">Consensus</div>
           <span className="mono">
-            {reviews.length ? `${agree} of ${reviews.length} run${reviews.length === 1 ? "" : "s"} agree` : "—"}
+            {samples ? `${agree} of ${samples} run${samples === 1 ? "" : "s"} agree` : "—"}
           </span>
         </div>
         <div>
@@ -664,10 +682,10 @@ function ReasonTab({ f, conf }: { f: Finding; conf: number | null }) {
           {f.llm?.reasoning ?? reviews[0]?.reasoning ?? "—"}
         </p>
       </div>
-      {(f.llm?.exploit_scenario || scenario) && (
+      {(f.exploit_scenario || f.llm?.exploit_scenario || scenario) && (
         <div>
           <h3 style={{ fontSize: 13, marginBottom: 4 }}>Exploit scenario</h3>
-          <p className="sm muted">{f.llm?.exploit_scenario ?? scenario}</p>
+          <p className="sm muted">{f.exploit_scenario ?? f.llm?.exploit_scenario ?? scenario}</p>
         </div>
       )}
       {runs.length > 0 && (
@@ -684,7 +702,10 @@ function ReasonTab({ f, conf }: { f: Finding; conf: number | null }) {
             <tbody>
               {runs.map((r, i) => {
                 const c = confidenceFraction(r.confidence ?? null);
-                const vk = verdictOf({ status: f.status, llm: { is_vulnerable: !!r.is_vulnerable, confidence: r.confidence ?? 0, reasoning: "" } });
+                const vk =
+                  r.is_vulnerable === null || r.is_vulnerable === undefined
+                    ? null
+                    : verdictOf({ status: f.status, llm: { is_vulnerable: !!r.is_vulnerable, confidence: r.confidence ?? 0, reasoning: "" } });
                 return (
                   <tr key={i}>
                     <td className="mono">{i + 1}</td>

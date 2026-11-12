@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useCurrentProject } from "@/app/project-context";
-import { useFindings, useHealth, usePrivacy, useProviders, useScans, useStats } from "@/api/queries";
-import type { Finding, PrivacySummary, Project, ProviderInfo, Scan, TrendPoint } from "@/api/types";
+import { useFindings, useOptional, usePrivacy, useProviders, useScans, useStats } from "@/api/queries";
+import { endpoints } from "@/api/endpoints";
+import type { Finding, InvariantReport, PrivacySummary, Project, ProviderInfo, Scan, TrendPoint } from "@/api/types";
 import { isOpen, providerName, scanPayloads, scanTarget, sevCounts, sortScans } from "@/lib/domain";
 import {
   ENGINE_COLUMNS,
@@ -47,7 +48,7 @@ export default function OverviewPage() {
   const prevPrivacy = usePrivacy(prev?.id).data;
   const stats = useStats().data;
   const providers = useProviders().data;
-  const health = useHealth().data;
+  const invariants = useOptional("invariants", endpoints.invariants).data;
 
   const crumbs = [{ label: current?.name ?? "Project" }, { label: "Overview" }];
   const loading = projLoading || scansQ.isLoading;
@@ -136,7 +137,7 @@ export default function OverviewPage() {
                   : undefined
               }
             />
-            <MttrKpi findings={findings} days={stats?.mttr_days} delta={stats?.mttr_delta_days} />
+            <MttrKpi findings={findings} days={stats?.mttr_days} delta={stats?.mttr_delta_days} samples={stats?.mttr_samples} />
           </div>
         )}
       </section>
@@ -150,7 +151,7 @@ export default function OverviewPage() {
         <OwaspCard findings={open} loading={findingsQ.isLoading} />
         <div className="stack s16">
           <TopCwes findings={open} loading={findingsQ.isLoading} />
-          <GuardCard health={health} privacy={privacyQ.data} />
+          <GuardCard report={invariants} privacy={privacyQ.data} />
         </div>
       </section>
 
@@ -194,7 +195,10 @@ function PrivacyScoreKpi({ p, prev }: { p?: PrivacySummary; prev?: PrivacySummar
 
 function EgressKpi({ p, scan }: { p?: PrivacySummary; scan?: Scan }) {
   const payloads = p?.payloads ?? (scan ? scanPayloads(scan) : null);
-  const frac = p?.disclosure?.repository_fraction_pct;
+  const frac =
+    p?.bytes_sent !== undefined && p?.bytes_sent !== null && p?.repo_bytes
+      ? ((p.bytes_sent / p.repo_bytes) * 100).toFixed(1)
+      : p?.disclosure?.repository_fraction_pct;
   const detail = `${fmtInt(payloads)} payloads${frac !== undefined ? ` · ${frac}% of repo` : ""}`;
   if (p?.bytes_sent !== undefined && p?.bytes_sent !== null) {
     const b = fmtBytes(p.bytes_sent);
@@ -212,7 +216,7 @@ function EgressKpi({ p, scan }: { p?: PrivacySummary; scan?: Scan }) {
   );
 }
 
-function MttrKpi({ findings, days, delta }: { findings: Finding[]; days?: number | null; delta?: number | null }) {
+function MttrKpi({ findings, days, delta, samples }: { findings: Finding[]; days?: number | null; delta?: number | null; samples?: number | null }) {
   let value: number | null = days ?? null;
   if (value === null) {
     const fixed = findings.filter((f) => f.status === "fixed" && f.created_at && f.updated_at);
@@ -235,6 +239,8 @@ function MttrKpi({ findings, days, delta }: { findings: Finding[]; days?: number
           </>
         ) : value === null ? (
           "no findings fixed yet"
+        ) : samples ? (
+          `${samples} fixed finding${samples === 1 ? "" : "s"}`
         ) : (
           "fixed findings, this scan"
         )
@@ -514,40 +520,30 @@ const INVARIANTS: [string, string][] = [
   ["I6", "No listed term in ledger payloads"],
 ];
 
-function GuardCard({ health, privacy }: { health?: { invariants?: { id: string; passed: boolean; title?: string }[] }; privacy?: PrivacySummary }) {
-  const inv = health?.invariants;
+function GuardCard({ report, privacy }: { report?: InvariantReport | null; privacy?: PrivacySummary }) {
+  const recorded = report?.recorded;
   return (
     <div className="card">
       <div className="card-h">
         <h2>Privacy guard status</h2>
         <MoreLink to="/privacy">Details</MoreLink>
       </div>
-      {inv && inv.length ? (
-        INVARIANTS.map(([id, title]) => {
-          const r = inv.find((x) => x.id === id);
-          return (
-            <Guard key={id} id={id} result={r ? (r.passed ? "pass" : <span className="note-w">Fail</span>) : <span className="xs faint">not run</span>}>
-              {title}
-            </Guard>
-          );
-        })
-      ) : privacy ? (
-        <>
-          <Guard id="I6" result={privacy.zero_leak.passed ? "pass" : <span className="note-w">{privacy.zero_leak.checked ? "Fail" : "Not run"}</span>}>
-            No listed term in ledger payloads
+      {INVARIANTS.map(([id, title]) => {
+        const r = report?.invariants.find((x) => x.id === id);
+        let result: React.ReactNode = <span className="xs faint">not recorded</span>;
+        if (r && recorded) result = r.passed ? "pass" : <span className="note-w">Fail</span>;
+        else if (id === "I6" && privacy) result = privacy.zero_leak.passed ? "pass" : <span className="note-w">{privacy.zero_leak.checked ? "Fail" : "Not run"}</span>;
+        else if (id === "I4" && privacy) result = <span className="xs faint">{fmtInt(privacy.blocked)} blocked</span>;
+        return (
+          <Guard key={id} id={id} result={result}>
+            {title}
           </Guard>
-          <Guard id="" result={privacy.chain_ok ? "pass" : <span className="note-w">Broken</span>}>
-            Ledger hash chain intact
-          </Guard>
-          <Guard id="I4" result={<span className="xs faint">{fmtInt(privacy.blocked)} blocked</span>}>
-            Blocked payloads stayed local
-          </Guard>
-          <p className="xs faint" style={{ marginTop: 8 }}>
-            Checks for the latest scan. The full I1 to I6 suite result appears here when the server reports it.
-          </p>
-        </>
-      ) : (
-        <Empty title="No privacy checks yet">They appear after a completed scan.</Empty>
+        );
+      })}
+      {report && !recorded && (
+        <p className="xs faint" style={{ marginTop: 8 }}>
+          I6 and I4 show this scan&apos;s evidence. Record the invariant suite on the server to show all six.
+        </p>
       )}
     </div>
   );

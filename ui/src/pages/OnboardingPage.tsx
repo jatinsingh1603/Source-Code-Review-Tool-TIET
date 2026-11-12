@@ -3,11 +3,11 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentProject } from "@/app/project-context";
 import { useShell } from "@/app/shell-context";
-import { qk, useCreateProject, usePolicy, useProject, useProviders, useSettings, useStartScan } from "@/api/queries";
-import { uploadArchive } from "@/api/endpoints";
+import { qk, useCreateProject, useOptional, usePolicy, useProject, useProviders, useSettings, useStartScan } from "@/api/queries";
+import { endpoints, uploadArchive } from "@/api/endpoints";
 import type { PrivacyLevel, Project, ProviderInfo, SourceType } from "@/api/types";
 import { atLeastAsStrict } from "@/lib/format";
-import { LEVEL_BARS, LEVEL_NAME } from "@/lib/display";
+import { fmtInt, LEVEL_BARS, LEVEL_NAME } from "@/lib/display";
 import { ENGINE_GROUPS } from "@/lib/pipeline";
 import { policyDoc } from "@/lib/policy";
 import { validateGitUrl } from "@/lib/validate";
@@ -159,6 +159,8 @@ export default function OnboardingPage() {
   };
 
   const langs = useMemo(() => project?.languages ?? [], [project]);
+  const inventory = useOptional(`inventory-${projectId}`, () => endpoints.inventory(projectId!), !!projectId).data;
+  const engines = useOptional("engines", endpoints.engines).data;
 
   return (
     <Content maxWidth={1180}>
@@ -277,7 +279,13 @@ export default function OnboardingPage() {
           <div className="card stack">
             <div className="card-h" style={{ margin: 0 }}>
               <h2 style={{ fontSize: 16 }}>Languages and inventory</h2>
-              <span className="sub">{project?.files ? `${project.files} files` : "Counted on the first scan"}</span>
+              <span className="sub">
+                {inventory?.totals?.files
+                  ? `${fmtInt(inventory.totals.files)} files · ${fmtInt(inventory.totals.lines)} lines`
+                  : project?.files
+                    ? `${project.files} files`
+                    : "Counted on the first scan"}
+              </span>
             </div>
             <div className="tbl-wrap">
               <table className="tbl">
@@ -285,20 +293,31 @@ export default function OnboardingPage() {
                   <tr>
                     <th>Language</th>
                     <th className="num">Files</th>
+                    <th className="num">Lines</th>
+                    <th>Share</th>
                     <th>Support</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {langs.map((l) => (
-                    <tr key={l}>
-                      <td>{l.charAt(0).toUpperCase() + l.slice(1)}</td>
-                      <td className="num mono faint">—</td>
-                      <td>{FULL.has(l.toLowerCase()) ? <span className="chip fixed">Full</span> : <span className="chip">Emerging</span>}</td>
-                    </tr>
-                  ))}
+                  {(inventory?.languages ?? langs.map((l) => ({ language: l, files: 0, lines: 0, support: FULL.has(l) ? "full" : "partial" }))).map((l) => {
+                    const total = inventory?.totals?.lines || 1;
+                    return (
+                      <tr key={l.language}>
+                        <td>{l.language === "unknown" ? "Other" : l.language.charAt(0).toUpperCase() + l.language.slice(1)}</td>
+                        <td className="num mono">{l.files ? fmtInt(l.files) : "—"}</td>
+                        <td className="num mono">{l.lines ? fmtInt(l.lines) : "—"}</td>
+                        <td style={{ width: 200 }}>
+                          <div className="bar">
+                            <i style={{ width: `${(l.lines / total) * 100}%` }} />
+                          </div>
+                        </td>
+                        <td>{l.support === "full" ? <span className="chip fixed">Full</span> : <span className="chip">{l.support === "basic" ? "Secrets only" : "Emerging"}</span>}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
-              {langs.length === 0 && (
+              {!inventory?.languages?.length && langs.length === 0 && (
                 <div className="empty">
                   <b style={{ color: "var(--text)" }}>Inventory appears after the first scan</b>
                   <span className="sm">Languages, files and lines are counted when the code is ingested.</span>
@@ -308,11 +327,21 @@ export default function OnboardingPage() {
           </div>
           <div className="card stack">
             <h2 style={{ fontSize: 16 }}>Engines available</h2>
-            {ENGINE_GROUPS.map((g) => (
-              <label key={g} className="swrow">
-                <input type="checkbox" className="chk" checked readOnly aria-readonly="true" onClick={(e) => e.preventDefault()} /> {g}
-              </label>
-            ))}
+            {(engines ?? []).length
+              ? engines!.map((e) => (
+                  <label key={e.id} className="swrow" title={e.summary}>
+                    <input type="checkbox" className="chk" checked={e.installed} readOnly aria-readonly="true" onClick={(ev) => ev.preventDefault()} />{" "}
+                    <span>
+                      {e.name}
+                      {!e.installed && <span className="xs faint"> · {e.status.replace(/_/g, " ")}</span>}
+                    </span>
+                  </label>
+                ))
+              : ENGINE_GROUPS.map((g) => (
+                  <label key={g} className="swrow">
+                    <input type="checkbox" className="chk" checked readOnly aria-readonly="true" onClick={(e) => e.preventDefault()} /> {g}
+                  </label>
+                ))}
             <p className="xs faint">Every installed engine runs on each scan.</p>
           </div>
         </section>

@@ -1,5 +1,6 @@
 import type { Finding, FindingStatus, Project, ProviderInfo, Scan, Severity } from "@/api/types";
 import { confidenceFraction, SEVERITY_RANK } from "./format";
+import { engineLabel } from "./display";
 import type { VerdictKind } from "@/components/ui/Badge";
 
 export const CLOSED: FindingStatus[] = ["fixed", "false_positive", "accepted_risk"];
@@ -24,10 +25,18 @@ export function bySeverity(a: Finding, b: Finding): number {
  * confidence below 0.65; false positive = status false_positive or the model
  * said not vulnerable. `null` when no model reviewed the finding.
  */
-export function verdictOf(f: Pick<Finding, "llm" | "status" | "llm_reviewed">): { kind: VerdictKind; conf: number | null } | null {
+export function verdictOf(
+  f: Pick<Finding, "llm" | "status" | "llm_reviewed"> & { verdict?: string | null; confidence?: number | string },
+): { kind: VerdictKind; conf: number | null } | null {
   if (f.status === "false_positive") return { kind: "fp", conf: null };
   const llm = f.llm;
-  if (!llm) return null;
+  if (!llm) {
+    // List rows carry the server's verdict word but not the model's confidence.
+    if (f.verdict === "not_vulnerable") return { kind: "fp", conf: null };
+    if (f.verdict === "uncertain") return { kind: "rev", conf: null };
+    if (f.verdict === "vulnerable") return { kind: "like", conf: null };
+    return null;
+  }
   const c = confidenceFraction(llm.confidence);
   if (!llm.is_vulnerable) return { kind: "fp", conf: c };
   if (c !== null && c < 0.65) return { kind: "rev", conf: c };
@@ -63,6 +72,17 @@ export function sortScans(scans: Scan[]): Scan[] {
   return [...scans].sort((a, b) =>
     (b.created_at ?? b.started_at ?? "").localeCompare(a.created_at ?? a.started_at ?? ""),
   );
+}
+
+/** Engine names of a finding (merged engines first-class), as design labels, unique. */
+export function enginesOf(f: Finding): string[] {
+  const raw: string[] = [];
+  if (Array.isArray(f.engines) && f.engines.length) {
+    for (const e of f.engines) raw.push(typeof e === "string" ? e : e.engine);
+  } else if (f.provenance?.engines?.length) {
+    for (const e of f.provenance.engines) raw.push(e.engine);
+  } else if (f.engine) raw.push(f.engine);
+  return [...new Set(raw.map(engineLabel))];
 }
 
 /** The finding's file and line. */
