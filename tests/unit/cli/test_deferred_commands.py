@@ -50,7 +50,7 @@ CASES = [
     Case("demo", ["demo"], "codekavach.cli.demo_runner.run_demo", "E13", "the demo"),
 ]  # fmt: skip
 IDS = [case.name for case in CASES]
-MISSING = [case for case in CASES if case.name != "demo"]  # the demo back end is in this build
+MISSING: list[Case] = []  # every back end is part of this build
 MISSING_IDS = [case.name for case in MISSING]
 
 

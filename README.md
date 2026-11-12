@@ -31,7 +31,7 @@ docker compose up -d --build  # then open http://127.0.0.1:8080 and log in as ad
 ```bash
 uv sync --all-extras
 uv run codekavach demo --out demo-out                      # offline, mock provider, writes an HTML and PDF report
-uv run codekavach scan fixtures/kavachbank --provider mock # a scan in the terminal
+uv run codekavach scan PATH --provider mock                    # scan your own project in the terminal
 uv run codekavach serve --host 127.0.0.1 --port 8080       # dashboard at http://127.0.0.1:8080
 ```
 

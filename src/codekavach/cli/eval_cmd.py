@@ -8,7 +8,7 @@ are ``codekavach.eval.run_detection_eval`` (epic E36) and ``codekavach.eval.run_
 ``backend_unavailable``; it prints no metric and writes no file.
 """
 
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 
@@ -22,6 +22,17 @@ from codekavach.cli.deferred import (
 from codekavach.cli.errors import UsageError
 
 eval_app = typer.Typer(help="Run the detection and leakage evaluations.", no_args_is_help=True)
+
+
+def _run(ctx: typer.Context, **kwargs: Any) -> None:
+    """Call the back end; a dataset the harness cannot read is a usage error, not a crash."""
+    try:
+        run_backend(ctx, module="codekavach.eval", **kwargs)
+    except ValueError as error:
+        if type(error).__name__ == "DatasetError":
+            raise UsageError(str(error), code="dataset_not_found") from error
+        raise
+
 
 LEVEL_HELP = "Privacy level to evaluate; repeat for several (L0 to L4)."
 
@@ -56,9 +67,8 @@ def detection_command(  # noqa: PLR0917 - Typer maps each parameter to one optio
     levels = check_levels(level or [])
     check_dataset(dataset)
     providers = check_names(provider or [], option="--provider")
-    run_backend(
+    _run(
         ctx,
-        module="codekavach.eval",
         attribute="run_detection_eval",
         feature="the detection evaluation",
         epic="E36",
@@ -108,9 +118,8 @@ def leakage_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         check_dataset(dataset)
     levels = check_levels(level or [])
     attackers = check_names(attacker or [], option="--attacker")
-    run_backend(
+    _run(
         ctx,
-        module="codekavach.eval",
         attribute="run_leakage_eval",
         feature="the leakage evaluation",
         epic="E37",

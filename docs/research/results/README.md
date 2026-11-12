@@ -28,3 +28,14 @@ How to read them honestly:
   classifier, line coverage and pseudonym linkability). A low score means these attackers
   recovered little, not that no attacker could.
 * The `llm` attacker is not run in these results. The `llm-raw` detection arm is not run either.
+
+## `kavachbank-agentrouter-L3/`
+
+Detection only, one level, with a real model: provider `agentrouter` (model `gpt-5.6-sol`) at L3 on KavachBank, one run.
+
+| Arm | TP | FP | FN | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| engines-only | 10 | 3 | 0 | 76.9 | 100.0 | 87.0 |
+| agentrouter@L3 | 10 | 1 | 0 | 90.9 | 100.0 | 95.2 |
+
+The model, seeing only L3 payloads, removed two of the three engine false positives and lost no true positive. This is one run on ten labels: the 95 percent intervals overlap (F1 70.0-100.0 against 84.2-100.0), so it shows the direction, not a proven gain. The leakage results for this provider were not re-run; the payloads at L3 are the same as in the mock run.
