@@ -17,6 +17,17 @@ if [ "${GITHUB_EVENT_NAME:-}" = "pull_request_target" ] && [ "$provider" != "non
   exit 2
 fi
 
+# A hosted runner has no OS keyring, so the default vault key source is unavailable and the
+# privacy-prepare stage (and with it every LLM review) would be skipped. Unless the workflow chose
+# a key source, use a random passphrase for this job: the vault does not outlive the runner.
+if [ -z "${CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE:-}" ]; then
+  CK_RUN_VAULT_PASSPHRASE="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+  echo "::add-mask::$CK_RUN_VAULT_PASSPHRASE"
+  export CK_RUN_VAULT_PASSPHRASE
+  export CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE=passphrase
+  export CODEKAVACH_PRIVACY__VAULT__PASSPHRASE=env:CK_RUN_VAULT_PASSPHRASE
+fi
+
 args=(--json scan "$target" --privacy-level "$level" --fail-on critical)
 case "$provider" in
   none) args+=(--no-llm) ;;
