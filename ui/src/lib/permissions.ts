@@ -8,6 +8,7 @@ export type Permission =
   | "projects:write"
   | "scans:run"
   | "findings:triage"
+  | "findings:review"
   | "privacy:read"
   | "privacy:read_original"
   | "reports:read"
@@ -29,8 +30,8 @@ const DEVELOPER: Permission[] = [
 
 /** Mirrors codekavach.server.rbac; used when the session carries no permission list. */
 const MAP: Record<Role, Permission[]> = {
-  admin: [...DEVELOPER, "privacy:read_original", "audit:read", "settings:write", "users:admin"],
-  auditor: [...DEVELOPER, "privacy:read_original", "audit:read"],
+  admin: [...DEVELOPER, "privacy:read_original", "audit:read", "findings:review", "settings:write", "users:admin"],
+  auditor: [...DEVELOPER, "privacy:read_original", "audit:read", "findings:review"],
   developer: DEVELOPER,
   viewer: ["reports:read"],
 };
@@ -40,6 +41,7 @@ const FROM_SERVER: Record<string, Permission> = {
   "project:write": "projects:write",
   "scan:run": "scans:run",
   "finding:triage": "findings:triage",
+  "finding:review": "findings:review",
   "privacy:read_ledger": "privacy:read",
   "privacy:read_original": "privacy:read_original",
   "report:read": "reports:read",

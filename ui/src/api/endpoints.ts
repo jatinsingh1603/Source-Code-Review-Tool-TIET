@@ -148,6 +148,9 @@ export const endpoints = {
   finding: (id: string) => api.get<Finding>(`/findings/${enc(id)}`),
   patchFinding: (id: string, body: FindingPatch) =>
     api.patch<Finding>(`/findings/${enc(id)}`, body),
+  /** Ask the model about one finding now (its sanitised slice goes through the egress guard). */
+  reviewFinding: (id: string, body: { provider?: string; model?: string } = {}) =>
+    api.post<Finding>(`/findings/${enc(id)}/review`, body),
   findingHistory: async (id: string) =>
     unwrapList<FindingHistoryEntry>(await api.get(`/findings/${enc(id)}/history`), "history"),
 

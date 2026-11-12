@@ -209,6 +209,22 @@ export function usePatchFinding() {
   });
 }
 
+/** `POST /findings/{id}/review`: the updated finding replaces the cached one. */
+export function useReviewFinding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, provider, model }: { id: string; provider?: string; model?: string }) =>
+      endpoints.reviewFinding(id, { provider, model }),
+    onSuccess: (f, { id }) => {
+      qc.setQueryData(qk.finding(id), f);
+      void qc.invalidateQueries({ queryKey: qk.finding(id) });
+      void qc.invalidateQueries({ queryKey: qk.findingsAll });
+      void qc.invalidateQueries({ queryKey: ["ledger"] });
+      void qc.invalidateQueries({ queryKey: qk.stats });
+    },
+  });
+}
+
 function stripUndef<T extends object>(o: T): Partial<T> {
   return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
 }

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { useFinding, useFindingHistory, useLedgerEntry, usePatchFinding, useUsers } from "@/api/queries";
+import { useFinding, useFindingHistory, useLedgerEntry, usePatchFinding, useProviders, useReviewFinding, useSettings, useUsers } from "@/api/queries";
 import { FINDING_STATUSES, type Finding, type FindingStatus, type PrivacyLevel, type TaintStep } from "@/api/types";
 import { useSession } from "@/app/session";
 import { enginesOf, locationOf, verdictOf } from "@/lib/domain";
@@ -111,6 +111,27 @@ export default function FindingDetailPage() {
   const [dialog, setDialog] = useState<null | "assign" | "suppress" | "sync">(null);
   const [comment, setComment] = useState("");
   const [jump, setJump] = useState<number | null>(null);
+  const review = useReviewFinding();
+  const providers = useProviders().data;
+  const reviewProviderId = f?.scan?.provider && f.scan.provider !== "none" ? f.scan.provider : undefined;
+  const defaultProviderId = useSettings().data?.default_provider;
+  const reviewProvider = providers?.find((p) => p.id === (reviewProviderId ?? defaultProviderId));
+  const runReview = () => {
+    if (!id) return;
+    const started = Date.now();
+    review.mutate(
+      { id },
+      {
+        onSuccess: (r) => {
+          const secs = Math.round((Date.now() - started) / 1000);
+          const verdict = r.llm?.is_vulnerable === true ? "vulnerable" : r.llm?.is_vulnerable === false ? "not vulnerable" : "undecided";
+          toast.success("Model review done", `${r.llm?.model ?? "The model"} says ${verdict}${secs ? ` · ${secs} s` : ""}.`);
+          setTab("reason");
+        },
+        onError: (e) => toast.error("Model review failed", e instanceof Error ? e.message : undefined),
+      },
+    );
+  };
 
   const doPatch = (p: Parameters<typeof patch.mutate>[0]["patch"], ok: string) =>
     patch.mutate(
@@ -219,6 +240,15 @@ export default function FindingDetailPage() {
             </div>
           </div>
           <div className="row">
+            {can("findings:review") && (
+              <Button
+                loading={review.isPending}
+                onClick={runReview}
+                title={`Send this finding's sanitised slice to ${reviewProvider?.name ?? "the scan's provider"} now; the request is recorded in the egress ledger.`}
+              >
+                {review.isPending ? "Reviewing" : reviews.length ? "Review again" : "Review with model"}
+              </Button>
+            )}
             {can("findings:triage") && (
               <>
                 <Button onClick={() => setDialog("assign")}>Assign</Button>
@@ -233,6 +263,13 @@ export default function FindingDetailPage() {
           </div>
         </div>
       </div>
+
+      {review.isPending && (
+        <div className="banner info sm" role="status">
+          Asking {reviewProvider?.name ?? "the model"} about this finding. Only its sanitised slice leaves, through the egress
+          guard{reviewProvider && !reviewProvider.local ? "; a remote model can take a minute or more" : ""}.
+        </div>
+      )}
 
       <section className="g g-side">
         <div className="stack s20">
@@ -308,7 +345,9 @@ export default function FindingDetailPage() {
                   )}
                 </div>
               )}
-              {tab === "reason" && <ReasonTab f={f} conf={conf} />}
+              {tab === "reason" && (
+                <ReasonTab f={f} conf={conf} onReview={can("findings:review") ? runReview : undefined} reviewing={review.isPending} />
+              )}
             </div>
           </div>
 
@@ -640,11 +679,19 @@ function SawTab({ f, seq, ledger }: { f: Finding; seq: number | null; ledger: Re
   );
 }
 
-function ReasonTab({ f, conf }: { f: Finding; conf: number | null }) {
+function ReasonTab({ f, conf, onReview, reviewing }: { f: Finding; conf: number | null; onReview?: () => void; reviewing?: boolean }) {
   const reviews = f.provenance?.llm_reviews ?? [];
   const runs = f.llm?.runs?.length ? f.llm.runs.filter((r) => r.source !== "ledger" || r.verdict) : reviews;
   if (!f.llm && !reviews.length) {
-    return <Empty title="No model review">This finding was not sent to a model.</Empty>;
+    return (
+      <Empty
+        title="No model review"
+        action={onReview ? (reviewing ? "Reviewing…" : "Review with model") : undefined}
+        onAction={onReview && !reviewing ? onReview : undefined}
+      >
+        This finding was not sent to a model: the scan reviewed only its most severe candidates, or ran at L0.
+      </Empty>
+    );
   }
   const v = verdictOf(f);
   const cons = f.llm?.consensus;
