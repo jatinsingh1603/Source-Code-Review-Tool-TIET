@@ -249,6 +249,7 @@ def test_privacy_summary(
     assert privacy["zero_leak"]["checked"] > 0
     assert privacy["zero_leak"]["passed"] is True
     assert privacy["attestation_text"]
+    assert 0 <= privacy["privacy_score"] <= 100
 
 
 def test_ledger_and_original_versus_sent(

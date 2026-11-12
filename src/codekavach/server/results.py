@@ -591,3 +591,44 @@ def attestation(summary: PrivacySummary) -> str:
         f"{chain}. {leak} Only sanitised payloads are eligible to leave the machine; original "
         "code, secrets and the pseudonym vault stay local."
     )
+
+
+def with_attestation(
+    summary: PrivacySummary,
+    paths: ScanPaths,
+    core_scan_id: str,
+    settings: "Settings",
+    terms_file: Path | None,
+) -> dict[str, Any]:
+    """The privacy JSON: the server's figures overlaid with the E28 attestation and score.
+
+    ``build_attestation`` (``codekavach.privacy.attestation``) adds the privacy score and its
+    components, the policy and disclosure figures. The listed terms of the project are given to it
+    for the zero-leak search only (the scan itself ran without them). Without that module the
+    server's own figures are returned unchanged.
+    """
+    data = summary.to_json()
+    try:
+        from codekavach.core.models.enums import PrivacyLevel  # noqa: PLC0415
+        from codekavach.privacy.attestation import build_attestation  # noqa: PLC0415
+
+        checked = settings
+        if terms_file is not None:
+            privacy = settings.privacy.model_copy(update={"domain_terms_file": terms_file})
+            checked = settings.model_copy(update={"privacy": privacy})
+        attestation = build_attestation(
+            paths.state_dir, core_scan_id, checked, level=PrivacyLevel(summary.level)
+        )
+        extra = attestation.to_api()
+    except Exception as error:  # noqa: BLE001 - the attestation is an optional enrichment
+        _log.info("server_attestation_unavailable", error_type=type(error).__name__)
+        return data
+    mine_checked = bool(data.get("zero_leak", {}).get("checked"))
+    for key, value in extra.items():
+        if value is None or (key == "zero_leak" and mine_checked and not value.get("checked")):
+            continue
+        if key in {"provider", "model"} and data.get(key):
+            continue
+        data[key] = value
+    data["attestation_digest"] = attestation.digest()
+    return data

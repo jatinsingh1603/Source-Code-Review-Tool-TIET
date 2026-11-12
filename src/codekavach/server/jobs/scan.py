@@ -37,6 +37,7 @@ from codekavach.server.results import (
     finding_columns,
     read_findings,
     scan_env,
+    with_attestation,
 )
 
 if TYPE_CHECKING:
@@ -403,10 +404,13 @@ def _store(  # noqa: PLR0917 - the parts of one result
         model=None,
         terms_file=_terms_file(project, job, paths),
     )
+    privacy_json = with_attestation(
+        privacy, paths, core_id, settings, _terms_file(project, job, paths)
+    )
     with state.db.transaction() as session:
         row = session.get(ScanRow, job.scan_id)
         if row is not None:
-            row.privacy = privacy.to_json()
+            row.privacy = privacy_json
             if not row.model and privacy.model:
                 row.model = privacy.model
             row.progress = 92
