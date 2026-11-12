@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from codekavach.config import Settings
 from codekavach.core.pipeline import keys
 from codekavach.core.pipeline.stage import FailurePolicy, StageCategory, describe_stage
@@ -41,8 +43,14 @@ def test_a_configured_format_is_written_and_recorded(tmp_path: Path) -> None:
 
 
 def test_a_format_without_a_renderer_is_a_named_failed_item_and_the_rest_is_written(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from codekavach.report.render import stage  # noqa: PLC0415
+    from codekavach.report.render.base import RendererRegistry  # noqa: PLC0415
+    from codekavach.report.render.html import HtmlRenderer  # noqa: PLC0415
+
+    only_html = RendererRegistry({"html": HtmlRenderer()})
+    monkeypatch.setattr(stage, "renderer_registry", lambda _config=None: only_html)
     store, failures = run_stage(tmp_path, ["html", "sarif"])
     assert [o.format for o in store.get_list(keys.REPORT_OUTPUTS, ReportOutput)] == ["html"]
     assert failures == ["renderer_unavailable"]

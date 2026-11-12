@@ -209,9 +209,10 @@
     <div class="fact"><div class="k">Confidence</div><div class="v">{{ v.confidence|title }}</div></div>
     <div class="fact"><div class="k">Status</div><div class="v">{{ v.status|replace('_',' ')|title }}</div></div>
     <div class="fact"><div class="k">Priority</div><div class="v">{{ v.priority }} · {{ v.lane }}</div></div>
-    <div class="fact"><div class="k">CVSS v4.0</div><div class="v{{ ' mono' if v.rating.cvss4_vector }}">{% if v.rating.cvss4_vector %}{{ v.rating.cvss4_score }} · {{ v.rating.cvss4_vector }}{% else %}Not scored{% endif %}</div></div>
+    {% if v.rating.owasp_overall %}<div class="fact"><div class="k">OWASP risk rating</div><div class="v">{{ v.rating.owasp_overall|title }} (likelihood {{ v.rating.owasp_likelihood_band }}, impact {{ v.rating.owasp_impact_band }})</div></div>{% endif %}
+    <div class="fact"><div class="k">CVSS v4.0{% if v.rating.cvss4_nomenclature %} ({{ v.rating.cvss4_nomenclature }}){% endif %}</div><div class="v{{ ' mono' if v.rating.cvss4_vector }}">{% if v.rating.cvss4_vector %}<strong>{{ v.rating.cvss4_score }}</strong> · {{ v.rating.cvss4_vector }}{% else %}Not scored{% endif %}</div></div>
     <div class="fact"><div class="k">CVSS v3.1</div><div class="v{{ ' mono' if v.rating.cvss31_vector }}">{% if v.rating.cvss31_vector %}{{ v.rating.cvss31_score if v.rating.cvss31_score is not none else '' }} · {{ v.rating.cvss31_vector }}{% else %}Not scored{% endif %}</div></div>
-    <div class="fact"><div class="k">CWE</div><div class="v">{% for c in v.cwe %}CWE-{{ c }} {{ v.cwe_names[loop.index0] }}{% if not loop.last %}; {% endif %}{% else %}n/a{% endfor %}{% if v.cwe_top25 %} <span class="chip">Top 25</span>{% endif %}</div></div>
+    <div class="fact"><div class="k">CWE</div><div class="v">{% for c in v.cwe %}CWE-{{ c }} {{ v.cwe_names[loop.index0] }}{% if not loop.last %}; {% endif %}{% else %}n/a{% endfor %}{% if v.cwe_top25 %} <span class="chip">Top 25{% if v.rating.top25_rank %} #{{ v.rating.top25_rank }}{% endif %}</span>{% endif %}</div></div>
     <div class="fact"><div class="k">OWASP Top 10</div><div class="v">{{ v.owasp_label }}</div></div>
     <div class="fact"><div class="k">ASVS · CAPEC</div><div class="v">{{ v.asvs|join(', ') or 'n/a' }} · {{ v.capec|join(', ') or 'n/a' }}</div></div>
     <div class="fact"><div class="k">Location</div><div class="v mono">{{ v.locations|join(', ') }}{% if v.symbol %} in {{ v.symbol }}{% endif %}</div></div>

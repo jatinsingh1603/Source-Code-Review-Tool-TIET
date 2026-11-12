@@ -41,7 +41,8 @@ _FRAMEWORK_NAMES = {
     "nist-800-53": "NIST SP 800-53",
     "owasp-asvs": "OWASP ASVS",
     "cwe-top25": "CWE Top 25",
-    "rbi": "RBI",
+    "rbi": "RBI Cyber Security Framework",
+    "rbi-itgrca": "RBI IT Governance Master Direction",
     "sebi": "SEBI CSCRF",
     "cert-in": "CERT-In",
     "dpdp": "DPDP Act 2023",
@@ -108,6 +109,14 @@ class RatingDetails(KavachModel):
     cvss31_score: float | None = None
     epss: float | None = None
     kev: bool | None = None
+    cvss4_nomenclature: str | None = None
+    owasp_overall: str | None = None
+    owasp_likelihood_band: str | None = None
+    owasp_impact_band: str | None = None
+    matrix_label: str | None = None
+    top25_rank: int | None = None
+    severity_source: str | None = None
+    adjustments: tuple[str, ...] = ()
 
     @classmethod
     def from_finding(cls, finding: Finding) -> "RatingDetails":
@@ -122,7 +131,16 @@ class RatingDetails(KavachModel):
         if v31 is None and (ref := _first(refs, _CVSS31_SCHEMES)) is not None:
             v31 = ref.id if ref.id.startswith("CVSS:") else ref.title
             s31 = _score(ref.title) if ref.id.startswith("CVSS:") else _score(ref.id)
+        risk = getattr(finding, "risk", None)
         return cls(
+            cvss4_nomenclature=getattr(risk, "cvss4_nomenclature", None),
+            owasp_overall=getattr(risk, "owasp_overall", None),
+            owasp_likelihood_band=getattr(risk, "owasp_likelihood_band", None),
+            owasp_impact_band=getattr(risk, "owasp_impact_band", None),
+            matrix_label=getattr(risk, "matrix_label", None),
+            top25_rank=getattr(risk, "top25_rank", None),
+            severity_source=getattr(risk, "severity_source", None),
+            adjustments=tuple(getattr(risk, "adjustments", ()) or ()),
             cvss4_vector=v4,
             cvss4_score=s4,
             cvss31_vector=v31,
@@ -323,7 +341,11 @@ class FindingView(KavachModel):
         description = mask_text(finding.description.strip()) or entry.description
         if description.strip() == finding.title.strip():
             description = f"{finding.title.rstrip('.')}. {entry.description}"
-        impact = mask_text(finding.impact.narrative.strip()) or entry.impact
+        narrative = finding.impact.narrative.strip()
+        if narrative.startswith("CVSS v4.0"):
+            # The rate stage's fallback is a rating summary, which the facts grid already shows.
+            narrative = ""
+        impact = mask_text(narrative) or entry.impact
         short, long_ = _remediation(finding, entry)
         evidence = tuple(_evidence(item, context_lines) for item in finding.evidence)
         flow = _flow(finding)
@@ -403,6 +425,7 @@ def _owasp(finding: Finding, entry: CweEntry) -> tuple[ComplianceItem, ...]:
                 framework="OWASP Top 10",
                 clause=ref.id,
                 title=ref.title or OWASP_2021.get(ref.id),
+                derived=getattr(ref, "basis", None) == "derived",
             )
             for ref in finding.owasp
         )
@@ -424,9 +447,11 @@ def _compliance(
     skip = _CVSS31_SCHEMES | _CVSS4_SCHEMES | _CAPEC_SCHEMES | {"owasp-top10"}
     stated = [
         ComplianceItem(
-            framework=_FRAMEWORK_NAMES.get(ref.scheme, ref.scheme.upper()),
+            framework=_FRAMEWORK_NAMES.get(ref.scheme, ref.scheme.upper())
+            + (f" {ref.version}" if ref.version else ""),
             clause=ref.id,
             title=ref.title,
+            derived=getattr(ref, "basis", None) == "derived",
         )
         for ref in finding.compliance
         if ref.scheme not in skip
