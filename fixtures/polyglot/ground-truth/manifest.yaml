@@ -1,0 +1,15 @@
+# Planted issues of the polyglot fixture. Synthetic; never deploy. Lines are 1-based.
+schema_version: 1
+application: {name: Polyglot, language: multiple}
+planted_vulnerabilities:
+  - {id: PG-VULN-001, cwe: 78, class: os_command_injection, file: src/app.py, line: 9}
+  - {id: PG-VULN-002, cwe: 78, class: os_command_injection, file: src/server.js, line: 6}
+  - {id: PG-VULN-003, cwe: 22, class: path_traversal, file: src/Main.kt, line: 4}
+  - {id: PG-VULN-004, cwe: 78, class: os_command_injection, file: src/index.php, line: 3}
+  - {id: PG-VULN-005, cwe: 327, class: weak_hash, file: src/Program.cs, line: 7}
+  - {id: PG-VULN-006, cwe: 95, class: eval_injection, file: src/app.rb, line: 4}
+  - {id: PG-VULN-007, cwe: 120, class: buffer_overflow, file: src/vuln.c, line: 6}
+  - {id: PG-VULN-008, cwe: 134, class: format_string, file: src/vuln.cpp, line: 5}
+planted_secrets: []
+negative_controls: []
+languages: [python, javascript, kotlin, php, csharp, ruby, c, cpp]
