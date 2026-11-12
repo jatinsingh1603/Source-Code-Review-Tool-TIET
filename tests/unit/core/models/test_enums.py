@@ -74,6 +74,7 @@ GOLDEN: dict[type[StrEnum], list[str]] = {
         "sink_window",
         "forward_slice",
         "hotspot",
+        "whole_file",
     ],
     CandidateKind: ["vulnerability", "secret", "dependency", "misconfiguration", "hotspot"],
     ScanStatus: [

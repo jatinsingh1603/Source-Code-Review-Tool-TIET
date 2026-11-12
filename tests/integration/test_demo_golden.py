@@ -18,6 +18,9 @@ import pytest
 from codekavach.cli.demo_runner import run_demo
 from tests.support.kavachbank import FIXTURE_ROOT
 
+# Each test runs the whole KavachBank demo (one to two minutes on a loaded CI runner).
+pytestmark = [pytest.mark.slow, pytest.mark.timeout(420)]
+
 GOLDEN = Path(__file__).parent / "golden"
 IDENTIFIER = re.compile(r"\b(scan|cand|find|slc|pay)_[0-9A-HJKMNP-TV-Z]{26}\b")
 TIME = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC")

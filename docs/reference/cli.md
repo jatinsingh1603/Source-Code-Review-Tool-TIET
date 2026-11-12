@@ -1116,6 +1116,7 @@ Usage: codekavach report [OPTIONS] [target]
 | `--org` | TEXT |  | Organisation that prepared the report. |
 | `--client` | TEXT |  | Organisation the report is prepared for. |
 | `--manifest / --no-manifest` | flag | on | Write a SHA-256 integrity manifest. |
+| `--terms` | PATH |  | Zero-leak terms file (one confidential term per line) checked against every recorded payload for the attestation; defaults to .codekavach-terms.txt if present. |
 
 Global options apply.
 

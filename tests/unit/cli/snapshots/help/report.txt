@@ -18,6 +18,10 @@
 │ --client                            <str>   Organisation the report is prepared for.             │
 │ --manifest        --no-manifest             Write a SHA-256 integrity manifest.                  │
 │                                             [default: manifest]                                  │
+│ --terms                             <path>  Zero-leak terms file (one confidential term per      │
+│                                             line) checked against every recorded payload for the │
+│                                             attestation; defaults to .codekavach-terms.txt if    │
+│                                             present.                                             │
 │ --help        -h                            Show this message and exit.                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮

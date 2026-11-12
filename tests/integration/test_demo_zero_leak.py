@@ -17,6 +17,9 @@ from codekavach.privacy.egress.ledger import open_reader
 from tests.support.kavachbank import FIXTURE_ROOT, TERMS_PATH, load_manifest, resolve_value_ref
 from tests.support.ledger_terms import assert_no_terms_in_ledger
 
+# Each test runs the whole KavachBank demo (one to two minutes on a loaded CI runner).
+pytestmark = [pytest.mark.slow, pytest.mark.timeout(420)]
+
 
 @pytest.fixture(autouse=True)
 def no_sockets(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:

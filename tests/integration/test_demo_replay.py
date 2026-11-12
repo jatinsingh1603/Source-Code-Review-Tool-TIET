@@ -11,6 +11,9 @@ from codekavach.cli.demo_runner import CASSETTES, run_demo
 from tests.support.cassettes import stale
 from tests.support.kavachbank import FIXTURE_ROOT
 
+# Each test runs the whole KavachBank demo (one to two minutes on a loaded CI runner).
+pytestmark = [pytest.mark.slow, pytest.mark.timeout(420)]
+
 COMMITTED = FIXTURE_ROOT / CASSETTES
 
 
