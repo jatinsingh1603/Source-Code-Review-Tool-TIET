@@ -4,7 +4,7 @@ Surface: CodeKavach as a security review step in the client's own pipeline. The 
 
 ## Live run
 
-- Latest green run, triggered by `workflow_dispatch`: <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43286191130>
+- Latest green run, triggered by `workflow_dispatch`: <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43287079496>
 - Every run of the workflow: <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/workflows/codekavach-review.yml>
 - Code scanning alerts from CodeKavach: <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/security/code-scanning?query=tool%3ACodeKavach>
 
@@ -24,7 +24,7 @@ The Security tab is visible to people with write access to the repository. Log i
 | Artifact `codekavach-reports` | `report.html`, `report.pdf`, `codekavach.sarif`, `verification.txt`, `verification.json`, `summary.md`, `scan.json` | Open `report.pdf` (executive summary, risk matrix, evidence, privacy attestation) and `verification.txt` (three lines: chain, payloads, terms). |
 | Pull request (same-repository PRs only) | One comment with the same summary, updated in place on each push | Not exercised live yet (no PR has touched `fixtures/**` or `src/**` since the workflow landed). If the audience asks, open a PR that edits `fixtures/kavachbank/README.md`. |
 
-Numbers from the run linked above (they change as rules are added): 55 findings (4 critical, 31 high, 15 medium, 5 low), 32 model requests recorded, 0 blocked, ledger chain intact (64 records), 11 distinct payloads re-hashed with 0 mismatches, 31 planted terms searched with 0 occurrences, 55 code-scanning alerts.
+Numbers from the run linked above (they change as rules and the risk model change): 55 findings (15 critical, 24 high, 11 medium, 5 low), 30 model requests recorded, 0 blocked, ledger chain intact (60 records), 11 distinct payloads re-hashed with 0 mismatches, 31 planted terms searched with 0 occurrences, 55 code-scanning alerts. The Security tab grades alerts by the numeric `security-severity` score in the SARIF, so its critical and high counts can differ from the severity column of the summary; the alerts and findings are the same 55.
 
 What the zero-leak line does and does not show: it searches the stored payloads for each planted secret and identifier verbatim. Structure (control flow, library calls, the shape of literals) still leaves at L3; `codekavach eval leakage` measures that. Say it before someone asks.
 
