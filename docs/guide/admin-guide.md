@@ -70,7 +70,7 @@ Recommended starting point for a regulated organisation: minimum level L3, publi
 
 ## 4. Providers
 
-Open **Settings, Providers** to see every provider, whether it is configured, its default model, and whether it runs locally. **Test** sends a tiny request through the egress path and reports success, latency and the model that answered. The [Provider guide](providers.md) covers each one.
+Open **Providers** in the sidebar to see every provider, whether it is configured, its default model, and whether it runs locally. **Run health checks** sends a tiny request through the egress path and reports success and latency on each card. The [Provider guide](providers.md) covers each one.
 
 Rules of thumb:
 

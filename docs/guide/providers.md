@@ -9,7 +9,7 @@ $ codekavach providers list
 $ codekavach providers test agentrouter
 ```
 
-In the dashboard: **Settings, Providers, Test**.
+In the dashboard: **Providers**, **Run health checks** (each configured provider is tested; one without its key is skipped and shows **Key missing**).
 
 ## Local providers (nothing leaves the machine)
 

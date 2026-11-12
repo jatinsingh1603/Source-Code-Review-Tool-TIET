@@ -52,7 +52,7 @@ Do this the day before and again 30 minutes before. Tick each item; if one fails
 - [ ] `uv run codekavach demo --out demo-out` exits 0 and prints `zero_leak_passed  True` (works offline).
 - [ ] Dashboard up: `docker compose up -d` (or `uv run codekavach serve`), then open `http://127.0.0.1:8080`, log in as `admin`.
 - [ ] Dashboard seeded: `uv run python scripts/seed_demo.py` has been run once; the Overview shows several scans and a Privacy Centre that is not empty (see "Seeding the dashboard").
-- [ ] Real model reachable: Settings, Providers, **Test** next to `agentrouter` answers `ok`. The key lives in `.env` (`CODEKAVACH_AGENTROUTER_API_KEY`), never in a file that is committed; do not show it on screen.
+- [ ] Real model reachable: **Providers** in the sidebar, **Run health checks**; the `agentrouter` card turns **Healthy** with its latency (hover it for the message). It shows **Key missing** when the key is not in the environment, and is then not called. The key lives in `.env` (`CODEKAVACH_AGENTROUTER_API_KEY`), never in a file that is committed; do not show it on screen.
 - [ ] `report.pdf` opens (needs the Pango libraries; see `DEMO1.md`).
 - [ ] The latest GitHub Actions run of the demo workflow is green; the Security tab has alerts. Check in the browser; do not rely on memory.
 - [ ] VS Code with the extension installed and the KavachBank folder open.
