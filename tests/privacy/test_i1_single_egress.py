@@ -64,6 +64,9 @@ NETWORK_DISTRIBUTIONS = {
 # The ``server`` extra (E32: ``fastapi``, ``starlette``, ``uvicorn``, ``python-multipart`` and
 # fastapi's no-op ``opentelemetry-api``) accepts inbound HTTP on the operator's machine and opens
 # no outbound connection; ``codekavach.server`` never calls a model itself.
+# The ``reports`` extra adds ``xlsxwriter`` and ``python-docx`` (with its parser ``lxml``): they
+# write and read local Office files only. lxml parsers refuse network access by default
+# (``no_network=True``) and the report writers never hand them a URL.
 REVIEWED_OFFLINE = frozenset(
     (
         "alembic",
@@ -104,6 +107,7 @@ REVIEWED_OFFLINE = frozenset(
         "jsonschema-specifications",
         "keyring",
         "librt",
+        "lxml",
         "mako",
         "markdown-it-py",
         "markupsafe",
@@ -133,6 +137,7 @@ REVIEWED_OFFLINE = frozenset(
         "pytest-timeout",
         "pytest-xdist",
         "python-discovery",
+        "python-docx",
         "python-dotenv",
         "python-multipart",
         "pywin32-ctypes",
@@ -165,6 +170,7 @@ REVIEWED_OFFLINE = frozenset(
         "virtualenv",
         "weasyprint",
         "webencodings",
+        "xlsxwriter",
         "zopfli",
     )
 )
