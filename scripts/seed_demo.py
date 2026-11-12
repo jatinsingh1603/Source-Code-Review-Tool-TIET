@@ -11,14 +11,16 @@ written to the database directly):
    ``kavach-admin``).
 2. Makes sure three projects exist: the KavachBank sample the server already seeds, plus
    ``fixtures/demo-ledgerly`` (Python) and ``fixtures/demo-shopfront`` (Node), the last two as
-   path sources over a scratch copy of the fixture.
+   uploaded archives, so the server may run on another machine or in a container.
 3. Runs scans with the offline ``mock`` provider at different privacy levels: KavachBank at L1, L2
    and L3; Ledgerly at L2, then again at L3 after a few of its planted flaws are really fixed in
-   the scratch copy; Shopfront at L3, then L0 (nothing leaves the machine), then L3 after fixes.
+   the code (a new archive is uploaded); Shopfront at L3, then L0 (nothing leaves the machine),
+   then L3 after fixes.
 4. Triages findings the way a reviewer would, through ``PATCH /findings/{id}``: findings that a
-   re-scan no longer reports are marked ``fixed``; a few high-severity ones ``confirmed``; one low
-   one a ``false_positive`` and one an ``accepted_risk`` on KavachBank. The triage choices are the
-   script's, the findings are the scanner's.
+   re-scan no longer reports are marked ``fixed``; a few high-severity ones ``confirmed``; two
+   lower ones on KavachBank ``accepted_risk``; findings that sit on a ground-truth negative control
+   (safe code) ``false_positive``. The triage choices are the script's, the findings are the
+   scanner's.
 
 Safe to run twice: projects that already have scans are skipped unless ``--again`` is given.
 Needs no API key and opens no connection except to the server. Requires a checkout (it reads
@@ -29,10 +31,13 @@ Needs no API key and opens no connection except to the server. Requires a checko
 from __future__ import annotations
 
 import argparse
+import io
 import os
 import shutil
 import sys
+import tempfile
 import time
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -91,9 +96,17 @@ class Api:
         return response.json() if response.content else None
 
     def login(self, username: str, password: str) -> None:
-        self.token = self.call("POST", "/auth/login", {"username": username, "password": password})[
-            "token"
-        ]
+        """Log in, and check the token works (the first request after a cold start can fail)."""
+        for attempt in range(4):
+            reply = self.call("POST", "/auth/login", {"username": username, "password": password})
+            self.token = reply["token"]
+            try:
+                self.call("GET", "/auth/me")
+                return
+            except SystemExit:
+                if attempt == 3:
+                    raise
+                time.sleep(2)
 
 
 def say(message: str) -> None:
@@ -203,14 +216,29 @@ def find_project(api: Api, name: str) -> dict[str, Any] | None:
     return next((p for p in api.call("GET", "/projects") if p["name"] == name), None)
 
 
-def ensure_project(api: Api, name: str, path: Path, description: str) -> str:
-    """The id of the project called ``name``, created over ``path`` or pointed at it."""
-    source = {"type": "path", "path": str(path)}
+def upload(api: Api, project_id: str, root: Path) -> None:
+    """Attach the current state of ``root`` to the project as a zip archive."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for path in sorted(root.rglob("*")):
+            if path.is_file():
+                archive.write(path, path.relative_to(root).as_posix())
+    response = httpx.post(
+        f"{api.base}/projects/{project_id}/upload",
+        files={"file": (f"{root.name}.zip", buffer.getvalue(), "application/zip")},
+        headers={"authorization": f"Bearer {api.token}"},
+        timeout=120.0,
+    )
+    if response.status_code >= 400:
+        raise SystemExit(f"upload failed: HTTP {response.status_code} {response.text[:300]}")
+
+
+def ensure_project(api: Api, name: str, description: str) -> str:
+    """The id of the project called ``name``, created when missing."""
     existing = find_project(api, name)
     if existing is not None:
-        api.call("PATCH", f"/projects/{existing['id']}", {"source": source})
         return existing["id"]
-    body = {"name": name, "description": description, "source": source}
+    body = {"name": name, "description": description, "source": {"type": "upload"}}
     return api.call("POST", "/projects", body)["id"]
 
 
@@ -226,13 +254,9 @@ def seed(api: Api, scratch: Path, again: bool) -> None:
         latest = findings_of(api, scans[-1]["id"])
         confirmed = confirm_top(api, scans[-1], 4)
         lows = [f for f in latest if f["severity"] in {"low", "medium"} and f["status"] == "open"]
-        if lows:
-            triage(
-                api, lows[-1], "false_positive", "Test fixture path; not reachable in production."
-            )
-        if len(lows) > 1:
-            triage(api, lows[-2], "accepted_risk", "Accepted by the owner until the next release.")
-        say(f"  triaged: {confirmed} confirmed, {min(len(lows), 2)} low or medium triaged")
+        for item in lows[-2:]:
+            triage(api, item, "accepted_risk", "Accepted by the owner until the next release.")
+        say(f"  triaged: {confirmed} confirmed, {len(lows[-2:])} accepted risk")
 
     for name, fixture, fixes, levels, blurb in (
         (
@@ -256,11 +280,13 @@ def seed(api: Api, scratch: Path, again: bool) -> None:
             say("  already has scans, skipped (use --again)")
             continue
         work = copy_fixture(fixture, scratch)
-        project_id = ensure_project(api, name, work, blurb)
+        project_id = ensure_project(api, name, blurb)
+        upload(api, project_id, work)
         # Run the scans against the unfixed code first, then fix some flaws and re-scan.
         first = run_scan(api, project_id, levels[0], name)
         extra = [run_scan(api, project_id, level, name) for level in levels[1:-1]]
         apply_fixes(work, fixes)
+        upload(api, project_id, work)
         last = run_scan(api, project_id, levels[-1], name)
         fixed = mark_fixed(api, first, last)
         false_positives = mark_negative_controls(api, last, fixture)
@@ -284,21 +310,14 @@ def main() -> int:
         help="admin password (default: $CODEKAVACH_ADMIN_PASSWORD or the demo default)",
     )
     parser.add_argument(
-        "--work-dir",
-        type=Path,
-        default=Path.home() / ".cache" / "codekavach-demo",
-        help="where the scratch copies of the sample projects live; the projects point at them, "
-        "so keep them while you demo (default: ~/.cache/codekavach-demo)",
-    )
-    parser.add_argument(
         "--again", action="store_true", help="scan again even if projects have scans"
     )
     args = parser.parse_args()
     api = Api(args.url)
     wait_for_health(api)
     api.login(args.username, args.password)
-    args.work_dir.mkdir(parents=True, exist_ok=True)
-    seed(api, args.work_dir, args.again)
+    with tempfile.TemporaryDirectory(prefix="codekavach-seed-") as scratch:
+        seed(api, Path(scratch), args.again)
     stats = api.call("GET", "/stats")
     say(
         f"done: {stats['projects']} projects, {stats['scans']} scans, "
