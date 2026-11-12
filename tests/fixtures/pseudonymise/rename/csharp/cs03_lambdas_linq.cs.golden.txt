@@ -1,0 +1,19 @@
+using System.Collections.Generic;
+using System.Linq;
+
+namespace mod_1.field_1
+{
+    public static class cls_1
+    {
+        public static int fn_1(List<int> param_1)
+        {
+            var var_2 = 0;
+            foreach (var var_3 in param_1)
+            {
+                var_2 += var_3;
+            }
+            var var_1 = param_1.Select(value => value * 2).ToList();
+            return var_2 + var_1.Count;
+        }
+    }
+}

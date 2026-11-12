@@ -1,0 +1,21 @@
+<?php
+trait cls_1
+{
+    protected $field_1 = [];
+
+    public function fn_2($param_2)
+    {
+        $this->field_1[] = $param_2;
+    }
+}
+
+enum cls_3: int
+{
+    case const_2 = 1;
+    case const_1 = 5;
+}
+
+interface cls_2
+{
+    public function fn_1($param_1);
+}

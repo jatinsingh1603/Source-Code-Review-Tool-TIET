@@ -1,0 +1,10 @@
+#include <vector>
+
+int fn_1(const std::vector<int> &param_2) {
+    int var_2 = 0;
+    for (int var_3 : param_2) {
+        var_2 += var_3;
+    }
+    auto var_1 = [&var_2](int param_1) { return param_1 - var_2; };
+    return var_1(static_cast<int>(param_2.size()));
+}

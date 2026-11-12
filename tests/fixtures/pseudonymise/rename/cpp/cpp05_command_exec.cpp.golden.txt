@@ -1,0 +1,7 @@
+#include <cstdlib>
+#include <string>
+
+int fn_1(const std::string &param_1) {
+    std::string var_1 = "xxxxxxxxxxxxxxx " + param_1;
+    return std::system(var_1.c_str());
+}

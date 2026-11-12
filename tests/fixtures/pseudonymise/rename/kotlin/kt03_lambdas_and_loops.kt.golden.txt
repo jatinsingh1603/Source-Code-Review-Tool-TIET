@@ -1,0 +1,11 @@
+package mod_3.mod_2.mod_1
+
+fun fn_1(param_1: List<Int>): Int {
+    var var_3 = 0
+    for (var_4 in param_1) {
+        var_3 += var_4
+    }
+    param_1.forEach { var_1 -> var_3 -= var_1 / 2 }
+    val var_2 = param_1.map { value -> value * 2 }
+    return var_3 + var_2.size
+}

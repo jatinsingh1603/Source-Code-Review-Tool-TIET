@@ -1,0 +1,11 @@
+namespace mod_1.field_1
+{
+    public enum cls_2 { const_2, const_1 }
+
+    public record cls_1(string param_1, double param_3);
+
+    public interface cls_3
+    {
+        void fn_1(string param_2);
+    }
+}

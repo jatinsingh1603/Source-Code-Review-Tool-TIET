@@ -1,0 +1,13 @@
+<?php
+function fn_1($param_3)
+{
+    $var_3 = 0;
+    foreach ($param_3 as $index => $var_4) {
+        $var_3 += $var_4;
+    }
+    $var_2 = function ($param_2) use ($var_3) {
+        return $param_2 - $var_3;
+    };
+    $var_1 = array_map(fn($param_1) => $param_1 * 2, $param_3);
+    return $var_2(count($var_1));
+}

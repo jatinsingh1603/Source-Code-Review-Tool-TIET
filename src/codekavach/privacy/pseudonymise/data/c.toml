@@ -1,0 +1,84 @@
+# Public-name allowlist for C (E09-07). Read by codekavach.privacy.pseudonymise.allowlist.
+#
+# Source: compiled by hand from the maintainers' working knowledge of the C standard library, POSIX and OpenSSL's libcrypto, limited to the
+#   security-relevant surface that the rule matchers and the triage model need to recognise
+#   (sources, sinks, sanitisers, crypto, serialisation, HTTP, SQL, process and file APIs). No
+#   library source code was copied. Names are listed once, not exhaustively. The list has NOT yet
+#   been checked name by name against the upstream documentation; that check is a follow-up before
+#   a client engagement relies on it.
+# Generated: 2026-11-12 (first curated version; edit by issue, and bump the version below).
+# Version: c-2026.11.12.1
+#
+# Reading rules: see data/java.toml. The members of the "builtins" package are public whatever
+# the file imports, because this language's imports are not resolved to packages: a listed name is
+# the language's or its standard library's, never the client's. Adding a name here is a disclosure
+# decision; renaming a framework contract name changes behaviour.
+
+version = "c-2026.11.12.1"
+language = "c"
+
+[packages.builtins]
+kind = "builtin"
+members = [
+    "BUFSIZ", "CHAR_BIT", "DIR", "EOF", "EVP_DigestInit", "EVP_EncryptInit", "FILE", "INT_MAX",
+    "MD5", "NULL", "PATH_MAX", "RAND_bytes", "SHA1", "SHA256", "SIZE_MAX", "SSL_read",
+    "SSL_write", "UINT_MAX", "_exit", "abort", "abs", "accept", "access", "alloca", "argc",
+    "argv", "assert", "atexit", "atof", "atoi", "atol", "bind", "bsearch", "calloc", "chdir",
+    "chmod", "chown", "clock", "close", "closedir", "connect", "crypt", "dlopen", "dlsym",
+    "envp", "errno", "execl", "execle", "execlp", "execv", "execve", "execvp", "exit", "fclose",
+    "feof", "ferror", "fflush", "fgets", "fopen", "fork", "fprintf", "fputs", "fread", "free",
+    "fscanf", "fseek", "fstat", "ftell", "fwrite", "getaddrinfo", "getchar", "getcwd", "getenv",
+    "geteuid", "gethostbyname", "getpid", "gets", "gets_s", "getsockopt", "getuid", "htonl",
+    "htons", "inet_addr", "inet_ntoa", "int16_t", "int32_t", "int64_t", "int8_t", "intptr_t",
+    "isalnum", "isalpha", "isdigit", "islower", "isspace", "isupper", "kill", "labs", "listen",
+    "lseek", "lstat", "main", "malloc", "memcmp", "memcpy", "memcpy_s", "memmove", "memset",
+    "mkdir", "mkstemp", "mktemp", "mmap", "munmap", "ntohl", "ntohs", "off_t", "open",
+    "opendir", "pclose", "perror", "pid_t", "poll", "popen", "printf", "pthread_create",
+    "pthread_join", "pthread_mutex_lock", "pthread_mutex_unlock", "ptrdiff_t", "putchar",
+    "putenv", "puts", "qsort", "rand", "read", "readdir", "realloc", "realpath", "recv",
+    "recvfrom", "remove", "rename", "rmdir", "scanf", "select", "send", "sendto", "setenv",
+    "setgid", "setsockopt", "setuid", "signal", "size_t", "sleep", "snprintf", "socket",
+    "sprintf", "srand", "sscanf", "ssize_t", "stat", "stderr", "stdin", "stdout", "strcasecmp",
+    "strcat", "strchr", "strcmp", "strcpy", "strcpy_s", "strdup", "strerror", "strlcat",
+    "strlcpy", "strlen", "strncat", "strncmp", "strncpy", "strrchr", "strstr", "strtod",
+    "strtok", "strtok_r", "strtol", "strtoul", "system", "tempnam", "time", "tmpfile", "tmpnam",
+    "tolower", "toupper", "uint16_t", "uint32_t", "uint64_t", "uint8_t", "uintptr_t", "unlink",
+    "usleep", "va_arg", "va_end", "va_list", "va_start", "vsnprintf", "vsprintf", "wait",
+    "waitpid", "write",
+]
+
+[framework_contracts]
+"DllMain" = "windows"
+"WinMain" = "windows"
+"cleanup_module" = "linux"
+"init_module" = "linux"
+"main" = "c"
+"probe" = "linux"
+"remove" = "linux"
+
+[framework_decorators]
+
+
+[well_known]
+sources = [
+    "argv", "fgets", "fread", "fscanf", "getchar", "getenv", "gets", "read", "recv", "recvfrom",
+    "scanf", "sscanf",
+]
+sinks = [
+    "access", "execl", "execv", "execve", "execvp", "fopen", "fprintf", "free", "gets",
+    "malloc", "memcpy", "memmove", "mktemp", "open", "popen", "printf", "snprintf", "sprintf",
+    "strcat", "strcpy", "strncpy", "system", "tmpnam", "vsprintf",
+]
+sanitisers = [
+    "gets_s", "memcpy_s", "realpath", "snprintf", "strcpy_s", "strlcat", "strlcpy", "strncpy_s",
+]
+conventional_instances = ["logger", "log", "app"]
+
+[reflection]
+name_argument = 0
+attribute_calls = []
+
+[dynamic_code]
+calls = [
+    "eval",
+]

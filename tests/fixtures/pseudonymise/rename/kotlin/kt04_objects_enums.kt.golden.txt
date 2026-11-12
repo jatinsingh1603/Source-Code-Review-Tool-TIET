@@ -1,0 +1,17 @@
+package mod_3.mod_1.mod_2
+
+enum class cls_1(val field_1: Int) {
+    const_2(1), const_1(5)
+}
+
+object cls_2 {
+    private val field_2 = mutableMapOf<String, Long>()
+
+    fun fn_2(param_1: String, param_3: Long) {
+        field_2[param_1] = param_3
+    }
+}
+
+interface cls_3 {
+    fun fn_1(param_2: String)
+}

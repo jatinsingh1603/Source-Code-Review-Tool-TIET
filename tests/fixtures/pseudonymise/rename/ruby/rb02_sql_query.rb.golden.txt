@@ -1,0 +1,9 @@
+def fn_1(param_1, param_2)
+  var_3 = "SELECT col_1 FROM tbl_4 WHERE col_2 = '#{param_2}'"
+  var_2 = param_1.execute(var_3)
+  var_1 = []
+  var_2.each do |param_3|
+    var_1 << param_3['ref']
+  end
+  var_1
+end

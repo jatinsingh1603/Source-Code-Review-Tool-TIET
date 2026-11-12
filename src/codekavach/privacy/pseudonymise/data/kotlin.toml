@@ -1,0 +1,134 @@
+# Public-name allowlist for Kotlin (E09-07). Read by codekavach.privacy.pseudonymise.allowlist.
+#
+# Source: compiled by hand from the maintainers' working knowledge of the Kotlin standard library, the JVM class library and Spring/Ktor, limited to the
+#   security-relevant surface that the rule matchers and the triage model need to recognise
+#   (sources, sinks, sanitisers, crypto, serialisation, HTTP, SQL, process and file APIs). No
+#   library source code was copied. Names are listed once, not exhaustively. The list has NOT yet
+#   been checked name by name against the upstream documentation; that check is a follow-up before
+#   a client engagement relies on it.
+# Generated: 2026-11-12 (first curated version; edit by issue, and bump the version below).
+# Version: kotlin-2026.11.12.1
+#
+# Reading rules: see data/java.toml. The members of the "builtins" package are public whatever
+# the file imports, because this language's imports are not resolved to packages: a listed name is
+# the language's or its standard library's, never the client's. Adding a name here is a disclosure
+# decision; renaming a framework contract name changes behaviour.
+
+version = "kotlin-2026.11.12.1"
+language = "kotlin"
+
+[packages.builtins]
+kind = "builtin"
+members = [
+    "Any", "Array", "Autowired", "Base64", "Bean", "Boolean", "BufferedReader", "Byte", "Char",
+    "Charsets", "Cipher", "Class", "Collection", "Column", "Component", "Configuration",
+    "Connection", "Controller", "DataSource", "Date", "DeleteMapping", "Double",
+    "DriverManager", "Entity", "Exception", "File", "Files", "Float", "GetMapping",
+    "HttpClient", "HttpRequest", "HttpServletRequest", "HttpServletResponse",
+    "HttpURLConnection", "Id", "IllegalArgumentException", "IllegalStateException",
+    "InputStream", "Instant", "Int", "Iterable", "KeyGenerator", "List", "LocalDate", "Long",
+    "Map", "MessageDigest", "MutableList", "MutableMap", "MutableSet", "Nothing",
+    "ObjectInputStream", "ObjectOutputStream", "OutputStream", "Pair", "Path", "PathVariable",
+    "Paths", "PostMapping", "PreparedStatement", "ProcessBuilder", "PutMapping", "Query",
+    "Random", "Regex", "Repository", "RequestBody", "RequestMapping", "RequestParam",
+    "ResponseEntity", "RestController", "ResultSet", "Runnable", "Runtime", "RuntimeException",
+    "SQLException", "SecretKeySpec", "SecureRandom", "Sequence", "Service", "Set", "Short",
+    "Statement", "String", "System", "TODO", "Table", "Thread", "Transactional", "Triple",
+    "URI", "URL", "UTF_8", "Unit", "add", "also", "application", "apply", "arrayOf", "call",
+    "check", "close", "compareTo", "component1", "contains", "copy", "createStatement",
+    "decode", "delete", "digest", "emptyList", "encode", "encodeToString", "endsWith", "equals",
+    "error", "exec", "execute", "executeQuery", "executeUpdate", "exists", "exitProcess",
+    "filter", "find", "first", "forEach", "forName", "format", "get", "getConnection",
+    "getCookies", "getDeclaredField", "getDeclaredMethod", "getHeader", "getInstance", "getInt",
+    "getParameter", "getProperty", "getRuntime", "getString", "getenv", "hashCode", "invoke",
+    "isEmpty", "isNotEmpty", "joinToString", "last", "lazy", "length", "let", "listFiles",
+    "listOf", "map", "mapOf", "matches", "mutableListOf", "mutableMapOf", "newInstance",
+    "openConnection", "openStream", "post", "prepareStatement", "print", "println", "put",
+    "readBytes", "readLines", "readObject", "readText", "remove", "replace", "require",
+    "respond", "respondText", "routing", "run", "sendRedirect", "set", "setInt", "setOf",
+    "setString", "size", "split", "start", "startsWith", "substring", "toDouble", "toInt",
+    "toList", "toLong", "toMap", "toRegex", "toString", "trim", "use", "with", "writeObject",
+    "writeText",
+]
+
+[framework_contracts]
+"afterPropertiesSet" = "spring"
+"call" = "java"
+"close" = "java"
+"compareTo" = "kotlin"
+"configure" = "spring"
+"doFilter" = "servlet"
+"doGet" = "servlet"
+"doPost" = "servlet"
+"equals" = "kotlin"
+"getValue" = "kotlin"
+"hasNext" = "kotlin"
+"hashCode" = "kotlin"
+"invoke" = "kotlin"
+"iterator" = "kotlin"
+"loadUserByUsername" = "spring"
+"main" = "kotlin"
+"next" = "kotlin"
+"onClick" = "android"
+"onCreate" = "android"
+"onCreateView" = "android"
+"onDestroy" = "android"
+"onPause" = "android"
+"onReceive" = "android"
+"onResume" = "android"
+"onStart" = "android"
+"onStop" = "android"
+"provideDelegate" = "kotlin"
+"run" = "java"
+"setValue" = "kotlin"
+"toString" = "kotlin"
+
+[framework_decorators]
+"After" = "junit"
+"Autowired" = "spring"
+"Before" = "junit"
+"Component" = "spring"
+"Controller" = "spring"
+"Deprecated" = "kotlin"
+"Entity" = "jpa"
+"GetMapping" = "spring"
+"Id" = "jpa"
+"JvmField" = "kotlin"
+"JvmOverloads" = "kotlin"
+"JvmStatic" = "kotlin"
+"Override" = "kotlin"
+"PostMapping" = "spring"
+"Repository" = "spring"
+"RequestMapping" = "spring"
+"RestController" = "spring"
+"Service" = "spring"
+"Suppress" = "kotlin"
+"Test" = "junit"
+"Throws" = "kotlin"
+
+[well_known]
+sources = [
+    "PathVariable", "RequestBody", "RequestParam", "getCookies", "getHeader", "getParameter",
+    "getProperty", "getenv", "readLine", "readText", "receive",
+]
+sinks = [
+    "createStatement", "evaluateJavascript", "exec", "execSQL", "execute", "executeQuery",
+    "executeUpdate", "forName", "invoke", "loadUrl", "newInstance", "openConnection",
+    "prepareStatement", "rawQuery", "readObject", "sendRedirect", "start",
+]
+sanitisers = [
+    "canonicalPath", "encode", "escapeHtml", "matches", "normalize", "setInt", "setLong",
+    "setString", "toRealPath",
+]
+conventional_instances = ["logger", "log", "app"]
+
+[reflection]
+name_argument = 0
+attribute_calls = [
+    "getDeclaredField", "getDeclaredMethod", "getField", "getMethod",
+]
+
+[dynamic_code]
+calls = [
+    "eval",
+]

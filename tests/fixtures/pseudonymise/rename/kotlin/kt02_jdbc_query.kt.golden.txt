@@ -1,0 +1,15 @@
+package mod_3.mod_1.mod_2
+
+import java.sql.Connection
+
+class cls_1(private val field_1: Connection) {
+    fun fn_1(param_1: String): List<String> {
+        val var_3 = "SELECT col_2 FROM tbl_4 WHERE col_3 = '" + param_1 + "'"
+        val var_2 = field_1.createStatement().executeQuery(var_3)
+        val var_1 = mutableListOf<String>()
+        while (var_2.next()) {
+            var_1.add(var_2.getString("ref"))
+        }
+        return var_1
+    }
+}

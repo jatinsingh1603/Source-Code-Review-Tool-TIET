@@ -1,0 +1,116 @@
+# Public-name allowlist for Ruby (E09-07). Read by codekavach.privacy.pseudonymise.allowlist.
+#
+# Source: compiled by hand from the maintainers' working knowledge of the Ruby core and standard library, Rails, ActiveRecord and Sinatra, limited to the
+#   security-relevant surface that the rule matchers and the triage model need to recognise
+#   (sources, sinks, sanitisers, crypto, serialisation, HTTP, SQL, process and file APIs). No
+#   library source code was copied. Names are listed once, not exhaustively. The list has NOT yet
+#   been checked name by name against the upstream documentation; that check is a follow-up before
+#   a client engagement relies on it.
+# Generated: 2026-11-12 (first curated version; edit by issue, and bump the version below).
+# Version: ruby-2026.11.12.1
+#
+# Reading rules: see data/java.toml. The members of the "builtins" package are public whatever
+# the file imports, because this language's imports are not resolved to packages: a listed name is
+# the language's or its standard library's, never the client's. Adding a name here is a disclosure
+# decision; renaming a framework contract name changes behaviour.
+
+version = "ruby-2026.11.12.1"
+language = "ruby"
+
+[packages.builtins]
+kind = "builtin"
+members = [
+    "ARGV", "ActiveRecord", "ArgumentError", "Array", "Base", "Base64", "Class", "Comparable",
+    "Date", "Digest", "Dir", "ENV", "ERB", "Enumerable", "Exception", "File", "Float", "HTTP",
+    "Hash", "IO", "Integer", "JSON", "Kernel", "Marshal", "Module", "Net",
+    "NotImplementedError", "Object", "Open3", "OpenSSL", "Process", "Rails", "Regexp",
+    "RuntimeError", "SecureRandom", "Sinatra", "StandardError", "String", "Struct", "Symbol",
+    "Time", "URI", "YAML", "__send__", "abort", "after_action", "all", "all?", "any?",
+    "at_exit", "attr_accessor", "attr_reader", "attr_writer", "basename", "before_action",
+    "belongs_to", "binding", "capitalize", "catch", "chomp", "class_eval", "clone",
+    "connection", "const_get", "constantize", "cookies", "count", "create", "create!",
+    "define_method", "delete", "destroy", "dig", "dirname", "downcase", "dump", "dup", "each",
+    "each_with_index", "empty?", "end_with?", "eval", "exec", "exec_query", "execute", "exist?",
+    "exit", "expand_path", "extend", "fail", "fetch", "find", "find_all", "find_by",
+    "find_by_sql", "first", "foreach", "format", "freeze", "generate", "get", "gets", "gsub",
+    "h", "has_many", "has_one", "head", "html_safe", "include", "include?", "includes",
+    "initialize", "inject", "instance_eval", "instance_variable_get", "instance_variable_set",
+    "join", "joins", "keys", "lambda", "last", "length", "limit", "load", "load_file", "loop",
+    "map", "match", "merge", "method_missing", "module_eval", "module_function", "namespace",
+    "new", "nil?", "open", "order", "p", "pack", "params", "parse", "patch", "permit", "pluck",
+    "pop", "popen", "popen3", "post", "pp", "prepare", "prepend", "print", "printf", "private",
+    "proc", "protect_from_forgery", "protected", "public", "public_send", "push", "put", "puts",
+    "query", "quote", "raise", "rand", "raw", "read", "readlines", "redirect_to", "reduce",
+    "reject", "render", "request", "require", "require_relative", "resources", "respond_to?",
+    "respond_to_missing?", "response", "root", "safe_load", "sanitize", "sanitize_sql", "save",
+    "save!", "scan", "scope", "select", "send", "session", "shift", "size",
+    "skip_before_action", "sleep", "spawn", "split", "sprintf", "srand", "start_with?", "strip",
+    "strong_parameters", "sub", "system", "tap", "then", "throw", "to_a", "to_f", "to_h",
+    "to_i", "to_json", "to_s", "to_sym", "to_yaml", "unpack", "unshift", "upcase", "update",
+    "update!", "validates", "values", "where", "write",
+]
+
+[framework_contracts]
+"<=>" = "ruby"
+"==" = "ruby"
+"call" = "rack"
+"change" = "rails"
+"coerce" = "ruby"
+"create" = "rails"
+"destroy" = "rails"
+"down" = "rails"
+"each" = "ruby"
+"edit" = "rails"
+"eql?" = "ruby"
+"extended" = "ruby"
+"hash" = "ruby"
+"included" = "ruby"
+"index" = "rails"
+"inherited" = "ruby"
+"initialize" = "ruby"
+"inspect" = "ruby"
+"method_missing" = "ruby"
+"new" = "rails"
+"perform" = "rails"
+"respond_to_missing?" = "ruby"
+"setup" = "minitest"
+"show" = "rails"
+"teardown" = "minitest"
+"to_a" = "ruby"
+"to_h" = "ruby"
+"to_proc" = "ruby"
+"to_s" = "ruby"
+"to_str" = "ruby"
+"up" = "rails"
+"update" = "rails"
+
+[framework_decorators]
+
+
+[well_known]
+sources = [
+    "ARGV", "ENV", "cookies", "gets", "headers", "params", "read", "readlines", "request",
+    "session",
+]
+sinks = [
+    "File", "Marshal", "class_eval", "constantize", "eval", "exec", "exec_query", "execute",
+    "find_by_sql", "html_safe", "instance_eval", "load", "open", "order", "popen",
+    "public_send", "raw", "redirect_to", "render", "send", "spawn", "system", "where", "write",
+]
+sanitisers = [
+    "CGI", "basename", "escape", "expand_path", "h", "html_escape", "permit", "quote",
+    "sanitize", "sanitize_sql", "shellescape",
+]
+conventional_instances = ["logger", "log", "app"]
+
+[reflection]
+name_argument = 0
+attribute_calls = [
+    "const_get", "define_method", "instance_variable_get", "instance_variable_set",
+    "public_send", "send",
+]
+
+[dynamic_code]
+calls = [
+    "class_eval", "eval", "instance_eval", "module_eval",
+]

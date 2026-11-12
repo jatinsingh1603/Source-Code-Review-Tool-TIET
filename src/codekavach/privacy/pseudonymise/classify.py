@@ -220,6 +220,8 @@ _RECEIVER_VERDICT: Final = _Verdict(IdentifierClass.PUBLIC, Rule.RECEIVER, depen
 _JAVA_LIBRARY_ROOTS: Final = frozenset({"java", "javax", "jakarta"})
 _ANNOTATIONS: Final = frozenset({"annotation", "marker_annotation"})
 _CALL_BOUND_METHODS: Final = frozenset({Language.JAVA, Language.GO})
+# Languages whose every segment of an import path takes the origin of the import.
+_DOTTED_IMPORTS: Final = frozenset({Language.JAVA, Language.KOTLIN, Language.CSHARP})
 _QUALIFIED_KINDS: Final = frozenset({"class", "variable", "method", "constant"})
 _JAVA_PACKAGE_SEGMENTS: Final = 2  # java.sql, org.springframework
 _GO_HOST_SEGMENTS: Final = 3  # github.com/owner/repo
@@ -639,7 +641,7 @@ class _Run:
         """
         for ref in self._table.imports:
             if _contains(ref.location, symbol.location) and (
-                self._language is Language.JAVA or ref.module.split(".", 1)[0] == symbol.name
+                self._language in _DOTTED_IMPORTS or ref.module.split(".", 1)[0] == symbol.name
             ):
                 # Java: every segment of ``java.sql`` or ``com.bank.util`` takes the origin of
                 # the import, so the qualifier of a class library import is not renamed.

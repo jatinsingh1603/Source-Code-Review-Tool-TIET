@@ -1,0 +1,17 @@
+#include <stdio.h>
+
+typedef struct cls_2 {
+    int field_2;
+    double field_1;
+} cls_1;
+
+static int var_2 = 0;
+
+double fn_1(cls_1 *param_1, int param_2) {
+    double var_1 = 0;
+    for (int var_3 = 0; var_3 < param_2; var_3++) {
+        var_1 += param_1[var_3].field_1;
+        var_2++;
+    }
+    return var_1 / param_2;
+}

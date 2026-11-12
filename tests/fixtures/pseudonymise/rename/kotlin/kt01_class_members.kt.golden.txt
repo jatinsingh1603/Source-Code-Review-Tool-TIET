@@ -1,0 +1,13 @@
+package mod_3.mod_1.mod_2
+
+class cls_1(private val field_3: Long, val field_1: String) {
+    private var field_2: Long = 0
+
+    fun fn_2(param_1: Int): Long {
+        val var_1 = field_3 * param_1
+        field_2 += var_1
+        return field_2
+    }
+
+    fun fn_1(): String = "xxxxxx " + field_1 + " xxxxxxx " + field_2
+}

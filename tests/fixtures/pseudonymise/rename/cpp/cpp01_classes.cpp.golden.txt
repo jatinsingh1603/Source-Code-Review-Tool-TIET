@@ -1,0 +1,24 @@
+#include <string>
+
+namespace mod_1 {
+
+class cls_1 {
+public:
+    explicit cls_1(long param_3) : field_1(param_3), field_2(0) {}
+
+    long fn_2(int param_1) {
+        long var_1 = field_1 * param_1;
+        field_2 += var_1;
+        return field_2;
+    }
+
+    std::string fn_1(const std::string &param_2) const {
+        return "xxxxxx " + param_2;
+    }
+
+private:
+    long field_1;
+    long field_2;
+};
+
+}                      

@@ -1,0 +1,24 @@
+using System.Data.SqlClient;
+
+namespace mod_1.field_1
+{
+    public class cls_1
+    {
+        private readonly SqlConnection field_2;
+
+        public cls_1(SqlConnection field_2)
+        {
+            this.field_2 = field_2;
+        }
+
+        public string fn_1(string param_1)
+        {
+            var var_3 = "SELECT ref FROM tbl_4 WHERE col_3 = '" + param_1 + "'";
+            var var_1 = new SqlCommand(var_3, field_2);
+            using (var var_2 = var_1.ExecuteReader())
+            {
+                return var_2.Read() ? var_2.GetString(0) : null;
+            }
+        }
+    }
+}

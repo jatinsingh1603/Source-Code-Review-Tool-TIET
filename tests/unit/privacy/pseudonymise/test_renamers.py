@@ -356,13 +356,19 @@ def test_the_registry_returns_each_renamer_by_language() -> None:
         Language.JAVASCRIPT,
         Language.TYPESCRIPT,
         Language.JAVA,
+        Language.KOTLIN,
+        Language.C,
+        Language.CPP,
+        Language.PHP,
         Language.GO,
+        Language.CSHARP,
+        Language.RUBY,
     )
 
 
 def test_a_language_without_a_renamer_is_refused_by_name() -> None:
-    with pytest.raises(UnsupportedLanguageError, match="kotlin"):
-        default_registry().get(Language.KOTLIN)
+    with pytest.raises(UnsupportedLanguageError, match="dockerfile"):
+        default_registry().get(Language.DOCKERFILE)
     assert issubclass(UnsupportedLanguageError, PseudonymError)
 
 

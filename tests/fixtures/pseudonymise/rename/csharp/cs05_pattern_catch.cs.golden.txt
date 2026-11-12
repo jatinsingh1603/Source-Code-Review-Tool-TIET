@@ -1,0 +1,23 @@
+using System;
+
+namespace mod_1.field_2
+{
+    public class cls_1
+    {
+        public string fn_1(object param_1)
+        {
+            if (param_1 is string var_2 && var_2.Length > 3)
+            {
+                return var_2;
+            }
+            try
+            {
+                return param_1.ToString();
+            }
+            catch (Exception var_1)
+            {
+                return var_1.field_1;
+            }
+        }
+    }
+}

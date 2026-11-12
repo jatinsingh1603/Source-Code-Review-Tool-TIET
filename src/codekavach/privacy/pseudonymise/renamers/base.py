@@ -27,7 +27,7 @@ plan raises ``PseudonymError``; no text is produced.
 """
 
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, ClassVar, Final, Protocol
 
@@ -133,6 +133,8 @@ class SourceFacts:
     )  # start of the text, not the quote
     # Go struct tags: (start of the tag text, name of the field the tag belongs to).
     tag_fields: tuple[tuple[int, str], ...] = ()
+    # C and C++ macro bodies: the start of each ``preproc_arg`` token.
+    macro_starts: frozenset[int] = field(default=frozenset())
 
 
 class ByteOffsets:
@@ -173,34 +175,40 @@ def _kind_of(kind: str) -> PseudonymKind:
 
 
 def name_tokens(
-    classification: ClassificationResult, generator: PseudonymGenerator
+    classification: ClassificationResult,
+    generator: PseudonymGenerator,
+    canonical: Callable[[str], str] = str,
 ) -> dict[str, str]:
     """The token of every internal name of a file; one token per name.
 
     The names of a kind are numbered together (``prepare``), so the numbers depend on the salt and
-    the set of names, not on the order of the code (I5).
+    the set of names, not on the order of the code (I5). ``canonical`` maps the spellings of one
+    name to a single key (Ruby's ``@conn``, ``:conn`` and ``conn``), so they share a token.
 
     Raises:
         PseudonymError: a symbol kind is unknown, or a token equals a name that stays in clear.
     """
     strongest: dict[str, str] = {}
+    spellings: dict[str, set[str]] = {}
     public: set[str] = set()
     for decision in classification.decisions:
         if decision.classification is IdentifierClass.PUBLIC:
             public.add(decision.name)
             continue
-        current = strongest.get(decision.name)
+        key = canonical(decision.name)
+        spellings.setdefault(key, set()).add(decision.name)
+        current = strongest.get(key)
         if current is None or _RANK.get(decision.kind, 99) < _RANK.get(current, 99):
-            strongest[decision.name] = decision.kind
+            strongest[key] = decision.kind
     by_kind: dict[PseudonymKind, list[str]] = {}
     for name, kind in strongest.items():
         by_kind.setdefault(_kind_of(kind), []).append(name)
     for kind, names in by_kind.items():
         generator.prepare(kind, names)
-    tokens = {name: generator.token(_kind_of(kind), name) for name, kind in strongest.items()}
-    if public.intersection(tokens.values()):
+    made = {key: generator.token(_kind_of(kind), key) for key, kind in strongest.items()}
+    if public.intersection(made.values()):
         raise PseudonymError("a pseudonym equals a name that stays in clear")
-    return tokens
+    return {name: made[key] for key, names in spellings.items() for name in names}
 
 
 class BaseRenamer:
@@ -213,6 +221,11 @@ class BaseRenamer:
     def facts(self, parsed: "ParsedFile") -> SourceFacts:
         """Byte offsets of the nodes whose rewrite differs from a plain rename."""
         return SourceFacts()
+
+    @staticmethod
+    def canonical_name(name: str) -> str:
+        """The key under which the spellings of one name share a token (default: the name)."""
+        return name
 
     def identifier_edits(
         self, name: str, token: str, start: int, end: int, facts: SourceFacts
@@ -279,7 +292,7 @@ class BaseRenamer:
         text = parsed.source.expose()
         data = text.encode("utf-8")
         offsets = ByteOffsets(text)
-        tokens = name_tokens(classification, generator)
+        tokens = name_tokens(classification, generator, self.canonical_name)
         facts = self.facts(parsed)
         string_names = {
             d.name

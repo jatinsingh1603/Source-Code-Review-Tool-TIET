@@ -1,0 +1,21 @@
+<?php
+namespace mod_1\mod_2;
+
+class cls_1
+{
+    private $field_2;
+    private $field_1 = 0;
+    const const_1 = 100;
+
+    public function __construct($field_2)
+    {
+        $this->field_2 = $field_2;
+    }
+
+    public function fn_1($param_1)
+    {
+        $var_1 = $this->field_2 * $param_1;
+        $this->field_1 += $var_1;
+        return $this->field_1;
+    }
+}

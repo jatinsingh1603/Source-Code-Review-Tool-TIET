@@ -12,10 +12,16 @@ from typing import Final
 
 from codekavach.core.models import Language
 from codekavach.privacy.pseudonymise.renamers.base import BaseRenamer, UnsupportedLanguageError
+from codekavach.privacy.pseudonymise.renamers.c import CRenamer
+from codekavach.privacy.pseudonymise.renamers.cpp import CppRenamer
+from codekavach.privacy.pseudonymise.renamers.csharp import CSharpRenamer
 from codekavach.privacy.pseudonymise.renamers.go import GoRenamer
 from codekavach.privacy.pseudonymise.renamers.java import JavaRenamer
 from codekavach.privacy.pseudonymise.renamers.javascript import JavaScriptRenamer, TypeScriptRenamer
+from codekavach.privacy.pseudonymise.renamers.kotlin import KotlinRenamer
+from codekavach.privacy.pseudonymise.renamers.php import PhpRenamer
 from codekavach.privacy.pseudonymise.renamers.python import PythonRenamer
+from codekavach.privacy.pseudonymise.renamers.ruby import RubyRenamer
 
 # Languages that have a ``LanguageSpec`` but no renamer yet, each with the reason. ``get`` raises
 # ``UnsupportedLanguageError`` for them; the registry completeness test fails when a language has
@@ -60,5 +66,11 @@ def default_registry() -> RenamerRegistry:
             TypeScriptRenamer(),
             JavaRenamer(),
             GoRenamer(),
+            KotlinRenamer(),
+            PhpRenamer(),
+            CSharpRenamer(),
+            RubyRenamer(),
+            CRenamer(),
+            CppRenamer(),
         )
     )

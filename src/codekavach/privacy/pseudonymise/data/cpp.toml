@@ -1,0 +1,111 @@
+# Public-name allowlist for C++ (E09-07). Read by codekavach.privacy.pseudonymise.allowlist.
+#
+# Source: compiled by hand from the maintainers' working knowledge of the C++ standard library, the C library and POSIX, limited to the
+#   security-relevant surface that the rule matchers and the triage model need to recognise
+#   (sources, sinks, sanitisers, crypto, serialisation, HTTP, SQL, process and file APIs). No
+#   library source code was copied. Names are listed once, not exhaustively. The list has NOT yet
+#   been checked name by name against the upstream documentation; that check is a follow-up before
+#   a client engagement relies on it.
+# Generated: 2026-11-12 (first curated version; edit by issue, and bump the version below).
+# Version: cpp-2026.11.12.1
+#
+# Reading rules: see data/java.toml. The members of the "builtins" package are public whatever
+# the file imports, because this language's imports are not resolved to packages: a listed name is
+# the language's or its standard library's, never the client's. Adding a name here is a disclosure
+# decision; renaming a framework contract name changes behaviour.
+
+version = "cpp-2026.11.12.1"
+language = "cpp"
+
+[packages.builtins]
+kind = "builtin"
+members = [
+    "ASSERT_TRUE", "BUFSIZ", "CHAR_BIT", "DIR", "EOF", "EVP_DigestInit", "EVP_EncryptInit",
+    "EXPECT_EQ", "FILE", "INT_MAX", "MD5", "NULL", "PATH_MAX", "QApplication", "QObject",
+    "QString", "QWidget", "RAND_bytes", "SHA1", "SHA256", "SIZE_MAX", "SSL_read", "SSL_write",
+    "TEST", "UINT_MAX", "_exit", "abort", "abs", "accept", "access", "alloca", "allocator",
+    "append", "argc", "argv", "array", "asio", "assert", "at", "atexit", "atof", "atoi", "atol",
+    "atomic", "back", "bad_alloc", "beast", "begin", "bind", "boost", "bsearch", "byte",
+    "c_str", "calloc", "cerr", "chdir", "chmod", "chown", "chrono", "cin", "clear", "clock",
+    "clog", "close", "closedir", "compare", "connect", "const_cast", "const_iterator", "copy",
+    "count", "cout", "create_directories", "crypt", "data", "deque", "dlopen", "dlsym",
+    "dynamic_cast", "emplace", "emplace_back", "empty", "end", "endl", "envp", "erase", "errno",
+    "exception", "execl", "execle", "execlp", "execv", "execve", "execvp", "exists", "exit",
+    "fclose", "feof", "ferror", "fflush", "fgets", "filesystem", "find", "fopen", "fork",
+    "forward", "fprintf", "fputs", "fread", "free", "front", "fscanf", "fseek", "fstat",
+    "fstream", "ftell", "function", "fwrite", "getaddrinfo", "getchar", "getcwd", "getenv",
+    "geteuid", "gethostbyname", "getline", "getpid", "gets", "gets_s", "getsockopt", "getuid",
+    "gtest", "htonl", "htons", "ifstream", "inet_addr", "inet_ntoa", "initializer_list",
+    "insert", "int16_t", "int32_t", "int64_t", "int8_t", "intptr_t", "invalid_argument",
+    "isalnum", "isalpha", "isdigit", "islower", "isspace", "istringstream", "isupper",
+    "iterator", "json", "kill", "labs", "length", "list", "listen", "lock_guard", "logic_error",
+    "lseek", "lstat", "main", "make_pair", "make_shared", "make_unique", "malloc", "map",
+    "memcmp", "memcpy", "memcpy_s", "memmove", "memset", "mkdir", "mkstemp", "mktemp", "mmap",
+    "move", "mt19937", "munmap", "mutex", "nlohmann", "ntohl", "ntohs", "nullptr_t", "off_t",
+    "ofstream", "open", "opendir", "operator", "optional", "ostringstream", "out_of_range",
+    "pair", "path", "pclose", "perror", "pid_t", "poll", "pop_back", "popen", "printf",
+    "pthread_create", "pthread_join", "pthread_mutex_lock", "pthread_mutex_unlock", "ptrdiff_t",
+    "push_back", "putchar", "putenv", "puts", "qsort", "rand", "random_device", "read",
+    "readdir", "realloc", "realpath", "recv", "recvfrom", "regex", "regex_match",
+    "regex_replace", "regex_search", "reinterpret_cast", "remove", "remove_all", "rename",
+    "reserve", "resize", "reverse_iterator", "rmdir", "runtime_error", "scanf", "select",
+    "send", "sendto", "set", "setenv", "setgid", "setsockopt", "setuid", "shared_ptr", "signal",
+    "size", "size_t", "sleep", "snprintf", "socket", "sort", "span", "sprintf", "srand",
+    "sscanf", "ssize_t", "stat", "static_cast", "std", "stderr", "stdin", "stdout", "stod",
+    "stoi", "stol", "strcasecmp", "strcat", "strchr", "strcmp", "strcpy", "strcpy_s", "strdup",
+    "strerror", "string", "string_view", "stringstream", "strlcat", "strlcpy", "strlen",
+    "strncat", "strncmp", "strncpy", "strrchr", "strstr", "strtod", "strtok", "strtok_r",
+    "strtol", "strtoul", "substr", "swap", "system", "tempnam", "thread", "time", "tmpfile",
+    "tmpnam", "to_string", "tolower", "toupper", "transform", "tuple", "uint16_t", "uint32_t",
+    "uint64_t", "uint8_t", "uintptr_t", "uniform_int_distribution", "unique_lock", "unique_ptr",
+    "unlink", "unordered_map", "unordered_set", "usleep", "va_arg", "va_end", "va_list",
+    "va_start", "variant", "vector", "vsnprintf", "vsprintf", "wait", "waitpid", "weak_ptr",
+    "write", "wstring",
+]
+
+[framework_contracts]
+"DllMain" = "windows"
+"SetUp" = "gtest"
+"TearDown" = "gtest"
+"TestBody" = "gtest"
+"WinMain" = "windows"
+"begin" = "std"
+"closeEvent" = "qt"
+"end" = "std"
+"event" = "qt"
+"keyPressEvent" = "qt"
+"main" = "cpp"
+"mousePressEvent" = "qt"
+"operator()" = "cpp"
+"paintEvent" = "qt"
+"run" = "qt"
+"size" = "std"
+"what" = "std"
+
+[framework_decorators]
+
+
+[well_known]
+sources = [
+    "argv", "cin", "fgets", "fread", "getenv", "getline", "gets", "ifstream", "read", "readAll",
+    "recv", "scanf",
+]
+sinks = [
+    "QProcess", "delete", "exec", "execl", "execv", "execvp", "fopen", "free", "malloc",
+    "memcpy", "mktemp", "new", "ofstream", "open", "popen", "printf", "reinterpret_cast",
+    "sprintf", "start", "strcat", "strcpy", "system",
+]
+sanitisers = [
+    "at", "canonical", "realpath", "regex_match", "snprintf", "stoi", "strlcpy",
+    "weakly_canonical",
+]
+conventional_instances = ["logger", "log", "app"]
+
+[reflection]
+name_argument = 0
+attribute_calls = []
+
+[dynamic_code]
+calls = [
+    "eval",
+]

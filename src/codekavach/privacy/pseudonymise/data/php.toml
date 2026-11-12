@@ -1,0 +1,150 @@
+# Public-name allowlist for PHP (E09-07). Read by codekavach.privacy.pseudonymise.allowlist.
+#
+# Source: compiled by hand from the maintainers' working knowledge of the PHP core and standard extensions, PDO, mysqli, Laravel and Symfony, limited to the
+#   security-relevant surface that the rule matchers and the triage model need to recognise
+#   (sources, sinks, sanitisers, crypto, serialisation, HTTP, SQL, process and file APIs). No
+#   library source code was copied. Names are listed once, not exhaustively. The list has NOT yet
+#   been checked name by name against the upstream documentation; that check is a follow-up before
+#   a client engagement relies on it.
+# Generated: 2026-11-12 (first curated version; edit by issue, and bump the version below).
+# Version: php-2026.11.12.1
+#
+# Reading rules: see data/java.toml. The members of the "builtins" package are public whatever
+# the file imports, because this language's imports are not resolved to packages: a listed name is
+# the language's or its standard library's, never the client's. Adding a name here is a disclosure
+# decision; renaming a framework contract name changes behaviour.
+
+version = "php-2026.11.12.1"
+language = "php"
+
+[packages.builtins]
+kind = "builtin"
+members = [
+    "ArrayAccess", "ArrayObject", "Auth", "Cache", "Closure", "Controller", "Countable", "DB",
+    "DOMDocument", "DateTime", "Exception", "GLOBALS", "Hash", "Illuminate", "Iterator",
+    "JsonSerializable", "Model", "PDO", "PDOException", "PDOStatement", "Request", "Response",
+    "Route", "SimpleXMLElement", "SplFileObject", "Storage", "Stringable", "Symfony", "_COOKIE",
+    "_ENV", "_FILES", "_GET", "_POST", "_REQUEST", "_SERVER", "_SESSION", "abs", "addslashes",
+    "all", "array_combine", "array_diff", "array_filter", "array_flip", "array_intersect",
+    "array_key_exists", "array_keys", "array_map", "array_merge", "array_pop", "array_push",
+    "array_reduce", "array_reverse", "array_search", "array_slice", "array_sum", "array_unique",
+    "array_values", "array_walk", "assert", "auth", "base64_decode", "base64_encode",
+    "basename", "beginTransaction", "bin2hex", "bindParam", "bindValue", "bind_param",
+    "call_user_func", "call_user_func_array", "ceil", "chmod", "commit", "compact", "copy",
+    "count", "crc32", "create_function", "crypt", "ctype_digit", "curl_exec", "curl_init",
+    "curl_setopt", "date", "define", "defined", "delete", "die", "dirname", "empty",
+    "error_log", "escapeshellarg", "escapeshellcmd", "eval", "exec", "execute", "exit",
+    "explode", "extract", "fclose", "feof", "fetch", "fetchAll", "fetchColumn", "fetch_array",
+    "fetch_assoc", "fetch_object", "fgets", "file", "file_exists", "file_get_contents",
+    "file_put_contents", "filter_input", "filter_var", "find", "first", "floatval", "floor",
+    "fopen", "fpassthru", "fputs", "fread", "fwrite", "get", "get_class", "get_result", "glob",
+    "hash", "hash_equals", "hash_hmac", "header", "header_remove", "hex2bin", "htmlentities",
+    "htmlspecialchars", "http_response_code", "iconv", "implode", "in_array", "include",
+    "ini_set", "input", "insert", "intdiv", "intval", "is_a", "is_array", "is_dir", "is_file",
+    "is_null", "is_numeric", "is_string", "isset", "iterator_to_array", "json_decode",
+    "json_encode", "json_last_error", "ksort", "lastInsertId", "lcfirst",
+    "libxml_disable_entity_loader", "list", "ltrim", "mail", "max", "mb_strlen", "mb_substr",
+    "md5", "microtime", "min", "mkdir", "move_uploaded_file", "mt_rand", "mysql_query",
+    "mysqli", "mysqli_close", "mysqli_connect", "mysqli_connect_error", "mysqli_error",
+    "mysqli_fetch_array", "mysqli_fetch_assoc", "mysqli_fetch_object", "mysqli_fetch_row",
+    "mysqli_num_rows", "mysqli_prepare", "mysqli_query", "mysqli_real_escape_string",
+    "mysqli_select_db", "mysqli_stmt_bind_param", "mysqli_stmt_close", "mysqli_stmt_execute",
+    "mysqli_stmt_get_result", "nl2br", "num_rows", "number_format", "ob_start",
+    "openssl_decrypt", "openssl_encrypt", "orderBy", "pack", "parse_str", "passthru",
+    "password_hash", "password_verify", "pathinfo", "popen", "post", "preg_match",
+    "preg_replace", "preg_split", "prepare", "print_r", "printf", "proc_open", "query", "quote",
+    "rand", "random_bytes", "random_int", "range", "raw", "readfile", "real_escape_string",
+    "realpath", "redirect", "rename", "request", "require", "response", "rmdir", "rollBack",
+    "round", "route", "rowCount", "rtrim", "scandir", "select", "selectRaw", "serialize",
+    "session", "session_destroy", "session_regenerate_id", "session_start", "setAttribute",
+    "setcookie", "sha1", "shell_exec", "simplexml_load_string", "sort", "spl_autoload_register",
+    "sprintf", "statement", "str_contains", "str_pad", "str_repeat", "str_replace",
+    "str_starts_with", "strip_tags", "strlen", "strpos", "strrev", "strtolower", "strtotime",
+    "strtoupper", "strval", "substr", "sys_get_temp_dir", "system", "table", "tempnam", "time",
+    "touch", "trim", "ucfirst", "ucwords", "uniqid", "unlink", "unpack", "unserialize", "unset",
+    "update", "urldecode", "urlencode", "usort", "validate", "var_dump", "view", "where",
+    "whereRaw", "wordwrap",
+]
+
+[framework_contracts]
+"__call" = "php"
+"__callStatic" = "php"
+"__clone" = "php"
+"__construct" = "php"
+"__debugInfo" = "php"
+"__destruct" = "php"
+"__get" = "php"
+"__invoke" = "php"
+"__isset" = "php"
+"__serialize" = "php"
+"__set" = "php"
+"__sleep" = "php"
+"__toString" = "php"
+"__unserialize" = "php"
+"__unset" = "php"
+"__wakeup" = "php"
+"authorize" = "laravel"
+"boot" = "laravel"
+"configure" = "symfony"
+"count" = "php"
+"create" = "laravel"
+"current" = "php"
+"destroy" = "laravel"
+"down" = "laravel"
+"edit" = "laravel"
+"execute" = "symfony"
+"getIterator" = "php"
+"handle" = "laravel"
+"index" = "laravel"
+"jsonSerialize" = "php"
+"key" = "php"
+"next" = "php"
+"offsetExists" = "php"
+"offsetGet" = "php"
+"offsetSet" = "php"
+"offsetUnset" = "php"
+"register" = "laravel"
+"rewind" = "php"
+"rules" = "laravel"
+"run" = "laravel"
+"show" = "laravel"
+"store" = "laravel"
+"up" = "laravel"
+"update" = "laravel"
+"valid" = "php"
+
+[framework_decorators]
+"Attribute" = "php"
+"Override" = "php"
+"ReturnTypeWillChange" = "php"
+"Route" = "symfony"
+
+[well_known]
+sources = [
+    "_COOKIE", "_ENV", "_FILES", "_GET", "_POST", "_REQUEST", "_SERVER", "file_get_contents",
+    "filter_input", "get", "getenv", "input", "post",
+]
+sinks = [
+    "assert", "call_user_func", "curl_exec", "echo", "eval", "exec", "extract",
+    "file_put_contents", "header", "include", "move_uploaded_file", "mysql_query",
+    "mysqli_query", "passthru", "popen", "print", "proc_open", "query", "raw", "require",
+    "selectRaw", "shell_exec", "system", "unlink", "unserialize", "whereRaw",
+]
+sanitisers = [
+    "addslashes", "basename", "bindParam", "bindValue", "bind_param", "e", "escapeshellarg",
+    "escapeshellcmd", "filter_var", "htmlentities", "htmlspecialchars", "intval",
+    "mysqli_real_escape_string", "password_hash", "prepare", "quote", "real_escape_string",
+    "realpath", "strip_tags",
+]
+conventional_instances = ["logger", "log", "app"]
+
+[reflection]
+name_argument = 0
+attribute_calls = [
+    "call_user_func", "call_user_func_array", "method_exists", "property_exists",
+]
+
+[dynamic_code]
+calls = [
+    "assert", "create_function", "eval",
+]

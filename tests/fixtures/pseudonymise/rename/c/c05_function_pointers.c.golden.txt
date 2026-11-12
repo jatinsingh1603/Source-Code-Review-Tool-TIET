@@ -1,0 +1,16 @@
+typedef int (*cls_1)(int param_1);
+
+static cls_1 var_1 = 0;
+
+void fn_2(cls_1 param_2) {
+    var_1 = param_2;
+}
+
+int fn_1(int param_1) {
+    if (var_1 != 0) {
+        return var_1(param_1);
+    }
+    goto var_2;
+var_2:
+    return -1;
+}

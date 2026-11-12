@@ -1,0 +1,11 @@
+<?php
+function fn_1()
+{
+    $var_1 = $_POST['xxxxxxxx'];
+    $var_2 = $_POST['xxxxxxxx'];
+    if (strlen($var_1) > 0) {
+        $_SESSION['xxxxxxxxxxxx'] = $var_1;
+        header("xxxxxxxx: /xxxxxxxxx");
+    }
+    return $var_2;
+}

@@ -1,0 +1,136 @@
+# Public-name allowlist for C# (E09-07). Read by codekavach.privacy.pseudonymise.allowlist.
+#
+# Source: compiled by hand from the maintainers' working knowledge of the .NET base class library, ADO.NET, ASP.NET Core and Entity Framework, limited to the
+#   security-relevant surface that the rule matchers and the triage model need to recognise
+#   (sources, sinks, sanitisers, crypto, serialisation, HTTP, SQL, process and file APIs). No
+#   library source code was copied. Names are listed once, not exhaustively. The list has NOT yet
+#   been checked name by name against the upstream documentation; that check is a follow-up before
+#   a client engagement relies on it.
+# Generated: 2026-11-12 (first curated version; edit by issue, and bump the version below).
+# Version: csharp-2026.11.12.1
+#
+# Reading rules: see data/java.toml. The members of the "builtins" package are public whatever
+# the file imports, because this language's imports are not resolved to packages: a listed name is
+# the language's or its standard library's, never the client's. Adding a name here is a disclosure
+# decision; renaming a framework contract name changes behaviour.
+
+version = "csharp-2026.11.12.1"
+language = "csharp"
+
+[packages.builtins]
+kind = "builtin"
+members = [
+    "ASCII", "Action", "ActionResult", "Activator", "Add", "AddScoped", "AddSingleton",
+    "AddTransient", "AddWithValue", "Aes", "AllowAnonymous", "Any", "ApiController",
+    "ArgumentException", "ArgumentNullException", "Array", "Assembly", "Async", "Authorize",
+    "Await", "BadRequest", "BinaryFormatter", "Boolean", "Build", "CancellationToken", "Close",
+    "Combine", "CommandText", "ComputeHash", "Console", "Contains", "Content", "Controller",
+    "ControllerBase", "Convert", "Cookies", "Count", "CreateBuilder", "CreateDecryptor",
+    "CreateEncryptor", "CreateInstance", "DES", "DateTime", "DbCommand", "DbConnection",
+    "DbContext", "DbSet", "Decrypt", "Delete", "Deserialize", "Dictionary", "Directory",
+    "Dispose", "Encoding", "Encrypt", "Environment", "Equals", "Exception", "ExecuteNonQuery",
+    "ExecuteReader", "ExecuteScalar", "ExecuteSqlRaw", "Exists", "File", "FileStream",
+    "FirstOrDefault", "Form", "Format", "FromBase64String", "FromBody", "FromQuery",
+    "FromRoute", "FromSqlInterpolated", "FromSqlRaw", "Func", "GetBytes", "GetConnectionString",
+    "GetFileName", "GetFullPath", "GetHashCode", "GetInt32", "GetMethod", "GetProperty",
+    "GetSection", "GetString", "GetType", "Guid", "HashSet", "Headers", "HttpClient",
+    "HttpContext", "HttpDelete", "HttpGet", "HttpPost", "HttpPut", "HttpRequest",
+    "HttpResponse", "IActionResult", "ICollection", "IConfiguration", "IDisposable",
+    "IEnumerable", "IList", "ILogger", "IServiceCollection", "Include", "Int32", "Int64",
+    "InvalidOperationException", "Invoke", "Json", "JsonSerializer", "Length", "Linq", "List",
+    "Load", "LogError", "LogInformation", "MD5", "Main", "MapGet", "MapPost", "Math",
+    "MemoryStream", "NotFound", "NotImplementedException", "Object", "Ok", "OleDbConnection",
+    "Open", "OrderBy", "Parameters", "Parse", "Path", "Process", "ProcessStartInfo", "Query",
+    "RSA", "Random", "RandomNumberGenerator", "Read", "ReadAllBytes", "ReadAllText", "ReadLine",
+    "Redirect", "RedirectToAction", "Regex", "Remove", "Replace", "Request", "Response",
+    "Route", "Run", "SHA1", "SHA256", "SHA512", "SaveChanges", "Select", "Serialize", "Session",
+    "Split", "SqlCommand", "SqlConnection", "SqlDataReader", "SqlParameter", "Start", "Stream",
+    "StreamReader", "StreamWriter", "String", "StringBuilder", "Substring", "System", "Task",
+    "TimeSpan", "ToArray", "ToBase64String", "ToList", "ToString", "Trim", "TripleDES",
+    "TryParse", "Type", "UTF8", "UseAuthentication", "UseAuthorization", "UseHttps", "View",
+    "WebApplication", "Where", "Write", "WriteAllText", "WriteLine", "XmlDocument", "XmlReader",
+    "XmlSerializer",
+]
+
+[framework_contracts]
+"Application_Start" = "aspnet"
+"CompareTo" = "dotnet"
+"Configure" = "aspnet"
+"ConfigureServices" = "aspnet"
+"Current" = "dotnet"
+"Delete" = "aspnet"
+"Dispose" = "dotnet"
+"Down" = "efcore"
+"Equals" = "dotnet"
+"ExecuteAsync" = "dotnet"
+"Finalize" = "dotnet"
+"Get" = "aspnet"
+"GetEnumerator" = "dotnet"
+"GetHashCode" = "dotnet"
+"Index" = "aspnet"
+"Invoke" = "dotnet"
+"InvokeAsync" = "aspnet"
+"Main" = "dotnet"
+"MoveNext" = "dotnet"
+"OnActionExecuted" = "aspnet"
+"OnActionExecuting" = "aspnet"
+"OnConfiguring" = "efcore"
+"OnGet" = "aspnet"
+"OnModelCreating" = "efcore"
+"OnPost" = "aspnet"
+"Page_Load" = "webforms"
+"Post" = "aspnet"
+"Put" = "aspnet"
+"StartAsync" = "dotnet"
+"StopAsync" = "dotnet"
+"ToString" = "dotnet"
+"Up" = "efcore"
+
+[framework_decorators]
+"ApiController" = "aspnet"
+"Authorize" = "aspnet"
+"Column" = "efcore"
+"Fact" = "xunit"
+"Flags" = "dotnet"
+"HttpGet" = "aspnet"
+"HttpPost" = "aspnet"
+"JsonIgnore" = "json"
+"JsonProperty" = "json"
+"Key" = "efcore"
+"Obsolete" = "dotnet"
+"Required" = "dataannotations"
+"Route" = "aspnet"
+"Serializable" = "dotnet"
+"Table" = "efcore"
+"Test" = "nunit"
+"TestClass" = "mstest"
+"TestMethod" = "mstest"
+"Theory" = "xunit"
+
+[well_known]
+sources = [
+    "Cookies", "Form", "FromBody", "FromQuery", "FromRoute", "GetEnvironmentVariable",
+    "GetQueryNameValuePairs", "Headers", "Query", "QueryString", "ReadAllText", "ReadLine",
+    "Request",
+]
+sinks = [
+    "Combine", "CommandText", "Content", "CreateInstance", "Deserialize", "ExecuteNonQuery",
+    "ExecuteReader", "ExecuteScalar", "ExecuteSqlRaw", "FromSqlRaw", "GetType", "Invoke",
+    "Load", "LoadXml", "ReadAllText", "Redirect", "SqlCommand", "Start", "Write", "WriteAsync",
+]
+sanitisers = [
+    "AddWithValue", "Encode", "FromSqlInterpolated", "GetFileName", "GetFullPath", "HtmlEncode",
+    "IsLocalUrl", "Parameters", "Sanitize", "SqlParameter", "UrlEncode",
+]
+conventional_instances = ["logger", "log", "app"]
+
+[reflection]
+name_argument = 0
+attribute_calls = [
+    "GetField", "GetMethod", "GetProperty",
+]
+
+[dynamic_code]
+calls = [
+    "Eval", "Execute",
+]

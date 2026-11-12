@@ -44,6 +44,12 @@ _DATA_FILES: Final[Mapping[Language, str]] = {
     Language.TYPESCRIPT: "javascript.toml",
     Language.JAVA: "java.toml",
     Language.GO: "go.toml",
+    Language.KOTLIN: "kotlin.toml",
+    Language.PHP: "php.toml",
+    Language.CSHARP: "csharp.toml",
+    Language.RUBY: "ruby.toml",
+    Language.C: "c.toml",
+    Language.CPP: "cpp.toml",
 }
 _PACKAGE_KINDS: Final = frozenset({"stdlib", "third_party", "pseudo", "builtin"})
 _MAGIC_MIN_LENGTH: Final = 5  # "__x__" is the shortest dunder name

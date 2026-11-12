@@ -1,0 +1,12 @@
+template <typename cls_2>
+class cls_1 {
+public:
+    explicit cls_1(int param_2) : field_1(param_2), field_3(0) {}
+
+    cls_2 fn_1(int param_1) const { return field_2[(field_3 + param_1) % field_1]; }
+
+private:
+    cls_2 field_2[16];
+    int field_1;
+    int field_3;
+};
