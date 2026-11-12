@@ -91,13 +91,18 @@ step() {
   header "$title" "$say"; pause
   printf '%s$ codekavach %s%s\n' "$M" "$*" "$Z"
   local log="$OUT/step-$N.log" rc
-  (cd "$PROJ" && "${CK[@]}" "$@") >"$log" 2>&1; rc=$?
+  if [ "${CLEAN:-0}" = 1 ]; then
+    # the vault settings above exist only for the scan; checking the bare machine must not see them
+    (cd "$PROJ" && env -u CODEKAVACH_DEMO_PASSPHRASE -u CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE -u CODEKAVACH_PRIVACY__VAULT__PASSPHRASE "${CK[@]}" "$@") >"$log" 2>&1; rc=$?
+  else
+    (cd "$PROJ" && "${CK[@]}" "$@") >"$log" 2>&1; rc=$?
+  fi
   cat "$log"
   if [[ " $OKCODES " == *" $rc "* ]]; then OK=$((OK + 1)); proves "$claim"
   elif grep -qiE "No such command|No such option|not in this build|no adapter for provider|delivered by epic|is not available|unknown provider" "$log"; then
     SKIP=$((SKIP + 1)); printf '%s  skipped:%s not in this build yet (exit %d)\n' "$Y$B" "$Z" "$rc"
   else FAIL=$((FAIL + 1)); printf '%s  FAILED:%s exit code %d (log: %s)\n' "$R$B" "$Z" "$rc" "$log"; fi
-  OKCODES="0"
+  OKCODES="0"; CLEAN=0
 }
 
 printf '%s' "$B$C"
@@ -115,6 +120,7 @@ if [ "$PROVIDER" = mock ]; then printf '%s  the mock answers on this machine: no
 step "Version" "Start with what is installed." \
   "the CLI is installed and versioned" -- --version
 
+CLEAN=1
 step "Doctor: is this machine ready?" "One command checks runtime, parsers, storage, engines and providers." \
   "every prerequisite is verified up front; optional parts are warnings with an install hint, never silent gaps" -- doctor
 

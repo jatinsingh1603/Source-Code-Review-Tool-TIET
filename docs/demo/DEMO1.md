@@ -26,17 +26,21 @@ The demo ignores ambient `CODEKAVACH_*` settings and refuses any provider other 
 
 ## Manual path
 
-The same sequence, one command at a time, for when the audience wants to see each step. Run it from the repository root.
+The same sequence, one command at a time, for when the audience wants to see each step. [`scripts/demo-cli.sh`](../../scripts/demo-cli.sh) runs it for you on a throw-away copy of the fixture, with a pause between steps; its runbook is [`cli.md`](cli.md). By hand, from the repository root:
 
 ```console
-$ uv run codekavach scan fixtures/kavachbank --no-send
-$ uv run codekavach privacy inspect fixtures/kavachbank --list
-$ uv run codekavach privacy inspect fixtures/kavachbank --html inspect.html
-$ uv run codekavach privacy ledger verify fixtures/kavachbank --check-terms fixtures/kavachbank/ground-truth/terms.txt --include-blocked
-$ uv run codekavach report fixtures/kavachbank --format html --format pdf
+$ cp -r fixtures/kavachbank /tmp/kb && rm -rf /tmp/kb/ground-truth && mkdir /tmp/kb/.git
+$ export CODEKAVACH_HOME=/tmp/kb-home CODEKAVACH_DEMO_PASSPHRASE="$(openssl rand -hex 16)"
+$ export CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE=passphrase CODEKAVACH_PRIVACY__VAULT__PASSPHRASE=env:CODEKAVACH_DEMO_PASSPHRASE
+$ cd /tmp/kb
+$ uv run --project <repo> codekavach scan . --provider mock
+$ uv run --project <repo> codekavach privacy inspect . --list
+$ uv run --project <repo> codekavach privacy inspect . --html inspect.html
+$ uv run --project <repo> codekavach privacy ledger verify . --check-terms <repo>/fixtures/kavachbank/ground-truth/terms.txt --include-blocked
+$ uv run --project <repo> codekavach report . --format html,pdf
 ```
 
-`--include-blocked` matters with `--no-send`: nothing is sent, so without it every hit would be excused as "blocked, not sent". The one-command demo sets it.
+The scan exits 1 when it finds anything at or above the `high` threshold; that is the planted findings, not a fault (`--fail-on none` silences it). The vault needs a key source that works without a keyring prompt, hence the passphrase variables. `--include-blocked` matters when a payload is blocked by the guard: without it every hit in a blocked payload would be excused as "blocked, not sent". The one-command demo sets it.
 
 ## Talking points per exit criterion
 
