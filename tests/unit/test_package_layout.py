@@ -717,6 +717,8 @@ def test_init_files_do_not_import(package: str) -> None:
         assert all(name == "importlib.metadata" for name in imported), imported
     elif package in INIT_IMPORT_ALLOWLIST:
         # Own submodules and ``typing`` only: a deliberate lazy or re-exporting public API.
-        assert all(name.startswith(package + ".") or name == "typing" for name in imported), imported
+        assert all(name.startswith(package + ".") or name == "typing" for name in imported), (
+            imported
+        )
     else:
         assert not imported, f"{package}/__init__.py must not import anything: {imported}"
