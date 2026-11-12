@@ -84,6 +84,7 @@ function toTyped(type: string, data: Record<string, unknown>): ScanEvent | null 
         id: String(data.id ?? ""),
         severity: (data.severity as ScanEvent & { type: "finding" })["severity"] ?? "info",
         title: String(data.title ?? ""),
+        ...(data.phase === "verdict" ? { phase: "verdict" as const } : {}),
       };
     case "done":
       return { type, status: (data.status as "completed") ?? "completed" };

@@ -496,6 +496,13 @@ export type ScanEvent = (
   | { type: "stage"; name: string; status: "started" | "completed" | "skipped" | "failed" | string }
   | { type: "progress"; percent: number; message?: string }
   | { type: "log"; level: string; message: string }
-  | { type: "finding"; id: string; severity: Severity; title: string }
+  | {
+      type: "finding";
+      id: string;
+      severity: Severity;
+      title: string;
+      /** "verdict": a live model verdict on a candidate (id is the candidate id), not a finding. */
+      phase?: "verdict";
+    }
   | { type: "done"; status: ScanStatus }
 ) & { /** Server timestamp of the event (ISO 8601), when sent. */ at?: string };

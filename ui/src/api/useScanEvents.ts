@@ -125,7 +125,7 @@ export function reduceLive(s: LiveScan, a: Action): LiveScan {
     case "log":
       return { ...s, logs: [...s.logs.slice(-499), { at: a.at, level: e.level, message: e.message }] };
     case "finding":
-      if (s.findings.some((f) => f.id === e.id)) return s;
+      if (e.phase === "verdict" || s.findings.some((f) => f.id === e.id)) return s;
       return { ...s, findings: [...s.findings, { id: e.id, severity: e.severity, title: e.title }] };
     case "done": {
       const raw = Object.fromEntries(

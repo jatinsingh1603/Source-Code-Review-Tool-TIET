@@ -95,7 +95,7 @@ function stageCount(n: string, state: StageState, scan: Scan | undefined, events
   if (state === "wait") return "waiting";
   if (state === "skip") return n === "09" ? "off" : "skipped";
   if (state === "fail") return "failed";
-  const findings = events.filter((e) => e.type === "finding").length;
+  const findings = events.filter((e) => e.type === "finding" && !e.phase).length;
   switch (n) {
     case "01":
       return scan?.files ? `${fmtInt(scan.files)} files` : state === "run" ? "running" : "done";
