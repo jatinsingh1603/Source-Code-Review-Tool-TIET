@@ -10,7 +10,7 @@ worker is gone.
 """
 
 import threading
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from typing import TYPE_CHECKING
 
 from sqlalchemy import select
@@ -24,6 +24,9 @@ if TYPE_CHECKING:
     from codekavach.server.state import ServerState
 
 _log = get_logger("codekavach.server.jobs.runner")
+
+# How long a shutdown waits for cancelled jobs to reach their next checkpoint.
+SHUTDOWN_WAIT_SECONDS = 10.0
 
 
 class JobRunner:
@@ -102,8 +105,17 @@ class JobRunner:
             )
         return len(ids)
 
-    def shutdown(self) -> None:
-        """Cancel every job and stop the pool."""
+    def shutdown(self, timeout: float = SHUTDOWN_WAIT_SECONDS) -> None:
+        """Cancel every job, stop the pool and give running jobs ``timeout`` seconds to stop.
+
+        A cancelled job stops at its next checkpoint. Waiting for it keeps it from opening a
+        database connection after the caller has closed the database.
+        """
         for scan_id in self.active():
             self.cancel(scan_id)
+        with self._lock:
+            running = list(self._futures.values())
         self._pool.shutdown(wait=False, cancel_futures=True)
+        _, not_done = wait(running, timeout=timeout)
+        if not_done:
+            _log.warning("server_jobs_still_running", count=len(not_done))
