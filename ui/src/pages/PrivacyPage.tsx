@@ -196,7 +196,7 @@ export default function PrivacyPage() {
                 <h2>Invariant suite</h2>
                 <span className="xs faint">
                   {invariants?.recorded
-                    ? `${invariants.run_at ? `CI · ${fmtLong(invariants.run_at)} · ` : ""}${invariants.invariants.reduce((a, r) => a + (r.tests?.passed ?? 0) + (r.tests?.failed ?? 0), 0)} tests`
+                    ? `${invariants.run_at ? `Run ${fmtLong(invariants.run_at)} · ` : ""}${invariants.invariants.reduce((a, r) => a + (r.tests?.passed ?? 0) + (r.tests?.failed ?? 0), 0)} tests`
                     : "not recorded on this server"}
                 </span>
               </div>

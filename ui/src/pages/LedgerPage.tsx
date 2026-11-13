@@ -303,6 +303,23 @@ export default function LedgerPage() {
                         : "This scan recorded no payloads."}
                 </Empty>
               )}
+              {!ledgerQ.isLoading && entries.length > 0 && filtered.length === 0 && (
+                <Empty title="No records match">
+                  Nothing in this scan&apos;s {fmtInt(entries.length)} records matches the search or filters.{" "}
+                  <button
+                    type="button"
+                    className="linkbtn"
+                    style={{ color: "var(--accent)", textDecoration: "underline" }}
+                    onClick={() => {
+                      setQ("");
+                      setStatus([]);
+                      setProv([]);
+                    }}
+                  >
+                    Clear filters
+                  </button>
+                </Empty>
+              )}
               {!scanId && !scans.length && <Empty title="No scans yet" action="Run a scan" to="/projects/new" />}
             </div>
           )}

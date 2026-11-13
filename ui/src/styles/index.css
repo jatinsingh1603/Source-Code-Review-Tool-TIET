@@ -318,3 +318,18 @@ body {
   width: auto;
   height: auto;
 }
+
+/* The ledger verification banner stacks its cells on a phone instead of wrapping them. */
+@media (max-width: 760px) {
+  .ck .banner.split {
+    flex-direction: column;
+  }
+  .ck .banner.split > div {
+    flex: none !important;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .ck .banner.split > div:last-child {
+    border-bottom: 0;
+  }
+}
