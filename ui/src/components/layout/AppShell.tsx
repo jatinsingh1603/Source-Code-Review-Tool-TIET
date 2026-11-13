@@ -1,9 +1,9 @@
 import { Suspense, useEffect, useRef, useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useSession } from "@/app/session";
 import { useCurrentProject } from "@/app/project-context";
 import { ShellProvider, useShellOverrides } from "@/app/shell-context";
-import { useHealth, useProviders, useScans, useSettings, useVersion } from "@/api/queries";
+import { useHealth, useProviders, useScan, useScans, useSettings, useVersion } from "@/api/queries";
 import { api } from "@/api/client";
 import type { PrivacyLevel } from "@/api/types";
 import type { Permission } from "@/lib/permissions";
@@ -203,12 +203,15 @@ function LevelPill() {
   const { current } = useCurrentProject();
   const scans = useScans(current?.id).data;
   const settings = useSettings().data;
+  // A page showing one scan (?scan=) names that scan's level, not the latest one's.
+  const linked = useScan(useSearchParams()[0].get("scan") ?? undefined).data;
   const latest = scans ? pickDefault(scans) : undefined;
-  const lv = (latest?.privacy_level ?? settings?.default_privacy_level) as PrivacyLevel | undefined;
+  const shown = linked ?? latest;
+  const lv = (shown?.privacy_level ?? settings?.default_privacy_level) as PrivacyLevel | undefined;
   const text = o.levelPill ?? (lv ? `${lv} · ${LEVEL_NAME[lv] ?? ""}` : null);
   if (!text) return null;
   return (
-    <span className="pill priv" title="Privacy level of the latest scan">
+    <span className="pill priv" title={linked ? "Privacy level of the scan on screen" : "Privacy level of the latest scan"}>
       <Icon name="shield" />
       {text}
     </span>
