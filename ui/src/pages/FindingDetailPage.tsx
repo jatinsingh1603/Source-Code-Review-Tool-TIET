@@ -131,6 +131,8 @@ export default function FindingDetailPage() {
   const [dialog, setDialog] = useState<null | "assign" | "suppress" | "sync">(null);
   const [comment, setComment] = useState("");
   const [jump, setJump] = useState<number | null>(null);
+  /** A taint step picked in a file other than the one the excerpt shows. */
+  const [elsewhere, setElsewhere] = useState<TaintStep | null>(null);
   const review = useReviewFinding();
   const providers = useProviders().data;
   const reviewProviderId = f?.scan?.provider && f.scan.provider !== "none" ? f.scan.provider : undefined;
@@ -319,8 +321,11 @@ export default function FindingDetailPage() {
                     last={i === taint.length - 1}
                     onPick={() => {
                       setTab("real");
-                      setJump(t.line);
-                      setTimeout(() => document.getElementById(`L${t.line}`)?.scrollIntoView({ block: "center" }), 50);
+                      const here = !f.evidence?.code || t.path === f.evidence.code.path;
+                      setElsewhere(here ? null : t);
+                      setJump(here ? t.line : null);
+                      const target = here ? `L${t.line}` : "taint-elsewhere";
+                      setTimeout(() => document.getElementById(target)?.scrollIntoView({ block: "center" }), 50);
                     }}
                   />
                 ))}
@@ -347,6 +352,20 @@ export default function FindingDetailPage() {
               {tab === "saw" && <SawTab f={f} seq={seq} ledger={ledger} />}
               {tab === "real" && (
                 <div className="stack">
+                  {elsewhere && (
+                    <div id="taint-elsewhere">
+                      <CodeBlock
+                        title={<span className="mono">{elsewhere.path}</span>}
+                        titleRight={<span className="faint">Taint step · {TAINT_KIND[elsewhere.kind]?.label ?? capitalise(elsewhere.kind)}</span>}
+                        code={elsewhere.code ?? elsewhere.label}
+                        startLine={elsewhere.line}
+                        kindOf={() => (elsewhere.kind === "source" ? "src" : elsewhere.kind === "sink" ? "sink" : "hl")}
+                      />
+                      <p className="xs faint" style={{ marginTop: 6 }}>
+                        Only this line of <span className="mono">{elsewhere.path}</span> is kept with the finding; the excerpt below is the file the finding is reported in.
+                      </p>
+                    </div>
+                  )}
                   {f.evidence?.code ? (
                     <CodeBlock
                       title={<span className="mono">{f.evidence.code.path}</span>}
@@ -633,7 +652,6 @@ function describe(h: { action: string; from_status?: string | null; to_status?: 
 
 function TaintNode({ step, n, last, onPick }: { step: TaintStep; n: number; last: boolean; onPick: () => void }) {
   const k = TAINT_KIND[step.kind] ?? { cls: "", label: capitalise(step.kind) };
-  const file = step.path.split("/").slice(-2).join("/");
   return (
     <>
       <a
@@ -649,8 +667,8 @@ function TaintNode({ step, n, last, onPick }: { step: TaintStep; n: number; last
           {n} · {k.label}
         </span>
         <code>{step.code ?? step.label}</code>
-        <span className="tl">
-          {file}:{step.line}
+        <span className="tl" style={{ overflowWrap: "anywhere" }}>
+          {step.path}:{step.line}
         </span>
       </a>
       {!last && (
