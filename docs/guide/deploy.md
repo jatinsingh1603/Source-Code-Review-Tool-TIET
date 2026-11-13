@@ -53,7 +53,7 @@ The Ollama container has no published port; CodeKavach reaches it at `http://oll
 
 ```console
 $ docker compose --profile airgapped up -d codekavach-airgapped
-$ docker compose exec codekavach-airgapped codekavach scan /app/fixtures/kavachbank --provider mock
+$ docker compose exec codekavach-airgapped codekavach demo --out /data/demo-out
 ```
 
 `codekavach-airgapped` is attached only to the internal network `airgap`, which has no default route, and runs with `CODEKAVACH_PROFILE=airgapped` and no provider key. An internal network cannot publish a port: reach the dashboard through a reverse proxy attached to `airgap`, or use the CLI with `docker compose exec`. For a machine with no network at all, use the bundle ([`install.md`](install.md#air-gapped-bundle)).

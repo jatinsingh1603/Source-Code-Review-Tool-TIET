@@ -39,8 +39,8 @@ CodeKavach is running.
 | It is one container | `docker compose ps` |
 | It runs as non-root with a read-only filesystem | `docker compose exec codekavach id` and `docker inspect codekavach-codekavach-1 --format '{{.HostConfig.ReadonlyRootfs}}'` |
 | The engines are inside | `docker compose exec codekavach opengrep --version` and `... bandit --version` |
-| The CLI is the same tool | `docker compose exec codekavach codekavach doctor` |
-| Nothing needs the network | `docker compose --profile airgapped up -d codekavach-airgapped`, then `docker compose exec codekavach-airgapped codekavach scan /app/fixtures/kavachbank --provider mock` |
+| The CLI is the same tool | `docker compose exec -w /data codekavach codekavach doctor` (`-w /data`: the image is read-only, so the CLI works from the data volume) |
+| Nothing needs the network | `docker compose --profile airgapped up -d codekavach-airgapped`, then `docker compose exec codekavach-airgapped codekavach demo --out /data/demo-out` (scans the bundled sample with the mock provider and prints `zero_leak_passed  True`) |
 
 Build or pull the image the day before: the first build downloads base images and takes a few minutes.
 

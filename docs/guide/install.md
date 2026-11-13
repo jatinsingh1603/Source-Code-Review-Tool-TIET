@@ -27,7 +27,7 @@ Open `http://127.0.0.1:8080` and log in as `admin` with the password from `.env`
 The same image runs the CLI:
 
 ```console
-$ docker compose exec codekavach codekavach doctor
+$ docker compose exec -w /data codekavach codekavach doctor
 $ docker compose exec codekavach codekavach demo --out /data/demo-out
 ```
 
