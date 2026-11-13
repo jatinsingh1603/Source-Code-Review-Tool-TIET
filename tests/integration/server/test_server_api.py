@@ -15,9 +15,11 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from codekavach.core.pipeline.cancel import CancellationToken
 from codekavach.server import audit
 from codekavach.server.app import create_app
 from codekavach.server.config import ServerConfig
+from codekavach.server.jobs.scan import ScanJob, execute_scan
 
 pytest.importorskip("fastapi")
 
@@ -381,6 +383,29 @@ def test_cancel_a_queued_scan(server: tuple[TestClient, Any], admin: dict[str, s
         time.sleep(0.2)
         final = client.get(f"/api/v1/scans/{created['id']}", headers=admin).json()
     assert final["status"] == "cancelled"
+
+
+def test_a_job_cancelled_before_it_starts_records_cancelled(
+    server: tuple[TestClient, Any], admin: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The race behind a flaky CI run: the cancel came after a worker took the job, so the runner
+    # could not cancel the future, and the job used to return with the scan left "queued".
+    client, state = server
+    monkeypatch.setattr(state.runner, "submit", lambda scan_id: None)
+    projects = client.get("/api/v1/projects", headers=admin).json()
+    sample = next(item for item in projects if item["source"]["type"] == "sample")
+    created = client.post(
+        f"/api/v1/projects/{sample['id']}/scans", json={"provider": "mock"}, headers=admin
+    ).json()
+    assert created["status"] == "queued"
+    token = CancellationToken()
+    token.cancel("cancelled")
+    execute_scan(ScanJob(scan_id=created["id"], state=state, token=token))
+    final = client.get(f"/api/v1/scans/{created['id']}", headers=admin).json()
+    assert final["status"] == "cancelled"
+    assert final["finished_at"]
+    done = [event for event in _events(client, created["id"], admin) if event["type"] == "done"]
+    assert [event["data"]["status"] for event in done] == ["cancelled"]
 
 
 SEVERITY_RANK = {"critical": 5, "high": 4, "medium": 3, "low": 2, "info": 1}

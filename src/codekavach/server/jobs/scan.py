@@ -328,26 +328,35 @@ def execute_scan(job: ScanJob) -> None:
     """Run the scan ``job.scan_id`` end to end; every failure ends in a ``failed`` status."""
     state = job.state
     log = state.hub.log(job.scan_id)
-    with state.db.transaction() as session:
-        row = session.get(ScanRow, job.scan_id)
-        if row is None:
-            return
-        if row.status == "cancelled" or job.token.is_cancelled:
-            return
-        project = session.get(Project, row.project_id)
-        if project is None:
-            row.status, row.error = "failed", "project deleted"
-            return
-        row.status, row.started_at, row.stage, row.progress = "running", utcnow(), "intake", 1
-        session.expunge(project)
-        scan = {
-            "level": row.privacy_level,
-            "provider": row.provider,
-            "model": row.model,
-            "send": row.send,
-            "overrides": _overrides(row, state.provider_overrides()),
-            "workspace": row.workspace,
-        }
+    cancelled_before_start = False
+    try:
+        with state.db.transaction() as session:
+            row = session.get(ScanRow, job.scan_id)
+            if row is None or row.status == "cancelled":
+                return
+            if cancelled_before_start := job.token.is_cancelled:
+                # Cancelled after a worker took the job but before it started: the runner could
+                # not cancel the future, so the job records the final status itself.
+                row.status, row.finished_at = "cancelled", utcnow()
+                return
+            project = session.get(Project, row.project_id)
+            if project is None:
+                row.status, row.error = "failed", "project deleted"
+                return
+            row.status, row.started_at, row.stage, row.progress = "running", utcnow(), "intake", 1
+            session.expunge(project)
+            scan = {
+                "level": row.privacy_level,
+                "provider": row.provider,
+                "model": row.model,
+                "send": row.send,
+                "overrides": _overrides(row, state.provider_overrides()),
+                "workspace": row.workspace,
+            }
+    finally:
+        # After the commit, so a client that sees the event also reads the final status.
+        if cancelled_before_start:
+            log.append("done", {"status": "cancelled", "error": None})
     paths = ScanPaths(Path(str(scan["workspace"])))
     progress = _Progress(job, log)
     try:
