@@ -80,8 +80,22 @@ const EXT_LANG: Record<string, string> = {
   lock: "Dependencies",
 };
 
+/** How a language id from the server is written (anything else is capitalised). */
+const LANG_NAME: Record<string, string> = {
+  javascript: "JavaScript",
+  typescript: "TypeScript",
+  yaml: "YAML",
+  json: "JSON",
+  toml: "TOML",
+  hcl: "Terraform",
+  php: "PHP",
+  csharp: "C#",
+  dockerfile: "Dockerfile",
+};
+
 export function languageOf(f: Finding): string {
-  if (f.language) return f.language.charAt(0).toUpperCase() + f.language.slice(1);
+  const id = f.language?.toLowerCase();
+  if (id && id !== "unknown" && id !== "text") return LANG_NAME[id] ?? id.charAt(0).toUpperCase() + id.slice(1);
   const p = locationOf(f)?.path ?? "";
   if (/dockerfile/i.test(p)) return "IaC";
   const ext = p.split(".").pop()?.toLowerCase() ?? "";
@@ -226,7 +240,10 @@ export default function FindingsPage() {
       const v = valueOf[k](f);
       m.set(v, (m.get(v) ?? 0) + 1);
     }
-    return [...m.entries()].map(([value, count]) => ({ value, count, label: label ? label(value) : value }));
+    // Most frequent first, then in natural order (CWE-22 before CWE-200), "—" last.
+    return [...m.entries()]
+      .sort(([a, x], [b, y]) => (a === "—" ? 1 : b === "—" ? -1 : y - x || a.localeCompare(b, undefined, { numeric: true })))
+      .map(([value, count]) => ({ value, count, label: label ? label(value) : value }));
   };
   const sevOrder: Severity[] = ["critical", "high", "medium", "low", "info"];
   const anyFilter =
