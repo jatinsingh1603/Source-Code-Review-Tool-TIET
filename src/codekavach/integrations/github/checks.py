@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Final
 
 from codekavach.integrations.github.findings import FindingView
+from codekavach.integrations.github.issues import md_code, md_text
 from codekavach.integrations.github.transport import GitHubClient, GitHubError
 
 ANNOTATION_BATCH: Final = 50
@@ -112,10 +113,10 @@ def job_summary(findings: Sequence[FindingView]) -> str:
     lines = ["## CodeKavach security review", "", f"{len(active)} open finding(s).", ""]
     if active:
         lines += ["| Severity | Finding | Location |", "|---|---|---|"]
-        lines += [
-            f"| {f.severity} | {f.title.replace('|', '/')} | `{f.path}:{f.start_line}` |"
-            for f in active[:100]
-        ]
+        for f in active[:100]:
+            title = md_text(f.title.replace("\n", " "))
+            where = md_code(f"{f.path}:{f.start_line}").replace("|", "\\|")
+            lines.append(f"| {md_text(f.severity)} | {title} | `{where}` |")
     return "\n".join(lines) + "\n"
 
 

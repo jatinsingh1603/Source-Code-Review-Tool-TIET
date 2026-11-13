@@ -48,7 +48,22 @@ codekavach findings "$target" --format sarif > "$out/codekavach.sarif"
 codekavach --json findings "$target" > "$out/findings.json"
 
 python - "$out/findings.json" "$fail_on" <<'PY'
-import json, os, sys
+import json, os, re, sys
+
+
+def cell(value):
+    """Untrusted text as one literal table cell: no HTML, links, images, mentions or breaks."""
+    value = re.sub(r"[\r\n]+", " ", str(value)).replace("\\", "\\\\").replace("|", "\\|")
+    value = value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    value = re.sub(r"([\[\]!*_~])", r"\\\1", value.replace("`", "'"))
+    return re.sub(r"@(?=\w)", "@​", value)
+
+
+def code(value):
+    """Untrusted text inside a one-backtick code span in a table cell."""
+    return re.sub(r"[\r\n]+", " ", str(value)).replace("`", "'").replace("|", "\\|")
+
+
 data = json.load(open(sys.argv[1]))["data"]
 order = ["info", "low", "medium", "high", "critical"]
 sev = [f["severity"] for f in data["findings"] if f["status"] in ("open", "confirmed")]
@@ -73,8 +88,8 @@ if summary:
         handle.write("| Severity | Finding | Location |\n|---|---|---|\n")
         for f in sorted(data["findings"], key=lambda f: -order.index(f["severity"]))[:50]:
             loc = f["locations"][0]
-            title = f["title"].replace("|", "/")
-            handle.write(f"| {f['severity']} | {title} | `{loc['path']}:{loc['start_line']}` |\n")
+            where = code(f"{loc['path']}:{loc['start_line']}")
+            handle.write(f"| {cell(f['severity'])} | {cell(f['title'])} | `{where}` |\n")
 print(f"{len(data['findings'])} findings, highest {top}, gate {gate}: {lines['outcome']}")
 PY
 

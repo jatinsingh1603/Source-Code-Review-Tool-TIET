@@ -72,7 +72,7 @@ def render_title(finding: FindingView) -> str:
     return f"[{finding.severity.upper()}] {finding.title}"[:240]
 
 
-def _text(value: str) -> str:
+def md_text(value: str) -> str:
     """Untrusted free text shown literally: no links, images, HTML, comments or @mentions.
 
     Descriptions and remediation can come from model output that scanned code may steer, so
@@ -85,7 +85,7 @@ def _text(value: str) -> str:
     return re.sub(r"@(?=\w)", "@\u200b", value)
 
 
-def _code(value: str) -> str:
+def md_code(value: str) -> str:
     """A value for a single-backtick code span: one line, no backtick to break out."""
     return value.replace("`", "'").replace("\r", " ").replace("\n", " ")
 
@@ -99,26 +99,26 @@ def _last(pattern: re.Pattern[str], body: str) -> str | None:
 def render_body(finding: FindingView) -> str:
     """Issue body without markers: masked, metadata only, untrusted text escaped."""
     parts = [
-        f"**Severity:** {_text(finding.severity)}  ",
-        f"**Location:** `{_code(finding.path)}:{finding.start_line}`  ",
+        f"**Severity:** {md_text(finding.severity)}  ",
+        f"**Location:** `{md_code(finding.path)}:{finding.start_line}`  ",
     ]
     if finding.cwe:
-        parts.append(f"**CWE:** {_text(', '.join(finding.cwe))}  ")
+        parts.append(f"**CWE:** {md_text(', '.join(finding.cwe))}  ")
     if finding.owasp:
-        parts.append(f"**OWASP:** {_text(', '.join(finding.owasp))}  ")
+        parts.append(f"**OWASP:** {md_text(', '.join(finding.owasp))}  ")
     if finding.rule_id:
-        parts.append(f"**Rule:** `{_code(finding.rule_id)}`  ")
+        parts.append(f"**Rule:** `{md_code(finding.rule_id)}`  ")
     if finding.confidence:
-        parts.append(f"**Confidence:** {_text(finding.confidence)}  ")
+        parts.append(f"**Confidence:** {md_text(finding.confidence)}  ")
     if finding.description:
-        parts += ["", "### Description", _text(finding.description)]
+        parts += ["", "### Description", md_text(finding.description)]
     if finding.snippet:
         code = "\n".join(f"{n:>4} | {mask_text(t)}" for n, t in finding.snippet)
         parts += ["", "### Code (secrets masked)", "```", code, "```"]
     if finding.remediation:
-        parts += ["", "### Remediation", _text(finding.remediation)]
+        parts += ["", "### Remediation", md_text(finding.remediation)]
     if finding.references:
-        parts += ["", "### References", *(f"- {_text(r)}" for r in finding.references if r)]
+        parts += ["", "### References", *(f"- {md_text(r)}" for r in finding.references if r)]
     parts += ["", "_Raised by CodeKavach. Closed automatically when the finding is resolved._"]
     return "\n".join(parts)
 
