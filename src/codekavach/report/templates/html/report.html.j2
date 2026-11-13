@@ -310,7 +310,7 @@
   <tr><th>Lines analysed</th><td>{{ '{:,}'.format(doc.coverage.lines_analysed) }}</td></tr>
   {% for lang, count in doc.coverage.by_language %}<tr><th>Findings in {{ lang }}</th><td>{{ count }}</td></tr>{% endfor %}
   <tr><th>Candidates</th><td>{{ doc.coverage.candidates_total }} (reviewed by model: {{ doc.coverage.candidates_reviewed_by_llm }})</td></tr>
-  {% for code, count in doc.coverage.not_reviewed %}<tr><th>Not reviewed: {{ code }}</th><td>{{ count }}</td></tr>{% endfor %}
+  {% for code, count in doc.coverage.not_reviewed %}<tr><th>Not sent to the model: {{ code | not_reviewed_label }}</th><td>{{ count }}</td></tr>{% endfor %}
 </table>
 {% if doc.coverage.files_reviewed %}
 <h3 id="appendix-files">C. Files reviewed</h3>

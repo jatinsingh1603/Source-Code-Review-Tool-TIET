@@ -25,6 +25,7 @@ from markupsafe import Markup, escape
 from codekavach.core.models.enums import Severity
 from codekavach.core.models.evidence import Evidence
 from codekavach.report.model.document import ReportDocument
+from codekavach.report.model.scope import not_reviewed_label
 from codekavach.report.render.charts import bar_chart, donut, risk_matrix, severity_chart
 from codekavach.report.render.snippets import css_rules, token_rows
 from codekavach.report.render.theme import DEFAULT_THEME, Theme
@@ -210,6 +211,7 @@ def report_environment() -> Environment:
     env.globals["snippet_rows"] = token_rows
     env.globals["zip"] = zip
     env.filters["disclosure_label"] = disclosure_label
+    env.filters["not_reviewed_label"] = not_reviewed_label
     env.globals["likelihood_text"] = LIKELIHOOD_TEXT
     return env
 

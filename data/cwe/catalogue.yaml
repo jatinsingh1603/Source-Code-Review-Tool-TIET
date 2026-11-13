@@ -59,7 +59,8 @@ weaknesses:
   - {id: 242, name: Use of Inherently Dangerous Function, abstraction: base, family: memory-safety, asvs: [V5.4.1], capec: [],
      summary: "A function that can never be used safely (for example gets) is called."}
   - {id: 250, name: Execution with Unnecessary Privileges, abstraction: base, family: security-misconfiguration, owasp: A05, owasp_basis: derived, asvs: [V14.2.6], capec: [104, 470, 69],
-     summary: "Code runs with more privileges than it needs (for example a root or privileged container), amplifying any other weakness."}
+     summary: "Code runs with more privileges than it needs (for example a root or privileged container), amplifying any other weakness.",
+     remediation: "Run the component as a non-root user, drop the privileged flag and host mounts, and grant only the Linux capabilities it needs. Enforce least privilege with admission policies (for example Pod Security Standards) and image linting in CI."}
   - {id: 252, name: Unchecked Return Value, abstraction: base, family: input-validation, asvs: [], capec: [],
      summary: "The return value of a function is not checked, so a failure goes unnoticed."}
   - {id: 259, name: Use of Hard-coded Password, abstraction: variant, family: hardcoded-secret, owasp: A07, owasp_basis: official, asvs: [V2.10.4, V6.4.1], capec: [191, 70],

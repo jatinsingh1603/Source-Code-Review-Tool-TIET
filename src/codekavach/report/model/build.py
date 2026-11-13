@@ -53,7 +53,13 @@ from codekavach.report.model.method import (
     default_rating_method,
     default_steps,
 )
-from codekavach.report.model.scope import Coverage, EngagementScope, Limitation, Target
+from codekavach.report.model.scope import (
+    Coverage,
+    EngagementScope,
+    Limitation,
+    Target,
+    not_reviewed_label,
+)
 from codekavach.report.narrative import AggregatedFacts, build_roadmap, executive_summary
 
 _log = get_logger(__name__)
@@ -302,7 +308,9 @@ def _limitations(
             )
         )
     if ledger and ledger.not_reviewed:
-        failed = ", ".join(f"{code} ({count})" for code, count in ledger.not_reviewed)
+        failed = "; ".join(
+            f"{not_reviewed_label(code)} ({count})" for code, count in ledger.not_reviewed
+        )
         items.append(
             Limitation(
                 id=f"L-{len(items) + 1}",
@@ -493,7 +501,10 @@ def build_report_document(
         files_discovered=len(files) or files_analysed,
         files_analysed=files_analysed,
         lines_analysed=lines_analysed,
-        by_language=tuple((lang.display_name, count) for lang, count in summary.by_language),
+        by_language=tuple(
+            (lang.display_name if lang.value != "unknown" else "other files", count)
+            for lang, count in summary.by_language
+        ),
         candidates_total=summary.candidates_total,
         candidates_reviewed_by_llm=summary.candidates_reviewed_by_llm,
         not_reviewed=ledger_summary.not_reviewed if ledger_summary else (),

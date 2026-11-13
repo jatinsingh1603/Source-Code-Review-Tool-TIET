@@ -61,3 +61,14 @@ class Limitation(KavachModel):
     id: str
     kind: str
     statement: str
+
+
+NOT_REVIEWED_LABELS: dict[str, str] = {
+    "privacy_slice_failed": "no code slice to send (secret, dependency or configuration finding)",
+    "privacy_pseudonymise_failed": "pseudonymisation failed, so nothing was sent (fail closed)",
+}
+
+
+def not_reviewed_label(code: str) -> str:
+    """Why candidates were not sent to the model, worded for the reader."""
+    return NOT_REVIEWED_LABELS.get(code, code.replace("_", " "))
