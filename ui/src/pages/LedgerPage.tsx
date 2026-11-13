@@ -294,7 +294,13 @@ export default function LedgerPage() {
               </table>
               {!ledgerQ.isLoading && scanId && entries.length === 0 && (
                 <Empty title="No payloads left this machine">
-                  {scan?.privacy_level === "L0" ? "This scan ran at L0. The ledger holds no payloads." : "This scan recorded no payloads."}
+                  {scan?.privacy_level === "L0"
+                    ? "This scan ran at L0. The ledger holds no payloads."
+                    : scan?.privacy_level === "L4" && privacy?.withheld
+                      ? `At L4 only abstract facts may leave. This build does not prepare L4 facts, so it fails closed: all ${fmtInt(privacy.withheld)} candidates were withheld and nothing was sent.`
+                      : privacy?.withheld
+                        ? `Policy withheld all ${fmtInt(privacy.withheld)} candidates, so nothing was sent.`
+                        : "This scan recorded no payloads."}
                 </Empty>
               )}
               {!scanId && !scans.length && <Empty title="No scans yet" action="Run a scan" to="/projects/new" />}

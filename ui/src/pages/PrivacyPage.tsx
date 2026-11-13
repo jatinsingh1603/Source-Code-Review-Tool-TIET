@@ -204,7 +204,7 @@ export default function PrivacyPage() {
                 const r = invariants?.invariants.find((x) => x.id === id);
                 let res: React.ReactNode = <span className="xs faint">not recorded</span>;
                 if (r && invariants?.recorded) res = r.passed ? "pass" : <span className="note-w">Fail</span>;
-                else if (id === "I6" && p) res = p.zero_leak.passed ? "pass" : <span className="note-w">{p.zero_leak.checked ? "Fail" : "Not run"}</span>;
+                else if (id === "I6" && p) res = p.zero_leak.passed ? "pass" : p.payloads === 0 ? <span className="xs faint">no payloads</span> : <span className="note-w">{p.zero_leak.checked ? "Fail" : "Not run"}</span>;
                 else if (id === "I4" && p) res = <span className="xs faint">{fmtInt(p.blocked)} blocked</span>;
                 return (
                   <Guard key={id} id={id} result={res}>
@@ -310,7 +310,7 @@ export default function PrivacyPage() {
                     {effective === "never-send"
                       ? "Nothing from this file is sent."
                       : effective === "L4"
-                        ? "This file sends data-flow facts only, never code."
+                        ? "At L4 only data-flow facts may leave, never code; where facts cannot be prepared the candidate is withheld (fails closed)."
                         : effective === "L0"
                           ? "Nothing from this file leaves the machine."
                           : effective
@@ -430,8 +430,9 @@ export default function PrivacyPage() {
                   <dt>Levels used</dt>
                   <dd className="row">
                     {Object.entries(p.levels_by_candidate ?? { [p.level]: p.payloads }).map(([l, n]) => (
-                      <LevelBadge key={l} level={l} label={`${l} · ${n}`} />
+                      <LevelBadge key={l} level={l} label={`${l} · ${fmtInt(n)} candidate${n === 1 ? "" : "s"}`} />
                     ))}
+                    {p.withheld ? <LevelBadge level="never-send" label={`withheld · ${fmtInt(p.withheld)}`} /> : null}
                     {p.blocked ? <LevelBadge level="never-send" label={`blocked · ${p.blocked}`} /> : null}
                   </dd>
                   <dt>Payloads</dt>
@@ -442,7 +443,13 @@ export default function PrivacyPage() {
                   <dt>Checks</dt>
                   <dd className="sm">
                     Ledger chain {p.chain_ok ? "verified" : "broken"}; zero-leak check ({fmtInt(p.zero_leak.checked)} terms){" "}
-                    {p.zero_leak.passed ? "passed" : p.zero_leak.checked ? "failed" : "not run"}
+                    {p.zero_leak.passed
+                      ? "passed"
+                      : p.payloads === 0
+                        ? "had nothing to search: no payloads were recorded"
+                        : p.zero_leak.checked
+                          ? `failed (${fmtInt(p.zero_leak.occurrences)} found)`
+                          : "not run"}
                   </dd>
                   <dt>Ledger head</dt>
                   <dd>
