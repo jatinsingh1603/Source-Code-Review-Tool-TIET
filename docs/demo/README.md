@@ -25,7 +25,7 @@ Install guides: [`docs/guide/install.md`](../guide/install.md) and [`docs/guide/
 |-----|------|--------------|-----|
 | 0-3 | The problem | One slide or the README intro | Reviewing code with an LLM is useful, and sending the code to a provider is exactly what a bank, a defence contractor or a university lab cannot do. We build the review so the provider never sees what it does not need to. |
 | 3-7 | The privacy approach | Levels table (below), then `codekavach privacy inspect` page | Five levels, L0 to L4. L3 is the default. Show what leaves the machine, not a promise about it. |
-| 7-15 | Live dashboard scan, real model (start it at minute 7 and keep talking: it took about 4 minutes in rehearsal, 16 payloads and 12 findings reviewed by `gpt-5.6-sol`) ([`DEMO2.md`](DEMO2.md) sections 3 to 5) | Dashboard: start a scan of the KavachBank project at L3 with the `agentrouter` provider | The findings carry the real file, line and name, although the model only saw pseudonyms; the mapping is restored locally from the vault. |
+| 7-15 | Live dashboard scan, real model (start it at minute 3, before the privacy slides, and come back to it: a quick review of 8 candidates took 14 min 37 s on 13 Nov; see [Real-model timings](#real-model-timings)) ([`DEMO2.md`](DEMO2.md) sections 3 to 5) | Dashboard: start a scan of the KavachBank project at L3 with the `agentrouter` provider, Model review "Quick · the 8 most severe candidates"; verdicts appear in the log one by one | The findings carry the real file, line and name, although the model only saw pseudonyms; the mapping is restored locally from the vault. |
 | 15-20 | Privacy Centre ([`DEMO2.md`](DEMO2.md) section 6) | Side by side (original vs payload), the egress ledger, the zero-leak check | The ledger is hash-chained: every payload that was sent, or blocked, is recorded. The check shows listed terms do not occur verbatim in any payload. Then state what it does not show (see questions). |
 | 20-23 | Report ([`DEMO2.md`](DEMO2.md) section 7) | Open the PDF from the dashboard or `codekavach report` | Audit-style: executive summary, risk matrix, evidence, remediation, privacy attestation. Also SARIF, JSON, CSV, XLSX, Markdown, DOCX. |
 | 23-26 | CI and VS Code ([`github-actions.md`](github-actions.md), [`vscode.md`](vscode.md)) | A finished GitHub Actions run with its Security-tab alerts; the extension showing the same findings in the editor | Same core everywhere. GitHub-hosted runs use the mock provider: no key, nothing leaves the runner. |
@@ -89,6 +89,27 @@ Honest notes for the presenter, as observed with the engines of the day:
 - The sample projects are small and synthetic, with ground truth in `fixtures/*/ground-truth/manifest.yaml`. The scanner finds most planted flaws, but not all, and it flags the safe code in Shopfront. That is a true statement about detection quality on small samples, and a good moment to show triage. Do not present it as a benchmark; `codekavach eval` is the benchmark.
 - L4 is not seeded: it is not delivered in every build and fails closed.
 - Scans with the mock provider say so in the summary: the ledger shows what **would** have been sent.
+
+## Real-model timings
+
+Measured on 13 Nov 2026 from the dashboard (WSL laptop, KavachBank sample, L3, `agentrouter` / `gpt-5.6-sol`, Model review "Quick · the 8 most severe candidates"). The gateway answers one request at a time per key and reasons at length, so the time is almost all model time.
+
+| Step | Time |
+|------|------|
+| New scan, **Test provider** | 15.7 s |
+| Deterministic stages (ingest to privacy layer, 29 files, 59 findings) | 7 s |
+| First verdict in the live log, after **Start scan** | 81 s |
+| Each further verdict | 23 s to 3 min 51 s (about 1 min 50 s on average) |
+| Model stage, 8 verdicts | 14 min 25 s |
+| Whole scan | 14 min 37 s |
+| **Review with model** on one finding page, first time | 53 s |
+| The same finding reviewed again (answered from the scan's cache, no egress, no ledger entry) | 2.6 s |
+
+What this means on the day:
+
+- Start the real scan early (minute 3) and talk over it; the verdicts stream into the log as they arrive. If time is short, open a real scan run before the session instead and say so.
+- A new scan of the same code is **not** answered from the cache: every server scan gets a fresh pseudonym salt (less linkability between scans), so its payloads differ and the model is asked again. Only a repeated **Review with model** on the same finding is served from the cache.
+- Candidates beyond the eight keep their deterministic evidence; open any of them and press **Review with model** (auditor or admin) to ask about that one finding live, in about a minute.
 
 ## Fallback ladder
 

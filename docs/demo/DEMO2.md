@@ -42,7 +42,7 @@ Providers (side navigation, under Deliver): press **Run health checks**; the `ag
 1. With **KavachBank (sample)** selected in the top bar, Overview, **New scan**.
 2. Privacy level **L3** (the default: slices around each candidate, secrets as typed placeholders, identifiers pseudonymised).
 3. Provider `agentrouter`, model `gpt-5.6-sol`, **No-send (dry run)** off.
-4. **Start scan**. The live view shows the nine-stage pipeline with counts, the egress meter (payloads, bytes, secrets, listed terms) and the streaming log. A scan of the sample takes a minute or two; each model call takes about four seconds.
+4. **Start scan**. The live view shows the nine-stage pipeline with counts, the egress meter (payloads, bytes, secrets, listed terms) and the streaming log. Leave **Model review** at "Quick · the 8 most severe candidates". The deterministic stages take seconds; the gateway then answers one request at a time, about one to two minutes each, so the scan takes about 15 minutes (timings in [the hub](README.md#real-model-timings)). Each verdict appears in the log as it lands.
 
 Say while it runs: the deterministic engines (own rules, taint, Opengrep, Bandit) find the candidates; the model only reviews a sanitised slice of each one and says whether it is exploitable and why.
 
