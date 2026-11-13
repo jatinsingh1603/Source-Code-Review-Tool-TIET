@@ -90,8 +90,13 @@ RESERVED_ENV_MEANINGS: Mapping[str, str] = MappingProxyType(
         "CODEKAVACH_LOG_LEVEL": "Lowest level of log events on stderr.",
         "CODEKAVACH_LOG_FORMAT": "Format of log events on stderr: console or json.",
         "CODEKAVACH_LOG_THIRD_PARTY": "Show log events of third-party libraries when true.",
-        "CODEKAVACH_ADMIN_PASSWORD": "Server: password of the admin account made on first start.",
-        "CODEKAVACH_AGENTROUTER_API_KEY": "Secret: API key of the agentrouter provider.",
+        # The two names below are variable names, not values.
+        "CODEKAVACH_ADMIN_PASSWORD": (  # pragma: allowlist secret
+            "Server: password of the admin account made on first start."
+        ),
+        "CODEKAVACH_AGENTROUTER_API_KEY": (  # pragma: allowlist secret
+            "Secret: API key of the agentrouter provider."
+        ),
         "CODEKAVACH_SERVER_DATA_DIR": "Server: data directory (the --data-dir option).",
         "CODEKAVACH_SERVER_VAULT_PASSPHRASE": "Secret: vault passphrase of the server.",
         "CODEKAVACH_PERF_FACTOR": "Test harness: multiplier for performance budgets.",
