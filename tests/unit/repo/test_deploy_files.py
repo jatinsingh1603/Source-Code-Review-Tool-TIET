@@ -78,6 +78,17 @@ def test_runtime_is_non_root_with_http_healthcheck() -> None:
     assert "gcc" not in runtime
 
 
+def test_documented_docker_run_publishes_on_loopback_only() -> None:
+    # The image starts with the default admin password unless one is set; a bare `-p 8080:8080`
+    # would publish that login on every host interface.
+    runs = [
+        line for line in DOCKERFILE.read_text(encoding="utf-8").splitlines() if "docker run" in line
+    ]
+    assert runs
+    for line in runs:
+        assert re.search(r"-p 127\.0\.0\.1:\d+:8080\b", line), line
+
+
 def test_compose_holds_no_secret_value_and_binds_localhost() -> None:
     compose = yaml.safe_load(COMPOSE.read_text(encoding="utf-8"))
     service = compose["services"]["codekavach"]

@@ -3,7 +3,8 @@
 # CodeKavach server image (E39-02): API server + web dashboard + CLI in one image.
 #
 #   docker build -f deploy/docker/Dockerfile -t codekavach:local .
-#   docker run --rm -p 8080:8080 -v ck-data:/data codekavach:local
+#   docker run --rm -p 127.0.0.1:8080:8080 -v ck-data:/data codekavach:local
+#   (loopback only: the admin password defaults to kavach-admin until CODEKAVACH_ADMIN_PASSWORD is set)
 #
 # Stages
 #   uv       the pinned uv binary
