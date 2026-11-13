@@ -11,6 +11,8 @@ export interface ShellOverrides {
   projectIcon?: boolean;
   levelPill?: string;
   hideProvider?: boolean;
+  /** The provider pill text (the scan page shows the scan's own provider). */
+  providerPill?: string;
 }
 
 interface Ctx {

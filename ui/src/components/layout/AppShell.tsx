@@ -232,7 +232,7 @@ function ProviderPill() {
   const providers = useProviders().data;
   if (o.hideProvider || !settings) return null;
   const p = providers?.find((x) => x.id === settings.default_provider);
-  return <span className="pill">{p?.name ?? settings.default_provider}</span>;
+  return <span className="pill">{o.providerPill ?? p?.name ?? settings.default_provider}</span>;
 }
 
 function Bell() {

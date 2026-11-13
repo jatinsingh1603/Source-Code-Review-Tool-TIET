@@ -5,6 +5,8 @@ import { subscribeScanEvents, type StreamState } from "@/api/events";
 import { qk, useCancelScan, usePrivacy, useProject, useProviders, useScan } from "@/api/queries";
 import type { PrivacySummary, Scan, ScanEvent } from "@/api/types";
 import { useSession } from "@/app/session";
+import { useShell } from "@/app/shell-context";
+import { useCurrentProject } from "@/app/project-context";
 import { fmtBytes, fmtClock, fmtElapsed, fmtInt, fmtTime, findingLabel, LEVEL_NAME, scanLabel, secondsBetween } from "@/lib/display";
 import { providerName, shortProviderName } from "@/lib/domain";
 import {
@@ -166,6 +168,15 @@ export default function ScanPage() {
   const [confirm, setConfirm] = useState(false);
   const [now, setNow] = useState(Date.now());
   const wasRunning = useRef(false);
+  const { setCurrentId } = useCurrentProject();
+  // The top bar describes this scan: its project, level and provider.
+  useShell({
+    levelPill: scan ? `${scan.privacy_level} · ${LEVEL_NAME[scan.privacy_level] ?? ""}` : undefined,
+    providerPill: scan && scan.provider && scan.provider !== "none" ? providerName(scan.provider, providers) : undefined,
+  });
+  useEffect(() => {
+    if (scan?.project_id) setCurrentId(scan.project_id);
+  }, [scan?.project_id, setCurrentId]);
 
   useEffect(() => {
     if (!running) return;
@@ -180,6 +191,7 @@ export default function ScanPage() {
       void qc.invalidateQueries({ queryKey: qk.scan(id!) });
       void qc.invalidateQueries({ queryKey: qk.scansAll });
       void qc.invalidateQueries({ queryKey: qk.stats });
+      void qc.invalidateQueries({ queryKey: qk.health });
       if (doneEv.status === "completed") toast.success("Scan completed", "Findings and the egress ledger are ready.");
       // A cancel the viewer asked for is confirmed by the cancel button's own toast.
       else if (doneEv.status === "failed") toast.error("Scan failed", scan?.error ?? undefined);

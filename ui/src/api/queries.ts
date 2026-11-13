@@ -49,7 +49,7 @@ export const qk = {
 type Opts<T> = Omit<UseQueryOptions<T, Error, T, readonly unknown[]>, "queryKey" | "queryFn">;
 
 export const useHealth = () =>
-  useQuery({ queryKey: qk.health, queryFn: endpoints.health, staleTime: 60_000, retry: false });
+  useQuery({ queryKey: qk.health, queryFn: endpoints.health, staleTime: 15_000, refetchInterval: 20_000, retry: false });
 export const useAudit = (enabled = true) =>
   useQuery({ queryKey: ["audit"], queryFn: () => endpoints.audit(50), enabled, retry: false });
 /** An endpoint from the design's API gaps; `null` data means the server does not have it yet. */
@@ -166,6 +166,8 @@ export function useStartScan() {
       qc.setQueryData(qk.scan(scan.id), scan);
       void qc.invalidateQueries({ queryKey: qk.scansAll });
       void qc.invalidateQueries({ queryKey: qk.projects });
+      // The network posture turns online while a scan with a remote provider runs.
+      void qc.invalidateQueries({ queryKey: qk.health });
     },
   });
 }
