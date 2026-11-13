@@ -81,6 +81,9 @@ class ServerConfig:
     max_compression_ratio: int = 200
     git_allowed_hosts: tuple[str, ...] = ("github.com", "gitlab.com", "bitbucket.org")
     allow_local_paths: bool = True
+    # The only secret references a GitHub sync may name: any other reference could make the
+    # server send another secret (a provider key, the vault passphrase) to GitHub as a token.
+    github_token_refs: tuple[str, ...] = ("env:GITHUB_TOKEN", "env:GH_TOKEN")
     seed: bool = True
     sample_dir: Path | None = field(default_factory=sample_project_dir)
 

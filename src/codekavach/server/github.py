@@ -5,7 +5,9 @@ Owning epic: E32.
 The server passes the scan's findings, with their triage status, to
 ``codekavach.integrations.github.sync.sync_findings``. The token is accepted only as a secret
 reference (``env:``, ``file:``, ``keyring:``) so no credential travels in a request body or lands
-in the database; without one the result is a dry-run plan. When the back end is not installed the
+in the database, and only a reference the server allows (``ServerConfig.github_token_refs``) so a
+caller cannot make the server resolve, probe or send any other secret; without one the result is a
+dry-run plan. When the back end is not installed the
 route answers 501 ``backend_unavailable`` instead of an empty success.
 """
 
@@ -20,7 +22,12 @@ REFERENCE_PREFIXES: Final = ("env:", "file:", "keyring:")
 
 
 def sync_scan(
-    findings: Sequence[Any], *, repo: str, token_ref: str | None, dry_run: bool
+    findings: Sequence[Any],
+    *,
+    repo: str,
+    token_ref: str | None,
+    dry_run: bool,
+    allowed_refs: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Plan or apply the issue sync of ``findings`` (``FindingRow`` objects)."""
     if token_ref and not token_ref.startswith(REFERENCE_PREFIXES):
@@ -28,6 +35,13 @@ def sync_scan(
             400,
             "token_not_reference",
             "pass the GitHub token as a reference such as env:GITHUB_TOKEN, never the token",
+        )
+    if token_ref and token_ref not in allowed_refs:
+        raise ApiError(
+            400,
+            "token_ref_not_allowed",
+            f"the token reference must be one of {', '.join(allowed_refs) or '(none)'}",
+            hint="an admin sets the allowed references in the server configuration",
         )
     if not dry_run and not token_ref:
         raise ApiError(400, "token_required", "a token reference is needed to change issues")

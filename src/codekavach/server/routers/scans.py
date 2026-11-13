@@ -945,7 +945,13 @@ def sync_github(
     findings = list(session.scalars(query.order_by(FindingRow.severity_rank.desc())))
     if body.finding_ids and len(findings) != len(set(body.finding_ids)):
         raise ApiError(404, "finding_not_in_scan", "a finding id does not belong to this scan")
-    result = sync_scan(findings, repo=body.repo, token_ref=body.token_ref, dry_run=body.dry_run)
+    result = sync_scan(
+        findings,
+        repo=body.repo,
+        token_ref=body.token_ref,
+        dry_run=body.dry_run,
+        allowed_refs=state.config.github_token_refs,
+    )
     audit.record(state.db, actor=principal.username, action="sync.github", resource=scan_id,
                  client=client_of(request),
                  detail={"repo": body.repo, "dry_run": body.dry_run,

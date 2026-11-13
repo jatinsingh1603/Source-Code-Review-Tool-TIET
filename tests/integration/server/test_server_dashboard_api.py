@@ -320,7 +320,8 @@ def test_sync_github_dry_run_without_a_token(
     scan: dict[str, Any],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = server[0]
+    client, state = server
+    monkeypatch.setattr(state.config, "github_token_refs", ("env:CK_TEST_UNSET_GITHUB_TOKEN",))
     monkeypatch.delenv("CK_TEST_UNSET_GITHUB_TOKEN", raising=False)
     url = f"{API}/scans/{scan['id']}/sync/github"
     body = {"repo": "example/repo", "token_ref": "env:CK_TEST_UNSET_GITHUB_TOKEN", "dry_run": True}
@@ -330,6 +331,27 @@ def test_sync_github_dry_run_without_a_token(
     applied = client.post(url, json={**body, "dry_run": False}, headers=admin)
     assert applied.status_code == 400
     assert applied.json()["error"]["code"] == "token_unresolved"
+
+
+@pytest.mark.parametrize(
+    "token_ref",
+    ["env:CODEKAVACH_AGENTROUTER_API_KEY", "file:/etc/hostname", "keyring:codekavach/provider"],
+)
+def test_sync_github_refuses_a_token_ref_outside_the_allow_list(
+    server: tuple[TestClient, Any],
+    admin: dict[str, str],
+    scan: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+    token_ref: str,
+) -> None:
+    client = server[0]
+    monkeypatch.setenv("CODEKAVACH_AGENTROUTER_API_KEY", "sk-test-not-a-real-key")
+    url = f"{API}/scans/{scan['id']}/sync/github"
+    for dry_run in (True, False):
+        body = {"repo": "attacker/drop", "token_ref": token_ref, "dry_run": dry_run}
+        response = client.post(url, json=body, headers=admin)
+        assert response.status_code == 400, response.text
+        assert response.json()["error"]["code"] == "token_ref_not_allowed"
 
 
 def test_saved_views(
