@@ -77,3 +77,39 @@ export function rulesToToml(doc: PolicyDoc, rules: PathRule[]): string {
   }
   return lines.join("\n") + "\n";
 }
+
+/**
+ * The path rules of a policy file that holds nothing but `policy_version` and `[[path]]` tables
+ * (what the rule editor can show), or null for any other shape.
+ */
+export function pathRulesOf(toml: string): PathRule[] | null {
+  const rules: PathRule[] = [];
+  let current: PathRule | null = null;
+  for (const raw of toml.split("\n")) {
+    const line = raw.replace(/\s+#.*$/, "").trim();
+    if (!line || line.startsWith("#")) continue;
+    if (line === "[[path]]") {
+      current = { pattern: "", never_send: false, level: null };
+      rules.push(current);
+      continue;
+    }
+    if (line.startsWith("[")) return null;
+    const m = /^([a-z_]+)\s*=\s*(.+)$/.exec(line);
+    if (!m) return null;
+    const k = m[1]!;
+    const v = m[2]!;
+    if (!current) {
+      if (k === "policy_version") continue;
+      return null;
+    }
+    try {
+      if (k === "pattern") current.pattern = JSON.parse(v) as string;
+      else if (k === "level") current.level = JSON.parse(v) as PrivacyLevel;
+      else if (k === "never_send") current.never_send = v === "true";
+      else return null;
+    } catch {
+      return null;
+    }
+  }
+  return rules.every((r) => r.pattern) ? rules : null;
+}

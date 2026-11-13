@@ -7,6 +7,7 @@ import { egressSummary } from "@/lib/egress";
 import { validateGitUrl } from "@/lib/validate";
 import { permissionsFor } from "@/lib/permissions";
 import { languageLabel } from "@/lib/display";
+import { pathRulesOf } from "@/lib/policy";
 import type { ProviderInfo } from "@/api/types";
 
 describe("segmentLines", () => {
@@ -118,5 +119,18 @@ describe("languageLabel", () => {
     expect(languageLabel("python")).toBe("Python");
     expect(languageLabel("unknown")).toBe("Other");
     expect(languageLabel(null)).toBe("");
+  });
+});
+
+describe("pathRulesOf", () => {
+  it("reads a path-only policy and refuses other axes", () => {
+    const toml =
+      'policy_version = 1\n\n[[path]]\npattern = "**/secrets/**"\nnever_send = true\n\n[[path]]\npattern = "**/payments/**"\nlevel = "L3"\n';
+    expect(pathRulesOf(toml)).toEqual([
+      { pattern: "**/secrets/**", never_send: true, level: null },
+      { pattern: "**/payments/**", never_send: false, level: "L3" },
+    ]);
+    expect(pathRulesOf(toml + '\n[[language]]\nlanguage = "sql"\nlevel = "L4"\n')).toBeNull();
+    expect(pathRulesOf('[privacy]\nlevel = "L3"\n')).toBeNull();
   });
 });

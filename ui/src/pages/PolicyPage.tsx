@@ -8,7 +8,7 @@ import { useFindings, usePolicy, useSavePolicy } from "@/api/queries";
 import type { PrivacyLevel } from "@/api/types";
 import { locationOf } from "@/lib/domain";
 import { LEVEL_NAME } from "@/lib/display";
-import { globToRegExp, matches, policyDoc, rulesToToml, type PathRule } from "@/lib/policy";
+import { globToRegExp, matches, pathRulesOf, policyDoc, rulesToToml, type PathRule } from "@/lib/policy";
 import { Button, Content, Empty, ErrorBanner, Guard, Skeleton, StatusDot, useToast } from "@/components/ui";
 
 type Action = "never-send" | PrivacyLevel;
@@ -58,6 +58,21 @@ export default function PolicyPage() {
     setRules(doc.path.map((r) => ({ pattern: r.pattern, never_send: !!r.never_send, level: r.level ?? null })));
   }, [doc]);
 
+  // GET /policy/templates: the server's own policies that the path editor can load (the built-in
+  // server default first), then the sector presets kept in the dashboard.
+  const serverTemplates = useQuery({ queryKey: ["policy-templates"], queryFn: endpoints.policyTemplates, retry: false, staleTime: 300_000 }).data;
+  const templates = useMemo(() => {
+    const fromServer = (serverTemplates ?? []).flatMap((t) => {
+      const r = t.editor ? pathRulesOf(t.toml) : null;
+      if (!r) return [];
+      const desc = r.length
+        ? r.map((x) => `${x.pattern} ${x.never_send ? "never-send" : x.level ?? ""}`.trim()).join(" · ")
+        : "No extra rules · the scan level applies";
+      return [{ name: t.name, desc: `${desc} (server)`, rules: r }];
+    });
+    const seen = new Set(fromServer.map((t) => t.rules.map(key).join()));
+    return [...fromServer, ...TEMPLATES.filter((t) => !seen.has(t.rules.map(key).join()))];
+  }, [serverTemplates]);
   const original = doc.path.map(key);
   const current = rules.map(key);
   const changes =
@@ -263,7 +278,13 @@ export default function PolicyPage() {
               <p className="sub">Scans and users cannot choose a level that discloses more than this.</p>
               <div className="seg" aria-label="Floor level">
                 {(["L1", "L2", "L3"] as PrivacyLevel[]).map((l) => (
-                  <button key={l} type="button" disabled className={doc.floor === l ? "on" : undefined}>
+                  <button
+                    key={l}
+                    type="button"
+                    disabled
+                    title="The floor is set in the organisation policy on the server (privacy.min_level), not here."
+                    className={doc.floor === l ? "on" : undefined}
+                  >
                     {l}
                   </button>
                 ))}
@@ -277,7 +298,7 @@ export default function PolicyPage() {
             <div className="card stack">
               <h2>Templates</h2>
               <div>
-                {TEMPLATES.map((t) => {
+                {templates.map((t) => {
                   const applied = t.rules.map(key).join() === current.join();
                   return (
                     <div className="listrow" key={t.name}>
