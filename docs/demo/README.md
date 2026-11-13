@@ -70,7 +70,7 @@ A dashboard with history is more convincing than an empty one. With the server r
 $ export CODEKAVACH_ADMIN_PASSWORD=...          # the admin password from .env; omit for the default
 $ uv run python scripts/seed_demo.py            # about two minutes; add --url http://host:8080 for another address
 KavachBank (sample)
-  KavachBank at L1: completed, 66 findings (19 critical, 26 high), 29 payloads, 0 blocked
+  KavachBank at L1: completed, 66 findings (19 critical, 26 high), 18 payloads, 0 blocked
   ...
 done: 3 projects, 8 scans, 80 findings, 76 still open
 ```
