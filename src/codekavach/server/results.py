@@ -371,6 +371,21 @@ def _taint_steps(data: dict[str, Any], source_root: Path | None) -> list[dict[st
     return steps
 
 
+def _impact(data: dict[str, Any], cwes: list[int]) -> dict[str, Any]:
+    """The impact of a finding, with the weakness's impact statement in place of a rating line.
+
+    Without a model verdict the rate stage writes a rating summary ("CVSS v4.0 9.3 (CVSS-B); ...")
+    as the narrative; the scores are shown beside it already, so the page says what the weakness
+    lets an attacker do instead, as the report does.
+    """
+    from codekavach.report.model.library import lookup  # noqa: PLC0415
+
+    impact = dict(data.get("impact") or {})
+    if str(impact.get("narrative") or "").startswith("CVSS v4.0"):
+        impact["narrative"] = lookup(tuple(cwes)).impact
+    return impact
+
+
 def finding_detail(row: Any, source_root: Path | None = None) -> dict[str, Any]:
     """The detail JSON of a finding row: everything the dashboard's finding page shows."""
     data: dict[str, Any] = dict(row.data or {})
@@ -407,7 +422,7 @@ def finding_detail(row: Any, source_root: Path | None = None) -> dict[str, Any]:
             "cvss4_vector": _score(data, "cvss4_vector"),
             "cvss31_vector": _score(data, "cvss31_vector"),
             "likelihood_detail": data.get("likelihood") or {},
-            "impact_detail": data.get("impact") or {},
+            "impact_detail": _impact(data, cwes),
             "compliance": compliance,
             "locations": data.get("locations") or [],
             "evidence": {
