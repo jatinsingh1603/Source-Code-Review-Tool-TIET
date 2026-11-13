@@ -90,12 +90,15 @@ A client who wants their own workflow to call a real provider adds the key as a 
 | The latest run was cancelled | "Several commits arrived together; the pipeline tests the newest one and drops the queued ones in between." | Open the next completed run. |
 | A macOS cell is slow or queued | "macOS runners are shared and slower; the Linux cells hold the same tests." | Open a Linux cell. |
 | Only `commits` is red | "A commit message broke the convention, for example a subject over 72 characters. History on `main` is never rewritten; the job checks only the commits of each push, so the next push is judged on its own." | Open the job log: it names the commit and the rule. |
+| Only the 3.13 test cells are red with `PytestUnraisableExceptionWarning ... sqlite3.Connection` | "Python 3.13 reports a database connection a test forgot to close; the warning lands on whichever test runs next, so the failing test name is not the culprit." | Find the test that creates a server or store without closing it (the serve banner tests were the last case, fixed in `63b22df`). |
+| Only `hooks` is red at the secret scan step | "The scanner flags anything that looks like a credential, including a variable named `..._PASSWORD`. A real new secret blocks the push." | The log names the file and line; a name that is not a value gets `# pragma: allowlist secret`. |
 | GitHub is unreachable | "The same gates run locally." | Run the local commands above. |
 
 ## Reference run
 
 A green run of this pipeline on `main`, checked while preparing this runbook:
 
+- <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43421402124>: commit `0254b15`, 13 November 2026 12:12 UTC, every job green (`ci-ok` success). `test (ubuntu-latest, 3.12)` took 9 minutes 2 seconds, `test (ubuntu-latest, 3.13)` 9 minutes 58 seconds, `perf` 5 minutes 54 seconds.
 - <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43334263876>: commit `f05fcb2`, 13 November 2026, every job green (`ci-ok` success). `test (ubuntu-latest, 3.12)` took 10 minutes 44 seconds, `test (ubuntu-latest, 3.13)` 9 minutes 54 seconds, `perf` 4 minutes 24 seconds.
 - <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43331968149>: commit `eea512c`, 12 November 2026, every job green (`ci-ok` success), including the four test cells, `perf`, `ui`, `docker`, `demo`, `detector-eval` and `provider-conformance`. The test step of `test (ubuntu-latest, 3.12)` took 11 minutes 23 seconds, the whole job 11 minutes 39 seconds, against its 20-minute limit.
 
