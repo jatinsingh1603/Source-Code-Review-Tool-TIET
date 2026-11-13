@@ -50,7 +50,7 @@ then start a scan with `{"provider": "agentrouter", "send": true}`.
 
 `POST /api/v1/auth/login {username, password}` returns `{token, user}`. Send the token as
 `Authorization: Bearer <token>`. `EventSource` and download links that cannot send headers may pass
-`?access_token=<token>`. Tokens expire after 12 hours and are revoked by `POST /auth/logout`, by a
+`?access_token=<token>` on `GET` requests only; the server redacts it from its access log. Tokens expire after 12 hours and are revoked by `POST /auth/logout`, by a
 role or password change and by deactivating the user. Passwords are hashed with scrypt; login is
 limited per client address and per user name and answers an unknown user and a wrong password the
 same way.

@@ -6,9 +6,11 @@ API responses get ``Content-Security-Policy: default-src 'none'; frame-ancestors
 ``X-Content-Type-Options: nosniff``, ``Referrer-Policy: no-referrer``, ``X-Frame-Options: DENY``
 and, when authenticated, ``Cache-Control: no-store``. The dashboard's static pages get a CSP that
 allows their own scripts and styles only. Request bodies above the limit are refused with 413
-before they are read.
+before they are read. The ``access_token`` query parameter is redacted from the access log.
 """
 
+import logging
+import re
 import secrets
 from collections.abc import Awaitable, Callable
 from typing import Final
@@ -24,6 +26,36 @@ UI_CSP: Final = (
     "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 )
 DOCS_PATHS: Final = ("/api/docs", "/api/redoc", "/api/openapi.json")
+
+
+_TOKEN_PARAM: Final = re.compile(r"(?i)(access_token=)[^&\s\"]*")
+ACCESS_LOGGER: Final = "uvicorn.access"
+
+
+def redact_token(text: str) -> str:
+    """``text`` with the value of any ``access_token`` query parameter replaced."""
+    return _TOKEN_PARAM.sub(r"\1[redacted]", text)
+
+
+class TokenRedactor(logging.Filter):
+    """Keeps bearer tokens passed as ``?access_token=`` out of the access log."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Redact the record in place; never drops it."""
+        if isinstance(record.args, tuple):
+            record.args = tuple(
+                redact_token(arg) if isinstance(arg, str) else arg for arg in record.args
+            )
+        if isinstance(record.msg, str):
+            record.msg = redact_token(record.msg)
+        return True
+
+
+def install_log_redaction() -> None:
+    """Add the token redactor to the access logger (once)."""
+    logger = logging.getLogger(ACCESS_LOGGER)  # noqa: TID251 - uvicorn's stdlib logger
+    if not any(isinstance(item, TokenRedactor) for item in logger.filters):
+        logger.addFilter(TokenRedactor())
 
 
 def install_middleware(app: FastAPI, *, max_body_bytes: int) -> None:

@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from codekavach.core.log import get_logger
 from codekavach.server.config import ServerConfig
 from codekavach.server.errors import install_handlers
-from codekavach.server.middleware import install_middleware
+from codekavach.server.middleware import install_log_redaction, install_middleware
 from codekavach.server.state import ServerState
 
 _log = get_logger("codekavach.server.app")
@@ -97,6 +97,7 @@ def create_app(config: ServerConfig | None = None, *, state: ServerState | None 
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        install_log_redaction()  # after uvicorn has configured its loggers
         try:
             yield
         finally:
@@ -113,6 +114,7 @@ def create_app(config: ServerConfig | None = None, *, state: ServerState | None 
     )
     app.state.server = server
     install_handlers(app)
+    install_log_redaction()
     install_middleware(app, max_body_bytes=server.config.max_upload_bytes + 1024 * 1024)
     origins = list(server.config.effective_cors_origins())
     if origins:

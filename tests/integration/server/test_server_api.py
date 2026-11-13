@@ -7,6 +7,7 @@ pipeline; the other cases read that scan's findings, privacy summary, ledger, ev
 import hashlib
 import io
 import json
+import logging
 import time
 import zipfile
 from collections.abc import Iterator
@@ -21,6 +22,7 @@ from codekavach.server import audit
 from codekavach.server.app import create_app
 from codekavach.server.config import ServerConfig
 from codekavach.server.jobs.scan import ScanJob, execute_scan
+from codekavach.server.middleware import ACCESS_LOGGER
 
 pytest.importorskip("fastapi")
 
@@ -124,6 +126,25 @@ def test_successful_logins_do_not_use_up_the_address_budget(
     with TestClient(create_app(config)) as client:
         for _ in range(6):
             _login(client, **ADMIN)
+
+
+def test_query_token_is_for_reads_only_and_kept_out_of_the_access_log(
+    server: tuple[TestClient, Any], caplog: pytest.LogCaptureFixture
+) -> None:
+    client = server[0]
+    token = _login(client, **ADMIN)["Authorization"].removeprefix("Bearer ")
+    assert client.get(f"/api/v1/auth/me?access_token={token}").status_code == 200
+    posted = client.post(f"/api/v1/auth/logout?access_token={token}")
+    assert posted.status_code == 401
+    logger = logging.getLogger(ACCESS_LOGGER)
+    with caplog.at_level(logging.INFO, logger=ACCESS_LOGGER):
+        logger.info(
+            '%s - "%s %s HTTP/%s" %d',
+            "127.0.0.1:1", "GET", f"/api/v1/scans/x/events?access_token={token}&a=1", "1.1", 200,
+        )  # fmt: skip
+    assert caplog.records
+    assert token not in caplog.text
+    assert "access_token=[redacted]&a=1" in caplog.text
 
 
 def test_requests_without_a_token_are_refused(server: tuple[TestClient, Any]) -> None:

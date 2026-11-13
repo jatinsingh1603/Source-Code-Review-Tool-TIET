@@ -56,10 +56,16 @@ def client_of(request: Request) -> str:
 
 
 def bearer_token(request: Request) -> str | None:
-    """The bearer token of the request, from the header or the ``access_token`` parameter."""
+    """The bearer token of the request, from the header or the ``access_token`` parameter.
+
+    The query parameter is for ``EventSource`` streams and download links, which cannot send
+    headers, so it is accepted on ``GET`` only: a request that changes state needs the header.
+    """
     header = request.headers.get("authorization", "")
     if header.lower().startswith("bearer "):
         return header[7:].strip() or None
+    if request.method not in {"GET", "HEAD"}:
+        return None
     token = request.query_params.get("access_token")
     return token or None
 
