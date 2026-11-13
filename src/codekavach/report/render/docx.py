@@ -11,6 +11,7 @@ so rather than pretending the page numbers are already there. A client Word temp
 not supported yet.
 """
 
+import re
 from pathlib import Path
 from typing import Any, Final
 
@@ -21,6 +22,14 @@ from codekavach.report.render.snippets import token_rows
 from codekavach.report.render.theme import DEFAULT_THEME, Theme
 
 MONO: Final = "Consolas"
+# Characters XML 1.0 cannot carry (lxml refuses them): C0 controls other than tab, LF and CR,
+# lone surrogates and U+FFFE/U+FFFF. A form feed in scanned source is common.
+_XML_INVALID: Final = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]")
+
+
+def _xml(text: object) -> str:
+    """``text`` with every XML-invalid character replaced by U+FFFD."""
+    return _XML_INVALID.sub("\ufffd", str(text))
 
 
 class DocxUnavailableError(RuntimeError):
@@ -102,7 +111,7 @@ class _Builder:
     ) -> Any:
         paragraph = self.doc.add_paragraph(style=style)
         if text:
-            run = paragraph.add_run(text)
+            run = paragraph.add_run(_xml(text))
             run.bold, run.italic = bold, italic
             if size:
                 run.font.size = self.Pt(size)
@@ -118,7 +127,7 @@ class _Builder:
         for index, name in enumerate(header):
             cell = table.rows[0].cells[index]
             cell.text = ""
-            run = cell.paragraphs[0].add_run(name)
+            run = cell.paragraphs[0].add_run(_xml(name))
             run.bold = True
             run.font.size = self.Pt(8.5)
             run.font.color.rgb = self.rgb("#ffffff")
@@ -127,7 +136,7 @@ class _Builder:
             cells = table.add_row().cells
             for index, value in enumerate(values):
                 cells[index].text = ""
-                run = cells[index].paragraphs[0].add_run(str(value))
+                run = cells[index].paragraphs[0].add_run(_xml(value))
                 run.font.size = self.Pt(8.5)
         if widths:
             for row in table.rows:
@@ -141,18 +150,18 @@ class _Builder:
         for key, value in rows:
             cells = table.add_row().cells
             cells[0].text = ""
-            run = cells[0].paragraphs[0].add_run(key)
+            run = cells[0].paragraphs[0].add_run(_xml(key))
             run.bold = True
             run.font.size = self.Pt(9)
             self.shade(cells[0], self.theme.panel)
             cells[1].text = ""
-            cells[1].paragraphs[0].add_run(str(value)).font.size = self.Pt(9)
+            cells[1].paragraphs[0].add_run(_xml(value)).font.size = self.Pt(9)
             cells[0].width, cells[1].width = self.Mm(50), self.Mm(124)
         return table
 
     def severity_cell(self, cell: Any, severity: str) -> None:
         cell.text = ""
-        run = cell.paragraphs[0].add_run(severity.upper())
+        run = cell.paragraphs[0].add_run(_xml(severity.upper()))
         run.bold = True
         run.font.size = self.Pt(8)
         run.font.color.rgb = self.rgb("#ffffff")
@@ -183,8 +192,8 @@ def _cover(b: _Builder, doc: ReportDocument) -> None:
 
 def _finding(b: _Builder, v: FindingView) -> None:
     heading = b.doc.add_heading(level=3)
-    heading.add_run(f"{v.report_id}  ").font.color.rgb = b.rgb(b.theme.muted)
-    heading.add_run(v.title)
+    heading.add_run(_xml(f"{v.report_id}  ")).font.color.rgb = b.rgb(b.theme.muted)
+    heading.add_run(_xml(v.title))
     facts = b.doc.add_table(rows=1, cols=4)
     facts.style = "Table Grid"
     b.severity_cell(facts.rows[0].cells[0], v.severity)
@@ -196,7 +205,7 @@ def _finding(b: _Builder, v: FindingView) -> None:
     for index, value in enumerate(values, start=1):
         cell = facts.rows[0].cells[index]
         cell.text = ""
-        cell.paragraphs[0].add_run(value).font.size = b.Pt(8.5)
+        cell.paragraphs[0].add_run(_xml(value)).font.size = b.Pt(8.5)
     b.kv(
         [
             ("CWE", "; ".join(f"CWE-{c} {n}" for c, n in zip(v.cwe, v.cwe_names, strict=False))
@@ -231,7 +240,7 @@ def _finding(b: _Builder, v: FindingView) -> None:
             number.font.color.rgb = b.rgb(b.theme.muted)
             paragraph = cells[1].paragraphs[0]
             for run in row.runs:
-                r = paragraph.add_run(run.text)
+                r = paragraph.add_run(_xml(run.text))
                 r.font.name, r.font.size = MONO, b.Pt(7.5)
                 r.bold, r.italic = run.bold, run.italic
                 if run.colour:
@@ -282,11 +291,11 @@ def build_docx(doc: ReportDocument, out: Path, theme: Theme) -> None:  # noqa: P
     b = _Builder(theme)
     section = b.doc.sections[0]
     header = section.header.paragraphs[0]
-    header.text = f"{doc.classification.upper()}    {doc.report_id}"
+    header.text = _xml(f"{doc.classification.upper()}    {doc.report_id}")
     header.runs[0].font.size = b.Pt(8)
     header.runs[0].font.color.rgb = b.rgb(theme.critical)
     footer = section.footer.paragraphs[0]
-    footer.add_run(f"{doc.report_id} · {doc.project_name} · Page ").font.size = b.Pt(8)
+    footer.add_run(_xml(f"{doc.report_id} · {doc.project_name} · Page ")).font.size = b.Pt(8)
     b.field(footer, "PAGE", "1")
     _cover(b, doc)
     if doc.control:
@@ -335,7 +344,7 @@ def build_docx(doc: ReportDocument, out: Path, theme: Theme) -> None:  # noqa: P
         )
     for block in doc.executive:
         if block.id != "overview":
-            b.doc.add_heading(block.heading, level=2)
+            b.doc.add_heading(_xml(block.heading), level=2)
         for paragraph in block.paragraphs:
             b.para(paragraph)
         for item in block.bullets:
@@ -463,10 +472,10 @@ def build_docx(doc: ReportDocument, out: Path, theme: Theme) -> None:  # noqa: P
     for limitation in doc.limitations:
         b.para(f"{limitation.id} ({limitation.kind}): {limitation.statement}", style="List Bullet")
     props = b.doc.core_properties
-    props.title = f"{doc.title}: {doc.project_name}"
-    props.author = doc.organisation
-    props.subject = doc.report_id
-    props.keywords = doc.classification
+    props.title = _xml(f"{doc.title}: {doc.project_name}")
+    props.author = _xml(doc.organisation)
+    props.subject = _xml(doc.report_id)
+    props.keywords = _xml(doc.classification)
     out.parent.mkdir(parents=True, exist_ok=True)
     b.doc.save(str(out))
 

@@ -68,6 +68,21 @@ def _secret_finding() -> object:
     return make_finding(evidence=(evidence,), title="Hard-coded credential", cwe=(798,))
 
 
+def test_docx_renders_xml_invalid_control_characters(tmp_path: Path) -> None:
+    pytest.importorskip("docx")
+    location = make_location(start_line=2, end_line=2)
+    source = RawCode("x = 1\n\x0cq = run('\x1b[31m' + v)\x0b\ny = 2\n")
+    evidence = Evidence.from_source(source, location, language=Language.PYTHON)
+    doc = _doc(
+        make_finding(evidence=(evidence,), title="Ctrl\x1b title", remediation="Fix\x0c now")
+    )
+    out = renderer_registry().get("docx").render(doc, tmp_path / "r.docx")
+    with zipfile.ZipFile(out) as archive:
+        body = archive.read("word/document.xml").decode("utf-8")
+    assert "Ctrl\ufffd title" in body and "\ufffd[31m" in body
+    assert not re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", body)
+
+
 def test_report_ids_are_stable_and_ordered() -> None:
     findings = [make_finding(severity=Severity.HIGH), make_finding(severity=Severity.LOW)]
     ids = assign_report_ids(findings, year=2026)
