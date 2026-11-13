@@ -59,7 +59,7 @@
   "fingerprint": "ckfp1:659fdfa0c188cbb1e78b8d3ac2396d10",
   "kind": "vulnerability",
   "language": "python",
-  "message": "Data from a http_param source reaches a sql sink (cur.execute)",
+  "message": "Data from a request parameter reaches an SQL query (cur.execute)",
   "engine_version": null,
   "engine_confidence": "medium",
   "properties": [

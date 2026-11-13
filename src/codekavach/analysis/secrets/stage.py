@@ -68,6 +68,31 @@ def severity_for(subtype: str, confidence: Confidence) -> Severity:
     return Severity.MEDIUM if confidence >= Confidence.MEDIUM else Severity.LOW
 
 
+_WORDS: Final = {
+    "aws": "AWS", "gcp": "GCP", "api": "API", "id": "ID", "jwt": "JWT", "npm": "npm",
+    "pypi": "PyPI", "ssh": "SSH", "github": "GitHub", "slack": "Slack", "stripe": "Stripe",
+    "google": "Google", "azure": "Azure", "razorpay": "Razorpay", "paytm": "Paytm",
+    "sendgrid": "SendGrid", "twilio": "Twilio",
+}  # fmt: skip
+
+
+def subtype_words(subtype: str) -> str:
+    """``aws_access_key`` as ``AWS access key``: a detector subtype in words for a title."""
+    words = [_WORDS.get(part, part) for part in subtype.split("_") if part]
+    if subtype == "private_key_block":
+        words = ["private", "key"]
+    if subtype == "jwt":
+        return "JSON Web Token"
+    return " ".join(words) or "secret"
+
+
+def secret_title(subtype: str) -> str:
+    """``Hard-coded credential: AWS access key``; a generic hit is just a hard-coded credential."""
+    if subtype in {"generic_credential", ""}:
+        return "Hard-coded credential"
+    return f"Hard-coded credential: {subtype_words(subtype)}"
+
+
 def cwes_for(subtype: str) -> tuple[int, ...]:
     """CWE-798 for every secret; private keys also CWE-321."""
     return (798, 321) if subtype == "private_key_block" else (798,)
@@ -173,8 +198,8 @@ def candidates_for(
                 kind=CandidateKind.SECRET,
                 language=language,
                 message=(
-                    f"Hard-coded credential of type {hit.subtype} "
-                    f"(masked preview {hit.preview}, entropy {hit.entropy} bits/char)."
+                    f"{secret_title(hit.subtype)} "
+                    f"(masked preview {hit.preview}, entropy {hit.entropy} bits per character)."
                 ),
                 properties=(
                     ("secret.type", hit.subtype),

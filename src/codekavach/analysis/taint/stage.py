@@ -97,8 +97,47 @@ def _confidence(flow: FlowWitness) -> Confidence:
     return (Confidence.HIGH, Confidence.MEDIUM, Confidence.LOW)[weakened]
 
 
+SOURCE_WORDS: Final = {
+    "http_param": "a request parameter",
+    "http_body": "the request body",
+    "http_cookie": "a cookie",
+    "http_header": "a request header",
+    "http_upload": "an uploaded file",
+    "http": "an HTTP request",
+    "http_handler": "a request handler argument",
+    "cli": "a command-line argument",
+    "environment": "an environment variable",
+    "stdin": "standard input",
+    "network": "network input",
+}
+"""Source label to the words a finding title uses; others read as "untrusted input"."""
+
+SINK_WORDS: Final = {
+    "sql": "an SQL query",
+    "shell": "a shell command",
+    "code": "code evaluation",
+    "deserialise": "deserialisation",
+    "deserialisation": "deserialisation",
+    "template": "a template",
+    "path": "a file path",
+    "http": "an outbound request",
+    "url": "an outbound request",
+    "redirect": "a redirect",
+    "xml": "an XML parser",
+    "html": "HTML output",
+    "js": "script output",
+    "ldap": "an LDAP query",
+    "xpath": "an XPath query",
+    "header": "a response header",
+    "log": "a log entry",
+}
+"""Sink kind to the words a finding title uses (the kinds of ``SINK_CLASSES``)."""
+
+
 def _message(flow: FlowWitness) -> str:
-    return f"Data from a {flow.label} source reaches a {flow.sink.kind} sink ({flow.sink_callee})"
+    source = SOURCE_WORDS.get(flow.label, "untrusted input")
+    sink = SINK_WORDS.get(flow.sink.kind, f"a {flow.sink.kind.replace('_', ' ')} sink")
+    return f"Data from {source} reaches {sink} ({flow.sink_callee})"
 
 
 def candidate_properties(flow: FlowWitness, result: PathResult) -> tuple[tuple[str, str], ...]:
