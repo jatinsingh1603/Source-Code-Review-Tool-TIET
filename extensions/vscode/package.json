@@ -13,6 +13,12 @@
   },
   "main": "./dist/extension.js",
   "activationEvents": ["onStartupFinished"],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "CodeKavach runs an external program in the workspace folder, so it only runs in trusted workspaces."
+    }
+  },
   "contributes": {
     "commands": [
       { "command": "codekavach.scan", "title": "CodeKavach: Scan Workspace" },
@@ -39,18 +45,21 @@
         "codekavach.executable": {
           "type": "string",
           "default": "codekavach",
-          "description": "Path of the codekavach command."
+          "scope": "machine",
+          "description": "The codekavach command: a name looked up on PATH, or an absolute path outside the workspace. User settings only; a workspace cannot override it."
         },
         "codekavach.privacyLevel": {
           "type": "string",
           "enum": ["L0", "L1", "L2", "L3", "L4"],
           "default": "L3",
-          "description": "What may leave your machine when an LLM provider is used."
+          "scope": "machine",
+          "description": "What may leave your machine when an LLM provider is used. User settings only; a workspace cannot override it."
         },
         "codekavach.provider": {
           "type": "string",
           "default": "",
-          "description": "LLM provider id (for example agentrouter or ollama). Empty runs deterministic analysis only; nothing is sent anywhere."
+          "description": "LLM provider id (for example agentrouter or ollama). Empty runs deterministic analysis only; nothing is sent anywhere. User settings only; a workspace cannot override it.",
+          "scope": "machine"
         },
         "codekavach.dashboardUrl": {
           "type": "string",
@@ -64,6 +73,7 @@
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --no-warnings --test test/*.test.ts",
     "package": "vsce package --no-dependencies"
   },
   "devDependencies": {

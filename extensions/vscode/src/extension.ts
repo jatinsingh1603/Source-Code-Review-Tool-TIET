@@ -141,7 +141,7 @@ export function activate(context: vscode.ExtensionContext): void {
       ];
       const pick = await vscode.window.showQuickPick(levels, { placeHolder: "Privacy level for LLM requests" });
       if (pick) {
-        await vscode.workspace.getConfiguration("codekavach").update("privacyLevel", pick.label, vscode.ConfigurationTarget.Workspace);
+        await vscode.workspace.getConfiguration("codekavach").update("privacyLevel", pick.label, vscode.ConfigurationTarget.Global);
       }
     }),
     vscode.commands.registerCommand("codekavach.openDashboard", () => {

@@ -1,4 +1,5 @@
 import { execFile } from "child_process";
+import { resolveExecutable } from "./executable";
 
 export type Severity = "info" | "low" | "medium" | "high" | "critical";
 
@@ -36,8 +37,15 @@ interface Envelope<T> {
   errors?: { code: string; message: string; hint?: string | null }[];
 }
 
-function run(executable: string, args: string[], cwd: string): Promise<{ stdout: string; code: number }> {
+function run(configured: string, args: string[], cwd: string): Promise<{ stdout: string; code: number }> {
   return new Promise((resolve, reject) => {
+    let executable: string;
+    try {
+      executable = resolveExecutable(configured, cwd);
+    } catch (e) {
+      reject(e);
+      return;
+    }
     execFile(executable, args, { cwd, maxBuffer: 256 * 1024 * 1024, timeout: 30 * 60 * 1000 }, (err, stdout) => {
       if (err && (err as NodeJS.ErrnoException).code === "ENOENT") {
         reject(new Error(`Cannot run '${executable}'. Install CodeKavach or set codekavach.executable.`));

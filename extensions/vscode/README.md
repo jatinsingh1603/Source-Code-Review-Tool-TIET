@@ -15,12 +15,17 @@ the egress ledger.
 |---|---|
 | CodeKavach: Scan Workspace | Runs `codekavach scan` then loads the findings |
 | CodeKavach: Reload Findings From Last Scan | Reads the stored scan without scanning |
-| CodeKavach: Set Privacy Level | Chooses L0 to L4 for this workspace |
+| CodeKavach: Set Privacy Level | Chooses L0 to L4 (saved in user settings) |
 | CodeKavach: Show Finding Details | Detail webview (also opens from the tree) |
 | CodeKavach: Open Dashboard | Opens the web dashboard (`codekavach.dashboardUrl`) |
 
 Requires the `codekavach` command on the PATH (or set `codekavach.executable`). The extension
 calls the CLI with `--json` and uses `codekavach findings`; it never reads the vault.
+
+The code under review is untrusted, so the extension only runs in trusted workspaces, and
+`codekavach.executable`, `codekavach.provider` and `codekavach.privacyLevel` are read from user
+settings only: a repo's `.vscode/settings.json` cannot change them. The executable must be a
+name found on an absolute PATH entry outside the workspace, or an absolute path outside it.
 
 ## Build
 
