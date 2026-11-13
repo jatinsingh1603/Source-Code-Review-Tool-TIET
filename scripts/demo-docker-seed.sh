@@ -23,10 +23,15 @@ token=$(printf '%s' "$login" | field token)
 [ -n "$token" ] || { echo "no token in login response" >&2; exit 1; }
 auth=(-H "Authorization: Bearer ${token}")
 
-project=$(curl -fsS -X POST "${API}/projects" "${auth[@]}" -H 'Content-Type: application/json' \
-  -d '{"name":"KavachBank (demo sample)","description":"Bundled sample project, seeded by demo-docker-seed.sh","source":{"type":"sample"}}')
-project_id=$(printf '%s' "$project" | field id)
-[ -n "$project_id" ] || { echo "could not create the sample project: $project" >&2; exit 1; }
+# The server creates "KavachBank (sample)" on first start; scan that project instead of adding a
+# second copy of it. Create it only if it has been deleted.
+project_id=prj_kavachbank_sample
+if ! curl -fsS "${API}/projects/${project_id}" "${auth[@]}" >/dev/null 2>&1; then
+  project=$(curl -fsS -X POST "${API}/projects" "${auth[@]}" -H 'Content-Type: application/json' \
+    -d '{"name":"KavachBank (sample)","description":"Bundled sample project","source":{"type":"sample"}}')
+  project_id=$(printf '%s' "$project" | field id)
+  [ -n "$project_id" ] || { echo "could not create the sample project: $project" >&2; exit 1; }
+fi
 
 scan=$(curl -fsS -X POST "${API}/projects/${project_id}/scans" "${auth[@]}" \
   -H 'Content-Type: application/json' -d '{"provider":"mock"}')

@@ -96,7 +96,7 @@ cat <<EOF
 
 CodeKavach is running.
   Dashboard : ${BASE}
-  API docs  : ${BASE}/docs
+  API docs  : ${BASE}/api/docs
   Login     : ${ADMIN_USER} / ${ADMIN_PASSWORD}   (change CODEKAVACH_ADMIN_PASSWORD in .env for anything beyond a demo)
   Image     : ${CODEKAVACH_IMAGE}
   Stop      : scripts/demo-docker.sh --down
