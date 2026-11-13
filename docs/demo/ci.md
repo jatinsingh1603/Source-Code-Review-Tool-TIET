@@ -74,7 +74,7 @@ To start a run by hand: on the Actions page choose **CI** then **Run workflow** 
 
 The Linux test cell used to run every test, the perf budgets and coverage in one process, about 14.5 minutes against a 15-minute limit. Now the cells use all runner cores with pytest-xdist and the perf budgets have their own job with no parallel workers, so the timings stay meaningful. The `--durations=30` list at the end of each test cell's log names the slowest tests.
 
-Measured on `main` on 12 November 2026, with about 12 700 tests: the test step of `test (ubuntu-latest, 3.12)` took 7 to 11 minutes against the 20-minute job limit, and the `perf` job about 6 minutes against 15. The tests that run the whole KavachBank demo (one to two minutes each on a busy runner) are marked `slow` with their own 420-second timeout, and every test worker starts with the product's logging configuration, so a failing stage no longer renders a traceback with every frame's local variables.
+Measured on `main` over the twelve completed runs from 12 November 2026 22:12 UTC to 13 November 00:22 UTC, with about 12 700 tests: the Linux test jobs (`test (ubuntu-latest, 3.12)` and `3.13`) took 5 minutes 48 seconds to 11 minutes 39 seconds, never more than 59 % of the 20-minute job limit and under the old 15-minute limit in every run; the `perf` job took 4 to 7 minutes against 15. Issue #313 is closed on that record. The tests that run the whole KavachBank demo (one to two minutes each on a busy runner) are marked `slow` with their own 420-second timeout, and every test worker starts with the product's logging configuration, so a failing stage no longer renders a traceback with every frame's local variables.
 
 ## Secrets and the LLM in CI
 
@@ -96,6 +96,7 @@ A client who wants their own workflow to call a real provider adds the key as a 
 
 A green run of this pipeline on `main`, checked while preparing this runbook:
 
+- <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43334263876>: commit `f05fcb2`, 13 November 2026, every job green (`ci-ok` success). `test (ubuntu-latest, 3.12)` took 10 minutes 44 seconds, `test (ubuntu-latest, 3.13)` 9 minutes 54 seconds, `perf` 4 minutes 24 seconds.
 - <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43331968149>: commit `eea512c`, 12 November 2026, every job green (`ci-ok` success), including the four test cells, `perf`, `ui`, `docker`, `demo`, `detector-eval` and `provider-conformance`. The test step of `test (ubuntu-latest, 3.12)` took 11 minutes 23 seconds, the whole job 11 minutes 39 seconds, against its 20-minute limit.
 
 Later pushes from the feature streams may turn a run red until the next fix lands; open this run when the latest one is not green.
