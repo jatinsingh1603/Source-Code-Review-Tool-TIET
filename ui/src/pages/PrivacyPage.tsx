@@ -437,9 +437,9 @@ export default function PrivacyPage() {
                   <dt>Levels used</dt>
                   <dd className="row">
                     {Object.entries(p.levels_by_candidate ?? { [p.level]: p.payloads }).map(([l, n]) => (
-                      <LevelBadge key={l} level={l} label={`${l} · ${fmtInt(n)} candidate${n === 1 ? "" : "s"}`} />
+                      <LevelBadge key={l} level={l} label={`${l} · ${fmtInt(n)}`} title={`${fmtInt(n)} candidate${n === 1 ? "" : "s"} reviewed at ${l}`} />
                     ))}
-                    {p.withheld ? <LevelBadge level="never-send" label={`withheld · ${fmtInt(p.withheld)}`} /> : null}
+                    {p.withheld ? <LevelBadge level="never-send" label={`withheld · ${fmtInt(p.withheld)}`} title="Candidates kept local by policy or because their level failed closed" /> : null}
                     {p.blocked ? <LevelBadge level="never-send" label={`blocked · ${p.blocked}`} /> : null}
                   </dd>
                   <dt>Payloads</dt>

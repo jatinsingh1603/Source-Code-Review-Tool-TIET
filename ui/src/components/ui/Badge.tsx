@@ -55,8 +55,11 @@ export function LevelBadge({
   meter = false,
   name = false,
   label,
+  title,
 }: {
   level: PrivacyLevel | string;
+  /** Tooltip; defaults to the level's name. */
+  title?: string;
   meter?: boolean;
   /** Append the level name ("L3 Minimal slice"). */
   name?: boolean;
@@ -66,7 +69,7 @@ export function LevelBadge({
   const lv = level as PrivacyLevel;
   const bars = LEVEL_BARS[lv] ?? 0;
   return (
-    <span className="lvl" title={LEVEL_NAME[lv] ? `${lv} · ${LEVEL_NAME[lv]}` : undefined}>
+    <span className="lvl" title={title ?? (LEVEL_NAME[lv] ? `${lv} · ${LEVEL_NAME[lv]}` : undefined)}>
       {label ?? (name && LEVEL_NAME[lv] ? `${lv} ${LEVEL_NAME[lv]}` : level)}
       {meter && (
         <span className="meter" aria-hidden>
