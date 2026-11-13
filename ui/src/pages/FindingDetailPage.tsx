@@ -176,11 +176,14 @@ export default function FindingDetailPage() {
       {
         onSuccess: (r) => {
           const secs = Math.round((Date.now() - started) / 1000);
+          // Same words as the badge on this page: a low-confidence "vulnerable" reads "needs review".
+          const shown = r.llm ? verdictOf(r) : null;
+          const conf = shown?.conf != null ? ` at ${shown.conf.toFixed(2)}` : "";
           const verdict =
             r.llm?.is_vulnerable === true
-              ? "vulnerable"
+              ? `vulnerable${conf}${shown?.kind === "rev" ? ", needs review" : ""}`
               : r.llm?.is_vulnerable === false
-                ? "not vulnerable"
+                ? `not vulnerable${conf}`
                 : "undecided";
           toast.success(
             "Model review done",
