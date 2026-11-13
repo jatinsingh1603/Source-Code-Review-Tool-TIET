@@ -44,7 +44,7 @@ from codekavach.config import Settings
 from codekavach.core.log import get_logger
 from codekavach.core.models import Candidate, RawCode
 from codekavach.core.models.disclosure import DisclosureRows, PayloadStub
-from codekavach.core.models.enums import PrivacyLevel, Severity
+from codekavach.core.models.enums import CandidateKind, PrivacyLevel, Severity
 from codekavach.core.models.payload import (
     MAX_STUB_SUMMARIES,
     MAX_SUMMARY_LENGTH,
@@ -451,6 +451,10 @@ class PrivacyPrepareStage:
         engine: Pseudonymiser,
         vault: Vault,
     ) -> _Outcome:
+        if candidate.kind is CandidateKind.SECRET:
+            # The model would only see the placeholder that replaced the secret: nothing to
+            # review, and the slice of a file full of secrets would repeat once per secret.
+            raise _FailedError(SLICE_FAILED)
         try:
             selector = StrategySelector.from_settings(ctx.config)
             ceiling = plan_for(level).strategy_ceiling
