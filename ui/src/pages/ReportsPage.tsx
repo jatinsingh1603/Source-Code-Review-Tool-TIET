@@ -20,7 +20,15 @@ const FORMAT_NAME: Record<string, string> = {
   csv: "CSV",
   xlsx: "XLSX",
   md: "Markdown",
-  compliance: "Compliance",
+  compliance: "Compliance annex",
+  manifest: "Integrity manifest",
+};
+
+/** Formats that take a while to render the first time, with what to say meanwhile. */
+const SLOW: Record<string, string> = {
+  pdf: "Rendering the PDF; the first time for a scan takes up to a minute.",
+  docx: "Writing the Word document.",
+  manifest: "Rendering every format and hashing it into the manifest; this can take a minute.",
 };
 
 /** Reports (SCREENS.md §15): generated reports, the builder and a page preview. */
@@ -43,6 +51,7 @@ export default function ReportsPage() {
   const toast = useToast();
   const [chosen, setChosen] = useState<Set<string>>(new Set(["pdf", "docx", "sarif", "json"]));
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const builderRef = useRef<HTMLFormElement>(null);
   const formats = (reportsQ.data ?? []).filter((f) => f.format !== "markdown");
   const frameworks = useMemo(() => {
@@ -61,18 +70,24 @@ export default function ReportsPage() {
     if (!scanId) return;
     setBusy(true);
     let ok = 0;
-    for (const fmt of chosen) {
+    // The manifest hashes the other files, so it comes last.
+    const order = formats.map((f) => f.format).filter((f) => chosen.has(f)).sort((a, b) => Number(a === "manifest") - Number(b === "manifest"));
+    for (const [i, fmt] of order.entries()) {
       const f = formats.find((x) => x.format === fmt);
       if (!f?.available) continue;
+      const name = FORMAT_NAME[fmt] ?? fmt.toUpperCase();
+      setProgress(`${i + 1} of ${order.length} · ${f.rendered ? `Downloading ${name}.` : (SLOW[fmt] ?? `Rendering ${name}.`)}`);
       try {
         const { blob, filename } = await fetchReport(scanId, fmt);
         saveBlob(blob, filename);
         ok += 1;
       } catch (e) {
-        toast.error(`${FORMAT_NAME[fmt] ?? fmt} failed`, e instanceof Error ? e.message : undefined);
+        toast.error(`${name} failed`, e instanceof Error ? e.message : undefined);
       }
     }
     setBusy(false);
+    setProgress(null);
+    void reportsQ.refetch();
     if (ok) toast.success("Report generated", `${ok} file${ok === 1 ? "" : "s"} downloaded.`);
   };
 
@@ -81,7 +96,8 @@ export default function ReportsPage() {
     if (!scanId) return;
     try {
       const { blob } = await fetchReport(scanId, "html");
-      setPreview(await blob.text());
+      // The sandbox blocks the report's scripts anyway; dropping them keeps the console clean.
+      setPreview((await blob.text()).replace(/<script\b[\s\S]*?<\/script>/gi, ""));
     } catch (e) {
       toast.error("Preview failed", e instanceof Error ? e.message : undefined);
     }
@@ -97,7 +113,7 @@ export default function ReportsPage() {
             variant="primary"
             onClick={() => {
               builderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-              builderRef.current?.querySelector<HTMLElement>("button, select")?.focus();
+              builderRef.current?.querySelector<HTMLElement>("button:not(:disabled), select:not(:disabled)")?.focus({ preventScroll: true });
             }}
           >
             New report
@@ -253,6 +269,11 @@ export default function ReportsPage() {
             <Button variant="primary" onClick={() => void generate()} loading={busy} disabled={!chosen.size}>
               Generate report
             </Button>
+            {progress && (
+              <p className="xs muted" role="status" aria-live="polite" style={{ marginTop: -8 }}>
+                {progress}
+              </p>
+            )}
           </form>
 
           <div className="stack">

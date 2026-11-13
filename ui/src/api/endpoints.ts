@@ -197,10 +197,11 @@ const FORMAT_LABELS: Record<string, string> = {
   md: "Markdown report",
   markdown: "Markdown report",
   docx: "Word document",
-  compliance: "Compliance mapping",
+  compliance: "Compliance annex",
+  manifest: "Integrity manifest",
 };
 
-const FORMAT_ORDER = ["html", "pdf", "docx", "xlsx", "compliance", "sarif", "json", "csv", "md", "markdown"];
+const FORMAT_ORDER = ["html", "pdf", "docx", "xlsx", "compliance", "sarif", "json", "csv", "md", "markdown", "manifest"];
 
 export const ALL_REPORT_FORMATS = ["html", "pdf", "docx", "xlsx", "sarif", "json", "csv", "md"];
 
@@ -218,6 +219,8 @@ export function normaliseFormats(data: unknown): ReportFormat[] {
       available: o.available ?? true,
       reason: o.reason ?? null,
       media_type: o.media_type,
+      rendered: o.rendered,
+      size: o.size,
     };
   });
   // `markdown` and `md` are the same renderer; show one card.

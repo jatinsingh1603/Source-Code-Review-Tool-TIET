@@ -477,6 +477,9 @@ export interface ReportFormat {
   available: boolean;
   reason?: string | null;
   media_type?: string;
+  /** Already rendered on the server (a download is immediate). */
+  rendered?: boolean;
+  size?: number | null;
 }
 
 export interface ProviderInfo {
