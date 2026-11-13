@@ -295,6 +295,7 @@ def test_finding_engines_sla_runs_and_scenario(
     assert runs and runs[0]["source"] == "review"
     schemes = {ref["framework"] for ref in detail.get("compliance") or []}
     assert set(item["frameworks"]) == schemes
+    assert item["llm_confidence"] == detail["llm"]["confidence"]
     assert any(run["ledger_seq"] for run in runs)
     assert detail["llm"]["consensus"]["samples"] >= 1
     assert detail["baseline_state"] is None

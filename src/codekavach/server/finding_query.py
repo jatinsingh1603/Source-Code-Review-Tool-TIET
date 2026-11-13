@@ -145,6 +145,8 @@ def enrich(
     item["engines"] = merged_engines(row, folded)
     item["merged_from"] = len(item["engines"])
     item["verdict"] = verdict_word(data)
+    reviews = (data.get("provenance") or {}).get("llm_reviews") or []
+    item["llm_confidence"] = reviews[-1].get("confidence") if reviews else None
     item["privacy_level"] = review_level(data) or scan_level
     item["language"] = data.get("language")
     item["frameworks"] = sorted(

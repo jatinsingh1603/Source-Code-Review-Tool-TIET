@@ -287,6 +287,8 @@ export interface Finding {
   compliance?: ComplianceRef[];
   /** Compliance frameworks the finding maps to (list view; the detail carries `compliance`). */
   frameworks?: string[];
+  /** The last model review's confidence (list view; the detail carries `llm`). */
+  llm_confidence?: number | string | null;
   locations: Location[];
   evidence?: Evidence | null;
   llm?: LlmVerdict | null;

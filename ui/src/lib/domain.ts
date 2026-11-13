@@ -26,10 +26,18 @@ export function bySeverity(a: Finding, b: Finding): number {
  * said not vulnerable. `null` when no model reviewed the finding.
  */
 export function verdictOf(
-  f: Pick<Finding, "llm" | "status" | "llm_reviewed"> & { verdict?: string | null; confidence?: number | string },
+  f: Pick<Finding, "llm" | "status" | "llm_reviewed"> & {
+    verdict?: string | null;
+    confidence?: number | string;
+    llm_confidence?: number | string | null;
+  },
 ): { kind: VerdictKind; conf: number | null } | null {
   if (f.status === "false_positive") return { kind: "fp", conf: null };
-  const llm = f.llm;
+  const llm =
+    f.llm ??
+    (f.llm_confidence != null && (f.verdict === "vulnerable" || f.verdict === "not_vulnerable")
+      ? { is_vulnerable: f.verdict === "vulnerable", confidence: f.llm_confidence }
+      : null);
   if (!llm) {
     // List rows carry the server's verdict word but not the model's confidence.
     if (f.verdict === "not_vulnerable") return { kind: "fp", conf: null };

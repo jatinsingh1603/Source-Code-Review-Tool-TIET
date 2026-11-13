@@ -180,7 +180,7 @@ export default function FindingsPage() {
       case "new":
         return stateOf(f) === "new";
       case "review": {
-        const c = confidenceFraction(f.llm?.confidence ?? f.confidence);
+        const c = confidenceFraction(f.llm?.confidence ?? f.llm_confidence ?? f.confidence);
         return isOpen(f) && (verdictOf(f)?.kind === "rev" || (c !== null && c < 0.65));
       }
       case "mine":
@@ -516,7 +516,7 @@ export default function FindingsPage() {
                   const loc = locationOf(f);
                   const st = stateOf(f);
                   const v = verdictOf(f);
-                  const conf = confidenceFraction(f.llm?.confidence ?? f.confidence);
+                  const conf = confidenceFraction(f.llm?.confidence ?? f.llm_confidence ?? f.confidence);
                   const engNames = enginesOf(f);
                   return (
                     <tr key={f.id} className={selected.has(f.id) ? "sel" : undefined}>
