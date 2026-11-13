@@ -1,0 +1,15 @@
+{
+  "body": {
+    "content": {
+      "analysis": "Mock analysis 1264d00ebe2b: the root cause is unvalidated input at the sink.",
+      "defence_in_depth": [
+        "Apply least privilege to the account used."
+      ],
+      "guidance": "1. Validate the input against an allow-list.\n2. Use the safe API of the library instead of building the operation by hand.",
+      "secure_example": "result = safe_call(validated_input)  # mock example",
+      "secure_example_language": "python"
+    }
+  },
+  "payload_hash": "1264d00ebe2b88c06ef42c90bce336ef315e9619bd5ab7427f40b1d6e3f8d6af",
+  "status": 200
+}

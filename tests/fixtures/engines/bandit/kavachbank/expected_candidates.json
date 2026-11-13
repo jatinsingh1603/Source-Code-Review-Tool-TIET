@@ -46,7 +46,7 @@
     "engine_version": "1.9.4",
     "fingerprint": "ckfp1:a223613e356d50990c07aded01519b64",
     "id": "cand-1",
-    "kind": "vulnerability",
+    "kind": "hotspot",
     "language": "python",
     "locations": [
       {
@@ -157,7 +157,7 @@
     "engine_version": "1.9.4",
     "fingerprint": "ckfp1:d7a442224a09dad1c908d50d2891ec7a",
     "id": "cand-4",
-    "kind": "vulnerability",
+    "kind": "hotspot",
     "language": "python",
     "locations": [
       {
@@ -231,7 +231,7 @@
     "engine_version": "1.9.4",
     "fingerprint": "ckfp1:48da00f270584d4f04992d68f7061ace",
     "id": "cand-6",
-    "kind": "vulnerability",
+    "kind": "hotspot",
     "language": "python",
     "locations": [
       {

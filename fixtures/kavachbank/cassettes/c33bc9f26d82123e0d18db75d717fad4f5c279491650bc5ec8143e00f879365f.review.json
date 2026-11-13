@@ -1,0 +1,22 @@
+{
+  "body": {
+    "content": {
+      "cited_lines": [],
+      "confidence": "medium",
+      "cwe": [
+        639
+      ],
+      "exploit_scenario": "Mock scenario: the attacker sends crafted input.",
+      "impact": "Mock impact: an attacker could read or modify data handled by this code.",
+      "is_vulnerable": true,
+      "needs_context": [],
+      "reasoning": "Mock analysis of payload c33bc9f26d82: the data flow was not executed.",
+      "remediation": "1. Validate the input against an allow-list.\n2. Use the safe API of the library instead of building the operation by hand.",
+      "secure_example": "result = safe_call(validated_input)  # mock example",
+      "secure_example_language": "python",
+      "severity": "medium"
+    }
+  },
+  "payload_hash": "c33bc9f26d82123e0d18db75d717fad4f5c279491650bc5ec8143e00f879365f",
+  "status": 200
+}

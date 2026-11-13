@@ -31,7 +31,11 @@ _log = get_logger(__name__)
 
 GENERIC_CVSS4: Final = "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:L/VA:L/SC:N/SI:N/SA:N"
 GENERIC_CVSS31: Final = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L"
-LADDER_KINDS: Final = frozenset({CandidateKind.DEPENDENCY, CandidateKind.MISCONFIGURATION})
+# Kinds whose engine rates each instance; a hotspot is a place to review, so its rule's own
+# severity applies rather than the worst case of its weakness family.
+LADDER_KINDS: Final = frozenset(
+    {CandidateKind.DEPENDENCY, CandidateKind.MISCONFIGURATION, CandidateKind.HOTSPOT}
+)
 # Representative Base vectors whose v4.0 and v3.1 scores fall in each qualitative band (derived).
 SEVERITY_LADDER: Final[dict[Severity, tuple[str, str]]] = {
     Severity.CRITICAL: (

@@ -9,7 +9,7 @@
     "engine_version": "1.9.4",
     "fingerprint": "ckfp1:f30e904a5366d4909af0aaffb6676f2a",
     "id": "cand-0",
-    "kind": "vulnerability",
+    "kind": "hotspot",
     "language": "python",
     "locations": [
       {

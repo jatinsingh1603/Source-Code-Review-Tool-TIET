@@ -48,6 +48,9 @@ MAX_REPORT_BYTES: Final = 64 * 1024 * 1024
 INSTALL_HINT: Final = "pipx install bandit  (or: pip install bandit)"
 PASSWORD_TESTS: Final = frozenset({"B105", "B106", "B107"})
 PASSWORD_DESCRIPTION: Final = "Possible hardcoded password"  # noqa: S105 - a fixed phrase
+# B401-B415 flag an import (subprocess, pickle, pyCrypto ...), not a use of it: a place to look
+# at, so they are hotspots and keep Bandit's own severity instead of the weakness family's.
+IMPORT_TESTS: Final = frozenset(f"B4{n:02d}" for n in range(1, 16))
 _LEVELS: Final = {"HIGH": "error", "MEDIUM": "warning", "LOW": "note"}
 
 SPEC: Final = EngineSpec(
@@ -84,6 +87,8 @@ def report_to_sarif(report: object) -> bytes:
         if password:
             rule["shortDescription"] = {"text": PASSWORD_DESCRIPTION}
             rule["properties"] = {"tags": ["secret"]}
+        elif test_id in IMPORT_TESTS:
+            rule["properties"] = {"tags": ["hotspot"]}
         lines = [
             n for n in item.get("line_range") or [item.get("line_number", 1)] if isinstance(n, int)
         ]

@@ -89,7 +89,7 @@ class SeverityPolicy(KavachModel):
         description="Never rate below the severity the reporting engine assigned.",
     )
     engine_authoritative_kinds: tuple[str, ...] = Field(
-        default=("dependency", "misconfiguration"),
+        default=("dependency", "misconfiguration", "hotspot"),
         description="Candidate kinds whose engine rates each instance; its severity is used.",
     )
     model_downgrade: bool = Field(

@@ -1,0 +1,22 @@
+{
+  "body": {
+    "content": {
+      "cited_lines": [],
+      "confidence": "high",
+      "cwe": [
+        327
+      ],
+      "exploit_scenario": "",
+      "impact": "",
+      "is_vulnerable": false,
+      "needs_context": [],
+      "reasoning": "Mock analysis of payload 3ea26f90d34f: the data flow was not executed.",
+      "remediation": "",
+      "secure_example": "",
+      "secure_example_language": "",
+      "severity": "info"
+    }
+  },
+  "payload_hash": "3ea26f90d34ff229d96587997dd56ffdcca926add7025044757659d931daef81",
+  "status": 200
+}

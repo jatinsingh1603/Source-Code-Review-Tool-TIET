@@ -225,6 +225,13 @@ def test_engine_rated_kinds_keep_the_engine_severity_and_a_matching_vector() -> 
         assert DEFAULT_POLICY.from_score(result.cvss4_score) is severity
         assert DEFAULT_POLICY.from_score(result.cvss31_score) is severity
         assert result.to_risk().severity_source == "engine"
+    # A hotspot (Bandit's "import subprocess") keeps its rule's rating, not the worst case of
+    # its weakness family (command injection would be critical).
+    hotspot = engine.rate(
+        RatingContext(cwe=(78,), kind=CandidateKind.HOTSPOT, engine_severity=Severity.LOW),
+        confidence=Confidence.HIGH,
+    )
+    assert hotspot.severity is Severity.LOW
     kev = engine.rate(
         RatingContext(
             cwe=(1395,), kind=CandidateKind.DEPENDENCY, engine_severity=Severity.HIGH, kev=True
