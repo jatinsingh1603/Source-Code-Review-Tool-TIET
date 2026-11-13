@@ -93,8 +93,11 @@ class TaskName(StrEnum):
     SUMMARISE = "summarise"
 
 
-_ALWAYS_LOCAL = frozenset({ProviderKind.MOCK, ProviderKind.REPLAY, ProviderKind.OLLAMA})
-_HOST_DERIVED = frozenset({ProviderKind.OPENAI_COMPATIBLE, ProviderKind.LITELLM})
+_ALWAYS_LOCAL = frozenset({ProviderKind.MOCK, ProviderKind.REPLAY})
+# Local only on a loopback host: an Ollama server elsewhere is self-hosted, not local.
+_HOST_DERIVED = frozenset(
+    {ProviderKind.OPENAI_COMPATIBLE, ProviderKind.LITELLM, ProviderKind.OLLAMA}
+)
 _OFFLINE = frozenset({ProviderKind.MOCK, ProviderKind.REPLAY})
 _REQUIRED_BY_KIND: dict[ProviderKind, tuple[str, ...]] = {
     ProviderKind.OPENAI_COMPATIBLE: ("base_url",),

@@ -1,0 +1,1 @@
+An `ollama` provider whose `base_url` is not a loopback address is now treated as remote: it needs consent, is stopped by `--offline`, must be on the provider host allow-list and gets the public tier floor. Set `trust_tier = "local"` explicitly for a self-hosted server you trust.

@@ -129,17 +129,32 @@ PUBLIC = ["llm.example.org", "8.8.8.8", "172.32.0.1", "[2001:db8::1]"]
 @pytest.mark.parametrize("host", LOOPBACK + PRIVATE + PUBLIC)
 def test_tier_derivation_table(kind: ProviderKind, host: str) -> None:
     fields = dict(MINIMAL[kind])
-    if kind in {ProviderKind.OPENAI_COMPATIBLE, ProviderKind.LITELLM, ProviderKind.AZURE_OPENAI}:
+    if kind in {
+        ProviderKind.OPENAI_COMPATIBLE,
+        ProviderKind.LITELLM,
+        ProviderKind.AZURE_OPENAI,
+        ProviderKind.OLLAMA,
+    }:
         fields["base_url"] = f"https://{host}/v1"
     provider = llm(p={"kind": kind, **fields}).providers["p"]
-    if kind in {ProviderKind.MOCK, ProviderKind.REPLAY, ProviderKind.OLLAMA}:
+    if kind in {ProviderKind.MOCK, ProviderKind.REPLAY}:
         expected = TrustTier.LOCAL
-    elif kind in {ProviderKind.OPENAI_COMPATIBLE, ProviderKind.LITELLM}:
+    elif kind in {ProviderKind.OPENAI_COMPATIBLE, ProviderKind.LITELLM, ProviderKind.OLLAMA}:
         expected = TrustTier.LOCAL if host in LOOPBACK else TrustTier.PUBLIC
     else:
         expected = TrustTier.PUBLIC
     assert provider.effective_trust_tier is expected
     assert provider.is_remote is (expected is TrustTier.PUBLIC)
+
+
+@pytest.mark.parametrize(
+    "url", ["https://gpu.corp.example:11434", "https://10.0.0.5:11434", "http://192.168.1.20:11434"]
+)
+def test_ollama_off_loopback_is_remote(url: str) -> None:
+    """A remote Ollama gets consent, the host allow-list and the public floor (I1, I6)."""
+    provider = llm(p={"kind": "ollama", "model": "m", "base_url": url}).providers["p"]
+    assert provider.effective_trust_tier is TrustTier.PUBLIC
+    assert provider.is_remote is True
 
 
 def test_litellm_without_url_is_public() -> None:

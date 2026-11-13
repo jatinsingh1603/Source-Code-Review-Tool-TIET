@@ -72,7 +72,7 @@ A check whose back end belongs to an epic that has not landed is `SKIP not avail
 `provider:<id>:reachable` is the only check that can send something to a remote host. It sends the constant probe of the provider adapter through the egress transport (epic E22), and the probe is recorded in the ledger like any other request (invariant I1). The doctor module builds no request and opens no connection itself; `tests/privacy/test_cli_static_imports.py` and the import contract `cli-no-direct-egress` hold it to that. The rules, in the order they are applied:
 
 1. Without `--probe-providers` the check is `SKIP use --probe-providers`, and the probe function is not called.
-2. A remote provider under `--offline` is `SKIP offline`. A local provider (`ollama`, or a loopback server whose trust tier is `local`) is probed under `--offline`, because loopback traffic does not leave the machine.
+2. A remote provider under `--offline` is `SKIP offline`. A local provider (`ollama` or another server on a loopback address, or one whose trust tier is set to `local`) is probed under `--offline`, because loopback traffic does not leave the machine.
 3. With `llm.enabled = false` the check is `SKIP`.
 4. The test doubles pass without a probe (`local mock provider; nothing was sent`).
 5. A remote provider is `SKIP remote providers are not allowed` when `llm.allow_remote = false`, and `SKIP privacy level L0 sends nothing` at level `L0`.

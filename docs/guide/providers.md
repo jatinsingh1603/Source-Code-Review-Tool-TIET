@@ -17,7 +17,7 @@ In the dashboard: **Providers**, **Run health checks** (each configured provider
 |----------|-----|
 | `mock` | Canned answers; for demonstrations and checking the pipeline. It has no judgement, so its verdicts say nothing about your code. |
 | `replay` | Answers from recorded cassettes (for example `fixtures/kavachbank/cassettes`). Reproducible offline demos and tests. |
-| `ollama` | A model served by [Ollama](https://ollama.com) on this machine or in the compose `local-llm` profile. |
+| `ollama` | A model served by [Ollama](https://ollama.com) on this machine or in the compose `local-llm` profile. Local only on a loopback address; on any other host it is remote and needs consent and the host allow-list. |
 | `vllm`, `lmstudio`, `ollama-openai` | Local OpenAI-compatible servers (presets). |
 
 Ollama in compose:
