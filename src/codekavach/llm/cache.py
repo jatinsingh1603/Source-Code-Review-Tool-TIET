@@ -12,7 +12,8 @@ prompt, the model or the sample is a miss.
 in pseudonym space, the same class of data as the ledger's completed entries and the replay
 cassettes. It lives in the scan state directory (``<state>/llm-cache``), next to the vault whose
 salt produced the pseudonyms, with owner-only permissions. A failed, refused or unparseable
-answer is never cached.
+answer is never cached, and neither is one the output defence rejects: ``ManagedSession`` holds an
+answer back until the reviewer accepts it.
 """
 
 import contextlib

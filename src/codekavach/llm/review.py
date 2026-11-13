@@ -220,6 +220,12 @@ class Reviewer:
             wait_seconds=self._wait,
         )
 
+    def _accept(self, result: Dispatch) -> None:
+        """Let the session cache an answer that passed the output defence."""
+        accept = getattr(self._session, "accept", None)
+        if accept is not None:
+            accept(result)
+
     def _triage_once(
         self, payload: SanitisedPayload, facts: CandidateFacts, perspective: str, context: str
     ) -> tuple[LLMVerdict | None, str | None]:
@@ -280,6 +286,7 @@ class Reviewer:
             self.counts.rejected += 1
             _log.warning("llm_output_rejected", reason=rejected.reason)
             return None, "invalid"
+        self._accept(result)
         return cleaned, None
 
     def _combined(self, task: TemplatedTask, raw: RawResponse) -> LLMVerdict:
@@ -321,7 +328,10 @@ class Reviewer:
                 check_text(piece, canaries=(self._canary,), shingles=self._shingles[name])
         except (ProviderError, ValueError, OutputRejected):
             return None
-        return answer if isinstance(answer, model) else None
+        if not isinstance(answer, model):
+            return None
+        self._accept(result)
+        return answer
 
     # -- the flow --------------------------------------------------------------------------
 

@@ -396,10 +396,19 @@ def test_the_cache_answers_a_repeated_request_without_egress(tmp_path: Any) -> N
     cache = ResponseCache(tmp_path / "cache")
     fake = FakeSession(Dispatch("answered", status=200, body=OK_BODY))
     first = managed(fake, [], cache=cache)
-    send(first)
+    first.accept(send(first))
     second = managed(fake, [], cache=cache)
     hit = send(second)
     assert (fake.calls, hit.body, second.budget.cache_hits) == (1, OK_BODY, 1)
+
+
+def test_an_answer_is_cached_only_once_the_output_defence_accepts_it(tmp_path: Any) -> None:
+    cache = ResponseCache(tmp_path / "cache")
+    fake = FakeSession(Dispatch("answered", status=200, body=OK_BODY))
+    send(managed(fake, [], cache=cache))  # rejected by the reviewer: never accepted
+    second = managed(fake, [], cache=cache)
+    send(second)
+    assert (fake.calls, second.budget.cache_hits) == (2, 0)
 
 
 def test_a_refusal_or_an_error_is_never_cached(tmp_path: Any) -> None:
@@ -529,7 +538,9 @@ def test_the_combined_review_is_cached_and_keyed_apart_from_triage(tmp_path: Any
 
     def ask(session: ManagedSession, task: str) -> Dispatch:
         request = adapter.prepare(review if task == "review" else TASK, payload())
-        return session.dispatch(request, provider="p", model="m-1", task=task, payload=payload())
+        result = session.dispatch(request, provider="p", model="m-1", task=task, payload=payload())
+        session.accept(result)
+        return result
 
     ask(managed(fake, [], cache=cache), "review")
     second = managed(fake, [], cache=cache)

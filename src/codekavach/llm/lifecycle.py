@@ -87,6 +87,8 @@ class ManagedSession:
         self._rng = rng if rng is not None else random.Random()  # noqa: S311 - jitter only
         self._lock = threading.Lock()  # dispatch may run on several threads at once
         self._samples: Counter[tuple[str, str]] = Counter()
+        # Answers waiting for the reviewer's output defence before they may be cached.
+        self._pending: dict[int, tuple[Dispatch, CacheKey]] = {}
         self.retries = 0
         self.budget_refusals = 0
 
@@ -217,9 +219,24 @@ class ManagedSession:
             self.retries += 1
             self._sleep(delay)
             attempt += 1
-        if key is not None and self._cacheable(result) and self._cache is not None:
-            self._cache.put(key, result.status or 200, result.body)
+        if key is not None and self._cacheable(result):
+            with self._lock:
+                self._pending[id(result)] = (result, key)
         return result
+
+    def accept(self, result: Dispatch) -> None:
+        """Cache ``result`` now that the output defence has passed it.
+
+        ``dispatch`` only holds a cacheable answer back: the canary check depends on the canary
+        of this run, so an answer cached before the check could be replayed into a later run
+        whose fresh canary it no longer contains. An answer the reviewer rejects is never
+        accepted, so it is never cached.
+        """
+        with self._lock:
+            entry = self._pending.pop(id(result), None)
+        if entry is None or entry[0] is not result or self._cache is None:
+            return
+        self._cache.put(entry[1], result.status or 200, result.body)
 
     @staticmethod
     def _cacheable(result: Dispatch) -> bool:

@@ -317,6 +317,10 @@ class ScriptedSession:
     def __init__(self, tamper: Callable[[str, dict[str, object]], dict[str, object]] | None = None):
         self.tamper = tamper
         self.tasks: list[str] = []
+        self.accepted: list[Dispatch] = []
+
+    def accept(self, result: Dispatch) -> None:
+        self.accepted.append(result)
 
     def dispatch(self, request: PreparedRequest, **kwargs: object) -> Dispatch:
         self.tasks.append(str(kwargs["task"]))
@@ -390,6 +394,15 @@ def test_a_model_that_leaks_the_canary_is_rejected_and_nothing_is_kept() -> None
     outcome = rv.review(vulnerable_payload())
     assert outcome.verdict is None and outcome.failure == "invalid"
     assert rv.counts.rejected == 1 and session.tasks == ["triage"]
+    # a rejected answer must not reach the cache, or a later run (new canary) would replay it
+    assert session.accepted == []
+
+
+def test_an_answer_that_passes_the_defence_is_accepted_for_the_cache() -> None:
+    session = ScriptedSession()
+    rv = reviewer(session, tasks=set())
+    rv.review(vulnerable_payload())
+    assert len(session.accepted) == 1
 
 
 def test_the_canary_is_in_the_material_and_never_in_the_rubric() -> None:
