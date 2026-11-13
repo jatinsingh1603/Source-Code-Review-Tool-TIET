@@ -8,6 +8,7 @@ scan's stored ``Scan`` record, the findings with their current triage status and
 summary; a cached file is re-rendered when triage changed after it was written.
 """
 
+import functools
 import json
 from collections.abc import Sequence
 from datetime import datetime
@@ -52,12 +53,30 @@ LABELS: Final = {
 ALIASES: Final = {"markdown": "md"}
 
 
+@functools.cache
+def _installed_registry() -> Any:
+    """The renderer registry without settings, built once per process.
+
+    Building it reads the installed entry points, which takes about a second and serialises
+    concurrent requests; what is installed does not change while the server runs.
+    """
+    from codekavach.report.render.base import renderer_registry  # noqa: PLC0415
+
+    return renderer_registry(None)
+
+
+def _registry(settings: "Settings | None") -> Any:
+    if settings is None:
+        return _installed_registry()
+    from codekavach.report.render.base import renderer_registry  # noqa: PLC0415
+
+    return renderer_registry(settings)
+
+
 def available_formats(settings: "Settings | None" = None) -> list[str]:
     """The report formats the installed renderers provide."""
     try:
-        from codekavach.report.render.base import renderer_registry  # noqa: PLC0415
-
-        return list(renderer_registry(settings).names())
+        return list(_registry(settings).names())
     except Exception as error:  # noqa: BLE001 - no renderer is a reportable state, not a crash
         _log.warning("server_renderers_unavailable", error_type=type(error).__name__)
         return []
@@ -66,9 +85,7 @@ def available_formats(settings: "Settings | None" = None) -> list[str]:
 def extension_of(fmt: str, settings: "Settings | None" = None) -> str:
     """The file extension of ``fmt`` (from the renderer when it says)."""
     try:
-        from codekavach.report.render.base import renderer_registry  # noqa: PLC0415
-
-        value = getattr(renderer_registry(settings).get(fmt), "extension", fmt)
+        value = getattr(_registry(settings).get(fmt), "extension", fmt)
         return str(value).lstrip(".") or fmt
     except Exception:  # noqa: BLE001 - fall back to the format name
         return fmt
