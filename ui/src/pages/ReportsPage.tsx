@@ -4,7 +4,7 @@ import { useCurrentProject } from "@/app/project-context";
 import { useFollowScanProject } from "@/app/useSelectedScan";
 import { useFindings, usePrivacy, useReports, useScans, useSettings } from "@/api/queries";
 import { fetchReport, saveBlob } from "@/api/endpoints";
-import type { Finding, Severity } from "@/api/types";
+import type { Finding, Scan, Severity } from "@/api/types";
 import { isOpen, sevCounts, sortScans } from "@/lib/domain";
 import { fmtDate, fmtInt, fmtShort, scanLabel } from "@/lib/display";
 import { frameworkLabel } from "@/lib/format";
@@ -54,7 +54,6 @@ export default function ReportsPage() {
   const [progress, setProgress] = useState<string | null>(null);
   const builderRef = useRef<HTMLFormElement>(null);
   const formats = (reportsQ.data ?? []).filter((f) => f.format !== "markdown");
-  const manifest = formats.find((f) => f.format === "manifest");
   const frameworks = useMemo(() => {
     const s = new Set<string>();
     for (const f of findings ?? []) {
@@ -147,45 +146,7 @@ export default function ReportsPage() {
               </tr>
             ) : (
               scans.slice(0, 8).map((s) => (
-                <tr key={s.id} className={s.id === scanId ? "sel" : undefined}>
-                  <td>
-                    <b className="sm">Report · {scanLabel(s.id)}</b>
-                    <div className="xs faint">{settings?.report_title as string ?? "Secure code review"}</div>
-                  </td>
-                  <td className="mono sm">{scanLabel(s.id)}</td>
-                  <td className="sm">Technical</td>
-                  <td>
-                    {s.id === scanId ? (
-                      <div className="row" style={{ gap: 4 }}>
-                        {formats
-                          .filter((f) => f.rendered && f.format !== "manifest")
-                          .map((f) => (
-                            <span key={f.format} className="tag">
-                              {FORMAT_NAME[f.format] ?? f.format.toUpperCase()}
-                            </span>
-                          ))}
-                        {reportsQ.isSuccess && !formats.some((f) => f.rendered && f.format !== "manifest") && <span className="faint sm">None yet</span>}
-                      </div>
-                    ) : (
-                      <span className="faint sm">Open to see</span>
-                    )}
-                  </td>
-                  <td>
-                    {s.id === scanId && manifest?.sha256 ? (
-                      <Hash value={manifest.sha256} copy={false} />
-                    ) : (
-                      <span className="faint sm" title="Generate the report with Integrity manifest selected to hash every file.">
-                        {s.id === scanId ? "Not generated" : "—"}
-                      </span>
-                    )}
-                  </td>
-                  <td className="sm muted">{fmtShort(s.finished_at)}</td>
-                  <td>
-                    <button type="button" className="more linkbtn" style={{ color: "var(--text)" }} onClick={() => select(s.id)}>
-                      Open <Icon name="arrow-right" />
-                    </button>
-                  </td>
-                </tr>
+                <ReportRow key={s.id} scan={s} selected={s.id === scanId} title={settings?.report_title as string | undefined} onOpen={() => select(s.id)} />
               ))
             )}
           </tbody>
@@ -476,5 +437,47 @@ function SummaryPage({
         </p>
       )}
     </div>
+  );
+}
+
+/** One row of the reports table: the formats already rendered for that scan and its manifest. */
+function ReportRow({ scan: s, selected, title, onOpen }: { scan: Scan; selected: boolean; title?: string; onOpen: () => void }) {
+  const q = useReports(s.id);
+  const rendered = (q.data ?? []).filter((f) => f.rendered && f.format !== "manifest" && f.format !== "markdown");
+  const manifest = (q.data ?? []).find((f) => f.format === "manifest");
+  return (
+    <tr className={selected ? "sel" : undefined}>
+      <td>
+        <b className="sm">Report · {scanLabel(s.id)}</b>
+        <div className="xs faint">{title ?? "Secure code review"}</div>
+      </td>
+      <td className="mono sm">{scanLabel(s.id)}</td>
+      <td className="sm">Technical</td>
+      <td>
+        <div className="row" style={{ gap: 4 }}>
+          {rendered.map((f) => (
+            <span key={f.format} className="tag">
+              {FORMAT_NAME[f.format] ?? f.format.toUpperCase()}
+            </span>
+          ))}
+          {q.isSuccess && rendered.length === 0 && <span className="faint sm">None yet</span>}
+        </div>
+      </td>
+      <td>
+        {manifest?.sha256 ? (
+          <Hash value={manifest.sha256} copy={false} />
+        ) : (
+          <span className="faint sm" title="Generate the report with Integrity manifest selected to hash every file.">
+            Not generated
+          </span>
+        )}
+      </td>
+      <td className="sm muted">{fmtShort(s.finished_at)}</td>
+      <td>
+        <button type="button" className="more linkbtn" style={{ color: "var(--text)" }} onClick={onOpen}>
+          Open <Icon name="arrow-right" />
+        </button>
+      </td>
+    </tr>
   );
 }
