@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING, Any, Final
 from codekavach.core.log import get_logger
 from codekavach.server.db.models import FindingRow, Project, ScanRow, utcnow
 from codekavach.server.events import EventLog
+from codekavach.server.insights import carry_triage
 from codekavach.server.jobs.workspace import (
     SAMPLE_IGNORE,
     ArchiveLimits,
@@ -521,6 +522,15 @@ def _store(  # noqa: PLR0917 - the parts of one result
         for finding in findings:
             columns = finding_columns(finding)
             session.merge(FindingRow(scan_id=job.scan_id, **columns))
+        session.flush()
+        carried = carry_triage(session, row)
+    if carried:
+        log.append(
+            "log",
+            {"level": "info",
+             "message": f"{carried} unchanged finding{'s' if carried != 1 else ''} kept the "
+             "reviewer's status from the previous scan"},
+        )  # fmt: skip
     for finding in findings:
         log.append(
             "finding",

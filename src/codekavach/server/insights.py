@@ -96,6 +96,51 @@ def baseline_states(
     return base.id, states, [before[fp] for fp in delta.fixed]
 
 
+# A reviewer's decision that still holds when the same finding is reported again. ``fixed`` is
+# not carried: a finding that comes back after a fix is a regression and opens again.
+CARRIED_STATUSES: Final = frozenset({"confirmed", "false_positive", "accepted_risk"})
+
+
+def carry_triage(session: Session, scan: ScanRow) -> int:
+    """Copy status and assignee from the previous scan to unchanged findings of ``scan``.
+
+    A finding with the same fingerprint as one the reviewer already triaged keeps that decision,
+    with a history entry naming the scan it came from. Returns the number of findings carried.
+    """
+    base = previous_scan(session, scan)
+    if base is None:
+        return 0
+    before = {
+        str(item.fingerprint): item
+        for item in session.scalars(select(FindingRow).where(FindingRow.scan_id == base.id))
+        if item.fingerprint and (item.status in CARRIED_STATUSES or item.assignee)
+    }
+    if not before:
+        return 0
+    label = "SCN-" + base.id.removeprefix("scn_")[:6].upper()
+    carried = 0
+    for row in session.scalars(select(FindingRow).where(FindingRow.scan_id == scan.id)):
+        old = before.get(str(row.fingerprint))
+        if old is None or row.status != "open":
+            continue
+        status = old.status if old.status in CARRIED_STATUSES else row.status
+        row.status = status
+        row.assignee = old.assignee
+        session.add(
+            FindingEvent(
+                finding_id=row.id,
+                actor="CodeKavach",
+                action="carried",
+                from_status="open",
+                to_status=status,
+                assignee=old.assignee,
+                comment=f"Kept the reviewer's decision from {label}: the finding is unchanged.",
+            )
+        )
+        carried += 1
+    return carried
+
+
 # --- merged engines -------------------------------------------------------------------------
 
 
