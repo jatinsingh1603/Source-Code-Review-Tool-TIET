@@ -27,6 +27,7 @@ The repository's own continuous integration is part of the demo: a green badge o
 | `detector-eval` | `tools/detector_eval.py --check` | Recall of every HIGH-confidence secret/PII detector subtype on the labelled corpus is 1.0; the table is in the job summary. |
 | `ui` | `npm ci && npm run build && npm test` in `ui/` | The web dashboard type-checks, builds and passes its unit tests. Green and skipped when `ui/package.json` is absent. |
 | `docker` | `docker buildx build -f deploy/docker/Dockerfile` (no push) | The server image (API, dashboard and CLI) builds from a clean checkout. Publishing is the separate Container workflow. |
+| `provider-conformance` | `pytest tests/conformance -m conformance` | Every registered LLM provider adapter (AgentRouter, OpenAI, Anthropic, Gemini and the others) meets the same request and response contract, in offline and recorded-cassette modes; no key and no connection. |
 | `ci-ok` | | The single required check: green only when every job above is green. |
 
 ### The privacy invariants in the test job
@@ -95,4 +96,6 @@ A client who wants their own workflow to call a real provider adds the key as a 
 
 A green run of this pipeline on `main`, checked while preparing this runbook:
 
-- Pending: the link is added here once the first run with the split test jobs completes green.
+- <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43331968149>: commit `eea512c`, 12 November 2026, every job green (`ci-ok` success), including the four test cells, `perf`, `ui`, `docker`, `demo`, `detector-eval` and `provider-conformance`. The test step of `test (ubuntu-latest, 3.12)` took 11 minutes 23 seconds, the whole job 11 minutes 39 seconds, against its 20-minute limit.
+
+Later pushes from the feature streams may turn a run red until the next fix lands; open this run when the latest one is not green.
