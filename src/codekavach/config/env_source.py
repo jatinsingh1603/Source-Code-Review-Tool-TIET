@@ -52,6 +52,11 @@ RESERVED_ENV: frozenset[str] = frozenset(
         "CODEKAVACH_LOG_LEVEL",
         "CODEKAVACH_LOG_FORMAT",
         "CODEKAVACH_LOG_THIRD_PARTY",
+        # E32/E39: the dashboard server and its container (compose sets these for every process)
+        "CODEKAVACH_ADMIN_PASSWORD",
+        "CODEKAVACH_AGENTROUTER_API_KEY",
+        "CODEKAVACH_SERVER_DATA_DIR",
+        "CODEKAVACH_SERVER_VAULT_PASSPHRASE",
         # Test-harness switches exported by CI for the whole job
         "CODEKAVACH_PERF_FACTOR",
         "CODEKAVACH_TEST_NETWORK",
@@ -85,6 +90,10 @@ RESERVED_ENV_MEANINGS: Mapping[str, str] = MappingProxyType(
         "CODEKAVACH_LOG_LEVEL": "Lowest level of log events on stderr.",
         "CODEKAVACH_LOG_FORMAT": "Format of log events on stderr: console or json.",
         "CODEKAVACH_LOG_THIRD_PARTY": "Show log events of third-party libraries when true.",
+        "CODEKAVACH_ADMIN_PASSWORD": "Server: password of the admin account made on first start.",
+        "CODEKAVACH_AGENTROUTER_API_KEY": "Secret: API key of the agentrouter provider.",
+        "CODEKAVACH_SERVER_DATA_DIR": "Server: data directory (the --data-dir option).",
+        "CODEKAVACH_SERVER_VAULT_PASSPHRASE": "Secret: vault passphrase of the server.",
         "CODEKAVACH_PERF_FACTOR": "Test harness: multiplier for performance budgets.",
         "CODEKAVACH_TEST_NETWORK": "Test harness: allow tests marked network to open sockets.",
         "CODEKAVACH_UPDATE_GOLDEN": "Test harness: rewrite golden files instead of comparing.",

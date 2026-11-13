@@ -318,6 +318,8 @@ Other `CODEKAVACH_*` variables are errors (CK-CFG-060), so a misspelt setting is
 | Variable | Meaning |
 |----------|---------|
 | `CODEKAVACH_ACCEPT_EGRESS` | Approve sending sanitised payloads to a remote provider (CI). |
+| `CODEKAVACH_ADMIN_PASSWORD` | Server: password of the admin account made on first start. |
+| `CODEKAVACH_AGENTROUTER_API_KEY` | Secret: API key of the agentrouter provider. |
 | `CODEKAVACH_CONFIG` | Configuration file to use instead of the discovered project file. |
 | `CODEKAVACH_DEBUG` | Print tracebacks and debug logs on stderr. |
 | `CODEKAVACH_HOME` | Directory of the user configuration, state and trust store. |
@@ -337,6 +339,8 @@ Other `CODEKAVACH_*` variables are errors (CK-CFG-060), so a misspelt setting is
 | `CODEKAVACH_PROFILE` | Name of the profile to apply (for example demo or ci). |
 | `CODEKAVACH_PROVIDER` | LLM provider id to use (the --provider option). |
 | `CODEKAVACH_QUIET` | Print only results and errors (the --quiet option). |
+| `CODEKAVACH_SERVER_DATA_DIR` | Server: data directory (the --data-dir option). |
+| `CODEKAVACH_SERVER_VAULT_PASSPHRASE` | Secret: vault passphrase of the server. |
 | `CODEKAVACH_SKIP_PERF` | Test harness: skip the performance budget tests. |
 | `CODEKAVACH_TEST_NETWORK` | Test harness: allow tests marked network to open sockets. |
 | `CODEKAVACH_TRUST_PROJECT_CONFIG` | Trust restricted keys in the project configuration. |
