@@ -245,7 +245,7 @@ export default function ReportsPage() {
               </div>
             </div>
             {reportsQ.isError && <ErrorBanner what="Report formats could not be loaded." error={reportsQ.error} />}
-            <Button variant="primary" onClick={() => void generate()} loading={busy} disabled={!chosen.size}>
+            <Button variant="primary" onClick={() => void generate()} loading={busy} disabled={!chosen.size || !reportsQ.isSuccess}>
               Generate report
             </Button>
             {progress && (
