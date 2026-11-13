@@ -370,6 +370,7 @@ export default function ScanPage() {
                 <div className="kpi">
                   <div className="k-l">Bytes out</div>
                   <div className="k-v">{egressFinal?.bytes_sent !== undefined ? fmtBytes(egressFinal.bytes_sent).v : "—"} <small>{egressFinal?.bytes_sent !== undefined ? fmtBytes(egressFinal.bytes_sent).unit : ""}</small></div>
+                  {egressFinal?.bytes_sent === undefined && <div className="k-d">totalled after the last payload</div>}
                 </div>
                 <div className="kpi">
                   <div className="k-l">Secrets checked</div>
