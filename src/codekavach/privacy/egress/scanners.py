@@ -95,11 +95,17 @@ _WORD: Final = re.compile(r"[\w$]+")
 _TOKEN: Final = re.compile(
     "(?:" + "|".join(kind.value for kind in PseudonymKind) + r")_[0-9]+(?:_[a-z]+)?"
 )
-# The words the tool writes into every payload around the client's code (see OriginalMatcher).
-_TOOL_WORDS: Final = PAYLOAD_VOCABULARY | frozenset(
-    word
-    for text in (header_text(Language.PYTHON, PrivacyLevel.L3), elision_marker(Language.PYTHON))
-    for word in re.findall(r"[a-z_]{3,}", text)
+# The words the tool writes into every payload around the client's code (see OriginalMatcher),
+# including the subtypes inside placeholders: the original ``conn`` must not match the
+# ``connection_string`` of ``<SECRET:connection_string:1>``.
+_TOOL_WORDS: Final = (
+    PAYLOAD_VOCABULARY
+    | frozenset().union(*VOCABULARY.values())
+    | frozenset(
+        word
+        for text in (header_text(Language.PYTHON, PrivacyLevel.L3), elision_marker(Language.PYTHON))
+        for word in re.findall(r"[a-z_]{3,}", text)
+    )
 )
 _PLACEHOLDER_WORDS: Final = frozenset(
     {kind.value.casefold() for kind in PlaceholderKind}

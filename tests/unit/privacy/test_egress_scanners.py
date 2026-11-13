@@ -219,6 +219,14 @@ def test_the_stub_label_unresolved_does_not_match_the_original_resolved() -> Non
     assert len(vault_scanner("resolved").scan(body_of("if (!resolved.ok) {}"), META)) == 1
 
 
+def test_a_placeholder_subtype_does_not_match_an_original_inside_it() -> None:
+    """A client name such as ``conn`` inside ``<SECRET:connection_string:1>`` blocked every slice
+    of a file with a redacted connection string."""
+    body = body_of('const_8 = "<SECRET:connection_string:1>"\n')
+    assert vault_scanner("onnection").scan(body, META) == ()
+    assert len(vault_scanner("onnection").scan(body_of("x = onnection_pool"), META)) == 1
+
+
 @pytest.mark.parametrize("level", [PrivacyLevel.L2, PrivacyLevel.L3, PrivacyLevel.L4])
 def test_a_pseudonymising_level_is_compared_with_the_vault(level: PrivacyLevel) -> None:
     meta = META.model_copy(update={"level": level})
