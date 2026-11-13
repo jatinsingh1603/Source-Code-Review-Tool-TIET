@@ -285,6 +285,8 @@ export interface Finding {
   likelihood?: string | null;
   impact?: string | null;
   compliance?: ComplianceRef[];
+  /** Compliance frameworks the finding maps to (list view; the detail carries `compliance`). */
+  frameworks?: string[];
   locations: Location[];
   evidence?: Evidence | null;
   llm?: LlmVerdict | null;

@@ -57,7 +57,10 @@ export default function ReportsPage() {
   const manifest = formats.find((f) => f.format === "manifest");
   const frameworks = useMemo(() => {
     const s = new Set<string>();
-    for (const f of findings ?? []) for (const c of f.compliance ?? []) s.add(c.framework);
+    for (const f of findings ?? []) {
+      for (const c of f.compliance ?? []) s.add(c.framework);
+      for (const fw of f.frameworks ?? []) s.add(fw);
+    }
     return [...s].filter((x) => !["capec", "cwe-top25"].includes(x));
   }, [findings]);
 

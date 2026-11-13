@@ -293,6 +293,8 @@ def test_finding_engines_sla_runs_and_scenario(
     detail = client.get(f"{API}/findings/{item['id']}", headers=admin).json()
     runs = detail["llm"]["runs"]
     assert runs and runs[0]["source"] == "review"
+    schemes = {ref["framework"] for ref in detail.get("compliance") or []}
+    assert set(item["frameworks"]) == schemes
     assert any(run["ledger_seq"] for run in runs)
     assert detail["llm"]["consensus"]["samples"] >= 1
     assert detail["baseline_state"] is None

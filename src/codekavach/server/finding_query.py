@@ -147,6 +147,13 @@ def enrich(
     item["verdict"] = verdict_word(data)
     item["privacy_level"] = review_level(data) or scan_level
     item["language"] = data.get("language")
+    item["frameworks"] = sorted(
+        {
+            str(c.get("scheme"))
+            for c in [*(data.get("compliance") or []), *(data.get("taxonomy") or [])]
+            if isinstance(c, dict) and c.get("scheme")
+        }
+    )
     item["baseline_state"] = states.get(row.id, "new" if has_baseline else None)
     item.update(sla(row, policy))
     return item
