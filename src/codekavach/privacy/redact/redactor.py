@@ -15,8 +15,14 @@ result is the same as substituting from the last span backwards. The declared ``
 resolution dropped is then never declared without appearing, and a token already present in the
 input (a text redacted before) is declared too, which is what ``SanitisedPayload`` checks in both
 directions.
+
+A placeholder keeps the line breaks of the value it replaces (a PEM private key spans several
+lines): they follow the token, so the redacted text has the line structure of its input and the
+payload's line map still points at the source lines. Without that, every candidate in a file
+with a multi-line secret failed pseudonymisation and was never reviewed.
 """
 
+import re
 from collections.abc import Sequence
 from typing import ClassVar
 
@@ -66,6 +72,9 @@ def _declared(text: str) -> tuple[PlaceholderRef, ...]:
     return tuple(refs)
 
 
+_LINE_BREAK = re.compile(r"\r?\n")
+
+
 class Redactor:
     """Turns text and spans into a :class:`RedactionResult`."""
 
@@ -101,6 +110,7 @@ class Redactor:
                 raise RedactionError("a placeholder already in the text would be reused")
             chunks.append(data[position : span.start_byte])
             chunks.append(token.encode("ascii"))
+            chunks.append("".join(_LINE_BREAK.findall(value)).encode("ascii"))
             position = span.end_byte
         chunks.append(data[position:])
         result = b"".join(chunks).decode("utf-8")

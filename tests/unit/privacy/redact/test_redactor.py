@@ -56,6 +56,17 @@ def test_a_span_is_replaced_by_its_typed_placeholder() -> None:
     assert_consistent(result)
 
 
+def test_a_multi_line_secret_keeps_its_line_breaks_after_the_placeholder() -> None:
+    key = "-----BEGIN PRIVATE KEY-----\r\nAAAA\nBBBB\n-----END PRIVATE KEY-----"
+    text = f'KEY = """{key}"""\nnext = 1\n'
+    start = text.index("-----BEGIN")
+    result = redact(text, [span(SECRET, "private_key_block", start, start + len(key))])
+    assert result.text == 'KEY = """<SECRET:private_key_block:1>\r\n\n\n"""\nnext = 1\n'
+    assert result.text.count("\n") == text.count("\n")
+    assert "AAAA" not in result.text
+    assert_consistent(result)
+
+
 def test_no_spans_returns_the_text_unchanged() -> None:
     result = redact("nothing to hide", [])
     assert (result.text, result.placeholders, result.spans_applied) == ("nothing to hide", (), 0)
