@@ -20,6 +20,7 @@ from codekavach.integrations.github.transport import GitHubClient, GitHubError
 
 FP_MARKER: Final = re.compile(r"<!--\s*codekavach:fp=(\S+?)\s*-->")
 HASH_MARKER: Final = re.compile(r"<!--\s*codekavach:h=([0-9a-f]+)\s*-->")
+_INLINE_MARKUP: Final = re.compile(r"([\\`*_\[\]()!#|~])")
 _COLOURS: Final = {
     "critical": "b60205",
     "high": "d93f0b",
@@ -71,29 +72,53 @@ def render_title(finding: FindingView) -> str:
     return f"[{finding.severity.upper()}] {finding.title}"[:240]
 
 
+def _text(value: str) -> str:
+    """Untrusted free text shown literally: no links, images, HTML, comments or @mentions.
+
+    Descriptions and remediation can come from model output that scanned code may steer, so
+    every Markdown control character is escaped, ``&``, ``<`` and ``>`` become entities (which
+    also removes any ``<!--`` marker look-alike) and ``@`` is broken with a zero-width space.
+    """
+    value = value.replace("\r", "")
+    value = value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    value = _INLINE_MARKUP.sub(r"\\\1", value)
+    return re.sub(r"@(?=\w)", "@\u200b", value)
+
+
+def _code(value: str) -> str:
+    """A value for a single-backtick code span: one line, no backtick to break out."""
+    return value.replace("`", "'").replace("\r", " ").replace("\n", " ")
+
+
+def _last(pattern: re.Pattern[str], body: str) -> str | None:
+    """The last match of a marker: the real markers always end the body this module writes."""
+    matches = pattern.findall(body)
+    return str(matches[-1]) if matches else None
+
+
 def render_body(finding: FindingView) -> str:
-    """Issue body without markers: masked, metadata only."""
+    """Issue body without markers: masked, metadata only, untrusted text escaped."""
     parts = [
-        f"**Severity:** {finding.severity}  ",
-        f"**Location:** `{finding.path}:{finding.start_line}`  ",
+        f"**Severity:** {_text(finding.severity)}  ",
+        f"**Location:** `{_code(finding.path)}:{finding.start_line}`  ",
     ]
     if finding.cwe:
-        parts.append(f"**CWE:** {', '.join(finding.cwe)}  ")
+        parts.append(f"**CWE:** {_text(', '.join(finding.cwe))}  ")
     if finding.owasp:
-        parts.append(f"**OWASP:** {', '.join(finding.owasp)}  ")
+        parts.append(f"**OWASP:** {_text(', '.join(finding.owasp))}  ")
     if finding.rule_id:
-        parts.append(f"**Rule:** `{finding.rule_id}`  ")
+        parts.append(f"**Rule:** `{_code(finding.rule_id)}`  ")
     if finding.confidence:
-        parts.append(f"**Confidence:** {finding.confidence}  ")
+        parts.append(f"**Confidence:** {_text(finding.confidence)}  ")
     if finding.description:
-        parts += ["", "### Description", finding.description]
+        parts += ["", "### Description", _text(finding.description)]
     if finding.snippet:
         code = "\n".join(f"{n:>4} | {mask_text(t)}" for n, t in finding.snippet)
         parts += ["", "### Code (secrets masked)", "```", code, "```"]
     if finding.remediation:
-        parts += ["", "### Remediation", finding.remediation]
+        parts += ["", "### Remediation", _text(finding.remediation)]
     if finding.references:
-        parts += ["", "### References", *(f"- {r}" for r in finding.references if r)]
+        parts += ["", "### References", *(f"- {_text(r)}" for r in finding.references if r)]
     parts += ["", "_Raised by CodeKavach. Closed automatically when the finding is resolved._"]
     return "\n".join(parts)
 
@@ -115,9 +140,9 @@ def fetch_existing(client: GitHubClient, repo: str, prefix: str) -> dict[str, di
     for item in client.paginate(f"/repos/{repo}/issues", state="all", labels=prefix):
         if "pull_request" in item:
             continue
-        match = FP_MARKER.search(item.get("body") or "")
-        if match:
-            found.setdefault(match[1], item)
+        fingerprint = _last(FP_MARKER, item.get("body") or "")
+        if fingerprint:
+            found.setdefault(fingerprint, item)
     return found
 
 
@@ -159,10 +184,10 @@ def plan_issues(
             plan.actions.append(IssueAction("create", finding.fingerprint, title, finding.severity))
             continue
         _, _, digest = render_issue(finding)
-        old = HASH_MARKER.search(issue.get("body") or "")
+        old = _last(HASH_MARKER, issue.get("body") or "")
         if issue["state"] == "closed":
             plan.actions.append(_act("reopen", finding, issue, "finding reappeared"))
-        elif not old or old[1] != digest:
+        elif old != digest:
             plan.actions.append(_act("update", finding, issue, "content changed"))
     if close_resolved:
         for fp, issue in existing.items():

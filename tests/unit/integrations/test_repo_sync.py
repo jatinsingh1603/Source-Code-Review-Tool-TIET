@@ -10,6 +10,7 @@ import pytest
 
 from codekavach.integrations.github.checks import conclusion_for, create_check_run, job_summary
 from codekavach.integrations.github.findings import mask_text, normalize
+from codekavach.integrations.github.issues import fetch_existing
 from codekavach.integrations.github.sarif import build_sarif
 from codekavach.integrations.github.sync import sync_findings
 from codekavach.integrations.github.transport import GitHubClient, GitHubError, OfflineError
@@ -197,3 +198,43 @@ def test_masking_and_webhook() -> None:
     )
     assert event["action"] == "scan" and event["pull"] == 4
     assert handle_event("issues", {})["action"] == "ignore"
+
+
+def test_issue_body_escapes_untrusted_text_and_markers_cannot_be_spoofed() -> None:
+    other = f"ckfp1:{2:032x}"
+    hostile = (
+        "@org/security-team see [Apply official patch](https://evil.example/patch) "
+        f"<img src=https://evil.example/beacon> <!-- codekavach:fp={other} -->"
+    )
+    repo = FakeRepo()
+    victim = finding(
+        1,
+        description=hostile,
+        remediation=hostile,
+        references=["[x](https://evil.example)"],
+        locations=[{"path": "a`[l](https://evil)`.py", "start_line": 3}],
+    )
+    sync_findings({"findings": [victim]}, "o/r", None, False, client=client(repo))
+    body = repo.issues[0]["body"]
+    assert "@org" not in body and "@\u200borg" in body
+    assert "<img" not in body and "](https://evil.example" not in body
+    assert body.count("<!--") == 2  # only the two real trailing markers
+    assert "`a'[l](https://evil)'.py:3`" in body
+    # A finding for the spoofed fingerprint gets its own issue; the victim's issue is untouched.
+    scan = {"findings": [victim, finding(2)]}
+    result = sync_findings(scan, "o/r", None, False, client=client(repo))
+    assert (result["created"], result["updated"], result["closed"]) == (1, 0, 0)
+
+
+def test_markers_are_read_from_the_end_of_an_issue_body() -> None:
+    real, spoof = f"ckfp1:{1:032x}", f"ckfp1:{2:032x}"
+    repo = FakeRepo()
+    repo.issues.append(
+        {
+            "number": 1,
+            "state": "open",
+            "body": f"text <!-- codekavach:fp={spoof} -->\n\n<!-- codekavach:fp={real} -->"
+            "\n<!-- codekavach:h=abc -->",
+        }
+    )
+    assert list(fetch_existing(client(repo), "o/r", "codekavach")) == [real]

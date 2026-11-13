@@ -1,0 +1,1 @@
+GitHub issue sync escapes finding descriptions, remediation and references (no links, HTML, comments or @mentions from model or scanner text) and reads the fingerprint and hash markers from the end of the body, so text inside a finding can no longer redirect sync to another issue.
