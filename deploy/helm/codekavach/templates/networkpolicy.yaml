@@ -15,13 +15,17 @@ spec:
     - ports:
         - port: 8080
           protocol: TCP
-      {{- with .Values.networkPolicy.ingressFromNamespaces }}
+      # A rule without `from` admits every source, including NodePort and LoadBalancer
+      # traffic from outside the cluster; always name the in-cluster callers.
       from:
+      {{- with .Values.networkPolicy.ingressFromNamespaces }}
         {{- range . }}
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: {{ . }}
         {{- end }}
+      {{- else }}
+        - namespaceSelector: {}
       {{- end }}
   egress:
     {{- if .Values.networkPolicy.allowDns }}
