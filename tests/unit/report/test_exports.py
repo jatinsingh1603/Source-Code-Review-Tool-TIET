@@ -2,6 +2,7 @@
 
 import csv
 import json
+import re
 import zipfile
 from pathlib import Path
 
@@ -128,6 +129,15 @@ def test_csv_neutralises_formulas(tmp_path: Path) -> None:
 def test_markdown_neutralises_mentions_and_html() -> None:
     text = build_markdown(_doc(make_finding(title="ping @octocat <b>x</b> | y")))
     assert "@octocat" not in text and "<b>" not in text and "\\|" in text
+
+
+def test_sarif_help_markdown_has_no_links_images_or_mentions() -> None:
+    hostile = "[Download hotfix](https://evil.example/fix.sh) ![b](https://evil.example/p) @org"
+    sarif = build_sarif(_doc(make_finding(remediation=hostile)))
+    help_md = sarif["runs"][0]["tool"]["driver"]["rules"][0]["help"]["markdown"]
+    assert "\\[Download hotfix\\](https://evil" in help_md
+    assert "\\!\\[b\\]" in help_md and "@org" not in help_md
+    assert not re.search(r"(?<!\\)[\[\]!]", help_md)
 
 
 def test_html_has_charts_filters_and_no_remote_fetch() -> None:

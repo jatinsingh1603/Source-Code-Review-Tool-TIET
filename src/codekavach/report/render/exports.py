@@ -104,8 +104,8 @@ def build_sarif(doc: ReportDocument) -> dict[str, Any]:  # noqa: PLR0912
                 "fullDescription": {"text": view.description},
                 "help": {
                     "text": f"{view.remediation_short_term}\n\n{view.remediation_long_term}",
-                    "markdown": f"**Fix now.** {view.remediation_short_term}\n\n"
-                    f"**Prevent recurrence.** {view.remediation_long_term}",
+                    "markdown": f"**Fix now.** {md_prose(view.remediation_short_term)}\n\n"
+                    f"**Prevent recurrence.** {md_prose(view.remediation_long_term)}",
                 },
                 "helpUri": cwe_url(view.cwe[0]) if view.cwe else INFORMATION_URI,
                 "defaultConfiguration": {"level": _LEVEL.get(view.severity, "note")},
@@ -452,6 +452,15 @@ def md(text: object) -> str:
     return re.sub(r"@(?=\w)", "@\u200b", value)
 
 
+def md_prose(text: object) -> str:
+    """:func:`md` for prose outside code spans: also no Markdown links or images.
+
+    Remediation text can carry model output that scanned code steers; escaping ``[``, ``]``
+    and ``!`` keeps ``[fix](https://evil)`` and ``![](beacon)`` as literal text.
+    """
+    return re.sub(r"([\[\]!])", r"\\\1", md(text))
+
+
 def build_markdown(doc: ReportDocument, *, limit: int = MARKDOWN_LIMIT) -> str:
     """The Markdown summary: posture, counts, findings table, top details, attestation."""
     facts = doc.facts
@@ -509,7 +518,7 @@ def build_markdown(doc: ReportDocument, *, limit: int = MARKDOWN_LIMIT) -> str:
             f"**Confidence:** {v.confidence}",
             f"- **CWE:** {md(v.cwe_label)} · **OWASP:** {md(v.owasp_label)}",
             f"- **Location:** `{md(v.location_label)}`",
-            f"- **Remediation:** {md(v.remediation_short_term)}",
+            f"- **Remediation:** {md_prose(v.remediation_short_term)}",
         ]
         if v.verdict:
             entry.append(f"- **Model assessment:** {md(v.verdict.label)} ({md(v.verdict.model)})")
