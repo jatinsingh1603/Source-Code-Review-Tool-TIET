@@ -267,7 +267,10 @@ def _materialise(project: Project, paths: ScanPaths, job: ScanJob) -> None:
     else:
         raise IntakeError("source_type_unknown", f"unknown source type {project.source_type}")
     policy = config.data_dir / POLICY_FILE
-    if policy.is_file() and not (source / POLICY_FILE).exists():
+    if policy.is_file():
+        # The admin's policy always wins: a policy file shipped in the project (a PR author's or
+        # a third party's) must not replace its never_send and per-path levels.
+        (source / POLICY_FILE).unlink(missing_ok=True)
         shutil.copyfile(policy, source / POLICY_FILE)
     # An empty .git marks the project root, as the demo does, so the configuration loader does
     # not climb into the server's data directory.
