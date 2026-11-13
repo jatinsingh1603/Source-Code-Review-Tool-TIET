@@ -1,11 +1,25 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useSelectedScan } from "@/app/useSelectedScan";
-import { useLedger, useLedgerEntry, usePrivacy, useProviders, useVerifyLedger } from "@/api/queries";
+import {
+  useLedger,
+  useLedgerEntry,
+  usePrivacy,
+  useProviders,
+  useVerifyLedger,
+} from "@/api/queries";
 import { downloadApiFile } from "@/api/endpoints";
 import type { LedgerEntry, LedgerVerifyResult } from "@/api/types";
 import { providerName } from "@/lib/domain";
-import { byteLength, fmtHash, fmtInt, fmtSeq, fmtTime, findingLabel, scanLabel } from "@/lib/display";
+import {
+  byteLength,
+  fmtHash,
+  fmtInt,
+  fmtSeq,
+  fmtTime,
+  findingLabel,
+  scanLabel,
+} from "@/lib/display";
 import { FilterMenu } from "@/components/FilterMenu";
 import { MarkedCode } from "@/components/Marked";
 import {
@@ -70,7 +84,10 @@ export default function LedgerPage() {
   const seq = params.get("seq") ? Number(params.get("seq")) : null;
   const detail = useLedgerEntry(scanId, seq);
 
-  const entries = useMemo(() => [...(ledgerQ.data ?? [])].sort((a, b) => b.seq - a.seq), [ledgerQ.data]);
+  const entries = useMemo(
+    () => [...(ledgerQ.data ?? [])].sort((a, b) => b.seq - a.seq),
+    [ledgerQ.data],
+  );
   const hasBytes = entries.some((e) => e.bytes !== undefined && e.bytes !== null);
   const filtered = entries.filter((e) => {
     const st = (e.outcome ?? "sent").split(":")[0]!;
@@ -78,7 +95,8 @@ export default function LedgerPage() {
     if (prov.length && !prov.includes(e.provider)) return false;
     if (q) {
       const t = q.toLowerCase().replace(/^#/, "");
-      const hay = `${fmtSeq(e.seq)} ${e.seq} ${e.payload_hash} ${e.entry_hash} ${e.finding_id ?? ""} ${findingLabel(e.finding_id)}`.toLowerCase();
+      const hay =
+        `${fmtSeq(e.seq)} ${e.seq} ${e.payload_hash} ${e.entry_hash} ${e.finding_id ?? ""} ${findingLabel(e.finding_id)}`.toLowerCase();
       if (!hay.includes(t)) return false;
     }
     return true;
@@ -86,7 +104,11 @@ export default function LedgerPage() {
   const sent = entries.filter((e) => (e.outcome ?? "sent") === "sent").length;
   const blocked = entries.filter((e) => e.outcome?.startsWith("blocked")).length;
   const chainOk = result ? result.ok : privacy?.chain_ok;
-  const head = result?.head_hash ?? privacy?.ledger_head ?? privacy?.ledger_head_hash ?? entries[0]?.entry_hash;
+  const head =
+    result?.head_hash ??
+    privacy?.ledger_head ??
+    privacy?.ledger_head_hash ??
+    entries[0]?.entry_hash;
   const setSeq = (s: number | null) => {
     const n = new URLSearchParams(params);
     if (s === null) n.delete("seq");
@@ -99,8 +121,16 @@ export default function LedgerPage() {
     verify.mutate(scanId, {
       onSuccess: (r) => {
         setResult(r);
-        if (r.ok) toast.success("Ledger chain verified", `${fmtInt(r.entries)} records · chain, payload hash and zero-leak checks passed`);
-        else toast.error("Ledger chain broken", r.first_bad_seq ? `First bad record: ${fmtSeq(r.first_bad_seq)}` : r.message);
+        if (r.ok)
+          toast.success(
+            "Ledger chain verified",
+            `${fmtInt(r.entries)} records · chain, payload hash and zero-leak checks passed`,
+          );
+        else
+          toast.error(
+            "Ledger chain broken",
+            r.first_bad_seq ? `First bad record: ${fmtSeq(r.first_bad_seq)}` : r.message,
+          );
       },
       onError: (e) => toast.error("Verification failed", e.message),
     });
@@ -135,10 +165,17 @@ export default function LedgerPage() {
           <Button
             disabled={!entries.length}
             onClick={() =>
-              void downloadApiFile(`/scans/${scanId}/ledger`, { format: "jsonl" }, `codekavach-ledger-${scanId}.jsonl`).catch(() =>
+              void downloadApiFile(
+                `/scans/${scanId}/ledger`,
+                { format: "jsonl" },
+                `codekavach-ledger-${scanId}.jsonl`,
+              ).catch(() =>
                 download(
                   `codekavach-ledger-${scanId}.jsonl`,
-                  [...entries].reverse().map((e) => JSON.stringify(e)).join("\n") + "\n",
+                  [...entries]
+                    .reverse()
+                    .map((e) => JSON.stringify(e))
+                    .join("\n") + "\n",
                   "application/x-ndjson",
                 ),
               )
@@ -149,10 +186,25 @@ export default function LedgerPage() {
           <Button
             disabled={!privacy}
             onClick={() =>
-              void downloadApiFile(`/scans/${scanId}/ledger-verification`, { format: "txt" }, `codekavach-verification-${scanId}.txt`).catch(() =>
+              void downloadApiFile(
+                `/scans/${scanId}/ledger-verification`,
+                { format: "txt" },
+                `codekavach-verification-${scanId}.txt`,
+              ).catch(() =>
                 download(
                   `codekavach-verification-${scanId}.json`,
-                  JSON.stringify({ scan_id: scanId, verified: result ?? null, chain_ok: privacy?.chain_ok, entries: entries.length, head, zero_leak: privacy?.zero_leak }, null, 2),
+                  JSON.stringify(
+                    {
+                      scan_id: scanId,
+                      verified: result ?? null,
+                      chain_ok: privacy?.chain_ok,
+                      entries: entries.length,
+                      head,
+                      zero_leak: privacy?.zero_leak,
+                    },
+                    null,
+                    2,
+                  ),
                   "application/json",
                 ),
               )
@@ -170,24 +222,33 @@ export default function LedgerPage() {
               {chainOk === false
                 ? `Chain broken${result?.first_bad_seq ? ` at record ${fmtSeq(result.first_bad_seq)}` : ""}`
                 : `Chain verified · ${fmtInt(result?.entries ?? privacy.chain_entries ?? entries.length)} records · ${
-                    (result?.terms_checked ?? z?.checked) ? `${fmtInt(result?.terms_found ?? z?.occurrences)} listed terms found` : "no listed terms to check"
+                    (result?.terms_checked ?? z?.checked)
+                      ? `${fmtInt(result?.terms_found ?? z?.occurrences)} listed terms found`
+                      : "no listed terms to check"
                   }`}
             </div>
             <div className="xs faint" style={{ marginTop: 2 }}>
-              {result?.verified_at ? `Verified offline at ${fmtTime(result.verified_at)} IST` : "Checked when the scan finished"}
+              {result?.verified_at
+                ? `Verified offline at ${fmtTime(result.verified_at)} IST`
+                : "Checked when the scan finished"}
               {head ? ` against head ${fmtHash(head)}` : ""}
             </div>
           </div>
           <div>
             <div className="xs faint">Chain links</div>
             <StatusDot tone={chainOk === false ? "bad" : "ok"} className="sm">
-              {chainOk === false ? "broken" : `${fmtInt(result?.entries ?? entries.length)} of ${fmtInt(result?.entries ?? entries.length)} valid`}
+              {chainOk === false
+                ? "broken"
+                : `${fmtInt(result?.entries ?? entries.length)} of ${fmtInt(result?.entries ?? entries.length)} valid`}
             </StatusDot>
           </div>
           <div>
             <div className="xs faint">Payload hashes</div>
             <StatusDot tone={chainOk === false ? "bad" : "ok"} className="sm">
-              {result?.hashes_ok !== undefined ? `${fmtInt(result.hashes_ok)} unique payloads match` : `${fmtInt(sent)} sent`} · {fmtInt(result?.blocked ?? blocked)} blocked
+              {fmtInt(sent)} sent
+              {result?.hashes_ok !== undefined &&
+                ` · ${fmtInt(result.hashes_ok)} distinct ${result.hashes_ok === 1 ? "payload matches" : "payloads match"}`}{" "}
+              · {fmtInt(result?.blocked ?? blocked)} blocked
             </StatusDot>
           </div>
           <div>
@@ -205,22 +266,37 @@ export default function LedgerPage() {
       {mock && (
         <div className="banner warn sm">
           <span>
-            <b>{scan?.provider === "mock" ? "Mock provider" : "Dry run"}:</b> the ledger shows what <i>would</i> have been sent. Nothing left this laptop.
+            <b>{scan?.provider === "mock" ? "Mock provider" : "Dry run"}:</b> the ledger shows what{" "}
+            <i>would</i> have been sent. Nothing left this laptop.
           </span>
         </div>
       )}
 
-      <section className={seq !== null ? "g g-side" : "g"} style={seq !== null ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}>
+      <section
+        className={seq !== null ? "g g-side" : "g"}
+        style={seq !== null ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}
+      >
         <div className="stack">
           <div className="row">
-            <label className="search" style={{ maxWidth: 280, background: "var(--surface)", cursor: "text" }}>
+            <label
+              className="search"
+              style={{ maxWidth: 280, background: "var(--surface)", cursor: "text" }}
+            >
               <Icon name="search" />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Hash, finding or sequence"
                 aria-label="Filter by hash, finding or sequence"
-                style={{ border: 0, outline: 0, background: "transparent", font: "inherit", color: "var(--text)", flex: 1, minWidth: 0 }}
+                style={{
+                  border: 0,
+                  outline: 0,
+                  background: "transparent",
+                  font: "inherit",
+                  color: "var(--text)",
+                  flex: 1,
+                  minWidth: 0,
+                }}
               />
             </label>
             <FilterMenu
@@ -228,22 +304,31 @@ export default function LedgerPage() {
               label="Status"
               value={status}
               onChange={setStatus}
-              options={[...new Set(entries.map((e) => (e.outcome ?? "sent").split(":")[0]!))].map((s) => ({
-                value: s,
-                label: STATUS[s]?.label ?? s,
-                count: entries.filter((e) => (e.outcome ?? "sent").startsWith(s)).length,
-              }))}
+              options={[...new Set(entries.map((e) => (e.outcome ?? "sent").split(":")[0]!))].map(
+                (s) => ({
+                  value: s,
+                  label: STATUS[s]?.label ?? s,
+                  count: entries.filter((e) => (e.outcome ?? "sent").startsWith(s)).length,
+                }),
+              )}
             />
             <FilterMenu
               all
               label="Provider"
               value={prov}
               onChange={setProv}
-              options={[...new Set(entries.map((e) => e.provider))].map((p) => ({ value: p, label: providerName(p, providers) }))}
+              options={[...new Set(entries.map((e) => e.provider))].map((p) => ({
+                value: p,
+                label: providerName(p, providers),
+              }))}
             />
           </div>
           {ledgerQ.isError ? (
-            <ErrorBanner what="The ledger could not be loaded." error={ledgerQ.error} onRetry={() => void ledgerQ.refetch()} />
+            <ErrorBanner
+              what="The ledger could not be loaded."
+              error={ledgerQ.error}
+              onRetry={() => void ledgerQ.refetch()}
+            />
           ) : (
             <div className="tbl-wrap">
               <table className="tbl">
@@ -260,7 +345,9 @@ export default function LedgerPage() {
                 </thead>
                 <tbody>
                   {ledgerQ.isLoading || !scanId ? (
-                    scans.length || !scanId ? <SkeletonRows cols={7} /> : null
+                    scans.length || !scanId ? (
+                      <SkeletonRows cols={7} />
+                    ) : null
                   ) : (
                     filtered.slice(0, shown).map((e) => {
                       const st = statusOf(e);
@@ -278,8 +365,16 @@ export default function LedgerPage() {
                           <td className="sm">
                             {providerName(e.provider, providers)} · {e.model}
                           </td>
-                          <td>{e.outcome?.startsWith("blocked") ? <span className="faint sm">none</span> : <Hash value={e.payload_hash} copy={false} />}</td>
-                          <td className="num mono">{fmtInt(hasBytes ? e.bytes ?? 0 : e.tokens)}</td>
+                          <td>
+                            {e.outcome?.startsWith("blocked") ? (
+                              <span className="faint sm">none</span>
+                            ) : (
+                              <Hash value={e.payload_hash} copy={false} />
+                            )}
+                          </td>
+                          <td className="num mono">
+                            {fmtInt(hasBytes ? (e.bytes ?? 0) : e.tokens)}
+                          </td>
                           <td>
                             <Hash value={e.entry_hash} copy={false} />
                           </td>
@@ -305,7 +400,8 @@ export default function LedgerPage() {
               )}
               {!ledgerQ.isLoading && entries.length > 0 && filtered.length === 0 && (
                 <Empty title="No records match">
-                  Nothing in this scan&apos;s {fmtInt(entries.length)} records matches the search or filters.{" "}
+                  Nothing in this scan&apos;s {fmtInt(entries.length)} records matches the search or
+                  filters.{" "}
                   <button
                     type="button"
                     className="linkbtn"
@@ -320,7 +416,9 @@ export default function LedgerPage() {
                   </button>
                 </Empty>
               )}
-              {!scanId && !scans.length && <Empty title="No scans yet" action="Run a scan" to="/projects/new" />}
+              {!scanId && !scans.length && (
+                <Empty title="No scans yet" action="Run a scan" to="/projects/new" />
+              )}
             </div>
           )}
           <div className="row between sm muted">
@@ -354,7 +452,11 @@ export default function LedgerPage() {
                   <dt>Finding</dt>
                   <dd>
                     {detail.data.entry.finding_id ? (
-                      <Link className="acc mono" to={`/findings/${detail.data.entry.finding_id}`} style={{ textDecoration: "none" }}>
+                      <Link
+                        className="acc mono"
+                        to={`/findings/${detail.data.entry.finding_id}`}
+                        style={{ textDecoration: "none" }}
+                      >
                         {findingLabel(detail.data.entry.finding_id)}
                       </Link>
                     ) : (
@@ -378,28 +480,45 @@ export default function LedgerPage() {
                     <Hash value={detail.data.entry.entry_hash} />
                   </dd>
                   <dt>Leak check</dt>
-                  <dd>{z?.checked ? `${fmtInt(z.occurrences)} of ${fmtInt(z.checked)} terms` : "no listed terms"}</dd>
+                  <dd>
+                    {z?.checked
+                      ? `${fmtInt(z.occurrences)} of ${fmtInt(z.checked)} terms`
+                      : "no listed terms"}
+                  </dd>
                 </dl>
                 {detail.data.payload_text ? (
                   <div>
                     <div className="code-h">
                       <span className="sm">Payload · read-only</span>
-                      <span className="xs faint">{fmtInt(detail.data.entry.bytes ?? byteLength(detail.data.payload_text))} B</span>
+                      <span className="xs faint">
+                        {fmtInt(detail.data.entry.bytes ?? byteLength(detail.data.payload_text))} B
+                      </span>
                     </div>
                     <MarkedCode
                       text={detail.data.payload_text}
                       markup={detail.data.markup}
                       side="payload"
-                      style={{ fontSize: 11.5, lineHeight: "19px", maxHeight: 420, overflow: "auto", borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
+                      style={{
+                        fontSize: 11.5,
+                        lineHeight: "19px",
+                        maxHeight: 420,
+                        overflow: "auto",
+                        borderTopLeftRadius: 0,
+                        borderTopRightRadius: 0,
+                      }}
                     />
                   </div>
                 ) : (
                   <p className="sm muted">No payload body for this record.</p>
                 )}
                 {detail.data.entry.outcome === "completed" && detail.data.entry.ref_seq ? (
-                  <MoreLink to={`/privacy/inspect/${scanId}/${detail.data.entry.ref_seq}`}>Open request in Privacy Inspect</MoreLink>
+                  <MoreLink to={`/privacy/inspect/${scanId}/${detail.data.entry.ref_seq}`}>
+                    Open request in Privacy Inspect
+                  </MoreLink>
                 ) : (
-                  <MoreLink to={`/privacy/inspect/${scanId}/${seq}`}>Open in Privacy Inspect</MoreLink>
+                  <MoreLink to={`/privacy/inspect/${scanId}/${seq}`}>
+                    Open in Privacy Inspect
+                  </MoreLink>
                 )}
               </>
             )}
