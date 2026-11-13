@@ -487,6 +487,22 @@ def test_keyring_check_looks_at_the_backend_only(
     assert cli(["doctor", "--check", "secrets:keyring", "--strict"], cwd=project).exit_code == 1
 
 
+def test_keyring_check_passes_in_passphrase_mode(
+    cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def unavailable(*_args: object) -> Any:
+        raise KeyringUnavailableError
+
+    monkeypatch.setattr(keys_module, "open_keyring", unavailable)
+    env = {
+        "CODEKAVACH_PRIVACY__VAULT__KEY_SOURCE": "passphrase",
+        "CODEKAVACH_PRIVACY__VAULT__PASSPHRASE": "env:CODEKAVACH_TEST_VAULT_PASSPHRASE",
+    }
+    result = one(cli, project, "secrets:keyring", env=env)
+    assert result["status"] == "pass"
+    assert "passphrase mode" in result["summary"]
+
+
 def test_plugin_check_passes_the_settings_to_the_registry(
     cli: Cli, project: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

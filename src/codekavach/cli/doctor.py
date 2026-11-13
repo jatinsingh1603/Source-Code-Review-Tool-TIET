@@ -486,10 +486,18 @@ def _ner_model(_ctx: CliContext) -> Outcome:
     )
 
 
-def _keyring(_ctx: CliContext) -> Outcome:
-    from codekavach.config.errors import SecretResolutionError  # noqa: PLC0415
+def _keyring(ctx: CliContext) -> Outcome:
+    from codekavach.config.errors import ConfigError, SecretResolutionError  # noqa: PLC0415
     from codekavach.config.keys import KeyringUnavailableError, open_keyring  # noqa: PLC0415
 
+    try:
+        source = ctx.loaded.settings.privacy.vault.key_source
+    except ConfigError:
+        source = "keyring"
+    if source == "passphrase":
+        # The container image and WSL set this: the vault key comes from a passphrase, so a
+        # missing or insecure keyring backend is not a problem worth a warning.
+        return Outcome(CheckStatus.PASS, "passphrase mode is configured; no keyring needed")
     try:
         keyring = open_keyring()  # looks at the backend only; no entry is read
     except KeyringUnavailableError:
