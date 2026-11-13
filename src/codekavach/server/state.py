@@ -61,10 +61,14 @@ class RateLimiter:
         self._hits: dict[str, deque[float]] = {}
         self._lock = threading.Lock()
 
+    SWEEP_AT: Final = 1024  # keys kept before idle ones are evicted
+
     def hit(self, key: str) -> float | None:
         """Record an attempt; returns seconds to wait when over the limit, else ``None``."""
         now = self._clock()
         with self._lock:
+            if len(self._hits) >= self.SWEEP_AT:
+                self._sweep(now)
             window = self._hits.setdefault(key, deque())
             while window and now - window[0] > 60.0:
                 window.popleft()
@@ -73,10 +77,29 @@ class RateLimiter:
             window.append(now)
             return None
 
+    def undo(self, key: str) -> None:
+        """Take back the latest attempt of ``key``, so a successful login costs nothing."""
+        with self._lock:
+            window = self._hits.get(key)
+            if window:
+                window.pop()
+            if not window:
+                self._hits.pop(key, None)
+
     def reset(self, key: str) -> None:
         """Forget the attempts of ``key`` (after a successful login)."""
         with self._lock:
             self._hits.pop(key, None)
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._hits)
+
+    def _sweep(self, now: float) -> None:
+        """Drop keys with no attempt inside the window (caller holds the lock)."""
+        idle = [k for k, w in self._hits.items() if not w or now - w[-1] > 60.0]
+        for key in idle:
+            del self._hits[key]
 
 
 class ServerState:

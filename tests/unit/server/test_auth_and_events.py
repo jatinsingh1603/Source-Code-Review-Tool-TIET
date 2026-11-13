@@ -104,6 +104,24 @@ def test_rate_limiter() -> None:
     assert limiter.hit("k") is None
 
 
+def test_rate_limiter_undo_gives_back_an_attempt() -> None:
+    limiter = RateLimiter(2, clock=lambda: 0.0)
+    for _ in range(5):
+        assert limiter.hit("ip:proxy") is None
+        limiter.undo("ip:proxy")
+    assert len(limiter) == 0
+
+
+def test_rate_limiter_evicts_idle_keys() -> None:
+    now = [0.0]
+    limiter = RateLimiter(2, clock=lambda: now[0])
+    for index in range(RateLimiter.SWEEP_AT):
+        limiter.hit(f"user:random{index}")
+    now[0] = 61.0
+    limiter.hit("user:admin")
+    assert len(limiter) == 1
+
+
 def test_event_log_persists_and_resumes(tmp_path: Path) -> None:
     path = tmp_path / "events.ndjson"
     log = EventLog(path)

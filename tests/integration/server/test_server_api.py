@@ -114,6 +114,18 @@ def test_wrong_password_and_unknown_user_look_the_same(server: tuple[TestClient,
     assert wrong.json()["error"]["code"] == unknown.json()["error"]["code"]
 
 
+def test_successful_logins_do_not_use_up_the_address_budget(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    config = ServerConfig(
+        data_dir=tmp_path_factory.mktemp("limit-data"), ui_dir=None, workers=1,
+        admin_password="kavach-admin", login_attempts_per_minute=3, seed=False,
+    )  # fmt: skip
+    with TestClient(create_app(config)) as client:
+        for _ in range(6):
+            _login(client, **ADMIN)
+
+
 def test_requests_without_a_token_are_refused(server: tuple[TestClient, Any]) -> None:
     client = server[0]
     response = client.get("/api/v1/projects")

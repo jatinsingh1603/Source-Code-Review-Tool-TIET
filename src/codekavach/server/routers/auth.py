@@ -59,7 +59,8 @@ def login(
 ) -> dict[str, Any]:
     """Exchange a user name and password for a bearer token."""
     client = client_of(request)
-    for key in (f"ip:{client}", f"user:{body.username.lower()}"):
+    keys = (f"ip:{client}", f"user:{body.username.lower()}")
+    for key in keys:
         wait = state.login_limiter.hit(key)
         if wait is not None:
             audit.record(state.db, actor=body.username[:64], action="auth.login",
@@ -77,7 +78,10 @@ def login(
         user.password_hash = hash_password(body.password)
     user.last_login = utcnow()
     token = issue_token(session, user, state.config.token_ttl_seconds)
-    state.login_limiter.reset(f"user:{body.username.lower()}")
+    # Only failures count: a successful login gives back its attempt on the address too, so
+    # users sharing one address (behind a proxy) do not use up each other's budget.
+    state.login_limiter.undo(keys[0])
+    state.login_limiter.reset(keys[1])
     audit.record(state.db, actor=user.username, action="auth.login", client=client)
     return {
         "token": token,
