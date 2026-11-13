@@ -42,6 +42,8 @@ import {
 const STATUS: Record<string, { tone: DotTone; label: string }> = {
   sent: { tone: "ok", label: "Sent" },
   completed: { tone: "ok", label: "Response" },
+  // The request left but no usable answer came back (a gateway error or a timeout).
+  failed: { tone: "warn", label: "No response" },
   blocked: { tone: "bad", label: "Blocked" },
   "dry-run": { tone: "neutral", label: "Dry-run" },
   recorded: { tone: "neutral", label: "Dry-run" },
