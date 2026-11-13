@@ -30,7 +30,7 @@ from codekavach.server.jobs.workspace import (
     assert_safe_clone_url,
     extract_archive,
 )
-from codekavach.server.rbac import Permission
+from codekavach.server.rbac import Permission, permitted
 from codekavach.server.routers.scans import scan_json, start_scan
 from codekavach.server.schemas import ProjectCreate, ProjectUpdate, ScanCreate, SourceBody
 from codekavach.server.state import ServerState, new_id
@@ -73,12 +73,25 @@ def project_json(session: Session, project: Project) -> dict[str, Any]:
     }
 
 
-def _check_source(state: ServerState, source: SourceBody) -> None:
+def _check_path(state: ServerState, principal: Any, raw: str | None) -> None:
+    """A local path names a directory on the server host: admin only, never the data dir."""
+    if not state.config.allow_local_paths:
+        raise ApiError(400, "path_source_disabled", "local path sources are disabled")
+    if not permitted(principal.role, Permission.settings_write):
+        raise ApiError(
+            403, "forbidden", "only an admin may point a project at a directory on the server"
+        )
+    if not raw or not Path(raw).expanduser().is_dir():
+        raise ApiError(400, "source_not_found", "the path is not a directory on the server")
+    path = Path(raw).expanduser().resolve()
+    data = state.config.data_dir.resolve()
+    if path == data or path.is_relative_to(data) or data.is_relative_to(path):
+        raise ApiError(400, "path_source_forbidden", "the path overlaps the server data directory")
+
+
+def _check_source(state: ServerState, source: SourceBody, principal: Any) -> None:
     if source.type == "path":
-        if not state.config.allow_local_paths:
-            raise ApiError(400, "path_source_disabled", "local path sources are disabled")
-        if not source.path or not Path(source.path).expanduser().is_dir():
-            raise ApiError(400, "source_not_found", "the path is not a directory on the server")
+        _check_path(state, principal, source.path)
     elif source.type == "git":
         try:
             assert_safe_clone_url(source.url or "", state.config.git_allowed_hosts)
@@ -114,7 +127,7 @@ def create_project(
     principal: Any = WriteDep,
 ) -> dict[str, Any]:
     """Create a project."""
-    _check_source(state, body.source)
+    _check_source(state, body.source, principal)
     project = Project(
         id=new_id("prj"),
         name=body.name,
@@ -158,7 +171,7 @@ def update_project(
     if body.description is not None:
         project.description = body.description
     if body.source is not None:
-        _check_source(state, body.source)
+        _check_source(state, body.source, principal)
         _apply_source(project, body.source)
     project.updated_at = utcnow()
     audit.record(state.db, actor=principal.username, action="project.update",

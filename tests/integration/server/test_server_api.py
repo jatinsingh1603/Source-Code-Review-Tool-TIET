@@ -138,7 +138,10 @@ def test_roles(
 
 
 def test_project_crud(
-    server: tuple[TestClient, Any], users: dict[str, dict[str, str]], tmp_path: Path
+    server: tuple[TestClient, Any],
+    admin: dict[str, str],
+    users: dict[str, dict[str, str]],
+    tmp_path: Path,
 ) -> None:
     client = server[0]
     developer = users["developer"]
@@ -150,7 +153,7 @@ def test_project_crud(
             "description": "d",
             "source": {"type": "path", "path": str(tmp_path)},
         },
-        headers=developer,
+        headers=admin,
     )
     assert created.status_code == 201, created.text
     project_id = created.json()["id"]
@@ -168,6 +171,35 @@ def test_project_crud(
     assert bad.json()["error"]["code"] == "git_url_scheme"
     assert client.delete(f"/api/v1/projects/{project_id}", headers=developer).status_code == 200
     assert client.get(f"/api/v1/projects/{project_id}", headers=developer).status_code == 404
+
+
+def test_only_an_admin_may_point_a_project_at_a_server_path(
+    server: tuple[TestClient, Any],
+    admin: dict[str, str],
+    users: dict[str, dict[str, str]],
+    tmp_path: Path,
+) -> None:
+    client, state = server
+    body = {"name": "Host", "source": {"type": "path", "path": str(tmp_path)}}
+    refused = client.post("/api/v1/projects", json=body, headers=users["developer"])
+    assert refused.status_code == 403, refused.text
+    sample = next(
+        item
+        for item in client.get("/api/v1/projects", headers=admin).json()
+        if item["source"]["type"] == "sample"
+    )
+    repoint = client.patch(
+        f"/api/v1/projects/{sample['id']}",
+        json={"source": {"type": "path", "path": str(tmp_path)}},
+        headers=users["developer"],
+    )
+    assert repoint.status_code == 403, repoint.text
+    for inside in (state.config.data_dir, state.config.data_dir / "uploads", Path("/")):
+        inside.mkdir(parents=True, exist_ok=True)
+        overlap = {"name": "Data", "source": {"type": "path", "path": str(inside)}}
+        response = client.post("/api/v1/projects", json=overlap, headers=admin)
+        assert response.status_code == 400, response.text
+        assert response.json()["error"]["code"] == "path_source_forbidden"
 
 
 def test_upload_accepts_a_zip_and_refuses_zip_slip(
