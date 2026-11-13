@@ -47,6 +47,24 @@ function splitImpact(text?: string | null): { impact: string; scenario: string |
   return { impact: rest.join("\n\n"), scenario };
 }
 
+/** Text with `inline code` spans set in the mono face (text only, never HTML). */
+function Inline({ text }: { text: string }) {
+  const parts = text.split(/`([^`\n]+)`/);
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <code key={i} className="mono" style={{ fontSize: "0.92em" }}>
+            {part}
+          </code>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
 /** Plain text with ``` fences rendered as code blocks (text only, never HTML). */
 function RichText({ text }: { text: string }) {
   const blocks = text.split(/```[a-zA-Z0-9]*\n?/);
@@ -61,7 +79,7 @@ function RichText({ text }: { text: string }) {
             .filter((p) => p.trim())
             .map((p, j) => (
               <p key={`${i}-${j}`} className="sm muted" style={{ whiteSpace: "pre-line" }}>
-                {p.trim()}
+                <Inline text={p.trim()} />
               </p>
             ))
         ),
@@ -608,6 +626,7 @@ function describe(h: { action: string; from_status?: string | null; to_status?: 
     return `changed status ${h.from_status ? `from ${STATUS_LABEL[h.from_status as FindingStatus] ?? h.from_status} ` : ""}to ${STATUS_LABEL[h.to_status as FindingStatus] ?? h.to_status}`;
   }
   if (h.action === "assign" || h.assignee) return `assigned to ${h.assignee ?? "someone"}`;
+  if (h.action === "llm_review") return "asked the model";
   if (h.comment) return "commented";
   return h.action;
 }
@@ -729,13 +748,15 @@ function ReasonTab({ f, conf, onReview, reviewing }: { f: Finding; conf: number 
       <div>
         <h3 style={{ fontSize: 13, marginBottom: 4 }}>Rationale</h3>
         <p className="sm muted" style={{ whiteSpace: "pre-line" }}>
-          {f.llm?.reasoning ?? reviews[0]?.reasoning ?? "—"}
+          <Inline text={f.llm?.reasoning ?? reviews[0]?.reasoning ?? "—"} />
         </p>
       </div>
       {(f.exploit_scenario || f.llm?.exploit_scenario || scenario) && (
         <div>
           <h3 style={{ fontSize: 13, marginBottom: 4 }}>Exploit scenario</h3>
-          <p className="sm muted">{f.exploit_scenario ?? f.llm?.exploit_scenario ?? scenario}</p>
+          <p className="sm muted">
+            <Inline text={f.exploit_scenario ?? f.llm?.exploit_scenario ?? scenario ?? ""} />
+          </p>
         </div>
       )}
       {runs.length > 0 && (
