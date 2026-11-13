@@ -193,6 +193,14 @@ def test_annotator_fills_standards_and_compliance() -> None:
     assert notes.remediation
 
 
+def test_a_weakness_with_its_own_advice_does_not_get_the_family_cheat_sheets() -> None:
+    notes = StandardsAnnotator(KB).annotations((829,))  # pull_request_target, family integrity
+    titles = " ".join(ref.title or "" for ref in notes.references)
+    assert "pull_request_target" in notes.remediation
+    assert "Mass Assignment" not in titles and "Prototype" not in titles
+    assert "cwe.mitre.org" in " ".join(ref.url or "" for ref in notes.references)
+
+
 def test_the_stage_populates_every_rating_field(tmp_path: Path) -> None:
     source = tmp_path / SAMPLE_PATH
     source.parent.mkdir(parents=True)

@@ -119,12 +119,16 @@ class StandardsAnnotator:
             )
             for control in kb.controls_for(family)
         )
-        references.extend(family.references)
+        entry = kb.primary(cwes)
+        # A weakness with its own remediation is one the family's advice does not fit (a
+        # pull_request_target workflow in the "integrity" family is not mass assignment), so the
+        # family's cheat sheets would mislead as much as its advice did.
+        if not (entry and entry.remediation):
+            references.extend(family.references)
         if owasp and owasp[0].url:
             references.append(
                 Reference(title=f"OWASP Top 10 2021 {owasp[0].title}", url=owasp[0].url)
             )
-        entry = kb.primary(cwes)
         remediation = (
             entry.remediation if entry and entry.remediation else ""
         ) or family.remediation
