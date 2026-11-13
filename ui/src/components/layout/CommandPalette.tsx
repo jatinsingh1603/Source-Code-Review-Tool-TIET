@@ -45,7 +45,10 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const allScansQ = useScans().data;
   const latest = pickDefault(scans);
   const term = q.trim();
-  const findingsQ = useFindings(term.length >= 2 ? latest?.id : undefined, term.length >= 2 ? { q: term } : {}).data;
+  const findingsQ = useFindings(
+    term.length >= 2 ? latest?.id : undefined,
+    term.length >= 2 ? { q: term } : {},
+  ).data;
 
   const { can } = useSession();
 
@@ -55,9 +58,23 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       navigate(to);
     };
     const t = term.toLowerCase();
-    const findings = term.length >= 2 ? findingsQ ?? [] : [];
+    const findings = term.length >= 2 ? (findingsQ ?? []) : [];
     const allScans = allScansQ ?? [];
     const out: Item[] = [];
+    if (t) {
+      // Every screen by name, so "admin" or "ledger" + Enter goes there before any finding that
+      // mentions the word.
+      for (const [label, to, perm] of PAGES) {
+        if ((!perm || can(perm)) && label.toLowerCase().includes(t)) {
+          out.push({
+            key: `p-${to}`,
+            lead: <span className="pal-k">PAGE</span>,
+            text: label,
+            go: go(to),
+          });
+        }
+      }
+    }
     for (const f of findings.slice(0, 6)) {
       out.push({
         key: `f-${f.id}`,
@@ -67,7 +84,9 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       });
     }
     if (t) {
-      for (const s of allScans.filter((s) => s.id.toLowerCase().includes(t) || scanLabel(s.id).toLowerCase().includes(t)).slice(0, 4)) {
+      for (const s of allScans
+        .filter((s) => s.id.toLowerCase().includes(t) || scanLabel(s.id).toLowerCase().includes(t))
+        .slice(0, 4)) {
         out.push({
           key: `s-${s.id}`,
           lead: <span className="pal-k">SCAN</span>,
@@ -78,7 +97,10 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     }
     const actions: [string, string][] = [
       ["Run KavachBank demo (offline)", "/demo"],
-      ["Verify egress ledger chain", latest ? `/privacy/ledger?scan=${latest.id}` : "/privacy/ledger"],
+      [
+        "Verify egress ledger chain",
+        latest ? `/privacy/ledger?scan=${latest.id}` : "/privacy/ledger",
+      ],
       ["Open Privacy Inspect", "/privacy/inspect"],
       ["Open findings", "/findings"],
       ["Set up a project", "/projects/new"],
@@ -86,16 +108,13 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       ["Settings", "/settings"],
     ];
     for (const [label, to] of actions) {
-      if (!t || label.toLowerCase().includes(t)) {
-        out.push({ key: `a-${label}`, lead: <span className="pal-k">ACTION</span>, text: label, go: go(to) });
-      }
-    }
-    if (t) {
-      // Every screen by name, so "admin" or "providers" + Enter goes there.
-      for (const [label, to, perm] of PAGES) {
-        if ((!perm || can(perm)) && label.toLowerCase().includes(t) && !out.some((o) => o.text === label)) {
-          out.push({ key: `p-${to}`, lead: <span className="pal-k">PAGE</span>, text: label, go: go(to) });
-        }
+      if ((!t || label.toLowerCase().includes(t)) && !out.some((o) => o.text === label)) {
+        out.push({
+          key: `a-${label}`,
+          lead: <span className="pal-k">ACTION</span>,
+          text: label,
+          go: go(to),
+        });
       }
     }
     return out;
@@ -110,7 +129,13 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div ref={ref} className="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+      <div
+        ref={ref}
+        className="palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+      >
         <div className="pal-in">
           <Icon name="search" className="faint" />
           <input
@@ -150,7 +175,15 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
               onClick={it.go}
             >
               {it.lead}
-              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {it.text}
               </span>
               {i === sel && <span className="kbd">↵</span>}
