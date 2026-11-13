@@ -365,6 +365,12 @@ class PrivacyPrepareStage:
                 if skip:
                     withheld += 1
                     continue
+                if candidate.kind is CandidateKind.SECRET:
+                    # The model would only see the placeholder that replaced the secret: nothing
+                    # to review, and the slice of a file full of secrets would repeat once per
+                    # secret. Decided before the review limit, so the reason does not depend on it.
+                    ctx.fail_item(str(candidate.id), SLICE_FAILED)
+                    continue
                 if limit is not None and len(payloads) >= limit:
                     ctx.fail_item(str(candidate.id), REVIEW_LIMIT)  # kept, not sent
                     limited += 1
@@ -451,10 +457,6 @@ class PrivacyPrepareStage:
         engine: Pseudonymiser,
         vault: Vault,
     ) -> _Outcome:
-        if candidate.kind is CandidateKind.SECRET:
-            # The model would only see the placeholder that replaced the secret: nothing to
-            # review, and the slice of a file full of secrets would repeat once per secret.
-            raise _FailedError(SLICE_FAILED)
         try:
             selector = StrategySelector.from_settings(ctx.config)
             ceiling = plan_for(level).strategy_ceiling

@@ -11,6 +11,7 @@ import re
 import shutil
 import socket
 import sqlite3
+import sys
 from collections import Counter
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -23,7 +24,7 @@ from hypothesis import strategies as st
 from pydantic import BaseModel
 
 from codekavach.config import load_settings
-from codekavach.core.models import Candidate, ScanStatus
+from codekavach.core.models import Candidate, CandidateKind, ScanStatus
 from codekavach.core.models.egress import EgressRecord
 from codekavach.core.models.enums import EgressOutcome
 from codekavach.core.models.finding import Finding
@@ -44,7 +45,12 @@ from codekavach.privacy.errors import PseudonymError, RedactionError
 from codekavach.privacy.policy.records import PolicyDecisionRow
 from codekavach.privacy.pseudonymise.engine import Pseudonymiser
 from codekavach.privacy.redact.redactor import Redactor
-from codekavach.privacy.stages import REVIEW_LIMIT, PrivacyPrepareStage, review_rank
+from codekavach.privacy.stages import (
+    REVIEW_LIMIT,
+    SLICE_FAILED,
+    PrivacyPrepareStage,
+    review_rank,
+)
 from codekavach.privacy.vault.salt import vault_path
 from codekavach.report.model.build import summarise_ledger
 from tests.support.ingest import SALT_HEX, stages_registry
@@ -587,6 +593,21 @@ def test_a_review_limit_prepares_only_the_most_severe_and_records_the_rest(
     )
     summary = summarise_ledger(run.outcome.state_dir, str(run.outcome.scan.id), loaded.settings)
     assert dict(summary.not_reviewed)[REVIEW_LIMIT] == len(limited)
+
+
+def test_a_secret_is_never_counted_against_the_review_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A secret has no slice to send whatever the limit, so its reason does not depend on it."""
+    monkeypatch.setattr(sys.modules[__name__], "STAGES", (*STAGES, "analyse-secrets"))
+    root = copy_fixture(tmp_path)
+    run = run_and_capture(
+        root, home="home-limit1", overrides={"llm": {"tasks": ["triage"], "review_limit": 1}}
+    )
+    secrets = {str(c.id) for c in run.candidates if c.kind is CandidateKind.SECRET}
+    assert secrets
+    failures = failures_of(run.outcome, "privacy-prepare")
+    assert {failures[s] for s in secrets} == {SLICE_FAILED}
 
 
 def test_the_combined_review_sends_one_request_per_payload(tmp_path: Path) -> None:
