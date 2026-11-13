@@ -28,8 +28,10 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const current = projects.find((p) => p.id === currentId) ?? projects.find((p) => p.id === SAMPLE_ID) ?? projects[0] ?? null;
 
   useEffect(() => {
-    if (current && current.id !== currentId) setId(current.id);
-  }, [current, currentId]);
+    // Adopt the fallback only while no valid choice is held: a page may have chosen a project
+    // in the same render (a linked scan of another project), and that choice must win.
+    if (current && current.id !== currentId) setId((id) => (id && projects.some((p) => p.id === id) ? id : current.id));
+  }, [current, currentId, projects]);
 
   const setCurrentId = useCallback((id: string) => {
     setId(id);
