@@ -52,7 +52,8 @@ Do this the day before and again 30 minutes before. Tick each item; if one fails
 - [ ] `uv run codekavach demo --out demo-out` exits 0 and prints `zero_leak_passed  True` (works offline).
 - [ ] Dashboard up: `docker compose up -d` (or `uv run codekavach serve`), then open `http://127.0.0.1:8080`, log in as `admin`.
 - [ ] Dashboard seeded: `uv run python scripts/seed_demo.py` has been run once; the Overview shows several scans and a Privacy Centre that is not empty (see "Seeding the dashboard").
-- [ ] Privacy guard status recorded: the Overview's "Privacy guard status" card reads "not recorded" for I1, I2, I3 and I5 until the invariant suite has been run once into the server's data directory: `uv run pytest -m privacy --junitxml=<data-dir>/invariants/junit.xml` (about two minutes; `<data-dir>` is the `--data-dir` of `codekavach serve`). Re-run it after `git pull`; a failing test shows as "Fail" on the card.
+- [ ] Privacy guard status recorded: the Overview's "Privacy guard status" card reads "not recorded" for I1, I2, I3 and I5 until the invariant suite has been run once into the server's data directory: `uv run pytest -m privacy --junitxml=<data-dir>/invariants/junit.xml` (about two minutes; `<data-dir>` is the `--data-dir` of `codekavach serve`). With Docker, run it on the host and copy the file into the volume: `uv run pytest -m privacy --junitxml=junit.xml && docker compose exec codekavach mkdir -p /data/invariants && docker compose cp junit.xml codekavach:/data/invariants/junit.xml`. The Privacy Centre's "Invariant suite" card then shows the run time and the test count (about 400). Re-run it after `git pull`; a failing test shows as "Fail" on the card.
+- [ ] Restart the server after every `git pull` (`docker compose up -d --build`, or stop and start `codekavach serve`): a server left running on old code with new report templates fails to render HTML and PDF reports.
 - [ ] Real model reachable: **Providers** in the sidebar, **Run health checks**; the `agentrouter` card turns **Healthy** with its latency (hover it for the message). It shows **Key missing** when the key is not in the environment, and is then not called. The key lives in `.env` (`CODEKAVACH_AGENTROUTER_API_KEY`), never in a file that is committed; do not show it on screen.
 - [ ] `report.pdf` opens (needs the Pango libraries; see `DEMO1.md`).
 - [ ] The latest GitHub Actions run of the demo workflow is green; the Security tab has alerts. Check in the browser; do not rely on memory.
@@ -87,7 +88,9 @@ Nothing is typed into the database. Findings, counts, payloads, the ledger and t
 Honest notes for the presenter, as observed with the engines of the day:
 
 - The sample projects are small and synthetic, with ground truth in `fixtures/*/ground-truth/manifest.yaml`. The scanner finds most planted flaws, but not all, and it flags the safe code in Shopfront. That is a true statement about detection quality on small samples, and a good moment to show triage. Do not present it as a benchmark; `codekavach eval` is the benchmark.
-- L4 is not seeded: it is not delivered in every build and fails closed.
+- L4 is not seeded: it is not delivered in every build and fails closed. A scan started at L4 completes with zero payloads and every candidate withheld; the scan form, the ledger, Inspect and the Privacy Centre all say so. Show it only as "fails closed", never as working L4.
+- Evaluation shows bundled sample results (marked "Sample results") until **Run benchmark** is pressed. A run takes about a minute with the mock provider and replaces the sample, including its AgentRouter row, with this server's mock-only figures, where the model review does not change F1. Decide before the session which one you want on screen.
+- The first PDF of a scan takes up to a minute to render on a laptop (later downloads are instant). Download the PDF of the scan you will show once before the session.
 - Scans with the mock provider say so in the summary: the ledger shows what **would** have been sent.
 
 ## Real-model timings
