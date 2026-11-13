@@ -77,7 +77,7 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
   const { current } = useCurrentProject();
   const projectScans = useScans(current?.id).data ?? [];
   const hasLevel = projectScans.some((x) => x.id !== scanId && x.status === "completed" && x.privacy_level === level);
-  const preview = useOptional<LedgerDetail>(`preview-${scanId}-${seq}-${level}`, () => endpoints.ledgerPreview(scanId, seq, level), !!d && !isSent && hasLevel);
+  const preview = useOptional<LedgerDetail>(`preview-${scanId}-${seq}-${level}`, () => endpoints.ledgerPreview(scanId, seq, level), !!d && !isSent && hasLevel && level !== "L4");
   const finding = useFinding(d?.entry.finding_id ?? undefined).data;
   const privacyOwn = usePrivacy(scanId).data;
   useShell({ levelPill: `${level} · ${LEVEL_NAME[level]}` });
@@ -207,7 +207,10 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
                     <p className="xs faint" style={{ marginTop: 8 }}>
                       Tinted lines are the vulnerability-relevant slice
                       {srcLine ? ` (source on line ${srcLine}` : " ("}
-                      {sinkLine ? `${srcLine ? ", " : ""}sink on line ${sinkLine})` : ")"}; untinted lines were not sent.
+                      {sinkLine ? `${srcLine ? ", " : ""}sink on line ${sinkLine})` : ")"}
+                      {isSent
+                        ? "; untinted lines were not sent."
+                        : `, as sent at ${sentLevel}.${shown && sent !== null ? ` The ${level} payload on the right covers ${Math.min(sent, shownTotal)} of ${shownTotal} lines of this file.` : ""}`}
                       {d.other_file_segments ? ` The slice also takes ${d.other_file_segments} segment${d.other_file_segments === 1 ? "" : "s"} from other files.` : ""}
                     </p>
                   )}
@@ -231,7 +234,7 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
                         : `payload #${fmtSeq(seq)} at ${level}`}
                   </span>
                 </span>
-                <span style={{ color: "var(--high-t)" }}>{d?.entry.outcome?.startsWith("blocked") ? "Blocked · not sent" : "Prepared for the model"}</span>
+                <span style={{ color: "var(--high-t)" }}>{d?.entry.outcome?.startsWith("blocked") ? "Blocked · not sent" : shown ? "Prepared for the model" : ""}</span>
               </div>
               {!d || (!isSent && preview.isLoading) ? (
                 <div className="code" style={{ padding: 16 }}>
@@ -250,10 +253,10 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
                   <MarkedCode text={shown.payload_text} markup={shown.markup} side="payload" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0 }} />
                 )
               ) : (
-                <div className="code" style={{ padding: "8px 16px", whiteSpace: "normal" }}>
+                <div className="code" style={{ padding: "8px 16px", whiteSpace: "normal", fontFamily: "var(--font-sans, inherit)" }}>
                   <Empty title={`No ${level} payload to compare`}>
                     {level === "L4"
-                      ? "L4 sends abstract data-flow facts only. It is not delivered in every build and fails closed, so no L4 scan of this project exists to compare with."
+                      ? "L4 is designed to send abstract data-flow facts only, never code. This build does not prepare L4 facts yet, so L4 fails closed: candidates are withheld and there is no L4 payload to compare."
                       : `This finding was prepared at ${sentLevel}. To compare, run a scan of this project at ${level}; its payload for the same finding then appears here. Nothing is prepared or sent from this page.`}
                   </Empty>
                 </div>
