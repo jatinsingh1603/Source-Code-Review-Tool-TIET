@@ -82,6 +82,21 @@ ITEM_FAILURE_WORDS: Final = {
         "info",
     ),
 }
+# Pipeline warning codes, worded for the scan log; an unknown code is shown as it is.
+WARNING_WORDS: Final = {
+    "engine_network_not_isolated": (
+        "External engines ran without network isolation (this host cannot create a network "
+        "namespace); they read a read-only copy of the code and nothing is sent to a model"
+    ),
+    "engine_unknown_id": "The settings name an engine this version does not know; it was ignored",
+    "files_skipped": "Some files could not be parsed and were left out of code analysis",
+    "partial_input": "A stage ran on partial input because an earlier stage failed",
+    "scan_deadline": "The scan reached its time limit and stopped",
+    "tool_versions_invalid": "Engine versions could not be recorded",
+    "diff_base_unresolved": "The diff base could not be resolved; the whole tree was scanned",
+    "submodules_not_scanned": "Git submodules were not scanned",
+    "no_files_found": "No files to scan were found",
+}
 VERDICT_WORDS: Final = {
     "vulnerable": "confirmed by the model",
     "not_vulnerable": "judged not exploitable by the model",
@@ -213,7 +228,8 @@ class _Progress:
             # Counted and logged once per error code when the stage ends (no raw item ids).
             self.failed.setdefault(stage, Counter())[str(data.get("error_code"))] += 1
         elif kind == "warning":
-            self.log.append("log", {"level": "warning", "message": str(data.get("code"))})
+            code = str(data.get("code"))
+            self.log.append("log", {"level": "warning", "message": WARNING_WORDS.get(code, code)})
 
     def _verdict(self, data: dict[str, Any]) -> None:
         """A model verdict landed: stream it as a live ``finding`` event (codes only)."""
