@@ -13,7 +13,7 @@ export function GithubSyncDialog({
   scanId: string;
   open: boolean;
   onClose: () => void;
-  /** Limit the preview to these findings (the server syncs the whole scan). */
+  /** Sync only these findings (the whole scan when omitted). */
   findingIds?: string[];
 }) {
   const [repo, setRepo] = useState("");
@@ -24,27 +24,29 @@ export function GithubSyncDialog({
   const sync = useGithubSync();
   const toast = useToast();
   const repoOk = /^[\w.-]+\/[\w.-]+$/.test(repo.trim());
+  const only = !!findingIds?.length;
+  const one = findingIds?.length === 1;
 
   const run = async () => {
     setError(null);
     setResult(null);
     try {
-      const r = await sync.mutateAsync({ scanId, body: { repo: repo.trim(), token_ref: tokenRef.trim(), dry_run: dryRun } });
+      const r = await sync.mutateAsync({ scanId, body: { repo: repo.trim(), token_ref: tokenRef.trim(), dry_run: dryRun, ...(only ? { finding_ids: findingIds } : {}) } });
       setResult(r);
       if (!dryRun) toast.success("GitHub issues synchronised", `${r.created} created, ${r.updated} updated, ${r.closed} closed.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sync failed");
     }
   };
-  const items = result ? result.items.filter((i) => !findingIds?.length || findingIds.includes(i.finding_id)) : [];
+  const items = result?.items ?? [];
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
       size="lg"
-      title="Sync to GitHub"
-      description="Creates or updates one issue per finding and closes issues for fixed findings. CodeKavach does not change code or open pull requests."
+      title={one ? "Create GitHub issue" : "Sync to GitHub"}
+      description={`${one ? "Creates or updates the issue for this finding" : only ? `Creates or updates one issue for each of the ${findingIds!.length} selected findings` : "Creates or updates one issue per finding of the scan and closes issues for fixed findings"}. CodeKavach does not change code or open pull requests.`}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>

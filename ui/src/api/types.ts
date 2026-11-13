@@ -538,6 +538,8 @@ export interface GithubSyncRequest {
   repo: string;
   token_ref: string;
   dry_run: boolean;
+  /** Only these findings of the scan (all of them when omitted). */
+  finding_ids?: string[];
 }
 
 export interface GithubSyncItem {
