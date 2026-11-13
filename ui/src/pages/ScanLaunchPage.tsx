@@ -168,6 +168,7 @@ export default function ScanLaunchPage() {
           <div className="fld">
             <label htmlFor="sc-r">Model review</label>
             <select id="sc-r" className="inp" value={limit} disabled={level === "L0"} onChange={(e) => setReviewLimit(Number(e.target.value))}>
+              <option value={3}>Live demo · the 3 most severe candidates</option>
               <option value={8}>Quick · the 8 most severe candidates</option>
               <option value={20}>The 20 most severe candidates</option>
               <option value={0}>Every candidate</option>
