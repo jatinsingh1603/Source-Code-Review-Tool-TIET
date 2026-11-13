@@ -439,7 +439,13 @@ export default function PrivacyPage() {
                     {Object.entries(p.levels_by_candidate ?? { [p.level]: p.payloads }).map(([l, n]) => (
                       <LevelBadge key={l} level={l} label={`${l} · ${fmtInt(n)}`} title={`${fmtInt(n)} candidate${n === 1 ? "" : "s"} reviewed at ${l}`} />
                     ))}
-                    {p.withheld ? <LevelBadge level="never-send" label={`withheld · ${fmtInt(p.withheld)}`} title="Candidates kept local by policy or because their level failed closed" /> : null}
+                    {p.withheld ? (
+                      p.level === "L0" ? (
+                        <LevelBadge level="L0" label={`L0 · ${fmtInt(p.withheld)}`} title="Reviewed on this machine only; nothing was prepared for a model" />
+                      ) : (
+                        <LevelBadge level="never-send" label={`withheld · ${fmtInt(p.withheld)}`} title="Candidates kept local by policy or because their level failed closed" />
+                      )
+                    ) : null}
                     {p.blocked ? <LevelBadge level="never-send" label={`blocked · ${p.blocked}`} /> : null}
                   </dd>
                   <dt>Payloads</dt>
@@ -523,7 +529,9 @@ function ExposureBudget({ p, budgets }: { p: PrivacySummary; budgets?: Budgets |
         </div>
       ) : null}
       <p className="xs faint">
-        {p.bytes_sent !== undefined && p.bytes_sent !== null ? `${fmtBytesText(p.bytes_sent)} sent in this scan. ` : ""}
+        {p.bytes_sent !== undefined && p.bytes_sent !== null
+          ? `${fmtBytesText(p.bytes_sent)} ${p.send === false || p.provider_tier === "local" ? "recorded (not transmitted)" : "sent"} in this scan. `
+          : ""}
         Limits come from the privacy configuration on the server.
       </p>
     </div>
