@@ -95,6 +95,11 @@ class ScoreInputs:
     chain_ok: bool
 
 
+def count_words(count: int, word: str) -> str:
+    """``"0 occurrences"``, ``"1 occurrence"``: a count with its noun, for display."""
+    return f"{count} {word}{'' if count == 1 else 's'}"
+
+
 def compute_privacy_score(inputs: ScoreInputs) -> PrivacyScore:
     """Compute the components and the summary score from ``inputs``."""
     parts: list[ScoreComponent] = []
@@ -127,7 +132,7 @@ def compute_privacy_score(inputs: ScoreInputs) -> PrivacyScore:
         residual, raw = 100.0, "no payload to search"
     elif inputs.residual_checked:
         residual = 100.0 if inputs.residual_occurrences == 0 else 0.0
-        raw = f"{inputs.residual_occurrences} occurrence(s)"
+        raw = count_words(inputs.residual_occurrences, "occurrence")
     else:
         residual, raw = 50.0, "not checked"
     parts.append(
@@ -144,7 +149,11 @@ def compute_privacy_score(inputs: ScoreInputs) -> PrivacyScore:
         ScoreComponent(
             name="linkability",
             value=round(100.0 * (1 - shared), 1),
-            raw=f"{inputs.tokens_shared}/{inputs.tokens_total} tokens shared",
+            raw=(
+                f"{inputs.tokens_shared} of {inputs.tokens_total} placeholders shared"
+                if inputs.tokens_total
+                else "no placeholders to link"
+            ),
             kind="measured",
             basis="placeholder tokens appearing in 2+ payloads",
         )

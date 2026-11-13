@@ -57,7 +57,11 @@ class ZeroLeak(KavachModel):
         """One line for the attestation."""
         if not self.checked:
             return "not checked in this run"
-        verdict = "no occurrence" if self.occurrences == 0 else f"{self.occurrences} occurrence(s)"
+        verdict = (
+            "no occurrence"
+            if self.occurrences == 0
+            else f"{self.occurrences} occurrence{'' if self.occurrences == 1 else 's'}"
+        )
         return f"{self.terms_checked} listed terms searched in every ledger payload: {verdict}"
 
 

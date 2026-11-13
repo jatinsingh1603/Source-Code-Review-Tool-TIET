@@ -759,11 +759,13 @@ def attestation(summary: PrivacySummary) -> str:
         if summary.chain_ok
         else "The egress ledger hash chain did not verify"
     )
+    from codekavach.privacy.attest import count_words  # noqa: PLC0415
+
     zero = summary.zero_leak
     if zero.get("checked"):
         leak = (
             f"The zero-leak check searched every payload for {zero['checked']} listed project "
-            f"terms and found {zero['occurrences']} occurrence(s)."
+            f"terms and found {count_words(int(zero['occurrences']), 'occurrence')}."
         )
     else:
         leak = "No list of project terms was available, so the zero-leak check did not run."

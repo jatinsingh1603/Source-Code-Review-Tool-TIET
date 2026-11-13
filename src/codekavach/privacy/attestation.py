@@ -26,7 +26,12 @@ from codekavach.core.models.enums import PrivacyLevel, TrustTier
 from codekavach.core.pipeline import keys
 from codekavach.core.store.artefacts import OnDiskArtefactStore
 from codekavach.core.store.layout import StateLayout
-from codekavach.privacy.attest import PrivacyScore, ScoreInputs, compute_privacy_score
+from codekavach.privacy.attest import (
+    PrivacyScore,
+    ScoreInputs,
+    compute_privacy_score,
+    count_words,
+)
 from codekavach.privacy.egress.ledger import open_reader
 from codekavach.privacy.policy.records import PolicyDecisionRow
 
@@ -264,11 +269,11 @@ def build_attestation(  # noqa: PLR0912, PLR0915 - one linear gather-and-summari
         )
     )
     if checked and not count:
-        leak = f"{len(terms)} term(s), 0 occurrence(s) (no payloads recorded)"
+        leak = f"{count_words(len(terms), 'term')}, no occurrences (no payloads recorded)"
     elif not checked:
         leak = "not checked (no terms configured)"
     else:
-        leak = f"{len(terms)} term(s), {occurrences} occurrence(s)"
+        leak = f"{count_words(len(terms), 'term')}, {count_words(occurrences, 'occurrence')}"
     local = tier is TrustTier.LOCAL
     text = _text(
         {
