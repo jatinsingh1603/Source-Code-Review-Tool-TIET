@@ -59,5 +59,5 @@ upload and issue sync are the only calls to GitHub and can be left off.
 - GitHub App registration and webhook hosting. `codekavach.integrations.github.webhook` has the
   signature check and an event-to-action mapping only.
 - Marketplace publication (needs a public repository with a root `action.yml`).
-- Pinning third-party actions to commit hashes, and a Docker image variant.
+- A Docker image variant. (The actions `action.yml` itself runs are pinned to commit hashes.)
 - The workflow was not run on GitHub in this environment; `run.sh` was exercised locally.
