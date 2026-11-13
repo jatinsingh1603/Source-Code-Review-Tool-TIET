@@ -80,7 +80,7 @@ jobs:
         with:
           persist-credentials: false
       - id: ck
-        uses: jatinsingh1603/Source-Code-Review-Tool-TIET/action@main
+        uses: jatinsingh1603/Source-Code-Review-Tool-TIET/action@283b6d7f0f552713a0622e2ac0426eae7290451a # main, 2026-11-13
         with:
           target: .            # the repository root (see "Known limits")
           provider: mock       # step 2 below switches to a real model
@@ -94,7 +94,7 @@ jobs:
           category: codekavach
 ```
 
-Pin `@main` to a release tag or commit once one is published. The action's own `upload-sarif: "true"` input also works, but uses an unpinned upload action; the explicit step above is pinned.
+The action is pinned to a commit, not `@main`: the job runs whatever the ref points to with the client's token and key in its environment, so move the pin only after reviewing the new commit. The action's own `upload-sarif: "true"` input also works; it uses the same pinned upload action.
 
 ### Step 2: a real model with the client's own key
 
@@ -103,7 +103,7 @@ Pin `@main` to a release tag or commit once one is published. The action's own `
 
 ```yaml
       - id: ck
-        uses: jatinsingh1603/Source-Code-Review-Tool-TIET/action@main
+        uses: jatinsingh1603/Source-Code-Review-Tool-TIET/action@283b6d7f0f552713a0622e2ac0426eae7290451a # main, 2026-11-13
         with:
           target: .
           # Fork PRs get no secrets: they fall back to the deterministic engines.

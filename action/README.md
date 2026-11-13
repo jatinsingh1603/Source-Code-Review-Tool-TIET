@@ -5,14 +5,18 @@ composite action: it installs the CLI from this repository and calls `codekavach
 `codekavach findings` and optionally `codekavach sync github`.
 
 ```yaml
-- uses: actions/checkout@v4
-- uses: jatinsingh1603/Source-Code-Review-Tool-TIET/action@main
+- uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+- uses: jatinsingh1603/Source-Code-Review-Tool-TIET/action@283b6d7f0f552713a0622e2ac0426eae7290451a # main, 2026-11-13
   with:
     provider: none        # or agentrouter, openai, anthropic, ...
     privacy-level: L3
     fail-on: high
     upload-sarif: "true"
 ```
+
+Pin the action to a commit hash, as above, not to `@main`: the job runs whatever that ref points
+to with your token and provider key in its environment. Move the pin only after reviewing the new
+commit.
 
 ## Inputs
 
