@@ -480,6 +480,8 @@ export interface ReportFormat {
   /** Already rendered on the server (a download is immediate). */
   rendered?: boolean;
   size?: number | null;
+  /** The integrity manifest's own SHA-256, once it has been written. */
+  sha256?: string | null;
 }
 
 export interface ProviderInfo {

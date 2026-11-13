@@ -54,6 +54,7 @@ export default function ReportsPage() {
   const [progress, setProgress] = useState<string | null>(null);
   const builderRef = useRef<HTMLFormElement>(null);
   const formats = (reportsQ.data ?? []).filter((f) => f.format !== "markdown");
+  const manifest = formats.find((f) => f.format === "manifest");
   const frameworks = useMemo(() => {
     const s = new Set<string>();
     for (const f of findings ?? []) for (const c of f.compliance ?? []) s.add(c.framework);
@@ -151,17 +152,30 @@ export default function ReportsPage() {
                   <td className="mono sm">{scanLabel(s.id)}</td>
                   <td className="sm">Technical</td>
                   <td>
-                    <div className="row" style={{ gap: 4 }}>
-                      {formats
-                        .filter((f) => f.available && chosen.has(f.format))
-                        .map((f) => (
-                          <span key={f.format} className="tag">
-                            {FORMAT_NAME[f.format] ?? f.format.toUpperCase()}
-                          </span>
-                        ))}
-                    </div>
+                    {s.id === scanId ? (
+                      <div className="row" style={{ gap: 4 }}>
+                        {formats
+                          .filter((f) => f.rendered && f.format !== "manifest")
+                          .map((f) => (
+                            <span key={f.format} className="tag">
+                              {FORMAT_NAME[f.format] ?? f.format.toUpperCase()}
+                            </span>
+                          ))}
+                        {reportsQ.isSuccess && !formats.some((f) => f.rendered && f.format !== "manifest") && <span className="faint sm">None yet</span>}
+                      </div>
+                    ) : (
+                      <span className="faint sm">Open to see</span>
+                    )}
                   </td>
-                  <td>{s.id === scanId && privacy?.attestation_digest ? <Hash value={privacy.attestation_digest} copy={false} /> : <span className="faint sm">on download</span>}</td>
+                  <td>
+                    {s.id === scanId && manifest?.sha256 ? (
+                      <Hash value={manifest.sha256} copy={false} />
+                    ) : (
+                      <span className="faint sm" title="Generate the report with Integrity manifest selected to hash every file.">
+                        {s.id === scanId ? "Not generated" : "—"}
+                      </span>
+                    )}
+                  </td>
                   <td className="sm muted">{fmtShort(s.finished_at)}</td>
                   <td>
                     <button type="button" className="more linkbtn" style={{ color: "var(--text)" }} onClick={() => select(s.id)}>
@@ -238,6 +252,7 @@ export default function ReportsPage() {
             </div>
             <div className="stack s6">
               <span className="lbl">Formats</span>
+              {reportsQ.isLoading && <Skeleton />}
               <div className="row">
                 {formats.map((f) => {
                   const on = chosen.has(f.format);

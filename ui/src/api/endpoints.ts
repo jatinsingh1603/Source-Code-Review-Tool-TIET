@@ -221,6 +221,7 @@ export function normaliseFormats(data: unknown): ReportFormat[] {
       media_type: o.media_type,
       rendered: o.rendered,
       size: o.size,
+      sha256: o.sha256,
     };
   });
   // `markdown` and `md` are the same renderer; show one card.

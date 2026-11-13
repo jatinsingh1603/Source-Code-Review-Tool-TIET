@@ -9,6 +9,7 @@ scan's egress ledger; the payload text and the original slice of ``/ledger/{seq}
 only. ``/reports/{fmt}`` renders through the installed renderers and re-renders after triage.
 """
 
+import hashlib
 import json
 import re
 import threading
@@ -774,6 +775,9 @@ def list_reports(scan_id: str, state: StateDep, session: SessionDep) -> dict[str
 
     def entry(fmt: str, path: Path | None) -> dict[str, Any]:
         done = path is not None and path.is_file()
+        digest = None
+        if done and path is not None and fmt == "manifest":
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
         return {
             "format": fmt,
             "label": LABELS.get(fmt, fmt.upper()),
@@ -782,6 +786,7 @@ def list_reports(scan_id: str, state: StateDep, session: SessionDep) -> dict[str
             "reason": None,
             "rendered": done,
             "size": path.stat().st_size if done and path is not None else None,
+            "sha256": digest,
             "url": f"/api/v1/scans/{scan_id}/reports/{fmt}",
         }
 

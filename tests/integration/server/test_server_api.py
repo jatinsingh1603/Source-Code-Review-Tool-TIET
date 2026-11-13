@@ -4,6 +4,7 @@ One module-scoped server scans the KavachBank sample with the mock provider thro
 pipeline; the other cases read that scan's findings, privacy summary, ledger, events and reports.
 """
 
+import hashlib
 import io
 import json
 import time
@@ -334,6 +335,9 @@ def test_compliance_annex_never_replaces_the_html_report(
     if manifest.status_code == 200:
         files = {item["file"] for item in manifest.json()["files"]}
         assert {"report.html", "report.compliance.html"} <= files
+        listing = client.get(base, headers=users["viewer"]).json()["formats"]
+        entry = next(item for item in listing if item["format"] == "manifest")
+        assert entry["sha256"] == hashlib.sha256(manifest.content).hexdigest()
 
 
 def test_stats_and_settings(
