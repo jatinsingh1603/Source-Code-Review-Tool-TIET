@@ -25,7 +25,7 @@ Install guides: [`docs/guide/install.md`](../guide/install.md) and [`docs/guide/
 |-----|------|--------------|-----|
 | 0-3 | The problem | One slide or the README intro | Reviewing code with an LLM is useful, and sending the code to a provider is exactly what a bank, a defence contractor or a university lab cannot do. We build the review so the provider never sees what it does not need to. |
 | 3-7 | The privacy approach | Levels table (below), then `codekavach privacy inspect` page | Five levels, L0 to L4. L3 is the default. Show what leaves the machine, not a promise about it. |
-| 7-15 | Live dashboard scan, real model (start it at minute 3, before the privacy slides, and come back to it: a quick review of 8 candidates took 14 min 37 s on 13 Nov; see [Real-model timings](#real-model-timings)) ([`DEMO2.md`](DEMO2.md) sections 3 to 5) | Dashboard: start a scan of the KavachBank project at L3 with the `agentrouter` provider, Model review "Quick · the 8 most severe candidates"; verdicts appear in the log one by one | The findings carry the real file, line and name, although the model only saw pseudonyms; the mapping is restored locally from the vault. |
+| 7-15 | Live dashboard scan, real model, then the full real-model scan made before the session (the live review of 3 candidates took 2 min 4 s on 13 Nov; see [Real-model timings](#real-model-timings)) ([`DEMO2.md`](DEMO2.md) sections 3 to 5) | Dashboard: start a scan of the KavachBank project at L3 with the `agentrouter` provider, Model review "Live demo · the 3 most severe candidates"; the three verdicts (command injection, unsafe deserialisation, SQL injection) appear in the log one by one. Then open the pre-run scan (every candidate reviewed) from **Scans** for the findings walk-through | The findings carry the real file, line and name, although the model only saw pseudonyms; the mapping is restored locally from the vault. |
 | 15-20 | Privacy Centre ([`DEMO2.md`](DEMO2.md) section 6) | Side by side (original vs payload), the egress ledger, the zero-leak check | The ledger is hash-chained: every payload that was sent, or blocked, is recorded. The check shows listed terms do not occur verbatim in any payload. Then state what it does not show (see questions). |
 | 20-23 | Report ([`DEMO2.md`](DEMO2.md) section 7) | Open the PDF from the dashboard or `codekavach report` | Audit-style: executive summary, risk matrix, evidence, remediation, privacy attestation. Also SARIF, JSON, CSV, XLSX, Markdown, DOCX. |
 | 23-26 | CI and VS Code ([`github-actions.md`](github-actions.md), [`vscode.md`](vscode.md)) | A finished GitHub Actions run with its Security-tab alerts; the extension showing the same findings in the editor | Same core everywhere. GitHub-hosted runs use the mock provider: no key, nothing leaves the runner. |
@@ -55,6 +55,7 @@ Do this the day before and again 30 minutes before. Tick each item; if one fails
 - [ ] Privacy guard status recorded: the Overview's "Privacy guard status" card reads "not recorded" for I1, I2, I3 and I5 until the invariant suite has been run once into the server's data directory: `uv run pytest -m privacy --junitxml=<data-dir>/invariants/junit.xml` (about two minutes; `<data-dir>` is the `--data-dir` of `codekavach serve`). With Docker, run it on the host and copy the file into the volume: `uv run pytest -m privacy --junitxml=junit.xml && docker compose exec codekavach mkdir -p /data/invariants && docker compose cp junit.xml codekavach:/data/invariants/junit.xml`. The Privacy Centre's "Invariant suite" card then shows the run time and the test count (about 400). Re-run it after `git pull`; a failing test shows as "Fail" on the card.
 - [ ] Restart the server after every `git pull` (`docker compose up -d --build`, or stop and start `codekavach serve`): a server left running on old code with new report templates fails to render HTML and PDF reports.
 - [ ] Real model reachable: **Providers** in the sidebar, **Run health checks**; the `agentrouter` card turns **Healthy** with its latency (hover it for the message). It shows **Key missing** when the key is not in the environment, and is then not called. The key lives in `.env` (`CODEKAVACH_AGENTROUTER_API_KEY`), never in a file that is committed; do not show it on screen.
+- [ ] Pre-run real-model scan in place: a completed KavachBank scan at L3 with `agentrouter` and Model review "Every candidate" (about 15 minutes; see [Making the pre-run real-model scan](#making-the-pre-run-real-model-scan)), its ledger verified and its PDF downloaded once. Settings, Default provider: `agentrouter`.
 - [ ] `report.pdf` opens (needs the Pango libraries; see `DEMO1.md`).
 - [ ] The latest GitHub Actions run of the demo workflow is green; the Security tab has alerts. Check in the browser; do not rely on memory.
 - [ ] VS Code with the extension installed and the KavachBank folder open.
@@ -95,31 +96,50 @@ Honest notes for the presenter, as observed with the engines of the day:
 
 ## Real-model timings
 
-Measured on 13 Nov 2026 from the dashboard (WSL laptop, KavachBank sample, L3, `agentrouter` / `gpt-5.6-sol`, Model review "Quick · the 8 most severe candidates"). The gateway answers one request at a time per key and reasons at length, so the time is almost all model time.
+Measured on 13 Nov 2026 from the dashboard in Chromium (WSL laptop, `codekavach serve`, KavachBank sample, 29 files, 59 findings, L3, `agentrouter` / `gpt-5.6-sol`). The gateway answers one request at a time per key and reasons at length, so the time is almost all model time, and it varies: the same request took 17 s in one run and over 5 minutes in another.
 
-| Step | Time |
+| Step | Live demo · 3 candidates | Quick · 8 candidates | Every candidate (14 payloads) |
+|------|------|------|------|
+| **Test provider** in the scan form | 14.2 s | 11.5 s | 11.5 s |
+| Deterministic stages (ingest to privacy layer) | 2 s | 3 s | 10 s |
+| First verdict in the live log, after **Start scan** | 81 s | 35 s | 38 s |
+| Verdicts, seconds after **Start scan** | 81, 98, 121 | 35, 54, 89, 122, 211, 228, 357, 407 | 38, 59, 85, 111, 163, 227, 562, 591, 638, 743, 769, 822, 836, 893 |
+| Model stage | 1 min 58 s | 6 min 44 s | 14 min 43 s |
+| Whole scan | **2 min 4 s** | 6 min 49 s | 14 min 58 s |
+| Reviewed by the model | CWE-78, CWE-502, CWE-89 (all critical, all confirmed) | the three above, then CWE-639, CWE-862, CWE-327, CWE-22 twice | every candidate with a code slice; the rest (secrets, dependencies, configuration) keep their deterministic evidence |
+| Payloads sent / blocked | 3 / 0 | 8 / 0 | 14 / 0 |
+| Ledger **Verify again** | chain intact, 6 records | chain intact, 16 records | chain intact, 30 records |
+| Zero-leak check | passed, 0 of 31 listed terms | passed, 0 of 31 | passed, 0 of 31 |
+
+| Finding page (high, SSRF in `payments.js`, from the 8-candidate scan) | Time |
 |------|------|
-| New scan, **Test provider** | 15.7 s |
-| Deterministic stages (ingest to privacy layer, 29 files, 59 findings) | 7 s |
-| First verdict in the live log, after **Start scan** | 81 s |
-| Each further verdict | 23 s to 3 min 51 s (about 1 min 50 s on average) |
-| Model stage, 8 verdicts | 14 min 25 s |
-| Whole scan | 14 min 37 s |
-| **Review with model** on one finding page, first time | 53 s |
-| The same finding reviewed again (answered from the scan's cache, no egress, no ledger entry) | 2.6 s |
+| **Review with model**, first time (the gateway failed once and the request was retried; the ledger shows "No response" then "Sent") | 81.5 s |
+| **Review again** on the same finding (answered from the scan's cache, no egress, no ledger entry) | 1.7 s |
 
 What this means on the day:
 
-- Start the real scan early (minute 3) and talk over it; the verdicts stream into the log as they arrive. If time is short, open a real scan run before the session instead and say so.
+- **Live: "Live demo · the 3 most severe candidates".** It finished in about two minutes; even with the slowest gateway answers seen today it stays under four. Eight candidates took almost seven minutes and are not safe to wait for on stage. Start it, explain the pipeline and the egress meter while it runs, and read the three verdicts out as they land.
+- **Pre-run: "Every candidate"**, made before the call (below). Use it for the findings walk-through, the Privacy Centre, the ledger and the report: it has a model verdict on all 14 candidates that can be sent, not only the top three.
 - A new scan of the same code is **not** answered from the cache: every server scan gets a fresh pseudonym salt (less linkability between scans), so its payloads differ and the model is asked again. Only a repeated **Review with model** on the same finding is served from the cache.
-- Candidates beyond the eight keep their deterministic evidence; open any of them and press **Review with model** (auditor or admin) to ask about that one finding live, in about a minute.
+- Candidates beyond the limit keep their deterministic evidence; open any of them and press **Review with model** (auditor or admin) to ask about that one finding live, in about a minute (longer when the gateway retries).
+- The pill in the top bar reads "Offline · air-gapped" whenever the default provider is `mock`, also next to a finished real-model scan. Set **Settings**, Default provider, to `agentrouter` before the call so the pill and the scan form match what you show.
+
+### Making the pre-run real-model scan
+
+Do it the day before or at least 30 minutes before the call, on the machine and the data directory (or Docker volume) you will present from; it takes about 15 minutes and needs no attention.
+
+1. Server up with the key in its environment (`.env` for Docker; `CODEKAVACH_AGENTROUTER_API_KEY` or `CODEKAVACH_AGENTROUTER_API_KEY_FILE` for `codekavach serve`) and the dashboard seeded.
+2. **Providers**, **Run health checks**: `agentrouter` is **Healthy**.
+3. KavachBank (sample), **New scan**: L3, provider `agentrouter`, model `gpt-5.6-sol`, Model review **Every candidate**, No-send off, **Start scan**.
+4. When it says **Completed**, open the ledger and press **Verify again** (chain intact, zero-leak passed), and download its PDF report once so the first render is not on stage.
+5. Note the scan id (for example `SCN-BD2984`) and the time it ran; you will say both when you open it. Do not restart the server with another vault passphrase or data directory, or the scan's vault becomes unreadable.
 
 ## Fallback ladder
 
 Go down one rung at a time, and say what you did ("the network is slow, so I will replay a recorded model run"). Do not hide a rung from the audience.
 
 1. **Real model** (`agentrouter`, model `gpt-5.6-sol`). Needs network and the key in the environment.
-2. **A real-model scan run before the session.** Open it from **Scans** (provider `agentrouter`): its verdicts, ledger and report are real; say when it was run. The `replay` provider is not offered in the dashboard (every dashboard scan gets a fresh pseudonym salt, so recorded answers would not match); it backs the offline CLI demo only (see [`DEMO1.md`](DEMO1.md)).
+2. **A real-model scan run before the session** (see [Making the pre-run real-model scan](#making-the-pre-run-real-model-scan)). Open it from **Scans** (provider `agentrouter`): its verdicts, ledger and report are real; say when it was run. The `replay` provider is not offered in the dashboard (every dashboard scan gets a fresh pseudonym salt, so recorded answers would not match); it backs the offline CLI demo only (see [`DEMO1.md`](DEMO1.md)).
 3. **Mock provider.** Deterministic, local, no key. The ledger then shows what would have been sent. This is the default for `codekavach demo`.
 4. **Recorded artefacts.** The sample report from the latest release (`codekavach-sample-report.zip`), the last green Actions run and the screenshots you took during rehearsal. Open them and narrate.
 

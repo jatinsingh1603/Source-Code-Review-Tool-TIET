@@ -41,8 +41,9 @@ Providers (side navigation, under Deliver): press **Run health checks**; the `ag
 
 1. With **KavachBank (sample)** selected in the top bar, Overview, **New scan**.
 2. Privacy level **L3** (the default: slices around each candidate, secrets as typed placeholders, identifiers pseudonymised).
-3. Provider `agentrouter`, model `gpt-5.6-sol`, **No-send (dry run)** off.
-4. **Start scan**. The live view shows the nine-stage pipeline with counts, the egress meter (payloads, bytes, secrets, listed terms) and the streaming log. Leave **Model review** at "Quick · the 8 most severe candidates". The deterministic stages take seconds; the gateway then answers one request at a time, about one to two minutes each, so the scan takes about 15 minutes (timings in [the hub](README.md#real-model-timings)). Each verdict appears in the log as it lands.
+3. Provider `agentrouter`, model `gpt-5.6-sol`, Model review "Live demo · the 3 most severe candidates", **No-send (dry run)** off.
+4. **Start scan**. The live view shows the nine-stage pipeline with counts, the egress meter (payloads, bytes, secrets, listed terms) and the streaming log. The deterministic stages take seconds; the gateway then answers one request at a time, so the three verdicts (command injection, unsafe deserialisation, SQL injection, all critical) land in the log over about two minutes: 2 min 4 s for the whole scan on 13 Nov, first verdict after 81 s. Eight candidates took 6 min 49 s and every candidate 14 min 58 s, too long to wait for on stage (timings in [the hub](README.md#real-model-timings)). The egress meter counts payloads as they leave; bytes are totalled after the last one.
+5. When it completes, open the **pre-run** real-model scan (every candidate reviewed, made before the call as the hub describes) from **Scans** for the rest of the walk-through, and say when it was run.
 
 Say while it runs: the deterministic engines (own rules, taint, Opengrep, Bandit) find the candidates; the model only reviews a sanitised slice of each one and says whether it is exploitable and why.
 
@@ -74,7 +75,7 @@ Reports: pick the formats in the builder (PDF, DOCX, SARIF and JSON are on by de
 
 Say what you are doing, then go down one rung at a time:
 
-1. **A real-model scan from before the session**: open it from **Scans** and say when it was run. Run one the day before for this purpose. (The dashboard does not offer the `replay` provider: each dashboard scan uses a fresh pseudonym salt, so recorded answers would not match.)
+1. **A real-model scan from before the session**: open it from **Scans** and say when it was run. Make one the day before for this purpose ([how](README.md#making-the-pre-run-real-model-scan)). (The dashboard does not offer the `replay` provider: each dashboard scan uses a fresh pseudonym salt, so recorded answers would not match.)
 2. **Mock**: provider `mock`. Local and deterministic, no key; the ledger shows what would have been sent.
 3. **CLI**: `docker compose exec codekavach codekavach demo --out /data/demo-out`, then copy the report out with `docker compose cp codekavach:/data/demo-out/report.pdf .`.
 
