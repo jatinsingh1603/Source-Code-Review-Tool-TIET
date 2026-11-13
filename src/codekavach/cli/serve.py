@@ -5,8 +5,9 @@ Owning epic: E32.
 The command builds a ``ServerConfig`` from its options, creates the FastAPI application and runs
 it with Uvicorn. On first start it creates the ``admin`` account (password from
 ``CODEKAVACH_ADMIN_PASSWORD``, default ``kavach-admin``) and the "KavachBank (sample)" project and
-prints the address and the credentials. The server is imported only when the command runs, so
-``codekavach --help`` does not load FastAPI.
+prints the address. It prints the admin password only when it is the public default; a password
+set through the environment never reaches stdout, stderr or container logs. The server is
+imported only when the command runs, so ``codekavach --help`` does not load FastAPI.
 """
 
 from pathlib import Path
@@ -41,6 +42,7 @@ def serve_command(  # noqa: PLR0917 - Typer maps each parameter to one option
 
         from codekavach.server.app import create_app  # noqa: PLC0415
         from codekavach.server.config import (  # noqa: PLC0415
+            ADMIN_PASSWORD_ENV,
             DEFAULT_ADMIN_PASSWORD,
             ServerConfig,
         )
@@ -75,12 +77,10 @@ def serve_command(  # noqa: PLR0917 - Typer maps each parameter to one option
                 f"  API docs:    http://{shown}:{port}/api/docs",
                 f"  data dir:    {config.data_dir}",
                 f"  dashboard files: {ui}",
-                f"  admin login: admin / {config.admin_password}"
-                + (
-                    ""
-                    if config.admin_password != DEFAULT_ADMIN_PASSWORD
-                    else "  (change it in Users)"
-                ),
+                # Only the public default is shown: a chosen password must not reach the logs.
+                f"  admin login: admin / {DEFAULT_ADMIN_PASSWORD}  (default; change it in Users)"
+                if config.admin_password == DEFAULT_ADMIN_PASSWORD
+                else f"  admin login: admin / (password from {ADMIN_PASSWORD_ENV})",
             ]
         ),
         err=True,

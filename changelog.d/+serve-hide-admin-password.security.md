@@ -1,0 +1,1 @@
+`codekavach serve` no longer prints the admin password at start when you set it through `CODEKAVACH_ADMIN_PASSWORD`, so it stays out of `docker logs` and `kubectl logs`; the built-in default is still shown, with a warning to change it.

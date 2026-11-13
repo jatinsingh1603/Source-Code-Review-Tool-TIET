@@ -40,7 +40,7 @@ Neither the image, the compose file nor the chart holds a secret value.
 
 | Variable | Kind | Used for |
 |----------|------|----------|
-| `CODEKAVACH_ADMIN_PASSWORD` | plain value you choose | the built-in `admin` dashboard account (default `kavach-admin`, printed at server start) |
+| `CODEKAVACH_ADMIN_PASSWORD` | plain value you choose | the built-in `admin` dashboard account (default `kavach-admin`; the server prints it at start only while it is the default, never a password you set) |
 | `CODEKAVACH_AGENTROUTER_API_KEY` | secret value | the `agentrouter` provider; empty means offline |
 | `CODEKAVACH_VAULT_PASSPHRASE` (compose) / `CODEKAVACH_SERVER_VAULT_PASSPHRASE` (in the container) | secret value, optional | the key of the pseudonym vault. A container has no OS keyring, so the image sets `privacy.vault.key_source = passphrase` and `privacy.vault.passphrase = env:CODEKAVACH_SERVER_VAULT_PASSPHRASE`. When it is empty, the wrapper `/usr/local/bin/codekavach` ([`docker/codekavach.sh`](docker/codekavach.sh)) generates `/data/vault.passphrase` (mode 0600) on first start and gives it to the server and to every CLI run in the container |
 
