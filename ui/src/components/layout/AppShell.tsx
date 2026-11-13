@@ -29,21 +29,77 @@ type NavEntry = NavItem | { heading: string };
 
 const NAV: NavEntry[] = [
   { to: "/", label: "Overview", icon: "grid", match: (p) => p === "/" },
-  { to: "/projects", label: "Projects", icon: "folder", match: (p) => p.startsWith("/projects") && !/\/scan$/.test(p) },
-  { to: "/scans", label: "Scans", icon: "gauge", match: (p) => p.startsWith("/scans") || /^\/projects\/[^/]+\/scan$/.test(p) },
+  {
+    to: "/projects",
+    label: "Projects",
+    icon: "folder",
+    match: (p) => p.startsWith("/projects") && !/\/scan$/.test(p),
+  },
+  {
+    to: "/scans",
+    label: "Scans",
+    icon: "gauge",
+    match: (p) => p.startsWith("/scans") || /^\/projects\/[^/]+\/scan$/.test(p),
+  },
   { to: "/findings", label: "Findings", icon: "flag", match: (p) => p.startsWith("/findings") },
   { heading: "Privacy" },
-  { to: "/privacy", label: "Privacy Centre", icon: "shield", permission: "privacy:read", match: (p) => p === "/privacy" },
-  { to: "/privacy/inspect", label: "Privacy Inspect", sub: true, permission: "privacy:read", match: (p) => p.startsWith("/privacy/inspect") },
-  { to: "/privacy/ledger", label: "Egress Ledger", icon: "lines", permission: "privacy:read", match: (p) => p.startsWith("/privacy/ledger") },
-  { to: "/privacy/policy", label: "Policy", icon: "sliders", permission: "privacy:read", match: (p) => p.startsWith("/privacy/policy") },
+  {
+    to: "/privacy",
+    label: "Privacy Centre",
+    icon: "shield",
+    permission: "privacy:read",
+    match: (p) => p === "/privacy",
+  },
+  {
+    to: "/privacy/inspect",
+    label: "Privacy Inspect",
+    sub: true,
+    permission: "privacy:read",
+    match: (p) => p.startsWith("/privacy/inspect"),
+  },
+  {
+    to: "/privacy/ledger",
+    label: "Egress Ledger",
+    icon: "lines",
+    permission: "privacy:read",
+    match: (p) => p.startsWith("/privacy/ledger"),
+  },
+  {
+    to: "/privacy/policy",
+    label: "Policy",
+    icon: "sliders",
+    permission: "privacy:read",
+    match: (p) => p.startsWith("/privacy/policy"),
+  },
   { heading: "Deliver" },
-  { to: "/reports", label: "Reports", icon: "doc", permission: "reports:read", match: (p) => p.startsWith("/reports") },
-  { to: "/integrations", label: "Integrations", icon: "plug", match: (p) => p.startsWith("/integrations") },
+  {
+    to: "/reports",
+    label: "Reports",
+    icon: "doc",
+    permission: "reports:read",
+    match: (p) => p.startsWith("/reports"),
+  },
+  {
+    to: "/integrations",
+    label: "Integrations",
+    icon: "plug",
+    match: (p) => p.startsWith("/integrations"),
+  },
   { to: "/providers", label: "Providers", icon: "chip", match: (p) => p.startsWith("/providers") },
   { heading: "Organisation" },
-  { to: "/evaluation", label: "Evaluation", icon: "bars", match: (p) => p.startsWith("/evaluation") },
-  { to: "/admin", label: "Admin", icon: "users", permission: "audit:read", match: (p) => p.startsWith("/admin") },
+  {
+    to: "/evaluation",
+    label: "Evaluation",
+    icon: "bars",
+    match: (p) => p.startsWith("/evaluation"),
+  },
+  {
+    to: "/admin",
+    label: "Admin",
+    icon: "users",
+    permission: "audit:read",
+    match: (p) => p.startsWith("/admin"),
+  },
   { to: "/settings", label: "Settings", icon: "cog", match: (p) => p.startsWith("/settings") },
 ];
 
@@ -157,7 +213,13 @@ function ProjectPill() {
   }
   return (
     <div className="ck-pop" ref={ref}>
-      <button className="pill" type="button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((x) => !x)}>
+      <button
+        className="pill"
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((x) => !x)}
+      >
         {current?.name ?? "No project"}
         <Icon name="chevron-down" />
       </button>
@@ -211,7 +273,10 @@ function LevelPill() {
   const text = o.levelPill ?? (lv ? `${lv} · ${LEVEL_NAME[lv] ?? ""}` : null);
   if (!text) return null;
   return (
-    <span className="pill priv" title={linked ? "Privacy level of the scan on screen" : "Privacy level of the latest scan"}>
+    <span
+      className="pill priv"
+      title={linked ? "Privacy level of the scan on screen" : "Privacy level of the latest scan"}
+    >
       <Icon name="shield" />
       {text}
     </span>
@@ -222,7 +287,10 @@ function NetworkPill() {
   const net = useHealth().data?.network;
   if (net !== "offline") return null;
   return (
-    <span className="pill off">
+    <span
+      className="pill off"
+      title="The default provider runs on this machine: a scan sends no code out unless you pick a remote provider"
+    >
       <span className="dot" />
       Offline · air-gapped
     </span>
@@ -243,12 +311,20 @@ function Bell() {
   const ref = useDismiss(open, () => setOpen(false));
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const feed = useQuery({ queryKey: ["notifications"], queryFn: endpoints.notifications, refetchInterval: 60_000, retry: false }).data;
+  const feed = useQuery({
+    queryKey: ["notifications"],
+    queryFn: endpoints.notifications,
+    refetchInterval: 60_000,
+    retry: false,
+  }).data;
   const unread = feed?.unread ?? 0;
   const toggle = () => {
     setOpen((x) => !x);
     if (!open && unread) {
-      void endpoints.markNotificationsRead().then(() => qc.invalidateQueries({ queryKey: ["notifications"] }), () => undefined);
+      void endpoints.markNotificationsRead().then(
+        () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+        () => undefined,
+      );
     }
   };
   return (
@@ -272,7 +348,12 @@ function Bell() {
                 key={n.id}
                 type="button"
                 className="mi"
-                style={{ whiteSpace: "normal", alignItems: "flex-start", flexDirection: "column", gap: 2 }}
+                style={{
+                  whiteSpace: "normal",
+                  alignItems: "flex-start",
+                  flexDirection: "column",
+                  gap: 2,
+                }}
                 onClick={() => {
                   setOpen(false);
                   if (n.link) navigate(n.link);
@@ -354,7 +435,13 @@ function TopBar({ onSearch }: { onSearch: () => void }) {
       <NetworkPill />
       <ProviderPill />
       <span className="grow" />
-      <button type="button" className="search" role="search" aria-label="Search findings, files, scans (Ctrl+K)" onClick={onSearch}>
+      <button
+        type="button"
+        className="search"
+        role="search"
+        aria-label="Search findings, files, scans (Ctrl+K)"
+        onClick={onSearch}
+      >
         <Icon name="search" />
         <span className="grow">Search findings, files, scans</span>
         <span className="kbd">⌘K</span>
@@ -390,7 +477,9 @@ export function AppShell() {
         <Sidebar />
         <div className="main">
           {api.isMock && (
-            <div className="mockbar">Demo data mode: the dashboard is showing built-in sample data, not a live server.</div>
+            <div className="mockbar">
+              Demo data mode: the dashboard is showing built-in sample data, not a live server.
+            </div>
           )}
           <TopBar onSearch={() => setPalette(true)} />
           <Suspense

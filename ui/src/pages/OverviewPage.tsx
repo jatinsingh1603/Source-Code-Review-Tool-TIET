@@ -2,9 +2,24 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useCurrentProject } from "@/app/project-context";
 import { useCan } from "@/app/session";
-import { useFindings, useOptional, usePrivacy, useProviders, useScans, useStats } from "@/api/queries";
+import {
+  useFindings,
+  useOptional,
+  usePrivacy,
+  useProviders,
+  useScans,
+  useStats,
+} from "@/api/queries";
 import { endpoints } from "@/api/endpoints";
-import type { Finding, InvariantReport, PrivacySummary, Project, ProviderInfo, Scan, TrendPoint } from "@/api/types";
+import type {
+  Finding,
+  InvariantReport,
+  PrivacySummary,
+  Project,
+  ProviderInfo,
+  Scan,
+  TrendPoint,
+} from "@/api/types";
 import { isOpen, providerName, scanPayloads, scanTarget, sevCounts, sortScans } from "@/lib/domain";
 import {
   ENGINE_COLUMNS,
@@ -60,7 +75,11 @@ export default function OverviewPage() {
       <Content>
         <PageHeader crumbs={crumbs} title="Overview" />
         <div className="card">
-          <Empty title="No scans yet" action="Run a scan" to={current ? `/projects/${current.id}/scan` : "/projects/new"}>
+          <Empty
+            title="No scans yet"
+            action="Run a scan"
+            to={current ? `/projects/${current.id}/scan` : "/projects/new"}
+          >
             Run a scan to see results here.
           </Empty>
           <div className="row" style={{ justifyContent: "center" }}>
@@ -76,7 +95,9 @@ export default function OverviewPage() {
   const findings = findingsQ.data ?? [];
   const open = findings.filter(isOpen);
   const counts = sevCounts(open);
-  const trend = (stats?.trend ?? []).filter((t) => !t.project_id || t.project_id === current?.id).slice(-12);
+  const trend = (stats?.trend ?? [])
+    .filter((t) => !t.project_id || t.project_id === current?.id)
+    .slice(-12);
 
   return (
     <Content>
@@ -87,7 +108,8 @@ export default function OverviewPage() {
           <>
             {last && (
               <span className="sub">
-                Last scan <span className="mono">{scanLabel(last.id)}</span> · {fmtLong(last.started_at ?? last.created_at)}
+                Last scan <span className="mono">{scanLabel(last.id)}</span> ·{" "}
+                {fmtLong(last.started_at ?? last.created_at)}
               </span>
             )}
             {current && canRun && (
@@ -124,7 +146,9 @@ export default function OverviewPage() {
             <Kpi
               to="/privacy/ledger"
               label="Zero-leak check"
-              value={privacyQ.data?.zero_leak.checked ? fmtInt(privacyQ.data.zero_leak.occurrences) : "—"}
+              value={
+                privacyQ.data?.zero_leak.checked ? fmtInt(privacyQ.data.zero_leak.occurrences) : "—"
+              }
               unit={privacyQ.data?.zero_leak.checked ? "terms found" : undefined}
               detail={
                 privacyQ.data?.zero_leak.checked
@@ -145,7 +169,12 @@ export default function OverviewPage() {
                   : undefined
               }
             />
-            <MttrKpi findings={findings} days={stats?.mttr_days} delta={stats?.mttr_delta_days} samples={stats?.mttr_samples} />
+            <MttrKpi
+              findings={findings}
+              days={stats?.mttr_days}
+              delta={stats?.mttr_delta_days}
+              samples={stats?.mttr_samples}
+            />
           </div>
         )}
       </section>
@@ -166,7 +195,11 @@ export default function OverviewPage() {
       <section className="stack">
         <SectionHead title="Recent scans" right={<MoreLink to="/scans">All scans</MoreLink>} />
         {scansQ.isError ? (
-          <ErrorBanner what="Scans could not be loaded." error={scansQ.error} onRetry={() => void scansQ.refetch()} />
+          <ErrorBanner
+            what="Scans could not be loaded."
+            error={scansQ.error}
+            onRetry={() => void scansQ.refetch()}
+          />
         ) : (
           <ScansTable scans={scans.slice(0, 5)} providers={providers} loading={loading} />
         )}
@@ -177,7 +210,13 @@ export default function OverviewPage() {
 
 function PrivacyScoreKpi({ p, prev }: { p?: PrivacySummary; prev?: PrivacySummary }) {
   const score = p?.privacy_score;
-  const d = score !== null && score !== undefined && prev?.privacy_score !== null && prev?.privacy_score !== undefined ? score - prev.privacy_score : null;
+  const d =
+    score !== null &&
+    score !== undefined &&
+    prev?.privacy_score !== null &&
+    prev?.privacy_score !== undefined
+      ? score - prev.privacy_score
+      : null;
   return (
     <Kpi
       to="/privacy"
@@ -187,7 +226,11 @@ function PrivacyScoreKpi({ p, prev }: { p?: PrivacySummary; prev?: PrivacySummar
       detailClass={d === null || d === 0 ? undefined : d > 0 ? "down" : "up"}
       detail={
         d === null ? (
-          p ? `${p.level} · ${p.payloads} payloads` : "not computed"
+          p ? (
+            `${p.level} · ${p.payloads} payloads`
+          ) : (
+            "not computed"
+          )
         ) : d === 0 ? (
           "no change vs last scan"
         ) : (
@@ -206,30 +249,56 @@ function EgressKpi({ p, scan }: { p?: PrivacySummary; scan?: Scan }) {
   // The core's measure: distinct repository lines disclosed over inventory lines. Payload bytes
   // over repository bytes would count the prompt text and repeated context, and can pass 100%.
   const raw = p?.disclosure?.repository_fraction_pct;
-  const frac = raw !== undefined && raw !== "" && Number.isFinite(Number(raw)) ? Number(raw).toFixed(1) : undefined;
+  const frac =
+    raw !== undefined && raw !== "" && Number.isFinite(Number(raw))
+      ? Number(raw).toFixed(1)
+      : undefined;
   const detail = `${fmtInt(payloads)} payloads${frac !== undefined ? ` · ${frac}% of repo lines` : ""}`;
   if (p?.bytes_sent !== undefined && p?.bytes_sent !== null) {
     const b = fmtBytes(p.bytes_sent);
-    return <Kpi to="/privacy/ledger" label="Bytes egressed, this scan" value={b.v} unit={b.unit} detail={detail} />;
+    return (
+      <Kpi
+        to="/privacy/ledger"
+        label="Bytes egressed, this scan"
+        value={b.v}
+        unit={b.unit}
+        detail={detail}
+      />
+    );
   }
   const tokens = p?.tokens_sent ?? scan?.privacy_summary?.tokens_sent;
   return (
     <Kpi
       to="/privacy/ledger"
       label="Tokens out, this scan"
-      value={tokens === undefined ? "—" : tokens >= 10_000 ? (tokens / 1000).toFixed(1) : fmtInt(tokens)}
+      value={
+        tokens === undefined ? "—" : tokens >= 10_000 ? (tokens / 1000).toFixed(1) : fmtInt(tokens)
+      }
       unit={tokens === undefined ? "" : tokens >= 10_000 ? "k tokens" : "tokens"}
       detail={detail}
     />
   );
 }
 
-function MttrKpi({ findings, days, delta, samples }: { findings: Finding[]; days?: number | null; delta?: number | null; samples?: number | null }) {
+function MttrKpi({
+  findings,
+  days,
+  delta,
+  samples,
+}: {
+  findings: Finding[];
+  days?: number | null;
+  delta?: number | null;
+  samples?: number | null;
+}) {
   let value: number | null = days ?? null;
   if (value === null) {
     const fixed = findings.filter((f) => f.status === "fixed" && f.created_at && f.updated_at);
     if (fixed.length) {
-      const total = fixed.reduce((a, f) => a + (Date.parse(f.updated_at!) - Date.parse(f.created_at!)), 0);
+      const total = fixed.reduce(
+        (a, f) => a + (Date.parse(f.updated_at!) - Date.parse(f.created_at!)),
+        0,
+      );
       value = total / fixed.length / 86_400_000;
     }
   }
@@ -260,7 +329,10 @@ function MttrKpi({ findings, days, delta, samples }: { findings: Finding[]; days
 function TrendCard({ trend, loading }: { trend: TrendPoint[]; loading: boolean }) {
   // Keep the design's twelve column slots so a short history keeps its bar width.
   const pad = Math.max(0, 12 - trend.length);
-  const max = Math.max(1, ...trend.map((t) => t.critical + t.high + t.medium + t.low + (t.info ?? 0)));
+  const max = Math.max(
+    1,
+    ...trend.map((t) => t.critical + t.high + t.medium + t.low + (t.info ?? 0)),
+  );
   const scale = 160 / max;
   const first = trend[0];
   const lastT = trend[trend.length - 1];
@@ -274,7 +346,10 @@ function TrendCard({ trend, loading }: { trend: TrendPoint[]; loading: boolean }
       <div className="card-h">
         <div>
           <h2>Findings trend</h2>
-          <p className="sub">Open findings by severity, last {trend.length || 12} scans</p>
+          <p className="sub">
+            Open findings by severity,{" "}
+            {trend.length === 1 ? "last scan" : `last ${trend.length || 12} scans`}
+          </p>
         </div>
         <div className="legend">
           <span>
@@ -310,7 +385,12 @@ function TrendCard({ trend, loading }: { trend: TrendPoint[]; loading: boolean }
                 <i style={{ height: t.critical * scale, background: "var(--crit)" }} />
                 <i style={{ height: t.high * scale, background: "var(--high)" }} />
                 <i style={{ height: t.medium * scale, background: "var(--med)" }} />
-                <i style={{ height: (t.low + (t.info ?? 0)) * scale, background: "var(--border-strong)" }} />
+                <i
+                  style={{
+                    height: (t.low + (t.info ?? 0)) * scale,
+                    background: "var(--border-strong)",
+                  }}
+                />
               </div>
             ))}
           </div>
@@ -419,7 +499,8 @@ function OwaspCard({ findings, loading }: { findings: Finding[]; loading: boolea
     if (!o) continue;
     const k1 = `${o.code}|${engineColumn(f.engine)}`;
     counts.set(k1, (counts.get(k1) ?? 0) + 1);
-    if (f.llm_reviewed || f.llm) counts.set(`${o.code}|LLM`, (counts.get(`${o.code}|LLM`) ?? 0) + 1);
+    if (f.llm_reviewed || f.llm)
+      counts.set(`${o.code}|LLM`, (counts.get(`${o.code}|LLM`) ?? 0) + 1);
   }
   return (
     <div className="card">
@@ -434,7 +515,10 @@ function OwaspCard({ findings, loading }: { findings: Finding[]; loading: boolea
         <Skeleton rows={3} />
       ) : (
         <div style={{ overflowX: "auto" }}>
-          <div className="hm" style={{ gridTemplateColumns: "220px repeat(6, minmax(56px, 1fr))", minWidth: 620 }}>
+          <div
+            className="hm"
+            style={{ gridTemplateColumns: "220px repeat(6, minmax(56px, 1fr))", minWidth: 620 }}
+          >
             <span />
             {cols.map((c) => (
               <span key={c} className="xs faint" style={{ textAlign: "center" }}>
@@ -451,7 +535,17 @@ function OwaspCard({ findings, loading }: { findings: Finding[]; loading: boolea
   );
 }
 
-function HmRow({ code, name, cols, counts }: { code: string; name: string; cols: readonly string[]; counts: Map<string, number> }) {
+function HmRow({
+  code,
+  name,
+  cols,
+  counts,
+}: {
+  code: string;
+  name: string;
+  cols: readonly string[];
+  counts: Map<string, number>;
+}) {
   return (
     <>
       <span className="sm" style={{ alignSelf: "center" }}>
@@ -464,7 +558,11 @@ function HmRow({ code, name, cols, counts }: { code: string; name: string; cols:
             key={c}
             className={`c ${bucket(n)}`}
             style={{ textDecoration: "none" }}
-            to={c === "LLM" ? `/findings?owasp=${code}` : `/findings?owasp=${code}&engine=${c.toLowerCase()}`}
+            to={
+              c === "LLM"
+                ? `/findings?owasp=${code}`
+                : `/findings?owasp=${code}&engine=${c.toLowerCase()}`
+            }
             title={`${code} · ${c}: ${n}`}
           >
             {n}
@@ -504,7 +602,8 @@ function TopCwes({ findings, loading }: { findings: Finding[]; loading: boolean 
             <div key={cwe}>
               <div className="row between sm">
                 <span>
-                  <span className="mono">{cwe}</span> <span className="muted">{CWE_SHORT[cwe] ?? e.name ?? ""}</span>
+                  <span className="mono">{cwe}</span>{" "}
+                  <span className="muted">{CWE_SHORT[cwe] ?? e.name ?? ""}</span>
                 </span>
                 <span className="mono">{e.n}</span>
               </div>
@@ -528,7 +627,13 @@ const INVARIANTS: [string, string][] = [
   ["I6", "No listed term in ledger payloads"],
 ];
 
-function GuardCard({ report, privacy }: { report?: InvariantReport | null; privacy?: PrivacySummary }) {
+function GuardCard({
+  report,
+  privacy,
+}: {
+  report?: InvariantReport | null;
+  privacy?: PrivacySummary;
+}) {
   const recorded = report?.recorded;
   return (
     <div className="card">
@@ -540,8 +645,14 @@ function GuardCard({ report, privacy }: { report?: InvariantReport | null; priva
         const r = report?.invariants.find((x) => x.id === id);
         let result: React.ReactNode = <span className="xs faint">not recorded</span>;
         if (r && recorded) result = r.passed ? "pass" : <span className="note-w">Fail</span>;
-        else if (id === "I6" && privacy) result = privacy.zero_leak.passed ? "pass" : <span className="note-w">{privacy.zero_leak.checked ? "Fail" : "Not run"}</span>;
-        else if (id === "I4" && privacy) result = <span className="xs faint">{fmtInt(privacy.blocked)} blocked</span>;
+        else if (id === "I6" && privacy)
+          result = privacy.zero_leak.passed ? (
+            "pass"
+          ) : (
+            <span className="note-w">{privacy.zero_leak.checked ? "Fail" : "Not run"}</span>
+          );
+        else if (id === "I4" && privacy)
+          result = <span className="xs faint">{fmtInt(privacy.blocked)} blocked</span>;
         return (
           <Guard key={id} id={id} result={result}>
             {title}
@@ -550,7 +661,8 @@ function GuardCard({ report, privacy }: { report?: InvariantReport | null; priva
       })}
       {report && !recorded && (
         <p className="xs faint" style={{ marginTop: 8 }}>
-          I6 and I4 show this scan&apos;s evidence. Record the invariant suite on the server to show all six.
+          I6 and I4 show this scan&apos;s evidence. Record the invariant suite on the server to show
+          all six.
         </p>
       )}
     </div>
@@ -598,7 +710,8 @@ export function ScansTable({
             </tr>
           ) : (
             scans.map((s) => {
-              const total = s.findings_total ?? Object.values(s.counts ?? {}).reduce((a, b) => a + b, 0);
+              const total =
+                s.findings_total ?? Object.values(s.counts ?? {}).reduce((a, b) => a + b, 0);
               const proj = list.find((p) => p.id === s.project_id);
               return (
                 <tr key={s.id}>
@@ -625,7 +738,9 @@ export function ScansTable({
           )}
         </tbody>
       </table>
-      {!loading && scans.length === 0 && <Empty title="No scans yet">Run a scan to see results here.</Empty>}
+      {!loading && scans.length === 0 && (
+        <Empty title="No scans yet">Run a scan to see results here.</Empty>
+      )}
     </div>
   );
 }
