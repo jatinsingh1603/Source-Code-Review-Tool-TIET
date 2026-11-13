@@ -72,7 +72,8 @@ weaknesses:
   - {id: 287, name: Improper Authentication, abstraction: class, family: broken-authentication, top25: 14, owasp: A07, owasp_basis: official, asvs: [], capec: [114, 115, 151, 194],
      summary: "A claim of identity is not proven, or is proven insufficiently."}
   - {id: 295, name: Improper Certificate Validation, abstraction: base, family: weak-cryptography, owasp: A07, owasp_basis: official, asvs: [V9.2.1], capec: [459, 475],
-     summary: "TLS certificates are not validated (for example verify=False), enabling interception of the connection."}
+     summary: "TLS certificates are not validated (for example verify=False), enabling interception of the connection.",
+     remediation: "Re-enable TLS certificate and hostname verification. Trust a private CA by adding it to the trust store instead of turning verification off, and forbid verify=False or rejectUnauthorized: false in CI."}
   - {id: 306, name: Missing Authentication for Critical Function, abstraction: base, family: broken-authentication, top25: 25, owasp: A07, owasp_basis: official, asvs: [], capec: [12, 36, 62],
      summary: "A function that needs a proven identity, or consumes significant resources, does not require authentication."}
   - {id: 311, name: Missing Encryption of Sensitive Data, abstraction: class, family: weak-cryptography, owasp: A04, owasp_basis: official, asvs: [V6.1.1, V8.3.4], capec: [157, 37],
@@ -124,7 +125,8 @@ weaknesses:
   - {id: 489, name: Active Debug Code, abstraction: base, family: security-misconfiguration, owasp: A05, owasp_basis: derived, asvs: [V14.3.2], capec: [121],
      summary: "Debug code or debug mode (for example Flask debug=True) is left enabled in deployed code."}
   - {id: 494, name: Download of Code Without Integrity Check, abstraction: base, family: integrity, owasp: A08, owasp_basis: official, asvs: [V10.3.2], capec: [184, 185, 186, 187],
-     summary: "Code or images are downloaded and used without verifying their origin and integrity."}
+     summary: "Code or images are downloaded and used without verifying their origin and integrity.",
+     remediation: "Verify a pinned checksum or signature before running anything that is downloaded (for example COPY a vendored file, or ADD with --checksum), and fetch build inputs from a controlled internal mirror."}
   - {id: 502, name: Deserialization of Untrusted Data, abstraction: base, family: deserialisation, top25: 16, owasp: A08, owasp_basis: official, asvs: [V5.5.1, V5.5.3], capec: [586],
      summary: "Untrusted data is deserialised with a mechanism that can instantiate objects, often leading to remote code execution."}
   - {id: 522, name: Insufficiently Protected Credentials, abstraction: class, family: broken-authentication, owasp: A04, owasp_basis: official, asvs: [V2.4.1], capec: [102, 50],
@@ -148,11 +150,13 @@ weaknesses:
   - {id: 643, name: "Improper Neutralization of Data within XPath Expressions ('XPath Injection')", abstraction: base, family: sql-injection, owasp: A03, owasp_basis: official, asvs: [V5.3.10], capec: [83],
      summary: "An XPath query is built from external input without neutralisation."}
   - {id: 668, name: Exposure of Resource to Wrong Sphere, abstraction: class, family: information-exposure, owasp: A01, owasp_basis: official, asvs: [], capec: [],
-     summary: "A resource is made available to actors who should not be able to reach it (for example a service bound to all interfaces or a mounted host path)."}
+     summary: "A resource is made available to actors who should not be able to reach it (for example a service bound to all interfaces or a mounted host path).",
+     remediation: "Restrict the resource to the network and principals that need it: make the database private, deny public access by default, and reach it through private networking or a bastion. Define the exposure in reviewed infrastructure as code."}
   - {id: 680, name: Integer Overflow to Buffer Overflow, abstraction: compound, family: memory-safety, asvs: [V5.4.3], capec: [10, 100, 14, 24, 45, 46, 47, 8, 9, 92],
      summary: "An integer overflow causes less memory to be allocated than needed, leading to a buffer overflow."}
   - {id: 732, name: Incorrect Permission Assignment for Critical Resource, abstraction: class, family: broken-access-control, owasp: A01, owasp_basis: derived, asvs: [V4.1.3], capec: [1, 17, 122, 127],
-     summary: "A security-critical resource (file, key, directory) is given permissions that let unintended actors read or modify it."}
+     summary: "A security-critical resource (file, key, directory) is given permissions that let unintended actors read or modify it.",
+     remediation: "Restrict the permissions to the owning principal: remove public ACLs and grants, block public access at the account level, and audit permissions in CI with least-privilege defaults."}
   - {id: 770, name: Allocation of Resources Without Limits or Throttling, abstraction: base, family: denial-of-service, asvs: [], capec: [125, 130, 147],
      summary: "Resources are allocated on request without limits (no memory, CPU or rate limits), enabling exhaustion."}
   - {id: 776, name: "Improper Restriction of Recursive Entity References in DTDs ('XML Entity Expansion')", abstraction: base, family: xml-external-entities, owasp: A05, owasp_basis: official, asvs: [V5.5.2], capec: [197],
@@ -162,7 +166,8 @@ weaknesses:
   - {id: 798, name: Use of Hard-coded Credentials, abstraction: base, family: hardcoded-secret, top25: 22, owasp: A07, owasp_basis: official, asvs: [V2.10.4, V6.4.1], capec: [191, 70],
      summary: "Credentials such as passwords, API keys or tokens are embedded in the source code."}
   - {id: 829, name: Inclusion of Functionality from Untrusted Control Sphere, abstraction: class, family: integrity, owasp: A08, owasp_basis: official, asvs: [V10.3.2], capec: [175, 201, 251],
-     summary: "Functionality (scripts, actions, images, plug-ins) is included from a source outside the product's control."}
+     summary: "Functionality (scripts, actions, images, plug-ins) is included from a source outside the product's control.",
+     remediation: "Do not check out or run untrusted pull-request code in a privileged workflow (pull_request_target, secrets, a write token). Pin every third-party action to a full commit SHA and give the job token the least permissions it needs."}
   - {id: 862, name: Missing Authorization, abstraction: class, family: broken-access-control, top25: 9, owasp: A01, owasp_basis: official, asvs: [V4.1.1, V4.1.3, V4.2.1], capec: [665],
      summary: "An action or resource is reachable without any check that the actor is allowed to use it."}
   - {id: 863, name: Incorrect Authorization, abstraction: class, family: broken-access-control, top25: 18, owasp: A01, owasp_basis: official, asvs: [V4.1.3, V4.2.1], capec: [122, 1],
@@ -180,7 +185,8 @@ weaknesses:
   - {id: 1004, name: "Sensitive Cookie Without 'HttpOnly' Flag", abstraction: variant, family: security-misconfiguration, owasp: A05, owasp_basis: official, asvs: [V3.4.2], capec: [],
      summary: "A session cookie lacks HttpOnly, so script injected into the page can read it."}
   - {id: 1104, name: Use of Unmaintained Third Party Components, abstraction: base, family: integrity, owasp: A06, owasp_basis: official, asvs: [V14.2.1], capec: [],
-     summary: "The product depends on third-party components that are no longer maintained."}
+     summary: "The product depends on third-party components that are no longer maintained.",
+     remediation: "Pin the component to a reviewed version or image digest instead of a floating tag such as latest, and replace components that are no longer maintained."}
   - {id: 1321, name: "Improperly Controlled Modification of Object Prototype Attributes ('Prototype Pollution')", abstraction: variant, family: integrity, owasp: A08, owasp_basis: derived, asvs: [], capec: [1, 180],
      summary: "Input can add or change attributes of an object prototype, affecting every object."}
   - {id: 1333, name: Inefficient Regular Expression Complexity, abstraction: base, family: denial-of-service, asvs: [], capec: [492],
@@ -188,4 +194,5 @@ weaknesses:
   - {id: 1336, name: Improper Neutralization of Special Elements Used in a Template Engine, abstraction: base, family: command-injection, owasp: A03, owasp_basis: derived, asvs: [V5.2.5], capec: [242],
      summary: "Input is compiled as a template (server-side template injection), which usually allows code execution."}
   - {id: 1395, name: Dependency on Vulnerable Third-Party Component, abstraction: class, family: integrity, owasp: A06, owasp_basis: derived, asvs: [V14.2.1], capec: [],
-     summary: "The product depends on a third-party component that contains a known vulnerability."}
+     summary: "The product depends on a third-party component that contains a known vulnerability.",
+     remediation: "Upgrade the component to a version that fixes the published vulnerability, or remove it if it is not needed. Run software composition analysis in CI, keep an SBOM and automate dependency updates."}
