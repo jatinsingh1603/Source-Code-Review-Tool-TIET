@@ -155,6 +155,13 @@ def test_the_pdf_renderer_writes_a_pdf_or_reports_the_engine_missing(tmp_path: P
     assert out.read_bytes().startswith(b"%PDF")
 
 
+def test_nothing_precedes_the_cover_in_the_pdf_so_page_one_is_the_cover() -> None:
+    page = render_html(document(), pdf=True)
+    body = page[page.index("<body>") + len("<body>") : page.index('<header class="cover"')]
+    assert re.sub(r"\{%.*?%\}|\s", "", body) == "<main>"
+    assert page.index('<header class="cover"') < page.index('class="doctitle"')
+
+
 def test_the_pdf_fetcher_refuses_every_url() -> None:
     for url in ("https://evil.example/x.css", "file:///etc/passwd", "data:text/css,a{}"):
         with pytest.raises(ValueError, match="no external resource"):
