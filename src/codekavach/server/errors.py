@@ -88,6 +88,22 @@ def install_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def _unexpected(request: Request, error: Exception) -> JSONResponse:
+        from codekavach.privacy.egress.ledger import LedgerKeyError  # noqa: PLC0415
+        from codekavach.privacy.vault.errors import VaultKeyError  # noqa: PLC0415
+
+        if isinstance(error, LedgerKeyError | VaultKeyError):
+            _log.warning("api_key_mismatch", error_type=type(error).__name__, path=request.url.path)
+            return JSONResponse(
+                _body(
+                    request,
+                    "vault_key_mismatch",
+                    "This scan's stored payloads are encrypted with another vault key, "
+                    "so they cannot be shown.",
+                    "The vault passphrase changed since the scan ran. Restore the old "
+                    "CODEKAVACH_VAULT_PASSPHRASE, or run the scan again.",
+                ),
+                status_code=409,
+            )
         _log.error("api_unhandled_error", error_type=type(error).__name__, path=request.url.path)
         return JSONResponse(
             _body(request, "internal_error", "internal server error"), status_code=500
