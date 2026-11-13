@@ -1,6 +1,7 @@
 """``codekavach serve`` must not print an operator-chosen admin password (it lands in logs)."""
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -16,7 +17,12 @@ from codekavach.server.config import ADMIN_PASSWORD_ENV, DEFAULT_ADMIN_PASSWORD
 def _banner(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> str:
-    monkeypatch.setattr(uvicorn, "run", lambda *_args, **_kwargs: None)
+    def fake_run(app: Any, *_args: Any, **_kwargs: Any) -> None:
+        # Uvicorn would close the server state when the app's lifespan ends; without this the
+        # database connections stay open until garbage collection, which Python 3.13 reports.
+        app.state.server.close()
+
+    monkeypatch.setattr(uvicorn, "run", fake_run)
     serve_command(data_dir=tmp_path / "data", ui_dir=None, workers=1)
     captured = capsys.readouterr()
     return captured.out + captured.err
