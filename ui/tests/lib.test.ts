@@ -76,6 +76,11 @@ describe("privacy levels", () => {
   it("names the local model case", () => {
     expect(egressSummary("L3", local, true).body).toMatch(/nothing is sent to a third party/);
   });
+  it("still explains the level with a local model or a dry run", () => {
+    expect(egressSummary("L1", local, true).body).toMatch(/only secrets and personal data/);
+    expect(egressSummary("L3", local, true).body).toMatch(/minimal slice/);
+    expect(egressSummary("L2", hosted, false).body).toMatch(/pseudonymised/);
+  });
   it("describes the hosted levels and what remains visible", () => {
     const l3 = egressSummary("L3", hosted, true);
     expect(l3.body).toMatch(/minimal slice/);
