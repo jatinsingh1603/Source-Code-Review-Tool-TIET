@@ -47,7 +47,10 @@ def get_session(state: StateDep) -> Iterator[Session]:
         yield session
 
 
-SessionDep = Annotated[Session, Depends(get_session)]
+# scope="function": commit before the response is sent. With the default ("request") FastAPI
+# commits only after the client already has the response, so a fast client that creates a
+# project and uploads to it at once got 404 "project not found".
+SessionDep = Annotated[Session, Depends(get_session, scope="function")]
 
 
 def client_of(request: Request) -> str:

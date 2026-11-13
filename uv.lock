@@ -548,7 +548,7 @@ typecheck = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.13,<2" },
     { name = "cryptography", specifier = ">=44" },
-    { name = "fastapi", marker = "extra == 'server'", specifier = ">=0.115,<1" },
+    { name = "fastapi", marker = "extra == 'server'", specifier = ">=0.121,<1" },
     { name = "httpx", specifier = ">=0.28,<1" },
     { name = "jinja2", specifier = ">=3.1,<4" },
     { name = "keyring", specifier = ">=25" },
