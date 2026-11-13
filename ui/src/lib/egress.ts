@@ -14,13 +14,20 @@ export function egressSummary(level: PrivacyLevel, provider: ProviderInfo | unde
       body: "At level L0 CodeKavach runs deterministic rules, taint analysis and engines locally and calls no model. Findings carry deterministic evidence only.",
     };
   }
-  const base: Record<Exclude<PrivacyLevel, "L0">, string> = {
-    L4: "At level L4 CodeKavach sends no code. For each candidate it sends abstract data-flow facts and questions: the weakness class, the kinds of source and sink, and the shape of the flow between them.",
+  if (level === "L4") {
+    // privacy/levels.py: L4 is not delivered in this build and fails closed.
+    return {
+      tone: "success",
+      title: "Nothing leaves this machine in this build",
+      body: "L4 is designed to send no code, only abstract data-flow facts about each candidate (the weakness class, the kinds of source and sink, the shape of the flow). This build does not prepare those facts yet, so L4 fails closed: every candidate is withheld, nothing is sent, and findings carry deterministic evidence only, as at L0.",
+    };
+  }
+  const base: Record<Exclude<PrivacyLevel, "L0" | "L4">, string> = {
     L3: "At level L3 CodeKavach sends a minimal slice of the code around each candidate finding. Before sending, detected secrets and personal data are replaced by typed placeholders, internal names are replaced by neutral pseudonyms, comments and docstrings are removed, and string literals keep their shape but lose domain words. Public library and framework names are kept so that the model can recognise sources and sinks.",
     L2: "At level L2 CodeKavach sends the relevant files in full, with secrets and personal data replaced by typed placeholders and identifiers, literals and comments pseudonymised. This discloses more of the repository than L3 in exchange for more context.",
     L1: "At level L1 CodeKavach sends source code with only secrets and personal data replaced by typed placeholders. Identifiers, literals and comments are sent as written, so use this level only with a model you trust with your code.",
   };
-  const what = base[level as Exclude<PrivacyLevel, "L0">];
+  const what = base[level];
   if (!send) {
     return {
       tone: "success",
@@ -41,10 +48,8 @@ export function egressSummary(level: PrivacyLevel, provider: ProviderInfo | unde
     title: `Sanitised payloads are sent to ${provider?.name ?? "the selected provider"}`,
     body: `${what} What is sent is recorded in the hash-chained ledger and can be read afterwards in the Privacy Centre.`,
     remains:
-      level === "L4"
-        ? "Still visible to the provider: the kinds of weakness suspected and the technology stack."
-        : level === "L1"
-          ? "Still visible to the provider: your source code apart from the redacted values, including internal names and comments."
-          : "Still visible to the provider: the structure of the code sent, the technology stack through public library names, and the kind of weakness suspected.",
+      level === "L1"
+        ? "Still visible to the provider: your source code apart from the redacted values, including internal names and comments."
+        : "Still visible to the provider: the structure of the code sent, the technology stack through public library names, and the kind of weakness suspected.",
   };
 }

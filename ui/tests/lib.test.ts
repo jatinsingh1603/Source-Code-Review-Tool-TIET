@@ -86,6 +86,7 @@ describe("privacy levels", () => {
     expect(l3.body).toMatch(/minimal slice/);
     expect(l3.remains).toMatch(/Still visible/);
     expect(egressSummary("L4", hosted, true).body).toMatch(/no code/);
+    expect(egressSummary("L4", hosted, true).body).toMatch(/fails closed/);
     expect(egressSummary("L1", hosted, true).tone).toBe("warning");
   });
 });

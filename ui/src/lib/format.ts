@@ -158,6 +158,7 @@ export const LEVEL_INFO: Record<
       "The model sees the weakness class, source and sink categories and the shape of the flow.",
       "No source text, identifiers or literals are sent.",
       "Lowest disclosure of the sending levels, at some cost in model precision.",
+      "Not delivered in this build: L4 fails closed, withholds every candidate and sends nothing.",
     ],
   },
   L3: {
