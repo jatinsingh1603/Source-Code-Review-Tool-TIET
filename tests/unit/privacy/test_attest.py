@@ -33,6 +33,9 @@ def test_components_are_named_and_labelled() -> None:
 def test_nothing_sent_scores_full() -> None:
     empty = replace(BASE, payload_levels=(), repo_pct=0.0, tokens_total=0)
     assert compute_privacy_score(empty).score >= 95
+    unlisted = compute_privacy_score(replace(empty, residual_checked=False))
+    assert unlisted.score == 100
+    assert unlisted.component("residual_terms").raw == "no payload to search"
 
 
 def test_residual_term_caps_score() -> None:

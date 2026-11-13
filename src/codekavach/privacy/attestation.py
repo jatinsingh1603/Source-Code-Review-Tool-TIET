@@ -166,7 +166,7 @@ def _gather(
     return rows, disclosure
 
 
-def build_attestation(  # noqa: PLR0915 - one linear gather-and-summarise
+def build_attestation(  # noqa: PLR0912, PLR0915 - one linear gather-and-summarise
     state_dir: Path | StateLayout,
     scan_id: str,
     settings: Settings,
@@ -242,6 +242,8 @@ def build_attestation(  # noqa: PLR0915 - one linear gather-and-summarise
         count = len(stubs)
         payload_levels = [s.level for s in stubs]
         pseudonyms = sum(s.pseudonym_count for s in stubs)
+    if terms and not count and not entries:
+        checked = True  # nothing was recorded, so no listed term can be in a payload
 
     by_level = Counter(row.level.value for row in rows if not row.withheld)
     withheld = sum(1 for row in rows if row.withheld)
@@ -261,11 +263,12 @@ def build_attestation(  # noqa: PLR0915 - one linear gather-and-summarise
             chain_ok=chain_ok,
         )
     )
-    leak = (
-        "not checked (no terms configured)"
-        if not checked
-        else f"{len(terms)} term(s), {occurrences} occurrence(s)"
-    )
+    if checked and not count:
+        leak = f"{len(terms)} term(s), 0 occurrence(s) (no payloads recorded)"
+    elif not checked:
+        leak = "not checked (no terms configured)"
+    else:
+        leak = f"{len(terms)} term(s), {occurrences} occurrence(s)"
     local = tier is TrustTier.LOCAL
     text = _text(
         {

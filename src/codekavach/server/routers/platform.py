@@ -323,9 +323,9 @@ def _guard_evidence(session: Any) -> dict[str, dict[str, Any]]:
                "detail": "payloads the egress guard blocked were recorded and not sent"},
         "I6": {"scan_id": scan.id, "terms_checked": zero.get("checked"),
                "occurrences": zero.get("occurrences"),
-               # No listed terms means the check did not run: that is not a failed invariant.
+               # No listed terms or no payloads: the check had nothing to run on, not a failure.
                "passed": (bool(zero.get("passed")) and privacy.get("chain_ok") is True)
-               if zero.get("checked") else None,
+               if zero.get("checked") and privacy.get("payloads") else None,
                "detail": "verbatim search of the latest scan's ledger payloads"},
     }  # fmt: skip
 

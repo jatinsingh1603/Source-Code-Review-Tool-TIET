@@ -123,7 +123,9 @@ def compute_privacy_score(inputs: ScoreInputs) -> PrivacyScore:
             basis="union of disclosed lines over inventory lines",
         )
     )
-    if inputs.residual_checked:
+    if not inputs.payload_levels:
+        residual, raw = 100.0, "no payload to search"
+    elif inputs.residual_checked:
         residual = 100.0 if inputs.residual_occurrences == 0 else 0.0
         raw = f"{inputs.residual_occurrences} occurrence(s)"
     else:
