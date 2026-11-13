@@ -68,13 +68,13 @@ Open **Privacy Centre**, then **Privacy Inspect** and **Egress Ledger** from the
 
 ## 7. Reports
 
-Reports: pick the formats in the builder, press **Generate report** and open the **PDF** (executive summary, risk matrix, findings with evidence and remediation, privacy attestation). Mention the other formats: HTML, SARIF (for GitHub code scanning), JSON, CSV, XLSX, Markdown and DOCX. Reports contain client code: keep them with the classification of the code.
+Reports: pick the formats in the builder (PDF, DOCX, SARIF and JSON are on by default), press **Generate report** and open the downloaded **PDF**. Each format is saved as its own download; the first time, the browser may ask to allow several downloads from this site: allow it. The PDF holds the executive summary, risk matrix, findings with evidence and remediation, and the privacy attestation. Mention the other formats: HTML, SARIF (for GitHub code scanning), JSON, CSV, XLSX, Markdown and DOCX. Reports contain client code: keep them with the classification of the code.
 
 ## 8. Fallback when the network or the key fails
 
 Say what you are doing, then go down one rung at a time:
 
-1. **Replay**: new scan with provider `replay`. It answers from recorded responses in `fixtures/kavachbank/cassettes/`; no network. Say it is a recording.
+1. **A real-model scan from before the session**: open it from **Scans** and say when it was run. Run one the day before for this purpose. (The dashboard does not offer the `replay` provider: each dashboard scan uses a fresh pseudonym salt, so recorded answers would not match.)
 2. **Mock**: provider `mock`. Local and deterministic, no key; the ledger shows what would have been sent.
 3. **CLI**: `docker compose exec codekavach codekavach demo --out /data/demo-out`, then copy the report out with `docker compose cp codekavach:/data/demo-out/report.pdf .`.
 

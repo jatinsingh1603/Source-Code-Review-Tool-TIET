@@ -77,7 +77,7 @@ Put it in `.env` (git-ignored), never in a command history, the repository or a 
 CODEKAVACH_AGENTROUTER_API_KEY=<your key>
 ```
 
-Then `docker compose up -d` again. Pick the provider and privacy level in the dashboard (Settings) or per scan. With the key empty, only the mock and replay providers work, which is enough for the demo.
+Then `docker compose up -d` again. Pick the provider and privacy level in the dashboard (Settings) or per scan. With the key empty, the dashboard offers only the offline mock provider (replay is for the CLI demo), which is enough for the demo.
 
 For GitHub-hosted runs (Action, CI) the client adds their own key as a repository secret named `CODEKAVACH_LLM_API_KEY`. The demo repository has no such secret and uses the mock or replay provider.
 

@@ -83,7 +83,7 @@ It uses only the REST API (so it works against a container), the offline `mock` 
 | Ledgerly (demo), Python, `fixtures/demo-ledgerly` | L2, then L3 after three flaws are fixed in the uploaded code | A falling trend: the re-scan no longer reports the SQL injection, the unsafe YAML load and the debug flag; those findings are marked **fixed**. |
 | Shopfront (demo), Node, `fixtures/demo-shopfront` | L3, L0, then L3 after fixes | An L0 scan with **zero payloads** (nothing leaves the machine) between two L3 scans; findings on the safe code (the ground-truth negative control) are marked **false positive**. |
 
-Nothing is typed into the database. Findings, counts, payloads, the ledger and the zero-leak result are the output of the scans; only the triage statuses are the script's choice, applied through the same API a reviewer uses. Run it twice and it skips projects that already have scans (`--again` repeats). Run it the day before, not in front of the audience, and check the Overview, a Privacy Centre page and one report afterwards.
+Nothing is typed into the database. Findings, counts, payloads, the ledger and the zero-leak result are the output of the scans; only the triage statuses are the script's choice, applied through the same API a reviewer uses. Run it twice and it skips projects that already have scans (`--again` repeats). With Docker, use it instead of `scripts/demo-docker.sh --seed`, which runs a single sample scan: once KavachBank has that scan, this script skips it unless you add `--again`. Run it the day before, not in front of the audience, and check the Overview, a Privacy Centre page and one report afterwards.
 
 Honest notes for the presenter, as observed with the engines of the day:
 
@@ -119,7 +119,7 @@ What this means on the day:
 Go down one rung at a time, and say what you did ("the network is slow, so I will replay a recorded model run"). Do not hide a rung from the audience.
 
 1. **Real model** (`agentrouter`, model `gpt-5.6-sol`). Needs network and the key in the environment.
-2. **Replay provider.** Answers from recorded responses keyed by payload hash (`fixtures/kavachbank/cassettes/`). Same findings as a live run of the mock, no network. Say it is a recording.
+2. **A real-model scan run before the session.** Open it from **Scans** (provider `agentrouter`): its verdicts, ledger and report are real; say when it was run. The `replay` provider is not offered in the dashboard (every dashboard scan gets a fresh pseudonym salt, so recorded answers would not match); it backs the offline CLI demo only (see [`DEMO1.md`](DEMO1.md)).
 3. **Mock provider.** Deterministic, local, no key. The ledger then shows what would have been sent. This is the default for `codekavach demo`.
 4. **Recorded artefacts.** The sample report from the latest release (`codekavach-sample-report.zip`), the last green Actions run and the screenshots you took during rehearsal. Open them and narrate.
 
