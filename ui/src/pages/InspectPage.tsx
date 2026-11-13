@@ -19,11 +19,19 @@ export default function InspectPage() {
   return <Inspect scanId={scanId} seq={Number(seq)} />;
 }
 
-/** The nav item opens the latest payload of the current project's latest scan. */
+/**
+ * The nav item opens the first payload of the scan in `?scan=`, else of the project's latest
+ * scan that recorded payloads (an L0 or L4 scan, or one where policy withheld everything, has
+ * nothing to inspect).
+ */
 function LatestPayload() {
   const { current } = useCurrentProject();
-  const scans = sortScans(useScans(current?.id).data ?? []).filter((s) => s.status === "completed" && s.privacy_level !== "L0");
-  const scan = scans[0];
+  const [params] = useSearchParams();
+  const linked = params.get("scan");
+  const all = sortScans(useScans(current?.id).data ?? []).filter((s) => s.status === "completed");
+  const withPayloads = all.filter((s) => (s.payloads ?? 1) > 0 && s.privacy_level !== "L0");
+  const scan = linked ? all.find((s) => s.id === linked) ?? { id: linked, privacy_level: undefined } : withPayloads[0];
+  const latest = all[0];
   const ledger = useLedger(scan?.id);
   const entry = ledger.data?.find((e) => e.outcome === "sent" && e.finding_id) ?? ledger.data?.find((e) => e.outcome === "sent");
   if (entry && scan) return <Navigate to={`/privacy/inspect/${scan.id}/${entry.seq}`} replace />;
@@ -45,7 +53,11 @@ function LatestPayload() {
           <Skeleton rows={2} />
         ) : (
           <Empty title="No payloads to inspect" action="Run the KavachBank demo" to="/demo">
-            {scan ? "The latest scan sent no payload: it ran at L0 or every candidate stayed local." : "Run a scan at L1 to L4 to see what would leave this machine."}
+            {scan
+              ? `${scanLabel(scan.id)}${scan.privacy_level ? ` (${scan.privacy_level})` : ""} recorded no payload: it ran at L0, at L4 (fails closed in this build) or policy kept every candidate local.`
+              : latest
+                ? "No scan of this project recorded a payload. Run a scan at L1, L2 or L3 to see what would leave this machine."
+                : "Run a scan at L1, L2 or L3 to see what would leave this machine."}
           </Empty>
         )}
       </div>
