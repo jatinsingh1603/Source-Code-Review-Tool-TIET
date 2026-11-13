@@ -19,6 +19,18 @@ from codekavach.report.render.theme import DEFAULT_THEME, Theme
 
 _DUE_DAYS: Final = {"critical": 7, "high": 30, "medium": 90, "low": 180, "info": 365}
 _STATUSES: Final = ["open", "confirmed", "false_positive", "accepted_risk", "suppressed", "fixed"]
+# Findings sheet headings; any other column is its CSV name in sentence case.
+_HEADINGS: Final = {
+    "report_id": "Report ID",
+    "cwe": "CWE",
+    "owasp": "OWASP",
+    "asvs": "ASVS",
+    "cvss4_score": "CVSS 4.0 score",
+    "cvss4_vector": "CVSS 4.0 vector",
+    "cvss31_score": "CVSS 3.1 score",
+    "cvss31_vector": "CVSS 3.1 vector",
+    "model_verdict": "Model verdict",
+}
 
 
 class XlsxUnavailableError(RuntimeError):
@@ -157,7 +169,7 @@ class XlsxRenderer:
             "comment": 30,
         }
         for col, name in enumerate(columns):
-            wf.write(0, col, name.replace("_", " ").title(), head)
+            wf.write(0, col, _HEADINGS.get(name, name.replace("_", " ").capitalize()), head)
             wf.set_column(col, col, widths.get(name, 13))
         wf.freeze_panes(1, 2)
         wf.set_row(0, 30)
