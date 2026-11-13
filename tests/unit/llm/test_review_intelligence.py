@@ -398,6 +398,36 @@ def test_a_model_that_leaks_the_canary_is_rejected_and_nothing_is_kept() -> None
     assert session.accepted == []
 
 
+class ErrorSession:
+    """Answers every request with an HTTP error status."""
+
+    def __init__(self, status: int) -> None:
+        self.status = status
+        self.calls = 0
+
+    def dispatch(self, request: PreparedRequest, **_: object) -> Dispatch:
+        self.calls += 1
+        return Dispatch("answered", status=self.status, body=b'{"error":"denied"}')
+
+
+@pytest.mark.parametrize("status", [400, 401, 403, 413])
+def test_an_http_error_is_a_failure_and_never_asked_again(status: int) -> None:
+    session = ErrorSession(status)
+    rv = Reviewer(
+        MockProvider(),
+        session,  # type: ignore[arg-type]
+        tasks=frozenset(),
+        consensus=1,
+        wait_seconds=0.0,
+        build_task=build_task,
+        repair_attempts=2,
+    )
+    outcome = rv.review(vulnerable_payload())
+    assert outcome.verdict is None and outcome.failure == "failed"
+    assert session.calls == 1  # no repair re-ask: that would only re-send the payload
+    assert (rv.counts.failed, rv.counts.repaired, rv.counts.answered) == (1, 0, 0)
+
+
 def test_an_answer_that_passes_the_defence_is_accepted_for_the_cache() -> None:
     session = ScriptedSession()
     rv = reviewer(session, tasks=set())

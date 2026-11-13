@@ -278,6 +278,12 @@ class Reviewer:
         except ProviderRefused:
             self.counts.refused += 1
             return None, "refused"
+        except ProviderUnavailable as error:
+            # an HTTP error, not a bad answer: asking again would only re-send the payload
+            self.counts.answered -= 1
+            self.counts.failed += 1
+            _log.info("llm_provider_error", task=name, reason=error.reason)
+            return None, "failed"
         except ProviderParseError as error:
             # the reason names a check, a field and an error type, never the answer's text
             _log.info("llm_output_unparsable", task=name, reason=error.reason)
