@@ -51,7 +51,9 @@ services:
       - codekavach-data:/data
     read_only: true
     tmpfs:
-      - /tmp:size=512m
+      # exec: Opengrep unpacks a helper into its temporary home and runs it. Docker mounts a
+      # tmpfs noexec by default, which made Opengrep fail silently in every scan.
+      - /tmp:size=512m,exec
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -83,7 +85,7 @@ services:
       - codekavach-airgapped-data:/data
     read_only: true
     tmpfs:
-      - /tmp:size=512m
+      - /tmp:size=512m,exec
     security_opt:
       - no-new-privileges:true
     cap_drop:
