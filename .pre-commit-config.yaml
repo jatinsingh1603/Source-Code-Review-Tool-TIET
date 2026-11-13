@@ -74,8 +74,11 @@ repos:
         # conformance case (E15-01) is Bandit's own JSON report, whose hard-coded password message
         # quotes a synthetic placeholder; JSON cannot carry a pragma and the file is replayed as is.
         # docs/samples/ holds generated reports of the KavachBank fixture: digests, fingerprints and
-        # the fixture's own (masked) code, checked by tests/unit/report/test_samples.py.
-        exclude: ^(fixtures/kavachbank/.*|docs/samples/.*|uv\.lock|docs/schemas/index\.json|docs/schemas/examples/.*|tests/golden/config/(show_effective(_origin)?|starter_full|starter_profile_demo)\.toml|tests/golden/config/snapshot_demo\.json|tests/fixtures/detect/secrets/(positive/gcp_service_account_json|negative/lock_sri)\.txt|tests/fixtures/engines/bandit/basic/output\.json)$
+        # the fixture's own (masked) code, checked by tests/unit/report/test_samples.py. The demo
+        # page goldens in tests/integration/golden/ render the same fixture: the Inspect page
+        # shows each candidate's original code next to its payload, checked by
+        # tests/integration/test_demo_golden.py.
+        exclude: ^(fixtures/kavachbank/.*|docs/samples/.*|tests/integration/golden/(inspect|report)\.html|uv\.lock|docs/schemas/index\.json|docs/schemas/examples/.*|tests/golden/config/(show_effective(_origin)?|starter_full|starter_profile_demo)\.toml|tests/golden/config/snapshot_demo\.json|tests/fixtures/detect/secrets/(positive/gcp_service_account_json|negative/lock_sri)\.txt|tests/fixtures/engines/bandit/basic/output\.json)$
 
   - repo: local
     hooks:
