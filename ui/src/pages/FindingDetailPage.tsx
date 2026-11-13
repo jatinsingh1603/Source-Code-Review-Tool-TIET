@@ -1,11 +1,39 @@
 import { useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { useFinding, useFindingHistory, useLedgerEntry, usePatchFinding, useProviders, useReviewFinding, useSettings, useUsers } from "@/api/queries";
-import { FINDING_STATUSES, type Finding, type FindingStatus, type PrivacyLevel, type TaintStep } from "@/api/types";
+import {
+  useFinding,
+  useFindingHistory,
+  useLedgerEntry,
+  usePatchFinding,
+  useProviders,
+  useReviewFinding,
+  useSettings,
+  useUsers,
+} from "@/api/queries";
+import {
+  FINDING_STATUSES,
+  type Finding,
+  type FindingStatus,
+  type PrivacyLevel,
+  type TaintStep,
+} from "@/api/types";
 import { useSession } from "@/app/session";
 import { useFollowScanProject } from "@/app/useSelectedScan";
 import { enginesOf, locationOf, verdictOf } from "@/lib/domain";
-import { capitalise, byteLength, fmtDate, fmtHash, fmtInt, fmtSeq, fmtShort, findingLabel, LEVEL_NAME, lineCount, payloadLineCount, scanLabel } from "@/lib/display";
+import {
+  capitalise,
+  byteLength,
+  fmtDate,
+  fmtHash,
+  fmtInt,
+  fmtSeq,
+  fmtShort,
+  findingLabel,
+  LEVEL_NAME,
+  lineCount,
+  payloadLineCount,
+  scanLabel,
+} from "@/lib/display";
 import { confidenceFraction, frameworkLabel, STATUS_LABEL } from "@/lib/format";
 import { cvssRating, parseVector } from "@/lib/cvss";
 import { MarkedCode } from "@/components/Marked";
@@ -122,7 +150,8 @@ export default function FindingDetailPage() {
   const history = useFindingHistory(id);
   useFollowScanProject(f?.scan_id);
   const reviews = f?.provenance?.llm_reviews ?? [];
-  const seq = reviews.find((r) => r.ledger_seq !== null && r.ledger_seq !== undefined)?.ledger_seq ?? null;
+  const seq =
+    reviews.find((r) => r.ledger_seq !== null && r.ledger_seq !== undefined)?.ledger_seq ?? null;
   const ledger = useLedgerEntry(f?.scan_id, seq);
   const patch = usePatchFinding();
   const users = useUsers().data;
@@ -135,7 +164,8 @@ export default function FindingDetailPage() {
   const [elsewhere, setElsewhere] = useState<TaintStep | null>(null);
   const review = useReviewFinding();
   const providers = useProviders().data;
-  const reviewProviderId = f?.scan?.provider && f.scan.provider !== "none" ? f.scan.provider : undefined;
+  const reviewProviderId =
+    f?.scan?.provider && f.scan.provider !== "none" ? f.scan.provider : undefined;
   const defaultProviderId = useSettings().data?.default_provider;
   const reviewProvider = providers?.find((p) => p.id === (reviewProviderId ?? defaultProviderId));
   const runReview = () => {
@@ -146,11 +176,20 @@ export default function FindingDetailPage() {
       {
         onSuccess: (r) => {
           const secs = Math.round((Date.now() - started) / 1000);
-          const verdict = r.llm?.is_vulnerable === true ? "vulnerable" : r.llm?.is_vulnerable === false ? "not vulnerable" : "undecided";
-          toast.success("Model review done", `${r.llm?.model ?? "The model"} says ${verdict}${secs ? ` · ${secs} s` : ""}.`);
+          const verdict =
+            r.llm?.is_vulnerable === true
+              ? "vulnerable"
+              : r.llm?.is_vulnerable === false
+                ? "not vulnerable"
+                : "undecided";
+          toast.success(
+            "Model review done",
+            `${r.llm?.model ?? "The model"} says ${verdict}${secs ? ` · ${secs} s` : ""}.`,
+          );
           setTab("reason");
         },
-        onError: (e) => toast.error("Model review failed", e instanceof Error ? e.message : undefined),
+        onError: (e) =>
+          toast.error("Model review failed", e instanceof Error ? e.message : undefined),
       },
     );
   };
@@ -168,7 +207,11 @@ export default function FindingDetailPage() {
     return (
       <Content>
         <Breadcrumb nav items={[{ label: "Findings", to: "/findings" }, { label: id ?? "" }]} />
-        <ErrorBanner what="This finding could not be loaded." error={q.error} onRetry={() => void q.refetch()} />
+        <ErrorBanner
+          what="This finding could not be loaded."
+          error={q.error}
+          onRetry={() => void q.refetch()}
+        />
       </Content>
     );
   }
@@ -197,31 +240,56 @@ export default function FindingDetailPage() {
   const hasSan = taint.some((t) => /saniti[sz]/.test(t.kind));
   const files = new Set(taint.map((t) => t.path)).size;
   const { impact } = splitImpact(f.llm?.impact ?? f.impact_detail?.narrative ?? null);
-  const level = (ledger.data?.entry.level ?? f.scan?.privacy_level ?? reviews[0]?.level) as PrivacyLevel | undefined;
+  const level = (ledger.data?.entry.level ?? f.scan?.privacy_level ?? reviews[0]?.level) as
+    PrivacyLevel | undefined;
   const engines = enginesOf(f);
-  const sinkLine = taint.find((t) => t.kind === "sink" && t.path === f.evidence?.code?.path)?.line ?? loc?.line;
+  const sinkLine =
+    taint.find((t) => t.kind === "sink" && t.path === f.evidence?.code?.path)?.line ?? loc?.line;
   const srcLine = taint.find((t) => t.kind === "source" && t.path === f.evidence?.code?.path)?.line;
   const assigneeName = f.assignee
-    ? users?.find((u) => u.username === f.assignee || u.id === f.assignee)?.display_name || f.assignee
+    ? users?.find((u) => u.username === f.assignee || u.id === f.assignee)?.display_name ||
+      f.assignee
     : null;
 
   const tags: ReactNode[] = [];
   if (f.cwe) {
     const n = f.cwe.replace(/\D/g, "");
     tags.push(
-      <a key="cwe" className="tag" href={`https://cwe.mitre.org/data/definitions/${n}.html`} target="_blank" rel="noreferrer noopener">
+      <a
+        key="cwe"
+        className="tag"
+        href={`https://cwe.mitre.org/data/definitions/${n}.html`}
+        target="_blank"
+        rel="noreferrer noopener"
+      >
         {f.cwe}
       </a>,
     );
   }
-  if (f.owasp) tags.push(<span key="owasp" className="tag">OWASP {f.owasp}</span>);
+  if (f.owasp)
+    tags.push(
+      <span key="owasp" className="tag">
+        OWASP {f.owasp}
+      </span>,
+    );
   const asvs = f.asvs_refs?.[0] ?? f.asvs?.split(",")[0]?.trim();
-  if (asvs) tags.push(<span key="asvs" className="tag">ASVS {asvs}</span>);
+  if (asvs)
+    tags.push(
+      <span key="asvs" className="tag">
+        ASVS {asvs}
+      </span>,
+    );
   const capec = f.capec_refs?.[0] ?? f.capec?.split(",")[0]?.trim();
-  if (capec) tags.push(<span key="capec" className="tag">{capec}</span>);
+  if (capec)
+    tags.push(
+      <span key="capec" className="tag">
+        {capec}
+      </span>,
+    );
   const seen = new Set<string>();
   for (const c of f.compliance ?? []) {
-    if (["owasp-asvs", "capec", "cwe-top25"].includes(c.framework) || seen.has(c.framework)) continue;
+    if (["owasp-asvs", "capec", "cwe-top25"].includes(c.framework) || seen.has(c.framework))
+      continue;
     seen.add(c.framework);
     if (seen.size > 4) break;
     tags.push(
@@ -239,7 +307,11 @@ export default function FindingDetailPage() {
       <div className="stack" style={{ gap: 10 }}>
         <Breadcrumb
           nav
-          items={[{ label: f.scan?.project_name ?? "Project", to: "/" }, { label: "Findings", to: `/findings?scan=${f.scan_id}` }, { label: findingLabel(f.id) }]}
+          items={[
+            { label: f.scan?.project_name ?? "Project", to: "/" },
+            { label: "Findings", to: `/findings?scan=${f.scan_id}` },
+            { label: findingLabel(f.id) },
+          ]}
         />
         <div className="ph" style={{ alignItems: "flex-start" }}>
           <div className="stack s6" style={{ minWidth: 0, flex: "1 1 100%" }}>
@@ -268,7 +340,11 @@ export default function FindingDetailPage() {
                 onClick={runReview}
                 title={`Send this finding's sanitised slice to ${reviewProvider?.name ?? "the scan's provider"} now; the request is recorded in the egress ledger.`}
               >
-                {review.isPending ? "Reviewing" : reviews.length ? "Review again" : "Review with model"}
+                {review.isPending
+                  ? "Reviewing"
+                  : reviews.length
+                    ? "Review again"
+                    : "Review with model"}
               </Button>
             )}
             {can("findings:triage") && (
@@ -288,8 +364,12 @@ export default function FindingDetailPage() {
 
       {review.isPending && (
         <div className="banner info sm" role="status">
-          Asking {reviewProvider?.name ?? "the model"} about this finding. Only its sanitised slice leaves, through the egress
-          guard{reviewProvider && !reviewProvider.local ? "; a remote model can take a minute or more" : ""}.
+          Asking {reviewProvider?.name ?? "the model"} about this finding. Only its sanitised slice
+          leaves, through the egress guard
+          {reviewProvider && !reviewProvider.local
+            ? "; a remote model can take a minute or more"
+            : ""}
+          .
         </div>
       )}
 
@@ -325,7 +405,10 @@ export default function FindingDetailPage() {
                       setElsewhere(here ? null : t);
                       setJump(here ? t.line : null);
                       const target = here ? `L${t.line}` : "taint-elsewhere";
-                      setTimeout(() => document.getElementById(target)?.scrollIntoView({ block: "center" }), 50);
+                      setTimeout(
+                        () => document.getElementById(target)?.scrollIntoView({ block: "center" }),
+                        50,
+                      );
                     }}
                   />
                 ))}
@@ -345,7 +428,13 @@ export default function FindingDetailPage() {
               tabs={[
                 { id: "saw", label: "What the LLM saw" },
                 { id: "real", label: "Real code" },
-                { id: "reason", label: "LLM reasoning", count: reviews.length ? `${reviews.length} run${reviews.length === 1 ? "" : "s"}` : undefined },
+                {
+                  id: "reason",
+                  label: "LLM reasoning",
+                  count: reviews.length
+                    ? `${reviews.length} run${reviews.length === 1 ? "" : "s"}`
+                    : undefined,
+                },
               ]}
             />
             <div style={{ paddingTop: 14 }}>
@@ -356,13 +445,25 @@ export default function FindingDetailPage() {
                     <div id="taint-elsewhere">
                       <CodeBlock
                         title={<span className="mono">{elsewhere.path}</span>}
-                        titleRight={<span className="faint">Taint step · {TAINT_KIND[elsewhere.kind]?.label ?? capitalise(elsewhere.kind)}</span>}
+                        titleRight={
+                          <span className="faint">
+                            Taint step ·{" "}
+                            {TAINT_KIND[elsewhere.kind]?.label ?? capitalise(elsewhere.kind)}
+                          </span>
+                        }
                         code={elsewhere.code ?? elsewhere.label}
                         startLine={elsewhere.line}
-                        kindOf={() => (elsewhere.kind === "source" ? "src" : elsewhere.kind === "sink" ? "sink" : "hl")}
+                        kindOf={() =>
+                          elsewhere.kind === "source"
+                            ? "src"
+                            : elsewhere.kind === "sink"
+                              ? "sink"
+                              : "hl"
+                        }
                       />
                       <p className="xs faint" style={{ marginTop: 6 }}>
-                        Only this line of <span className="mono">{elsewhere.path}</span> is kept with the finding; the excerpt below is the file the finding is reported in.
+                        Only this line of <span className="mono">{elsewhere.path}</span> is kept
+                        with the finding; the excerpt below is the file the finding is reported in.
                       </p>
                     </div>
                   )}
@@ -374,25 +475,47 @@ export default function FindingDetailPage() {
                       highlight={f.evidence.code.highlight}
                       anchor="L"
                       kindOf={(n) =>
-                        n === sinkLine ? "sink" : n === srcLine ? "src" : n === jump || f.evidence!.code!.highlight.some((r) => n >= r.start && n <= r.end) ? "hl" : undefined
+                        n === sinkLine
+                          ? "sink"
+                          : n === srcLine
+                            ? "src"
+                            : n === jump ||
+                                f.evidence!.code!.highlight.some((r) => n >= r.start && n <= r.end)
+                              ? "hl"
+                              : undefined
                       }
                     />
                   ) : f.evidence?.snippet ? (
-                    <CodeBlock title={<span className="mono">{loc?.path}</span>} code={f.evidence.snippet} startLine={loc?.line ?? 1} />
+                    <CodeBlock
+                      title={<span className="mono">{loc?.path}</span>}
+                      code={f.evidence.snippet}
+                      startLine={loc?.line ?? 1}
+                    />
                   ) : (
-                    <Empty title="No code excerpt">The original code is only shown to roles allowed to read it.</Empty>
+                    <Empty title="No code excerpt">
+                      The original code is only shown to roles allowed to read it.
+                    </Empty>
                   )}
                 </div>
               )}
               {tab === "reason" && (
-                <ReasonTab f={f} conf={conf} onReview={can("findings:review") ? runReview : undefined} reviewing={review.isPending} />
+                <ReasonTab
+                  f={f}
+                  conf={conf}
+                  onReview={can("findings:review") ? runReview : undefined}
+                  reviewing={review.isPending}
+                />
               )}
             </div>
           </div>
 
           <div className="card stack">
             <h2>Impact</h2>
-            {impact ? <RichText text={impact} /> : <p className="sm muted">{f.description ?? "No impact statement for this finding."}</p>}
+            {impact ? (
+              <RichText text={impact} />
+            ) : (
+              <p className="sm muted">{f.description ?? "No impact statement for this finding."}</p>
+            )}
           </div>
 
           <div className="card stack">
@@ -407,11 +530,20 @@ export default function FindingDetailPage() {
             )}
             {f.remediation_example && !(f.remediation ?? "").includes("```") && (
               <CodeBlock
-                title={<span className="mono">Secure example · {f.remediation_example.language ?? f.language ?? ""}</span>}
+                title={
+                  <span className="mono">
+                    Secure example · {f.remediation_example.language ?? f.language ?? ""}
+                  </span>
+                }
                 code={f.remediation_example.code}
               />
             )}
-            {f.remediation_diff && <CodeBlock title={<span className="mono">{loc?.path}</span>} code={f.remediation_diff} />}
+            {f.remediation_diff && (
+              <CodeBlock
+                title={<span className="mono">{loc?.path}</span>}
+                code={f.remediation_diff}
+              />
+            )}
           </div>
 
           {(f.references ?? []).length > 0 && (
@@ -419,9 +551,19 @@ export default function FindingDetailPage() {
               <h2>References</h2>
               <div className="stack s6 sm">
                 {(f.references ?? []).map((r, i) => {
-                  const ref = typeof r === "string" ? { title: r, url: /^https?:/.test(r) ? r : undefined } : r;
+                  const ref =
+                    typeof r === "string"
+                      ? { title: r, url: /^https?:/.test(r) ? r : undefined }
+                      : r;
                   return ref.url ? (
-                    <a key={i} className="more" href={ref.url} target="_blank" rel="noreferrer noopener" style={{ whiteSpace: "normal" }}>
+                    <a
+                      key={i}
+                      className="more"
+                      href={ref.url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      style={{ whiteSpace: "normal" }}
+                    >
                       {ref.title} <Icon name="arrow-up-right" />
                     </a>
                   ) : (
@@ -446,7 +588,10 @@ export default function FindingDetailPage() {
                   aria-label="Status"
                   value={f.status}
                   disabled={!can("findings:triage") || patch.isPending}
-                  onChange={(e) => e.target.value !== f.status && doPatch({ status: e.target.value as FindingStatus }, "Status updated")}
+                  onChange={(e) =>
+                    e.target.value !== f.status &&
+                    doPatch({ status: e.target.value as FindingStatus }, "Status updated")
+                  }
                 >
                   {FINDING_STATUSES.map((s) => (
                     <option key={s} value={s}>
@@ -468,13 +613,23 @@ export default function FindingDetailPage() {
               </dd>
               <dt>Scan</dt>
               <dd className="mono sm">
-                <Link to={`/scans/${f.scan_id}`} title={f.scan_id} style={{ textDecoration: "none" }}>
+                <Link
+                  to={`/scans/${f.scan_id}`}
+                  title={f.scan_id}
+                  style={{ textDecoration: "none" }}
+                >
                   {scanLabel(f.scan_id)}
                 </Link>
                 {f.baseline_state && f.baseline_scan_id && (
                   <span>
                     {" "}
-                    · {f.baseline_state === "new" ? "New since" : f.baseline_state === "fixed" ? "Fixed since" : "Unchanged since"} {scanLabel(f.baseline_scan_id)}
+                    ·{" "}
+                    {f.baseline_state === "new"
+                      ? "New since"
+                      : f.baseline_state === "fixed"
+                        ? "Fixed since"
+                        : "Unchanged since"}{" "}
+                    {scanLabel(f.baseline_scan_id)}
                   </span>
                 )}
               </dd>
@@ -488,7 +643,11 @@ export default function FindingDetailPage() {
               <dt>Payload</dt>
               <dd>
                 {seq !== null ? (
-                  <Link className="mono acc sm" to={`/privacy/ledger?scan=${f.scan_id}&seq=${seq}`} title="Open this payload in the egress ledger">
+                  <Link
+                    className="mono acc sm"
+                    to={`/privacy/ledger?scan=${f.scan_id}&seq=${seq}`}
+                    title="Open this payload in the egress ledger"
+                  >
                     #{fmtSeq(seq)}
                     {ledger.data ? ` · ${fmtHash(ledger.data.entry.payload_hash)}` : ""}
                   </Link>
@@ -504,7 +663,11 @@ export default function FindingDetailPage() {
                   <dd className="sm">
                     {fmtDate(f.due_at)}
                     {f.sla_days ? ` · ${f.sla_days}-day SLA` : ""}
-                    {f.sla_state === "overdue" ? <span className="badc"> · overdue</span> : f.sla_state === "due_soon" ? <span className="up"> · due soon</span> : null}
+                    {f.sla_state === "overdue" ? (
+                      <span className="badc"> · overdue</span>
+                    ) : f.sla_state === "due_soon" ? (
+                      <span className="up"> · due soon</span>
+                    ) : null}
                   </dd>
                 </>
               )}
@@ -563,7 +726,9 @@ export default function FindingDetailPage() {
                     <b>CodeKavach</b>{" "}
                     <span className="muted">
                       opened from {scanLabel(f.scan_id)}
-                      {f.cvss4_score ? ` · rated ${capitalise(f.severity)} · CVSS ${f.cvss4_score.toFixed(1)}` : ""}
+                      {f.cvss4_score
+                        ? ` · rated ${capitalise(f.severity)} · CVSS ${f.cvss4_score.toFixed(1)}`
+                        : ""}
                     </span>
                   </div>
                   <div className="xs faint">{fmtShort(f.created_at)}</div>
@@ -579,7 +744,10 @@ export default function FindingDetailPage() {
                   if (!comment.trim()) return;
                   patch.mutate(
                     { id: f.id, patch: { comment: comment.trim() } },
-                    { onSuccess: () => setComment(""), onError: (err) => toast.error("Comment not saved", err.message) },
+                    {
+                      onSuccess: () => setComment(""),
+                      onError: (err) => toast.error("Comment not saved", err.message),
+                    },
                   );
                 }}
               >
@@ -591,7 +759,8 @@ export default function FindingDetailPage() {
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) (e.currentTarget.form as HTMLFormElement).requestSubmit();
+                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey))
+                      (e.currentTarget.form as HTMLFormElement).requestSubmit();
                   }}
                 />
                 {comment.trim() && (
@@ -626,7 +795,14 @@ export default function FindingDetailPage() {
           setDialog(null);
         }}
       />
-      {dialog === "sync" && <GithubSyncDialog scanId={f.scan_id} open onClose={() => setDialog(null)} findingIds={[f.id]} />}
+      {dialog === "sync" && (
+        <GithubSyncDialog
+          scanId={f.scan_id}
+          open
+          onClose={() => setDialog(null)}
+          findingIds={[f.id]}
+        />
+      )}
     </Content>
   );
 }
@@ -640,7 +816,13 @@ function Pair({ k, children }: { k: string; children: ReactNode }) {
   );
 }
 
-function describe(h: { action: string; from_status?: string | null; to_status?: string | null; comment?: string | null; assignee?: string | null }): string {
+function describe(h: {
+  action: string;
+  from_status?: string | null;
+  to_status?: string | null;
+  comment?: string | null;
+  assignee?: string | null;
+}): string {
   if (h.to_status && h.to_status !== h.from_status) {
     return `changed status ${h.from_status ? `from ${STATUS_LABEL[h.from_status as FindingStatus] ?? h.from_status} ` : ""}to ${STATUS_LABEL[h.to_status as FindingStatus] ?? h.to_status}`;
   }
@@ -650,7 +832,17 @@ function describe(h: { action: string; from_status?: string | null; to_status?: 
   return h.action;
 }
 
-function TaintNode({ step, n, last, onPick }: { step: TaintStep; n: number; last: boolean; onPick: () => void }) {
+function TaintNode({
+  step,
+  n,
+  last,
+  onPick,
+}: {
+  step: TaintStep;
+  n: number;
+  last: boolean;
+  onPick: () => void;
+}) {
   const k = TAINT_KIND[step.kind] ?? { cls: "", label: capitalise(step.kind) };
   return (
     <>
@@ -680,10 +872,22 @@ function TaintNode({ step, n, last, onPick }: { step: TaintStep; n: number; last
   );
 }
 
-function SawTab({ f, seq, ledger }: { f: Finding; seq: number | null; ledger: ReturnType<typeof useLedgerEntry> }) {
+function SawTab({
+  f,
+  seq,
+  ledger,
+}: {
+  f: Finding;
+  seq: number | null;
+  ledger: ReturnType<typeof useLedgerEntry>;
+}) {
   if (seq === null) {
     return (
-      <Empty title="Nothing was sent for this finding">It was reviewed at L0 or by deterministic engines only.</Empty>
+      <Empty title="Nothing was sent for this finding">
+        The engines' evidence stands on its own: secrets, dependencies and configuration findings
+        have no code slice to send, a quick review sends only the most severe candidates, and at L0
+        nothing leaves.
+      </Empty>
     );
   }
   if (ledger.isLoading) return <Skeleton rows={2} />;
@@ -693,7 +897,11 @@ function SawTab({ f, seq, ledger }: { f: Finding; seq: number | null; ledger: Re
   const d = ledger.data;
   const lv = d.entry.level;
   if (d.entry.outcome?.startsWith("blocked")) {
-    return <div className="banner bad sm">Blocked by policy · {d.entry.block_code ?? "never-send"}. Nothing was sent.</div>;
+    return (
+      <div className="banner bad sm">
+        Blocked by policy · {d.entry.block_code ?? "never-send"}. Nothing was sent.
+      </div>
+    );
   }
   const sent = payloadLineCount(d.payload_text);
   const total = d.lines_total ?? lineCount(d.original_text);
@@ -703,25 +911,42 @@ function SawTab({ f, seq, ledger }: { f: Finding; seq: number | null; ledger: Re
       <div className="row between sm">
         <span className="muted">
           Payload{" "}
-          <Link className="mono acc" to={`/privacy/ledger?scan=${f.scan_id}&seq=${seq}`} title="Open this payload in the egress ledger">
+          <Link
+            className="mono acc"
+            to={`/privacy/ledger?scan=${f.scan_id}&seq=${seq}`}
+            title="Open this payload in the egress ledger"
+          >
             #{fmtSeq(seq)}
           </Link>{" "}
-          · {lv} {LEVEL_NAME[lv]?.toLowerCase()} · {sent} of {total || "—"} lines · {fmtInt(bytes)} bytes
+          · {lv} {LEVEL_NAME[lv]?.toLowerCase()} · {sent} of {total || "—"} lines · {fmtInt(bytes)}{" "}
+          bytes
         </span>
         <MoreLink to={`/privacy/inspect/${f.scan_id}/${seq}`}>Inspect side by side</MoreLink>
       </div>
       <MarkedCode text={d.payload_text} markup={d.markup} side="payload" />
       <p className="xs faint">
-        Visible to the model: control flow, literal shapes and public API names. Not visible: real names, secrets and string
-        values that were replaced.
+        Visible to the model: control flow, literal shapes and public API names. Not visible: real
+        names, secrets and string values that were replaced.
       </p>
     </div>
   );
 }
 
-function ReasonTab({ f, conf, onReview, reviewing }: { f: Finding; conf: number | null; onReview?: () => void; reviewing?: boolean }) {
+function ReasonTab({
+  f,
+  conf,
+  onReview,
+  reviewing,
+}: {
+  f: Finding;
+  conf: number | null;
+  onReview?: () => void;
+  reviewing?: boolean;
+}) {
   const reviews = f.provenance?.llm_reviews ?? [];
-  const runs = f.llm?.runs?.length ? f.llm.runs.filter((r) => r.source !== "ledger" || r.verdict) : reviews;
+  const runs = f.llm?.runs?.length
+    ? f.llm.runs.filter((r) => r.source !== "ledger" || r.verdict)
+    : reviews;
   if (!f.llm && !reviews.length) {
     return (
       <Empty
@@ -729,13 +954,18 @@ function ReasonTab({ f, conf, onReview, reviewing }: { f: Finding; conf: number 
         action={onReview ? (reviewing ? "Reviewing…" : "Review with model") : undefined}
         onAction={onReview && !reviewing ? onReview : undefined}
       >
-        This finding was not sent to a model: the scan reviewed only its most severe candidates, or ran at L0.
+        This finding was not sent to a model: the scan reviewed only its most severe candidates, or
+        ran at L0.
       </Empty>
     );
   }
   const v = verdictOf(f);
   const cons = f.llm?.consensus;
-  const agree = cons ? (f.llm?.is_vulnerable === false ? cons.votes_safe : cons.votes_vulnerable) : reviews.filter((r) => r.is_vulnerable === f.llm?.is_vulnerable).length;
+  const agree = cons
+    ? f.llm?.is_vulnerable === false
+      ? cons.votes_safe
+      : cons.votes_vulnerable
+    : reviews.filter((r) => r.is_vulnerable === f.llm?.is_vulnerable).length;
   const samples = cons?.samples ?? reviews.length;
   const { scenario } = splitImpact(f.llm?.impact ?? null);
   return (
@@ -747,7 +977,9 @@ function ReasonTab({ f, conf, onReview, reviewing }: { f: Finding; conf: number 
         </div>
         <div>
           <div className="xs faint">Confidence</div>
-          <span className="mono">{conf === null ? (f.llm?.confidence ?? "—") : conf.toFixed(2)}</span>
+          <span className="mono">
+            {conf === null ? (f.llm?.confidence ?? "—") : conf.toFixed(2)}
+          </span>
         </div>
         <div>
           <div className="xs faint">Consensus</div>
@@ -759,7 +991,9 @@ function ReasonTab({ f, conf, onReview, reviewing }: { f: Finding; conf: number 
           <div className="xs faint">Model</div>
           <span className="mono sm">
             {f.llm?.model ?? reviews[0]?.model ?? "—"}
-            {f.llm?.temperature !== undefined && f.llm?.temperature !== null ? ` · temp ${f.llm.temperature}` : ""}
+            {f.llm?.temperature !== undefined && f.llm?.temperature !== null
+              ? ` · temp ${f.llm.temperature}`
+              : ""}
           </span>
         </div>
       </div>
@@ -794,13 +1028,26 @@ function ReasonTab({ f, conf, onReview, reviewing }: { f: Finding; conf: number 
                 const vk =
                   r.is_vulnerable === null || r.is_vulnerable === undefined
                     ? null
-                    : verdictOf({ status: f.status, llm: { is_vulnerable: !!r.is_vulnerable, confidence: r.confidence ?? 0, reasoning: "" } });
+                    : verdictOf({
+                        status: f.status,
+                        llm: {
+                          is_vulnerable: !!r.is_vulnerable,
+                          confidence: r.confidence ?? 0,
+                          reasoning: "",
+                        },
+                      });
                 return (
                   <tr key={i}>
                     <td className="mono">{i + 1}</td>
                     <td>{vk ? <Verdict kind={vk.kind} /> : "—"}</td>
-                    <td className="num mono">{c === null ? (r.confidence ?? "—") : c.toFixed(2)}</td>
-                    <td className="mono sm">{r.ledger_seq !== undefined && r.ledger_seq !== null ? `#${fmtSeq(r.ledger_seq)}` : "—"}</td>
+                    <td className="num mono">
+                      {c === null ? (r.confidence ?? "—") : c.toFixed(2)}
+                    </td>
+                    <td className="mono sm">
+                      {r.ledger_seq !== undefined && r.ledger_seq !== null
+                        ? `#${fmtSeq(r.ledger_seq)}`
+                        : "—"}
+                    </td>
                   </tr>
                 );
               })}
@@ -824,10 +1071,14 @@ interface RiskDetail {
 function OtherRatings({ f }: { f: Finding }) {
   const risk = (f as Finding & { risk?: RiskDetail | null }).risk ?? null;
   const v31 = f.cvss31_score;
-  const hasOwasp = risk?.owasp_overall && risk.owasp_likelihood !== undefined && risk.owasp_impact !== undefined;
+  const hasOwasp =
+    risk?.owasp_overall && risk.owasp_likelihood !== undefined && risk.owasp_impact !== undefined;
   if ((v31 === null || v31 === undefined) && !hasOwasp) return null;
   return (
-    <dl className="dl sm" style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+    <dl
+      className="dl sm"
+      style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}
+    >
       {v31 !== null && v31 !== undefined && (
         <Pair k="CVSS 3.1">
           <span title={f.cvss31_vector ?? undefined}>
@@ -844,7 +1095,8 @@ function OtherRatings({ f }: { f: Finding }) {
         <Pair k="OWASP risk">
           <b>{capitalise(risk!.owasp_overall!)}</b>
           <div className="xs muted">
-            Likelihood {risk!.owasp_likelihood!.toFixed(1)} {risk!.owasp_likelihood_band ?? ""} · impact {risk!.owasp_impact!.toFixed(1)} {risk!.owasp_impact_band ?? ""}
+            Likelihood {risk!.owasp_likelihood!.toFixed(1)} {risk!.owasp_likelihood_band ?? ""} ·
+            impact {risk!.owasp_impact!.toFixed(1)} {risk!.owasp_impact_band ?? ""}
           </div>
         </Pair>
       )}
