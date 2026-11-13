@@ -242,6 +242,24 @@ def templates() -> list[dict[str, Any]]:
     return found
 
 
+def _largest_payload(state: ServerState, scan: ScanRow | None) -> int | None:
+    """Bytes of the largest payload the scan's ledger records, or None when it has none."""
+    if scan is None or scan.status != "completed":
+        return None
+    from codekavach.server.routers.scans import scan_results  # noqa: PLC0415 - import cycle
+
+    try:
+        sizes = [
+            int(row["bytes"])
+            for row in scan_results(state, scan).ledger_rows({})
+            if row.get("bytes") is not None
+        ]
+    except Exception as error:  # noqa: BLE001 - an unreadable ledger is "not measured"
+        _log.info("server_budget_unmeasured", error_type=type(error).__name__)
+        return None
+    return max(sizes) if sizes else None
+
+
 @router.get("/privacy/budgets", dependencies=[LedgerDep])
 def budgets(state: StateDep, session: SessionDep, scan_id: str | None = None) -> dict[str, Any]:
     """Configured exposure and request budgets against what a scan used."""
@@ -264,10 +282,10 @@ def budgets(state: StateDep, session: SessionDep, scan_id: str | None = None) ->
          "across the engagement", "unit": "percent",
          "limit": egress.lifetime_budget_pct or egress.aggregation_budget_pct, "used": None,
          "source": "privacy.egress.lifetime_budget_pct",
-         "note": "the server keeps one state directory per scan, so it has no cross-scan "
-         "exposure account; the CLI keeps one per project"},
+         "note": "Not tracked by the dashboard: each scan is accounted on its own. The "
+         "command line keeps a running account per project."},
         {"id": "payload_bytes", "label": "Largest request body", "unit": "bytes",
-         "limit": egress.max_payload_bytes, "used": None,
+         "limit": egress.max_payload_bytes, "used": _largest_payload(state, scan),
          "source": "privacy.egress.max_payload_bytes"},
         {"id": "requests", "label": "LLM requests per scan", "unit": "requests",
          "limit": limits.max_requests, "used": summary_requests,

@@ -561,6 +561,7 @@ def test_privacy_budgets(
     assert rows["scan_disclosure"]["limit"] > 0
     assert rows["scan_disclosure"]["used"] is not None
     assert rows["input_tokens"]["used"] > 0
+    assert rows["payload_bytes"]["used"] > 0
     assert client.get(f"{API}/privacy/budgets", headers=users["viewer"]).status_code == 403
 
 

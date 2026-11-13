@@ -212,6 +212,13 @@ export default function PrivacyPage() {
                   </Guard>
                 );
               })}
+              {p && p.zero_leak.checked > 0 && p.zero_leak.occurrences > 0 && (
+                <p className="xs" style={{ marginTop: 8, color: "var(--warn)" }}>
+                  The suite is the recorded test run. This scan&apos;s own zero-leak check found {fmtInt(p.zero_leak.occurrences)} listed term
+                  {p.zero_leak.occurrences === 1 ? "" : "s"} in its payloads
+                  {scan?.privacy_level === "L1" ? ": L1 sends real names and business terms by design. Use L2 or stricter for anything sensitive." : "."}
+                </p>
+              )}
               {invariants && !invariants.recorded && invariants.how_to_record && (
                 <p className="xs faint" style={{ marginTop: 8 }}>
                   I4 and I6 show this scan&apos;s evidence. To show the CI results, run <span className="mono">{invariants.how_to_record}</span> on the server.
