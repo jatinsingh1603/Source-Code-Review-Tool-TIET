@@ -83,6 +83,7 @@ export default function PrivacyPage() {
 
   const files = useMemo(() => [...new Set((findings ?? []).map((f) => locationOf(f)?.path).filter((x): x is string => !!x))].sort(), [findings]);
   const [file, setFile] = useState<string>("");
+  const [pdfPending, setPdfPending] = useState(false);
   const doc = policyDoc(policy);
   const chosen = file || files[0] || "";
   const provider = providers?.find((x) => x.id === scan?.provider);
@@ -393,13 +394,19 @@ export default function PrivacyPage() {
                   <Button
                     size="sm"
                     disabled={!scanId}
+                    loading={pdfPending}
                     title="The PDF audit report includes the privacy attestation."
                     onClick={async () => {
+                      setPdfPending(true);
+                      const slow = setTimeout(() => toast.info("Rendering the PDF report", "The first PDF of a scan takes up to a minute; later downloads are instant."), 3000);
                       try {
                         const { blob, filename } = await fetchReport(scanId!, "pdf");
                         saveBlob(blob, filename);
                       } catch (e) {
                         toast.error("Download failed", e instanceof Error ? e.message : undefined);
+                      } finally {
+                        clearTimeout(slow);
+                        setPdfPending(false);
                       }
                     }}
                   >
