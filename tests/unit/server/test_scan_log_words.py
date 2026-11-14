@@ -93,3 +93,9 @@ def test_an_l0_scan_does_not_say_payloads_are_sent() -> None:
     assert "nothing is sent to a model" in l0
     l3 = _opening_words({"level": "L3", "provider": "mock", "send": True}, remote=False)
     assert l3 == "Privacy level L3; provider mock (local); payloads sent"
+
+
+def test_an_l4_scan_says_it_fails_closed() -> None:
+    l4 = _opening_words({"level": "L4", "provider": "mock", "send": True}, remote=False)
+    assert "payloads sent" not in l4
+    assert "fails closed" in l4 and "nothing is sent" in l4

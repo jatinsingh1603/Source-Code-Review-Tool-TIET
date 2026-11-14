@@ -475,6 +475,12 @@ def _opening_words(scan: dict[str, Any], *, remote: bool) -> str:
     """The scan log's privacy line; an L0 scan says nothing goes to a model, not "payloads sent"."""
     if str(scan["level"]) == "L0":
         return "Privacy level L0; no model review: nothing is sent to a model (local engines only)"
+    if str(scan["level"]) == "L4":
+        # privacy/levels.py: L4 is not delivered in this build and fails closed.
+        return (
+            "Privacy level L4; not delivered in this build, so it fails closed: every candidate "
+            "is withheld and nothing is sent to a model"
+        )
     where = "remote" if remote else "local"
     sent = "sent" if scan["send"] else "recorded only"
     return f"Privacy level {scan['level']}; provider {scan['provider']} ({where}); payloads {sent}"
