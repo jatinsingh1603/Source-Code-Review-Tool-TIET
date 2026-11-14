@@ -279,7 +279,9 @@ export default function ScanPage() {
         actions={
           <>
             <span className="sub mono">
-              {running
+              {scan.status === "queued"
+                ? `Waiting for a free scan slot · ${fmtClock(elapsed)}`
+                : running
                 ? `${fmtClock(elapsed)} elapsed${scan.eta_seconds ? ` · about ${Math.round(scan.eta_seconds)} s left` : ""}`
                 : finished
                   ? `Completed in ${fmtElapsed(scan.started_at, scan.finished_at)}`
