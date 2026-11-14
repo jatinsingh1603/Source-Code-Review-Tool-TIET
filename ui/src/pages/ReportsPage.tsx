@@ -207,13 +207,13 @@ export default function ReportsPage() {
             <div className="fld">
               <span className="lbl">Audience</span>
               <div className="seg">
-                <button type="button" disabled title="Audience templates need server support.">
+                <button type="button" disabled title="Not in this build: every report is the technical report, which opens with the executive summary.">
                   Executive
                 </button>
                 <button className="on" type="button">
                   Technical
                 </button>
-                <button type="button" disabled title="Use the Compliance format below for the framework mapping.">
+                <button type="button" disabled title="Not in this build: choose the Compliance annex format below for the framework mapping.">
                   Compliance
                 </button>
               </div>
@@ -264,7 +264,7 @@ export default function ReportsPage() {
             </div>
             <div className="fld">
               <label htmlFor="rb-cls">Classification</label>
-              <select id="rb-cls" className="inp" disabled value="c">
+              <select id="rb-cls" className="inp" disabled value="c" title="Set in the server configuration (reporting.classification).">
                 <option value="c">{(settings?.classification as string) ?? "Confidential"}</option>
               </select>
             </div>
