@@ -179,7 +179,7 @@ def vault_status(state: StateDep, session: SessionDep) -> dict[str, Any]:
         "count": len(vaults),
         "records": sum(int(item.get("records") or 0) for item in vaults),
         "retention_days": settings.privacy.vault.retention_days,
-        "key_source": "passphrase (server-generated file, mode 0600)",
+        "key_source": state.passphrase_origin,
         "note": "metadata only: the server never returns or logs a vault mapping",
     }
 

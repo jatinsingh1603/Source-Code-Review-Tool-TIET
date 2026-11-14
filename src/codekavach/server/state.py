@@ -102,6 +102,21 @@ class RateLimiter:
             del self._hits[key]
 
 
+def _passphrase_origin(config: ServerConfig) -> str:
+    """Where the vault passphrase comes from, in words for the Admin page; never the value."""
+    preset = os.environ.get(VAULT_PASSPHRASE_ENV)
+    path = config.data_dir / "vault.passphrase"
+    if not preset:
+        return "passphrase (server-generated file, mode 0600)"
+    try:
+        from_file = path.is_file() and path.read_text(encoding="utf-8").strip() == preset.strip()
+    except OSError:
+        from_file = False
+    if from_file:
+        return "passphrase (server-generated file, mode 0600)"
+    return f"passphrase (environment variable {VAULT_PASSPHRASE_ENV})"
+
+
 class ServerState:
     """Everything a request handler or worker needs."""
 
@@ -111,6 +126,7 @@ class ServerState:
         self.config = config
         config.prepare()
         self.passphrase_env = VAULT_PASSPHRASE_ENV
+        self.passphrase_origin = _passphrase_origin(config)
         if not os.environ.get(VAULT_PASSPHRASE_ENV):
             os.environ[VAULT_PASSPHRASE_ENV] = config.secret_file("vault.passphrase")
         self.db = Database(config.db_path)
