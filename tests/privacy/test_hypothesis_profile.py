@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from hypothesis import settings
+from hypothesis import HealthCheck, settings
 
 EXPECTED: dict[str, dict[str, Any]] = {
     "dev": {"max_examples": 50, "deadline": timedelta(milliseconds=500), "derandomize": False},
@@ -24,6 +24,11 @@ def test_active_profile_matches_table() -> None:
         assert current.derandomize is True
         assert current.deadline is None
         assert current.print_blob is True
+
+
+def test_active_profile_tolerates_a_slow_machine() -> None:
+    """A loaded laptop must not turn a passing invariant into "Fail" on the dashboard card."""
+    assert HealthCheck.too_slow in settings().suppress_health_check
 
 
 @pytest.mark.parametrize("name", ["dev", "nightly"])

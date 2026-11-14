@@ -7,7 +7,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
-from hypothesis import settings
+from hypothesis import HealthCheck, settings
 
 from codekavach.core.log import configure_logging
 from tests.support.tiers import tier_of
@@ -32,11 +32,31 @@ PROFILES = ("dev", "ci", "nightly")
 # E02 extends this registration; never register a profile name twice. Unnamed settings are
 # inherited from hypothesis' own defaults, and with CI=true in the environment (a CI runner, some
 # dev containers) those defaults are already derandomised, so every profile states it.
+# HealthCheck.too_slow measures the machine, not the code: on a loaded laptop it failed privacy
+# invariant tests at random, which shows a passing invariant as "Fail" in the dashboard.
+SLOW_MACHINE_OK = [HealthCheck.too_slow]
 settings.register_profile(
-    "dev", max_examples=50, deadline=timedelta(milliseconds=500), derandomize=False
+    "dev",
+    max_examples=50,
+    deadline=timedelta(milliseconds=500),
+    derandomize=False,
+    suppress_health_check=SLOW_MACHINE_OK,
 )
-settings.register_profile("ci", max_examples=200, deadline=None, derandomize=True, print_blob=True)
-settings.register_profile("nightly", max_examples=2000, deadline=None, derandomize=False)
+settings.register_profile(
+    "ci",
+    max_examples=200,
+    deadline=None,
+    derandomize=True,
+    print_blob=True,
+    suppress_health_check=SLOW_MACHINE_OK,
+)
+settings.register_profile(
+    "nightly",
+    max_examples=2000,
+    deadline=None,
+    derandomize=False,
+    suppress_health_check=SLOW_MACHINE_OK,
+)
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
