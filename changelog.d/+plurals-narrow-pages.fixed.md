@@ -1,0 +1,1 @@
+The terminal output of doctor, scan, privacy inspect and ledger verify writes plurals ("0 warnings", "1 finding") instead of "(s)"; the dashboard no longer scrolls sideways at phone width on Reports, Policy, Admin and finding pages.
