@@ -201,6 +201,20 @@ def test_a_weakness_with_its_own_advice_does_not_get_the_family_cheat_sheets() -
     assert "cwe.mitre.org" in " ".join(ref.url or "" for ref in notes.references)
 
 
+@pytest.mark.parametrize(
+    ("cwe", "word"),
+    [(942, "origin"), (489, "debug"), (326, "TLS 1.2"), (311, "encryption at rest")],
+)
+def test_configuration_weaknesses_get_advice_about_themselves(cwe: int, word: str) -> None:
+    # CORS and debug mode got cookie and session advice; a TLS version and an unencrypted
+    # database got password-hashing advice and the Password Storage Cheat Sheet.
+    notes = StandardsAnnotator(KB).annotations((cwe,))
+    titles = " ".join(ref.title or "" for ref in notes.references)
+    assert word in notes.remediation
+    assert "Session Management" not in titles and "Password Storage" not in titles
+    assert "HttpOnly" not in notes.remediation and "Argon2id" not in notes.remediation
+
+
 def test_the_stage_populates_every_rating_field(tmp_path: Path) -> None:
     source = tmp_path / SAMPLE_PATH
     source.parent.mkdir(parents=True)

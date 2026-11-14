@@ -77,7 +77,8 @@ weaknesses:
   - {id: 306, name: Missing Authentication for Critical Function, abstraction: base, family: broken-authentication, top25: 25, owasp: A07, owasp_basis: official, asvs: [], capec: [12, 36, 62],
      summary: "A function that needs a proven identity, or consumes significant resources, does not require authentication."}
   - {id: 311, name: Missing Encryption of Sensitive Data, abstraction: class, family: weak-cryptography, owasp: A04, owasp_basis: official, asvs: [V6.1.1, V8.3.4], capec: [157, 37],
-     summary: "Sensitive data is stored or transmitted without encryption."}
+     summary: "Sensitive data is stored or transmitted without encryption.",
+     remediation: "Turn on encryption at rest for the database, bucket or volume with a managed key (for example a KMS key), and use TLS for every connection that carries the data. Make encryption the default in the infrastructure modules so a new resource cannot be created without it."}
   - {id: 312, name: Cleartext Storage of Sensitive Information, abstraction: base, family: weak-cryptography, owasp: A04, owasp_basis: official, asvs: [V6.1.1], capec: [37],
      summary: "Sensitive information is stored in cleartext where others may read it."}
   - {id: 319, name: Cleartext Transmission of Sensitive Information, abstraction: base, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V9.1.1, V9.2.2], capec: [65, 102, 117, 383],
@@ -85,7 +86,8 @@ weaknesses:
   - {id: 321, name: Use of Hard-coded Cryptographic Key, abstraction: variant, family: hardcoded-secret, owasp: A02, owasp_basis: official, asvs: [V2.10.4, V6.4.1], capec: [191],
      summary: "A cryptographic key is embedded in the code, so anyone with the code can decrypt or forge data."}
   - {id: 326, name: Inadequate Encryption Strength, abstraction: class, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V6.2.1], capec: [20, 112],
-     summary: "Data is protected with an algorithm or key size that is too weak."}
+     summary: "Data is protected with an algorithm or key size that is too weak.",
+     remediation: "Allow only TLS 1.2 and 1.3 with modern cipher suites, and use keys of adequate strength (RSA or DH of 2048 bits or more, AES-128 or more). Set the minimum protocol version in one shared configuration and check it in CI."}
   - {id: 327, name: Use of a Broken or Risky Cryptographic Algorithm, abstraction: class, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V6.2.2, V6.2.5], capec: [20, 97, 459, 473, 475, 608, 614],
      summary: "A broken or risky algorithm such as DES, RC4, MD5 or ECB mode protects sensitive data."}
   - {id: 328, name: Use of Weak Hash, abstraction: base, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V6.2.5], capec: [68],
@@ -123,7 +125,8 @@ weaknesses:
   - {id: 476, name: NULL Pointer Dereference, abstraction: base, family: memory-safety, top25: 21, asvs: [], capec: [],
      summary: "A pointer expected to be valid is NULL when dereferenced, typically crashing the process."}
   - {id: 489, name: Active Debug Code, abstraction: base, family: security-misconfiguration, owasp: A05, owasp_basis: derived, asvs: [V14.3.2], capec: [121],
-     summary: "Debug code or debug mode (for example Flask debug=True) is left enabled in deployed code."}
+     summary: "Debug code or debug mode (for example Flask debug=True) is left enabled in deployed code.",
+     remediation: "Turn debug mode off outside development (for example debug: false or FLASK_DEBUG=0), take the setting from the environment rather than the code, and serve generic error pages so stack traces and the interactive console do not reach users."}
   - {id: 494, name: Download of Code Without Integrity Check, abstraction: base, family: integrity, owasp: A08, owasp_basis: official, asvs: [V10.3.2], capec: [184, 185, 186, 187],
      summary: "Code or images are downloaded and used without verifying their origin and integrity.",
      remediation: "Verify a pinned checksum or signature before running anything that is downloaded (for example COPY a vendored file, or ADD with --checksum), and fetch build inputs from a controlled internal mirror."}
@@ -179,7 +182,8 @@ weaknesses:
   - {id: 918, name: Server-Side Request Forgery (SSRF), abstraction: base, family: ssrf, top25: 19, owasp: A10, owasp_basis: official, asvs: [V5.2.6, V12.6.1], capec: [664],
      summary: "The server fetches a URL supplied by an attacker, reaching internal services or cloud metadata."}
   - {id: 942, name: Permissive Cross-domain Policy with Untrusted Domains, abstraction: variant, family: security-misconfiguration, owasp: A05, owasp_basis: official, asvs: [V14.5.3], capec: [],
-     summary: "A cross-domain policy (for example CORS with credentials and a wildcard or reflected origin) trusts untrusted domains."}
+     summary: "A cross-domain policy (for example CORS with credentials and a wildcard or reflected origin) trusts untrusted domains.",
+     remediation: "Replace the wildcard with an explicit list of the origins that need the API, do not reflect the Origin header back unchecked, and do not combine credentials with a broad origin. Keep the allow-list per environment in configuration."}
   - {id: 943, name: Improper Neutralization of Special Elements in Data Query Logic, abstraction: class, family: sql-injection, owasp: A03, owasp_basis: derived, asvs: [V5.3.4], capec: [676],
      summary: "A data query (for example a NoSQL filter) is built from external input without neutralisation."}
   - {id: 1004, name: "Sensitive Cookie Without 'HttpOnly' Flag", abstraction: variant, family: security-misconfiguration, owasp: A05, owasp_basis: official, asvs: [V3.4.2], capec: [],

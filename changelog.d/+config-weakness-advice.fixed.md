@@ -1,0 +1,1 @@
+A CORS wildcard, debug mode, a deprecated TLS version and unencrypted storage get advice about themselves in the dashboard and the report, not cookie, session or password-hashing advice and cheat sheets.
