@@ -127,8 +127,13 @@ const SORTERS: Record<SortKey, (a: Finding, b: Finding) => number> = {
     const lb = locationOf(b);
     return (la?.path ?? "").localeCompare(lb?.path ?? "") || (la?.line ?? 0) - (lb?.line ?? 0);
   },
-  confidence: (a, b) => (confidenceFraction(a.confidence) ?? -1) - (confidenceFraction(b.confidence) ?? -1),
+  confidence: (a, b) => (shownConfidence(a) ?? -1) - (shownConfidence(b) ?? -1),
 };
+
+/** The confidence the Conf. column shows: the model's when it reviewed the finding, else the engine's. */
+function shownConfidence(f: Finding): number | null {
+  return confidenceFraction(f.llm?.confidence ?? f.llm_confidence ?? f.confidence);
+}
 
 export default function FindingsPage() {
   const [params, setParams] = useSearchParams();
@@ -168,7 +173,8 @@ export default function FindingsPage() {
     if (v) n.set(k, v);
     else n.delete(k);
     if (k !== "page") n.delete("page");
-    setParams(n, { replace: true });
+    // A page turn is a step the reader expects Back to undo; filter edits replace the entry.
+    setParams(n, { replace: !(k === "page" && v) });
   };
 
   useEffect(() => {
@@ -198,7 +204,7 @@ export default function FindingsPage() {
       case "new":
         return stateOf(f) === "new";
       case "review": {
-        const c = confidenceFraction(f.llm?.confidence ?? f.llm_confidence ?? f.confidence);
+        const c = shownConfidence(f);
         return isOpen(f) && (verdictOf(f)?.kind === "rev" || (c !== null && c < 0.65));
       }
       case "mine":
@@ -572,7 +578,7 @@ export default function FindingsPage() {
                   const loc = locationOf(f);
                   const st = stateOf(f);
                   const v = verdictOf(f);
-                  const conf = confidenceFraction(f.llm?.confidence ?? f.llm_confidence ?? f.confidence);
+                  const conf = shownConfidence(f);
                   const engNames = enginesOf(f);
                   return (
                     <tr
