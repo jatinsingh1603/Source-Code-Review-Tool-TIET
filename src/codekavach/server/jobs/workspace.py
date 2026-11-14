@@ -195,6 +195,9 @@ def extract_archive(archive: Path, destination: Path, limits: ArchiveLimits | No
         raise IntakeError(
             "archive_corrupt", f"the archive cannot be read: {type(error).__name__}"
         ) from None
+    if not any(item.is_file() for item in destination.rglob("*")):
+        shutil.rmtree(destination, ignore_errors=True)
+        raise IntakeError("archive_empty", "the archive holds no files; there is nothing to scan")
     entries = [entry for entry in destination.iterdir() if entry.name != "__MACOSX"]
     if len(entries) == 1 and entries[0].is_dir():
         inner = entries[0]

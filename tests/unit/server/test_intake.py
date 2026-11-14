@@ -81,6 +81,16 @@ def test_a_non_archive_is_refused(tmp_path: Path) -> None:
     assert caught.value.code == "archive_unsupported"
 
 
+@pytest.mark.parametrize("entries", [{}, {"only/a/folder/": b""}])
+def test_an_archive_without_files_is_refused(tmp_path: Path, entries: dict[str, bytes]) -> None:
+    archive = _zip(tmp_path / "empty.zip", entries)
+    out = tmp_path / "out"
+    with pytest.raises(IntakeError) as caught:
+        extract_archive(archive, out)
+    assert caught.value.code == "archive_empty"
+    assert not out.exists()
+
+
 def test_a_tar_with_traversal_is_refused(tmp_path: Path) -> None:
     path = tmp_path / "t.tar"
     with tarfile.open(path, "w") as bundle:
