@@ -455,6 +455,13 @@ export default function PrivacyPage() {
                   <dd className="sm">
                     {fmtInt(p.payloads)} {p.send === false || p.provider_tier === "local" ? "recorded" : "sent"} · {fmtInt(p.tokens_sent)} prompt tokens, review instructions included
                     {p.disclosure?.repository_fraction_pct !== undefined ? ` · ${p.disclosure.repository_fraction_pct}% of repository lines` : ""}
+                    {p.later_reviews?.payloads ? (
+                      <div className="xs muted">
+                        Not included: {fmtInt(p.later_reviews.payloads)} more sent later by Review with model on findings of this scan (
+                        {fmtBytesText(p.later_reviews.bytes_sent)}, {fmtInt(p.later_reviews.tokens_sent)} prompt tokens); they are in this
+                        scan&apos;s ledger.
+                      </div>
+                    ) : null}
                   </dd>
                   <dt>Checks</dt>
                   <dd className="sm">
@@ -535,6 +542,7 @@ function ExposureBudget({ p, budgets }: { p: PrivacySummary; budgets?: Budgets |
         {p.bytes_sent !== undefined && p.bytes_sent !== null
           ? `${fmtBytesText(p.bytes_sent)} ${p.send === false || p.provider_tier === "local" ? "recorded (not transmitted)" : "sent"} in this scan. `
           : ""}
+        {p.later_reviews?.payloads ? `${fmtBytesText(p.later_reviews.bytes_sent)} more sent later by Review with model. ` : ""}
         Limits come from the privacy configuration on the server.
       </p>
     </div>

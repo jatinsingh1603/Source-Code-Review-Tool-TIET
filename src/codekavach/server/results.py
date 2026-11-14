@@ -527,6 +527,31 @@ class ScanResults:
                 _log.info("server_ledger_unreadable", error_type=type(error).__name__)
         return sorted(out, key=lambda record: record.seq)
 
+    def review_egress(self) -> dict[str, int]:
+        """What the on-demand reviews of this scan's findings sent after the scan finished.
+
+        The scan's privacy summary and attestation are fixed when it completes; a later "Review
+        with model" adds its payloads to the scan's ledger only. These figures let the Privacy
+        Centre say so instead of showing fewer payloads than the ledger.
+        """
+        out = {"payloads": 0, "bytes_sent": 0, "tokens_sent": 0, "blocked": 0}
+        for scan_id in self.scan_ids[1:]:
+            try:
+                records = self.reader.records(scan_id)
+            except Exception as error:  # noqa: BLE001 - a review that sent nothing has no ledger
+                _log.info("server_ledger_unreadable", error_type=type(error).__name__)
+                continue
+            for record in records:
+                outcome = str(record.outcome.value)
+                if outcome == "blocked":
+                    out["blocked"] += 1
+                if outcome != "sent":
+                    continue
+                out["payloads"] += 1
+                out["tokens_sent"] += int(record.token_counts.prompt)
+                out["bytes_sent"] += (self.payload_size(record.payload_hash) or (0, 0))[0]
+        return out
+
     def entries(self) -> list[Any]:
         """The payload entries (payload, candidate, slice, outcome) of the scan and its reviews."""
         from codekavach.cli.privacy import collect  # noqa: PLC0415

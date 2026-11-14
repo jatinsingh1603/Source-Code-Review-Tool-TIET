@@ -605,6 +605,9 @@ def test_a_quick_review_then_an_on_demand_review_of_one_finding(
         if not item["llm_reviewed"] and item["fingerprint"] in reviewed_before
     )
     url = f"/api/v1/findings/{target['id']}/review"
+    privacy_url = f"/api/v1/scans/{quick['id']}/privacy"
+    before = client.get(privacy_url, headers=admin).json()
+    assert before["later_reviews"]["payloads"] == 0
     assert client.post(url, headers=users["developer"]).status_code == 403
     answered = client.post(url, json={}, headers=users["auditor"])
     assert answered.status_code == 200, answered.text
@@ -615,6 +618,11 @@ def test_a_quick_review_then_an_on_demand_review_of_one_finding(
     assert detail["history"][-1]["action"] == "llm_review"
     again = client.get(f"/api/v1/scans/{quick['id']}/findings", headers=admin).json()
     assert sum(1 for item in again if item["llm_reviewed"]) == 2
+    # The scan's summary stays as it finished; the review's payload is reported beside it.
+    after = client.get(privacy_url, headers=admin).json()
+    assert after["payloads"] == before["payloads"]
+    assert after["later_reviews"]["payloads"] == 1
+    assert after["later_reviews"]["bytes_sent"] > 0 and after["later_reviews"]["tokens_sent"] > 0
     # The review's payload is listed with the scan's ledger, so "What the LLM saw" can open it.
     seq = next(r["ledger_seq"] for r in detail["provenance"]["llm_reviews"] if r.get("ledger_seq"))
     entry = client.get(f"/api/v1/scans/{quick['id']}/ledger/{seq}", headers=admin)

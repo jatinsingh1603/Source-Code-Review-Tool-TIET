@@ -424,6 +424,7 @@ def scan_privacy(scan_id: str, state: StateDep, session: SessionDep) -> dict[str
     data["send"] = row.send
     data["repo_bytes"] = repo_bytes(row)
     data["lines_total"] = row.lines
+    data["later_reviews"] = scan_results(state, row).review_egress()
     data["score_parts"] = [
         {"label": item.get("name"), "value": item.get("value"), "kind": item.get("kind")}
         for item in data.get("score_components") or []

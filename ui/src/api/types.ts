@@ -395,6 +395,8 @@ export interface PrivacySummary {
   ledger_head_hash?: string | null;
   ledger_entries?: number;
   attestation_digest?: string | null;
+  /** Payloads that "Review with model" on this scan's findings sent after the scan finished. */
+  later_reviews?: { payloads: number; bytes_sent: number; tokens_sent: number; blocked: number };
   send?: boolean;
   provider_tier?: string;
   levels_by_candidate?: Record<string, number>;
