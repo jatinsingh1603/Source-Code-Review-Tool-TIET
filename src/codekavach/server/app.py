@@ -86,6 +86,10 @@ def _mount_ui(app: FastAPI, ui_dir: Path | None) -> None:
             if "/assets/" in f"/{path}":
                 response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
             return response
+        if path.startswith("assets/"):
+            # A tab opened before an upgrade asks for the old build's chunks; answering with
+            # index.html (text/html) makes the browser report a MIME error instead of a 404.
+            return Response("not found", status_code=404, media_type="text/plain")
         return FileResponse(root / "index.html", headers={"Cache-Control": "no-cache"})
 
 
