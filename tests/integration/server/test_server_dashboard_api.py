@@ -207,6 +207,8 @@ def test_verify_and_verification_report(
     result = client.post(f"{API}/scans/{scan['id']}/ledger/verify", headers=admin).json()
     assert result["ok"] and result["chain_ok"]
     assert result["hashes_ok"] > 0
+    # every distinct payload is one stored file and one hash check
+    assert result["hashes_ok"] == result["payloads_distinct"] <= result["payloads_sent"]
     assert result["terms_checked"] > 0
     assert result["terms_found"] == 0
     assert result["head_hash"]
@@ -214,6 +216,7 @@ def test_verify_and_verification_report(
     text = client.get(url, params={"format": "txt"}, headers=admin)
     assert text.status_code == 200
     assert "Result: PASS" in text.text
+    assert "distinct; identical payloads are stored and checked once" in text.text
     assert "attachment" in text.headers["content-disposition"]
     assert json.loads(client.get(url, headers=admin).text)["ok"] is True
     assert client.get(url, headers=users["viewer"]).status_code == 403

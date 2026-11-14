@@ -623,6 +623,7 @@ def verification(state: ServerState, session: Session, row: ScanRow) -> dict[str
     chain_ok, entries, reason = results.chain()
     data = {step.name: step.data if isinstance(step.data, dict) else {} for step in steps}
     records = results.records()
+    sent = [record for record in records if str(record.outcome.value) == "sent"]
     payloads = data.get("payloads", {})
     terms = data.get("terms", {})
     return {
@@ -636,6 +637,9 @@ def verification(state: ServerState, session: Session, row: ScanRow) -> dict[str
         "hashes_mismatched": len(payloads.get("mismatched", [])),
         "payloads_missing": len(payloads.get("missing", [])),
         "blocked": sum(1 for record in records if str(record.outcome.value) == "blocked"),
+        # Payloads are stored by hash, so two identical payloads are one file and one check.
+        "payloads_sent": len(sent),
+        "payloads_distinct": len({record.payload_hash for record in sent}),
         "terms_checked": int(terms.get("checked", 0)),
         "terms_found": len(terms.get("hits", [])),
         "head_hash": records[-1].entry_hash if records else None,
@@ -686,7 +690,9 @@ def verification_report(
             f"Chain: {'intact' if result['chain_ok'] else 'broken'} over {result['entries']} "
             f"entries; head {result['head_hash'] or '-'}",
             f"Payload hashes: {result['hashes_ok']} match, {result['hashes_mismatched']} "
-            f"mismatch, {result['payloads_missing']} missing",
+            f"mismatch, {result['payloads_missing']} missing ({result['payloads_sent']} payloads "
+            f"sent, {result['payloads_distinct']} distinct; identical payloads are stored and "
+            "checked once)",
             f"Blocked by the egress guard: {result['blocked']}",
             f"Listed terms: {result['terms_checked']} checked, {result['terms_found']} found "
             "(verbatim search only)",
