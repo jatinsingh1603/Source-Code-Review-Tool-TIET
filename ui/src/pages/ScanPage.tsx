@@ -283,14 +283,19 @@ export default function ScanPage() {
                 ? `${fmtClock(elapsed)} elapsed${scan.eta_seconds ? ` · about ${Math.round(scan.eta_seconds)} s left` : ""}`
                 : finished
                   ? `Completed in ${fmtElapsed(scan.started_at, scan.finished_at)}`
-                  : status === "failed"
-                    ? "Failed"
-                    : "Cancelled"}
+                  : scan.finished_at && scan.started_at
+                    ? `Stopped after ${fmtElapsed(scan.started_at, scan.finished_at)}`
+                    : null}
             </span>
             {running && can("scans:run") && (
               <Button variant="danger" onClick={() => setConfirm(true)}>
                 Cancel scan
               </Button>
+            )}
+            {(status === "failed" || status === "cancelled") && can("scans:run") && (
+              <Link className="btn primary" to={rerunLink(scan)}>
+                Run again
+              </Link>
             )}
             {finished && (
               <>
@@ -325,7 +330,9 @@ export default function ScanPage() {
             <div className="row between">
               <h2>Pipeline</h2>
               <span className="sub">
-                Stage {Math.max(1, stageNo)} of 9 · {Math.round(progress)}%
+                {running || finished
+                  ? `Stage ${Math.max(1, stageNo)} of 9 · ${Math.round(progress)}%`
+                  : `Stopped at stage ${Math.min(9, stages.findIndex((x) => x.state === "stop") + 1 || stageNo + 1)} of 9`}
               </span>
             </div>
             <div className="bar" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label="Scan progress">
@@ -390,7 +397,11 @@ export default function ScanPage() {
               ) : privacyQ.isLoading ? (
                 <Skeleton />
               ) : (
-                <p className="sm muted">No egress summary for this scan.</p>
+                <p className="sm muted">
+                  {status === "cancelled" || status === "failed"
+                    ? "No egress summary: the scan stopped before the privacy step finished. The ledger lists anything that was recorded."
+                    : "No egress summary for this scan."}
+                </p>
               )
             ) : (
               <div className="kpi-strip boxed">
@@ -558,7 +569,7 @@ function LaunchSummary({
       <label className="swrow">
         <input type="checkbox" className="sw" checked={scan.send === false} readOnly disabled /> No-send (dry run)
       </label>
-      <Link className="more" to={`/projects/${scan.project_id}/scan`}>
+      <Link className="more" to={rerunLink(scan)}>
         Run again with changes <Icon name="arrow-right" />
       </Link>
     </form>
@@ -567,4 +578,12 @@ function LaunchSummary({
 
 function filesText(n: number): string {
   return `${fmtInt(n)} file${n === 1 ? "" : "s"}`;
+}
+
+/** The scan form for this scan's project, starting from the level, provider and model it ran with. */
+function rerunLink(scan: Scan): string {
+  const q = new URLSearchParams({ level: scan.privacy_level });
+  if (scan.provider && scan.provider !== "none") q.set("provider", scan.provider);
+  if (scan.model) q.set("model", scan.model);
+  return `/projects/${scan.project_id}/scan?${q.toString()}`;
 }

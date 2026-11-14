@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useCurrentProject } from "@/app/project-context";
 import { useProject, useProviders, useSettings, useStartScan, useTestProvider } from "@/api/queries";
 import { PRIVACY_LEVELS, type PrivacyLevel, type ProviderTestResult } from "@/api/types";
@@ -13,6 +13,8 @@ import { ENGINE_GROUPS, STAGES } from "@/lib/pipeline";
 /** Scan launch: the live view's left form, unlocked (SCREENS.md §07). */
 export default function ScanLaunchPage() {
   const { id } = useParams();
+  // "Run again" from a scan passes its level, provider and model, so the form starts from them.
+  const [params] = useSearchParams();
   const project = useProject(id);
   const { projects, setCurrentId } = useCurrentProject();
   const providers = useProviders();
@@ -38,12 +40,22 @@ export default function ScanLaunchPage() {
   useEffect(() => {
     if (ready || !list.length || settings.isLoading) return;
     const s = settings.data;
-    const def = list.find((p) => p.id === s?.default_provider) ?? list.find((p) => p.configured) ?? list[0]!;
+    const asked = list.find((p) => p.id === params.get("provider"));
+    const def = asked ?? list.find((p) => p.id === s?.default_provider) ?? list.find((p) => p.configured) ?? list[0]!;
     setProviderId(def.id);
-    setModel(s?.default_provider === def.id && s?.default_model ? s.default_model : def.default_model ?? def.models[0] ?? "");
-    if (s?.default_privacy_level) setLevel(s.default_privacy_level);
+    const askedModel = params.get("model");
+    setModel(
+      asked && askedModel && def.models.includes(askedModel)
+        ? askedModel
+        : s?.default_provider === def.id && s?.default_model
+          ? s.default_model
+          : def.default_model ?? def.models[0] ?? "",
+    );
+    const askedLevel = params.get("level") as PrivacyLevel | null;
+    if (askedLevel && PRIVACY_LEVELS.includes(askedLevel)) setLevel(askedLevel);
+    else if (s?.default_privacy_level) setLevel(s.default_privacy_level);
     setReady(true);
-  }, [list, settings.data, settings.isLoading, ready]);
+  }, [list, settings.data, settings.isLoading, ready, params]);
 
   useEffect(() => {
     if (project.data?.id) setCurrentId(project.data.id);
