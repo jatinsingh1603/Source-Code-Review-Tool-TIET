@@ -117,6 +117,14 @@ NO_EXTERNAL_ENGINES: Final = (
 EAGER_FORMATS: Final = ("html", "json", "sarif")
 
 
+# The cancellation reason the runner gives running scans when the server stops.
+SERVER_STOPPED: Final = "server_stopped"
+STOPPED_MESSAGE: Final = (
+    "The server was stopped while this scan was running, so the scan did not finish. "
+    "Start it again with Run again; anything already sent is listed in the egress ledger."
+)
+
+
 class ScanCancelled(Exception):  # noqa: N818 - a control-flow signal, not an error
     """The scan was cancelled by a user."""
 
@@ -370,6 +378,17 @@ def _finish(job: ScanJob, status: str, *, error: str | None = None) -> None:
     job.state.hub.log(job.scan_id).append("done", {"status": status, "error": error})
 
 
+def _cancelled(job: ScanJob, log: Any) -> None:
+    """End a cancelled scan: by the user, or by the server stopping (then it failed)."""
+    if job.token.reason == SERVER_STOPPED:
+        # Not the user's doing: say so, as a scan orphaned by a crash says it on restart.
+        log.append("log", {"level": "error", "message": STOPPED_MESSAGE})
+        _finish(job, "failed", error=STOPPED_MESSAGE)
+    else:
+        log.append("log", {"level": "warning", "message": "Scan cancelled by user"})
+        _finish(job, "cancelled")
+
+
 def execute_scan(job: ScanJob) -> None:
     """Run the scan ``job.scan_id`` end to end; every failure ends in a ``failed`` status."""
     state = job.state
@@ -424,8 +443,7 @@ def execute_scan(job: ScanJob) -> None:
         _finish(job, "completed")
         _log.info("server_scan_completed", scan_id=job.scan_id)
     except ScanCancelled:
-        log.append("log", {"level": "warning", "message": "Scan cancelled by user"})
-        _finish(job, "cancelled")
+        _cancelled(job, log)
     except IntakeError as error:
         log.append("log", {"level": "error", "message": f"{error.code}: {error.message}"})
         _finish(job, "failed", error=f"{error.code}: {error.message}")

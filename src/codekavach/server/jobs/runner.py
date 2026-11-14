@@ -18,7 +18,7 @@ from sqlalchemy import select
 from codekavach.core.log import get_logger
 from codekavach.core.pipeline.cancel import CancellationToken
 from codekavach.server.db.models import ScanRow, utcnow
-from codekavach.server.jobs.scan import ScanJob, execute_scan
+from codekavach.server.jobs.scan import SERVER_STOPPED, STOPPED_MESSAGE, ScanJob, execute_scan
 
 if TYPE_CHECKING:
     from codekavach.server.state import ServerState
@@ -63,20 +63,23 @@ class JobRunner:
                 self._tokens.pop(job.scan_id, None)
                 self._futures.pop(job.scan_id, None)
 
-    def cancel(self, scan_id: str) -> bool:
+    def cancel(self, scan_id: str, reason: str = "cancelled") -> bool:
         """Cancel a queued or running scan; False when it is not active in this process."""
         with self._lock:
             token = self._tokens.get(scan_id)
             future = self._futures.get(scan_id)
         if token is None:
             return False
-        token.cancel("cancelled")
+        token.cancel(reason)
         if future is not None and future.cancel():
+            stopped = reason == SERVER_STOPPED
+            status = "failed" if stopped else "cancelled"
+            error = STOPPED_MESSAGE if stopped else None
             with self._state.db.transaction() as session:
                 row = session.get(ScanRow, scan_id)
                 if row is not None:
-                    row.status, row.finished_at = "cancelled", utcnow()
-            self._state.hub.log(scan_id).append("done", {"status": "cancelled", "error": None})
+                    row.status, row.finished_at, row.error = status, utcnow(), error
+            self._state.hub.log(scan_id).append("done", {"status": status, "error": error})
         return True
 
     def active(self) -> list[str]:
@@ -118,7 +121,7 @@ class JobRunner:
         database connection after the caller has closed the database.
         """
         for scan_id in self.active():
-            self.cancel(scan_id)
+            self.cancel(scan_id, reason=SERVER_STOPPED)
         with self._lock:
             running = list(self._futures.values())
         self._pool.shutdown(wait=False, cancel_futures=True)

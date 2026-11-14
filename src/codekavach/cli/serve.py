@@ -11,11 +11,15 @@ imported only when the command runs, so ``codekavach --help`` does not load Fast
 """
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Final
 
 import typer
 
 from codekavach.cli.errors import UsageError
+
+# Seconds Ctrl+C waits for open connections (a dashboard's live scan log) before closing them;
+# the running scans are then cancelled and marked failed on the next start.
+GRACEFUL_SHUTDOWN_SECONDS: Final = 5
 
 
 def serve_command(  # noqa: PLR0917 - Typer maps each parameter to one option
@@ -85,4 +89,13 @@ def serve_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         ),
         err=True,
     )
-    uvicorn.run(app, host=host, port=port, log_level="info", proxy_headers=False)
+    # An open dashboard keeps a live-log stream open for as long as a scan runs; without a
+    # limit, Ctrl+C waited for the scan to finish (minutes) before stopping the server.
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_level="info",
+        proxy_headers=False,
+        timeout_graceful_shutdown=GRACEFUL_SHUTDOWN_SECONDS,
+    )

@@ -1,0 +1,1 @@
+Stopping `codekavach serve` with Ctrl+C while a scan runs and a dashboard is open now takes a few seconds instead of waiting for the scan to finish, and the scan ends as failed with "The server was stopped while this scan was running", not "cancelled by user".
