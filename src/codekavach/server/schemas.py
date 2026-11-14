@@ -6,9 +6,9 @@ Responses are plain JSON objects documented in ``docs/api.md``; request bodies a
 so a malformed request is refused with 422 and a ``validation_error`` code before a handler runs.
 """
 
-from typing import Final, Literal
+from typing import Annotated, Final, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 RoleName = Literal["admin", "auditor", "developer", "viewer"]
 LevelName = Literal["L0", "L1", "L2", "L3", "L4"]
@@ -80,7 +80,11 @@ class SettingsBody(BaseModel):
     default_provider: str | None = None
     default_model: str | None = None
     default_privacy_level: LevelName | None = None
-    org_name: str | None = Field(default=None, max_length=200)
+    # Trimmed; a blank name left the sidebar and the reports without an organisation.
+    org_name: (
+        Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+        | None
+    ) = None
     report_title: str | None = Field(default=None, max_length=200)
     classification: str | None = Field(default=None, max_length=64)
     send_by_default: bool | None = None

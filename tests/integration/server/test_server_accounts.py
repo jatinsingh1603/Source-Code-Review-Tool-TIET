@@ -92,3 +92,11 @@ def test_vault_key_origin_names_the_environment_variable(
         admin = _login(client, "admin", "kavach-admin")
         vault = client.get(f"{API}/vault", headers=admin).json()
     assert vault["key_source"] == "passphrase (environment variable)"
+
+
+def test_organisation_name_cannot_be_blank(server: tuple[TestClient, dict[str, str]]) -> None:
+    client, admin = server
+    assert client.put(f"{API}/settings", json={"org_name": "   "}, headers=admin).status_code == 422
+    saved = client.put(f"{API}/settings", json={"org_name": "  Thapar CSED  "}, headers=admin)
+    assert saved.status_code == 200, saved.text
+    assert client.get(f"{API}/settings", headers=admin).json()["org_name"] == "Thapar CSED"

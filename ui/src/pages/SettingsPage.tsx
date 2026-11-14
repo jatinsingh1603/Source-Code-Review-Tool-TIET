@@ -479,12 +479,16 @@ function OrgDefaults() {
       onSubmit={async (e) => {
         e.preventDefault();
         if (!form) return;
+        if (!(form.org_name ?? "").trim()) {
+          toast.error("Defaults were not saved", "Enter the organisation name; it appears in the sidebar and on every report.");
+          return;
+        }
         try {
           await save.mutateAsync({
             default_provider: form.default_provider,
             default_model: form.default_model,
             default_privacy_level: form.default_privacy_level,
-            org_name: form.org_name,
+            org_name: (form.org_name ?? "").trim(),
           });
           toast.success("Organisation defaults saved");
         } catch (err) {
