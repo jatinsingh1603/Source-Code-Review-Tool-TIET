@@ -21,7 +21,7 @@
         "symbol": null
       }
     ],
-    "message": "Starting a process with a shell, possible injection detected, security issue.",
+    "message": "A process is started through a shell.",
     "properties": [
       [
         "cwe.source",

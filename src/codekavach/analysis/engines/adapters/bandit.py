@@ -9,6 +9,9 @@ formatter because that formatter is a separate optional package.
 * ``--ignore-nosec`` keeps findings a repository silenced with ``# nosec``; suppression is decided
   later (E21), not by the scanned code.
 * The report's ``code`` snippet is not read.
+* Bandit's own messages read as linter output ("subprocess call with shell=True identified,
+  security issue."). The tests seen in practice get a plain sentence as the finding title
+  (``TITLES``); any other message keeps Bandit's wording with a capital first letter.
 * The three hard-coded password tests (B105 to B107) quote the value in their message. The adapter
   replaces that message with the rule's description and marks the candidate as a secret, so the
   value does not reach a candidate.
@@ -47,7 +50,22 @@ OUTPUT_FILE: Final = "bandit.json"
 MAX_REPORT_BYTES: Final = 64 * 1024 * 1024
 INSTALL_HINT: Final = "pipx install bandit  (or: pip install bandit)"
 PASSWORD_TESTS: Final = frozenset({"B105", "B106", "B107"})
-PASSWORD_DESCRIPTION: Final = "Possible hardcoded password"  # noqa: S105 - a fixed phrase
+PASSWORD_DESCRIPTION: Final = "Possible hard-coded password."  # noqa: S105 - a fixed phrase
+TITLES: Final[dict[str, str]] = {
+    "B104": "The server binds to all network interfaces.",
+    "B201": "A Flask application runs with debug mode on.",
+    "B301": "Data is deserialised with pickle, which can run arbitrary code.",
+    "B303": "MD5 or SHA-1 is used as a hash.",
+    "B324": "MD5 or SHA-1 is used as a hash for a security purpose.",
+    "B403": "The pickle module is imported; check that it never loads untrusted data.",
+    "B404": "The subprocess module is imported; check how its commands are built.",
+    "B413": "The unmaintained pyCrypto library is imported; use pyca/cryptography instead.",
+    "B501": "TLS certificate verification is turned off for a request.",
+    "B506": "YAML is loaded without a safe loader, which can construct arbitrary objects.",
+    "B602": "A subprocess call runs its command through a shell (shell=True).",
+    "B605": "A process is started through a shell.",
+    "B608": "An SQL query is built from strings, a possible SQL injection.",
+}
 # B401-B415 flag an import (subprocess, pickle, pyCrypto ...), not a use of it: a place to look
 # at, so they are hotspots and keep Bandit's own severity instead of the weakness family's.
 IMPORT_TESTS: Final = frozenset(f"B4{n:02d}" for n in range(1, 16))
@@ -70,6 +88,13 @@ SPEC: Final = EngineSpec(
     weight=1,
 )
 _log = get_logger(__name__)
+
+
+def _title(test_id: str, text: str) -> str:
+    """A finding title in plain words: the curated sentence, else Bandit's text capitalised."""
+    if test_id in TITLES:
+        return TITLES[test_id]
+    return text[:1].upper() + text[1:]
 
 
 def report_to_sarif(report: object) -> bytes:
@@ -100,7 +125,7 @@ def report_to_sarif(report: object) -> bytes:
             {
                 "ruleId": test_id,
                 "level": _LEVELS.get(str(item.get("issue_severity", "")).upper(), "warning"),
-                "message": {"text": str(item.get("issue_text", ""))},
+                "message": {"text": _title(test_id, str(item.get("issue_text", "")))},
                 "locations": [
                     {
                         "physicalLocation": {

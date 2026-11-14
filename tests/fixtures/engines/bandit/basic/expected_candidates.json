@@ -21,7 +21,7 @@
         "symbol": null
       }
     ],
-    "message": "Consider possible security implications associated with the subprocess module.",
+    "message": "The subprocess module is imported; check how its commands are built.",
     "properties": [
       [
         "cwe.source",
@@ -58,7 +58,7 @@
         "symbol": null
       }
     ],
-    "message": "Possible hardcoded password",
+    "message": "Possible hard-coded password.",
     "properties": [
       [
         "cwe.source",
@@ -95,7 +95,7 @@
         "symbol": null
       }
     ],
-    "message": "Possible SQL injection vector through string-based query construction.",
+    "message": "An SQL query is built from strings, a possible SQL injection.",
     "properties": [
       [
         "cwe.source",
@@ -132,7 +132,7 @@
         "symbol": null
       }
     ],
-    "message": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+    "message": "MD5 or SHA-1 is used as a hash for a security purpose.",
     "properties": [
       [
         "cwe.source",
@@ -169,7 +169,7 @@
         "symbol": null
       }
     ],
-    "message": "subprocess call with shell=True identified, security issue.",
+    "message": "A subprocess call runs its command through a shell (shell=True).",
     "properties": [
       [
         "cwe.source",

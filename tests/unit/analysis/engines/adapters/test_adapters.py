@@ -341,6 +341,34 @@ def test_bandit_password_text_is_replaced_before_it_reaches_a_candidate() -> Non
     assert run["tool"]["driver"]["rules"][0]["properties"] == {"tags": ["secret"]}
 
 
+@pytest.mark.parametrize(
+    ("test_id", "text", "title"),
+    [
+        (
+            "B602",
+            "subprocess call with shell=True identified, security issue.",
+            "A subprocess call runs its command through a shell (shell=True).",
+        ),
+        ("B999", "some new check, security issue.", "Some new check, security issue."),
+    ],
+)
+def test_bandit_messages_become_titles_in_plain_words(test_id: str, text: str, title: str) -> None:
+    report = {
+        "results": [
+            {
+                "test_id": test_id,
+                "filename": "a.py",
+                "line_number": 1,
+                "issue_severity": "HIGH",
+                "issue_confidence": "HIGH",
+                "issue_text": text,
+            }
+        ]
+    }
+    run = json.loads(report_to_sarif(report))["runs"][0]
+    assert run["results"][0]["message"]["text"] == title
+
+
 def test_the_bandit_invocation_ignores_nosec_and_exits_zero(tmp_path: Path) -> None:
     found = BanditAdapter().build_invocation(tmp_path, FILES, Settings())
     assert found is not None
