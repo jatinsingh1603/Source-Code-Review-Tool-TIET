@@ -130,6 +130,18 @@ const SORTERS: Record<SortKey, (a: Finding, b: Finding) => number> = {
   confidence: (a, b) => (shownConfidence(a) ?? -1) - (shownConfidence(b) ?? -1),
 };
 
+/** Headers whose rows can lack a value; those rows sort last whichever way the column runs. */
+const BLANK: Partial<Record<SortKey, (f: Finding) => boolean>> = {
+  cvss: (f) => f.cvss4_score == null,
+  confidence: (f) => shownConfidence(f) === null,
+};
+
+function parseSort(raw: string | null): { key: SortKey; dir: 1 | -1 } | null {
+  if (!raw) return null;
+  const key = raw.replace(/^-/, "");
+  return Object.hasOwn(SORTERS, key) ? { key: key as SortKey, dir: raw.startsWith("-") ? -1 : 1 } : null;
+}
+
 /** The confidence the Conf. column shows: the model's when it reviewed the finding, else the engine's. */
 function shownConfidence(f: Finding): number | null {
   return confidenceFraction(f.llm?.confidence ?? f.llm_confidence ?? f.confidence);
@@ -158,7 +170,6 @@ export default function FindingsPage() {
   const [q, setQ] = useState(params.get("q") ?? "");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dialog, setDialog] = useState<null | "assign" | "suppress" | "sync" | "save">(null);
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 } | null>(null);
   const viewsQ = useQuery({ queryKey: ["views"], queryFn: () => endpoints.views(), retry: false, staleTime: 60_000 });
   const saved = useMemo(() => savedViews(viewsQ.data), [viewsQ.data]);
   const [busy, setBusy] = useState(false);
@@ -167,6 +178,8 @@ export default function FindingsPage() {
   const savedView = rawView.startsWith(SAVED) ? saved.find((v) => SAVED + v.id === rawView) : undefined;
   const view = (rawView.startsWith(SAVED) ? "all" : rawView) as View;
   const page = Math.max(1, Number(params.get("page") ?? 1) || 1);
+  // The sort lives in the URL ("-confidence" = highest first), so Back to page 2 shows the same rows.
+  const sort = parseSort(params.get("sort"));
   const list = (k: ListKey) => (params.get(k) ?? "").split(",").filter(Boolean);
   const setParam = (k: string, v: string | null) => {
     const n = new URLSearchParams(params);
@@ -256,7 +269,9 @@ export default function FindingsPage() {
   });
   if (sort) {
     const cmp = SORTERS[sort.key];
-    filtered.sort((a, b) => sort.dir * cmp(a, b) || bySeverity(a, b));
+    const blank = (f: Finding) => (BLANK[sort.key]?.(f) ? 1 : 0);
+    // Rows without a value (no CVSS, no confidence) stay at the end in both directions.
+    filtered.sort((a, b) => blank(a) - blank(b) || sort.dir * cmp(a, b) || bySeverity(a, b));
   }
   const sortTh = (key: SortKey, label: string, className?: string) => (
     <th
@@ -271,8 +286,9 @@ export default function FindingsPage() {
         onClick={() => {
           // Text sorts A to Z first, figures highest first; the third click restores the default.
           const first: 1 | -1 = key === "location" ? 1 : -1;
-          setSort((s) => (s?.key !== key ? { key, dir: first } : s.dir === first ? { key, dir: -first as 1 | -1 } : null));
-          if (page > 1) setParam("page", null);
+          const next = sort?.key !== key ? first : sort.dir === first ? -first : null;
+          // setParam drops the page: a new order starts on page 1.
+          setParam("sort", next === null ? null : `${next === -1 ? "-" : ""}${key}`);
         }}
       >
         {label}
