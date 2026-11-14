@@ -889,6 +889,10 @@ def _manifest(
                 _log.warning("manifest_format_skipped", format=fmt, error_type=type(error).__name__)
                 continue
         files.append(target)
+    existing = paths.reports / MANIFEST
+    if _manifest_current(existing, files, changed):
+        # Same files, same bytes: the auditor's earlier download keeps matching its hash.
+        return existing
     try:
         return render_manifest(scan_json=paths.scan_json, state_dir=paths.state_dir,
                                findings=findings, settings=settings, out_dir=paths.reports,
@@ -896,6 +900,18 @@ def _manifest(
     except Exception as error:  # noqa: BLE001 - reported as an API error, not a 500
         raise ApiError(503, "report_failed", "the integrity manifest could not be written",
                        hint=type(error).__name__) from None  # fmt: skip
+
+
+def _manifest_current(manifest: Path, files: list[Path], changed: Any) -> bool:
+    """Whether ``manifest`` lists exactly ``files`` and is newer than each and the triage."""
+    if not manifest.is_file() or not is_fresh(manifest, changed):
+        return False
+    try:
+        listed = {item["file"] for item in json.loads(manifest.read_text("utf-8"))["files"]}
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    written = manifest.stat().st_mtime
+    return listed == {f.name for f in files} and all(f.stat().st_mtime <= written for f in files)
 
 
 def _report_response(

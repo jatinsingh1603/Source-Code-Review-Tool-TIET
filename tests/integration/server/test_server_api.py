@@ -405,6 +405,18 @@ def test_compliance_annex_never_replaces_the_html_report(
         assert entry["sha256"] == hashlib.sha256(manifest.content).hexdigest()
 
 
+def test_manifest_is_stable_while_the_reports_do_not_change(
+    server: tuple[TestClient, Any], scan: dict[str, Any], users: dict[str, dict[str, str]]
+) -> None:
+    client = server[0]
+    url = f"/api/v1/scans/{scan['id']}/reports/manifest"
+    first = client.get(url, headers=users["auditor"])
+    if first.status_code != 200:
+        pytest.skip("a report format cannot render here")
+    second = client.get(url, headers=users["auditor"])
+    assert second.content == first.content
+
+
 def test_delta_report_compares_two_scans_of_a_project(
     server: tuple[TestClient, Any],
     scan: dict[str, Any],
