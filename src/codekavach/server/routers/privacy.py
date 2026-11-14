@@ -284,9 +284,11 @@ def budgets(state: StateDep, session: SessionDep, scan_id: str | None = None) ->
          "source": "privacy.egress.lifetime_budget_pct",
          "note": "Not tracked by the dashboard: each scan is accounted on its own. The "
          "command line keeps a running account per project."},
-        {"id": "payload_bytes", "label": "Largest request body", "unit": "bytes",
+        {"id": "payload_bytes", "label": "Largest payload (code slice)", "unit": "bytes",
          "limit": egress.max_payload_bytes, "used": _largest_payload(state, scan),
-         "source": "privacy.egress.max_payload_bytes"},
+         "source": "privacy.egress.max_payload_bytes",
+         "note": "The limit applies to the whole request body, which also carries the fixed "
+         "review prompt; the egress guard checks it before anything is sent."},
         {"id": "requests", "label": "LLM requests per scan", "unit": "requests",
          "limit": limits.max_requests, "used": summary_requests,
          "source": "llm.budget.max_requests"},

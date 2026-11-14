@@ -524,7 +524,10 @@ def scan_ledger(
         "total": total,
         "offset": start,
         "limit": size,
-        "bytes_total": sum(int(entry.get("bytes") or 0) for entry in entries),
+        # A response record names its request's payload; count each payload once.
+        "bytes_total": sum(
+            int(entry.get("bytes") or 0) for entry in entries if entry.get("ref_seq") is None
+        ),
         "entries": page,
     }
 
@@ -739,6 +742,8 @@ def download_attestation(
     records = results.records()
     levels: dict[str, int] = {}
     for record in records:
+        if record.ref_seq is not None:
+            continue  # a response record, not another request at that level
         levels[str(record.level.value)] = levels.get(str(record.level.value), 0) + 1
     privacy_extras(state, row)
     stored = row.privacy or {}
