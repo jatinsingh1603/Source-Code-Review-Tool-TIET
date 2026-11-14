@@ -117,6 +117,19 @@ const VERDICT_NAMES: Record<string, string> = {
   none: "Not sent to a model",
 };
 
+type SortKey = "severity" | "cvss" | "location" | "confidence";
+/** Ascending comparators for the sortable headers of the findings table. */
+const SORTERS: Record<SortKey, (a: Finding, b: Finding) => number> = {
+  severity: (a, b) => -bySeverity(a, b),
+  cvss: (a, b) => (a.cvss4_score ?? -1) - (b.cvss4_score ?? -1),
+  location: (a, b) => {
+    const la = locationOf(a);
+    const lb = locationOf(b);
+    return (la?.path ?? "").localeCompare(lb?.path ?? "") || (la?.line ?? 0) - (lb?.line ?? 0);
+  },
+  confidence: (a, b) => (confidenceFraction(a.confidence) ?? -1) - (confidenceFraction(b.confidence) ?? -1),
+};
+
 export default function FindingsPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
@@ -137,6 +150,7 @@ export default function FindingsPage() {
   const [q, setQ] = useState(params.get("q") ?? "");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dialog, setDialog] = useState<null | "assign" | "suppress" | "sync" | "save">(null);
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 } | null>(null);
   const viewsQ = useQuery({ queryKey: ["views"], queryFn: () => endpoints.views(), retry: false, staleTime: 60_000 });
   const saved = useMemo(() => savedViews(viewsQ.data), [viewsQ.data]);
   const [busy, setBusy] = useState(false);
@@ -231,6 +245,32 @@ export default function FindingsPage() {
     if (imp && riskLevel(f.impact) !== imp) return false;
     return true;
   });
+  if (sort) {
+    const cmp = SORTERS[sort.key];
+    filtered.sort((a, b) => sort.dir * cmp(a, b) || bySeverity(a, b));
+  }
+  const sortTh = (key: SortKey, label: string, className?: string) => (
+    <th
+      className={className}
+      aria-sort={sort?.key === key ? (sort.dir === 1 ? "ascending" : "descending") : undefined}
+    >
+      <button
+        type="button"
+        className="linkbtn"
+        style={{ color: "inherit", fontWeight: "inherit", fontSize: "inherit" }}
+        title={`Sort by ${label.toLowerCase()}`}
+        onClick={() => {
+          // Text sorts A to Z first, figures highest first; the third click restores the default.
+          const first: 1 | -1 = key === "location" ? 1 : -1;
+          setSort((s) => (s?.key !== key ? { key, dir: first } : s.dir === first ? { key, dir: -first as 1 | -1 } : null));
+          if (page > 1) setParam("page", null);
+        }}
+      >
+        {label}
+        {sort?.key === key ? (sort.dir === 1 ? " ↑" : " ↓") : ""}
+      </button>
+    </th>
+  );
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
   const pg = Math.min(page, pages);
   const rows = filtered.slice((pg - 1) * PAGE, pg * PAGE);
@@ -501,15 +541,15 @@ export default function FindingsPage() {
                     />
                   </th>
                 )}
-                <th>Severity</th>
+                {sortTh("severity", "Severity")}
                 <th>Finding</th>
                 <th>CWE</th>
                 <th>OWASP</th>
-                <th>CVSS 4.0</th>
-                <th>Location</th>
+                {sortTh("cvss", "CVSS 4.0")}
+                {sortTh("location", "Location")}
                 <th>Engines</th>
                 <th>LLM verdict</th>
-                <th className="num">Conf.</th>
+                {sortTh("confidence", "Conf.", "num")}
                 <th>Status</th>
                 <th>Assignee</th>
               </tr>
