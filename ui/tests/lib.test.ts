@@ -6,7 +6,7 @@ import { atLeastAsStrict, confidenceFraction, fmtRemediation, LEVELS_BY_STRICTNE
 import { egressSummary } from "@/lib/egress";
 import { suggestName, validateGitUrl } from "@/lib/validate";
 import { permissionsFor } from "@/lib/permissions";
-import { auditTarget, fmtDate, fmtLong, languageLabel, setDisplayPrefs } from "@/lib/display";
+import { auditTarget, fmtDate, fmtDayMonth, fmtLong, languageLabel, setDisplayPrefs } from "@/lib/display";
 import { pathRulesOf } from "@/lib/policy";
 import { ApiError } from "@/api/client";
 import { errorText } from "@/components/ui/Feedback";
@@ -176,6 +176,10 @@ describe("display preferences", () => {
       setDisplayPrefs("UTC", true);
       expect(fmtDate(at)).toBe("2026-11-14");
       expect(fmtLong(at)).toMatch(/^2026-11-14 11:46/);
+      expect(fmtDayMonth(at)).toBe("11-14");
+      setDisplayPrefs("Australia/Sydney", true);
+      // 13:15 UTC is a quarter past midnight the next day in Sydney
+      expect(fmtDayMonth("2026-11-14T13:15:00Z")).toBe("11-15");
     } finally {
       setDisplayPrefs("Asia/Kolkata", false);
     }
@@ -197,6 +201,8 @@ describe("auditTarget", () => {
     expect(auditTarget("scn_59a7a66d9c42b21d5fc7#1")).toBe("SCN-59A7A6 #1");
     expect(auditTarget("scn_38e61cad98c75c52f8ab.pdf")).toBe("SCN-38E61C.pdf");
     expect(auditTarget("prj_kavachbank_sample")).toBe("prj_kavachbank_sample");
+    // a finding reads as on the findings page
+    expect(auditTarget("find_01M7D2E2DZ6SJMS4ZE5NCNRKQX")).toBe("F-CNRKQX");
     expect(auditTarget(null)).toBe("—");
   });
 });

@@ -120,10 +120,11 @@ export function fmtShort(iso?: string | null, tz: string = TZ): string {
   return `${p.day} ${p.month}, ${p.hour}:${p.minute}`;
 }
 
-/** "12 Nov" */
+/** "12 Nov", or "11-12" when the reader chose ISO dates */
 export function fmtDayMonth(iso?: string | null, tz: string = TZ): string {
   const d = parse(iso);
   if (!d) return "—";
+  if (ISO_DATES) return isoDay(d, tz).slice(5);
   const p = parts(d, tz);
   return `${p.day} ${p.month}`;
 }
@@ -208,10 +209,13 @@ export function scanLabel(id?: string | null): string {
   return id;
 }
 
-/** An audit target with its scan ids in display form: `scn_59a7…#1` → "SCN-59A7A6 #1". */
+/** An audit target with its scan and finding ids in display form: `scn_59a7…#1` → "SCN-59A7A6 #1". */
 export function auditTarget(resource?: string | null): string {
   if (!resource) return "—";
-  return resource.replace(/scn_[0-9a-z]+/gi, (id) => scanLabel(id)).replace(/(SCN-[0-9A-Z]{6})#/g, "$1 #");
+  return resource
+    .replace(/scn_[0-9a-z]+/gi, (id) => scanLabel(id))
+    .replace(/(SCN-[0-9A-Z]{6})#/g, "$1 #")
+    .replace(/find_[0-9A-Z]+/gi, (id) => findingLabel(id));
 }
 
 /** Display form of a finding id: `find_01M78…5TCC` → "KF-…5TCC" style short id. */
