@@ -24,8 +24,8 @@ export default function HowItWorksPage() {
           </div>
           <h1>How CodeKavach works</h1>
           <p className="muted" style={{ marginTop: 4, maxWidth: 760 }}>
-            Heavy analysis stays on your machine. Only a minimal, sanitised slice crosses the boundary, every outbound byte is
-            written to the egress ledger, and verdicts are mapped back using a vault that never leaves.
+            Heavy analysis stays on your machine. Only a minimal, sanitised slice crosses the boundary, every outbound request is
+            checked by the egress guard and its payload recorded in the egress ledger, and verdicts are mapped back using a vault that never leaves.
           </p>
         </div>
         <ButtonLink variant="primary" to="/demo" icon={<Icon name="play" />}>
@@ -103,7 +103,7 @@ export default function HowItWorksPage() {
                 04 · OUTBOUND
               </div>
               <div style={{ fontWeight: 650 }}>Privacy layer</div>
-              <div className="xs muted">redact → slice → pseudonymise → leak check → ledger</div>
+              <div className="xs muted">slice → redact → pseudonymise → leak check → ledger</div>
             </div>
             <div className="xs" style={{ color: "var(--priv)", fontWeight: 600, letterSpacing: "0.06em" }}>
               THE ARMOUR
@@ -150,8 +150,8 @@ export default function HowItWorksPage() {
         <div className="card stack">
           <h2>What crosses the boundary</h2>
           <p className="sub">
-            At the default L3: the minimal vulnerability-relevant slice, with secrets and PII redacted and identifiers, strings and
-            comments pseudonymised. No whole files.
+            At the default L3: the minimal vulnerability-relevant slice, with secrets and PII redacted, identifiers pseudonymised, and the
+            words in strings and comments replaced by filler. No whole files.
           </p>
           <Link className="btn sm" to="/privacy/inspect" style={{ alignSelf: "flex-start" }}>
             Open Privacy Inspect
