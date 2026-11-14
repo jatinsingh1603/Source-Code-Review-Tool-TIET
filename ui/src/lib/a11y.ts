@@ -7,7 +7,12 @@ const MARK = "data-kb-scroll";
 
 function pageTitle(): string {
   const h1 = document.querySelector("main h1");
-  const text = h1?.textContent?.replace(/\s+/g, " ").trim();
+  // Join the h1's parts with spaces: "Scan SCN-1341F1" + a "Running" badge.
+  const text = Array.from(h1?.childNodes ?? [])
+    .map((n) => n.textContent?.trim() ?? "")
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ");
   return text ? `${text} · ${APP}` : APP;
 }
 

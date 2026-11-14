@@ -121,9 +121,11 @@ export default function ScanLaunchPage() {
             </select>
           </div>
           <div className="fld">
-            <span className="lbl">Mode</span>
-            <div className="seg">
-              <button className="on" type="button">
+            <span className="lbl" id="sc-mode">
+              Mode
+            </span>
+            <div className="seg" role="group" aria-labelledby="sc-mode">
+              <button className="on" type="button" aria-pressed="true">
                 Branch
               </button>
               <button type="button" disabled title="Diff scans need server support for a base ref.">

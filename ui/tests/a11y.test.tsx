@@ -11,7 +11,10 @@ function Shell({ path, title }: { path: string; title: string }) {
         <a href="/x">Findings</a>
       </nav>
       <main id="main" tabIndex={-1}>
-        <h1>{title}</h1>
+        <h1>
+          {title}
+          <span className="badge">Running</span>
+        </h1>
       </main>
     </>
   );
@@ -20,7 +23,7 @@ function Shell({ path, title }: { path: string; title: string }) {
 describe("useA11yShell", () => {
   it("titles the document after the page's h1", async () => {
     render(<Shell path="/" title="Overview" />);
-    await waitFor(() => expect(document.title).toBe("Overview · CodeKavach"));
+    await waitFor(() => expect(document.title).toBe("Overview Running · CodeKavach"));
   });
 
   it("moves focus to main after a route change, not on first load", async () => {
@@ -37,6 +40,6 @@ describe("useA11yShell", () => {
     expect(document.activeElement).toBe(link);
     act(() => go("/findings"));
     await waitFor(() => expect(document.activeElement?.id).toBe("main"));
-    await waitFor(() => expect(document.title).toBe("Findings · CodeKavach"));
+    await waitFor(() => expect(document.title).toBe("Findings Running · CodeKavach"));
   });
 });
