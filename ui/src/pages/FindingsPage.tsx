@@ -730,7 +730,10 @@ export default function FindingsPage() {
         onClose={() => setDialog(null)}
         users={users?.map((u) => ({ id: u.username, name: u.display_name || u.username })) ?? []}
         busy={busy}
-        onAssign={(a) => void patchAll({ assignee: a }, `assigned to ${a}`)}
+        onAssign={(a) => {
+          const name = users?.find((u) => u.username === a)?.display_name || a;
+          void patchAll({ assignee: a }, `assigned to ${name}`);
+        }}
       />
       <SuppressDialog
         open={dialog === "suppress"}
