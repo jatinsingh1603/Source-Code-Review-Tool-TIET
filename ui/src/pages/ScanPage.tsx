@@ -316,7 +316,7 @@ export default function ScanPage() {
           scan={scan}
           projectName={project?.name ?? scan.project_name}
           providers={providers}
-          source={scan.ref ?? project?.source.ref ?? (project?.source as { upload_name?: string } | undefined)?.upload_name ?? project?.source.path ?? project?.source.type}
+          source={scan.ref ?? project?.source.ref ?? (project?.source as { upload_name?: string } | undefined)?.upload_name ?? project?.source.path ?? project?.source.url ?? project?.source.type}
         />
 
         <div className="stack s16">

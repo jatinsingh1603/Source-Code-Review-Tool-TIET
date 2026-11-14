@@ -601,6 +601,10 @@ export default function FindingsPage() {
                   setParams(new URLSearchParams(params.get("scan") ? { scan: params.get("scan")! } : {}), { replace: true });
                 }}
               />
+            ) : all.length === 0 ? (
+              <Empty title="This scan reported no findings">
+                No engine flagged anything in the files it read. The scan page shows how many files that was.
+              </Empty>
             ) : (
               <Empty title="No findings in this view">Pick another view above.</Empty>
             )

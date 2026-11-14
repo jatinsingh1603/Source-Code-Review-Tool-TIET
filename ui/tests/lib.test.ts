@@ -4,7 +4,7 @@ import { applyFiltersToParams, filtersFromParams, toggleListValue } from "@/lib/
 import { cvssRating, parseVector } from "@/lib/cvss";
 import { atLeastAsStrict, confidenceFraction, LEVELS_BY_STRICTNESS } from "@/lib/format";
 import { egressSummary } from "@/lib/egress";
-import { validateGitUrl } from "@/lib/validate";
+import { suggestName, validateGitUrl } from "@/lib/validate";
 import { permissionsFor } from "@/lib/permissions";
 import { languageLabel } from "@/lib/display";
 import { pathRulesOf } from "@/lib/policy";
@@ -132,5 +132,16 @@ describe("pathRulesOf", () => {
     ]);
     expect(pathRulesOf(toml + '\n[[language]]\nlanguage = "sql"\nlevel = "L4"\n')).toBeNull();
     expect(pathRulesOf('[privacy]\nlevel = "L3"\n')).toBeNull();
+  });
+});
+
+describe("suggestName", () => {
+  it("takes the folder, repository or archive name", () => {
+    expect(suggestName("path", "fixtures/polyglot/", "", null)).toBe("polyglot");
+    expect(suggestName("git", "", "https://github.com/octocat/Hello-World.git", null)).toBe("Hello-World");
+    expect(suggestName("git", "", "git@github.com:org/repo.git", null)).toBe("repo");
+    expect(suggestName("upload", "", "", new File(["x"], "demo-shopfront.zip"))).toBe("demo-shopfront");
+    expect(suggestName("path", "", "", null)).toBe("");
+    expect(validateGitUrl("github.com/octocat/Hello-World")).toMatch(/^Add https:\/\//);
   });
 });

@@ -10,7 +10,7 @@ import { atLeastAsStrict } from "@/lib/format";
 import { fmtInt, languageLabel, LEVEL_BARS, LEVEL_NAME } from "@/lib/display";
 import { ENGINE_GROUPS } from "@/lib/pipeline";
 import { policyDoc } from "@/lib/policy";
-import { validateGitUrl } from "@/lib/validate";
+import { suggestName, validateGitUrl } from "@/lib/validate";
 import { Button, Content, ErrorBanner, Icon, useToast } from "@/components/ui";
 
 const STEPS = ["Connect repository", "Detect inventory", "Privacy level", "Provider", "Consent and launch"];
@@ -21,7 +21,7 @@ const LEVEL_CARDS: { l: PrivacyLevel; title: string; sub: string }[] = [
   { l: "L1", title: "Redacted", sub: "Code with secrets and PII redacted." },
   { l: "L2", title: "Pseudonymised", sub: "L1, plus identifiers, strings and comments renamed." },
   { l: "L3", title: "Minimal slice", sub: "L2, but only the vulnerability-relevant slice." },
-  { l: "L4", title: "Facts only", sub: "No code. Abstract data-flow facts and questions." },
+  { l: "L4", title: "Facts only", sub: "No code. Not prepared in this build: fails closed, nothing is sent." },
 ];
 
 const LEAVES: Record<PrivacyLevel, [string, string]> = {
@@ -29,7 +29,10 @@ const LEAVES: Record<PrivacyLevel, [string, string]> = {
   L1: ["Source files with secrets and PII replaced by typed placeholders.\nReal identifiers, strings and comments.", "Secret values and PII.\nVault and ledger."],
   L2: ["Source files with identifiers, strings and comments pseudonymised.\nControl flow and literal shapes.", "Secrets, PII, real names and business terms.\nVault mapping pseudonyms back."],
   L3: ["Only the lines on the source-to-sink slice, pseudonymised.\nControl flow and public API names in that slice.", "Whole files, secrets, PII, real names and business terms.\nEverything outside the slice."],
-  L4: ["Abstract data-flow facts and questions. No code.", "All source code, names and literals.\nVault and ledger."],
+  L4: [
+    "Designed to send abstract data-flow facts only, never code. This build does not prepare L4 facts yet, so L4 fails closed: every candidate is withheld and nothing is sent.",
+    "All source code, names and literals.\nVault and ledger.",
+  ],
 };
 
 const FULL = new Set(["python", "javascript", "typescript"]);
@@ -56,7 +59,8 @@ export default function OnboardingPage() {
   const setStep = (n: number) => {
     const p = new URLSearchParams(params);
     p.set("step", String(n));
-    setParams(p, { replace: true });
+    // A new history entry per step, so the browser's Back returns to the previous step.
+    setParams(p);
   };
   const navigate = useNavigate();
   const toast = useToast();
@@ -95,11 +99,13 @@ export default function OnboardingPage() {
   const belowFloor = !!provider?.min_level && level !== "L0" && !atLeastAsStrict(level, provider.min_level);
   const doc = policyDoc(policy);
 
+  /** The name used when the field is left empty: the folder, repository or archive name. */
+  const suggestedName = suggestName(type, path, url, file);
+
   /** Step 1 → 2 creates the project (and uploads the archive). */
   const connect = async () => {
     setErr(null);
-    const finalName = name.trim() || (type === "sample" ? "KavachBank sample" : "");
-    if (!finalName) return setErr("Give the project a name.");
+    // Check the source first: it is what a newcomer fills in, and the name can be derived from it.
     if (type === "git") {
       const g = validateGitUrl(url);
       if (g) return setErr(g);
@@ -110,6 +116,8 @@ export default function OnboardingPage() {
       if (file.size > MAX_UPLOAD_MB * 1024 * 1024) return setErr(`The limit is ${MAX_UPLOAD_MB} MB.`);
       if (!/\.(zip|tar|tar\.gz|tgz)$/i.test(file.name)) return setErr("Use a .zip, .tar or .tar.gz archive.");
     }
+    const finalName = name.trim() || suggestedName;
+    if (!finalName) return setErr("Give the project a name.");
     try {
       const p: Project = await create.mutateAsync({
         name: finalName,
@@ -154,6 +162,13 @@ export default function OnboardingPage() {
   };
 
   const canLaunch = !!projectId && (consent || level === "L0" || dryRun) && !belowFloor && (level === "L0" || !!provider?.configured);
+  const launchBlocker = !projectId
+    ? "Connect a repository first"
+    : belowFloor
+      ? `${provider?.name} needs ${provider?.min_level} or stricter`
+      : level !== "L0" && !provider?.configured
+        ? "Choose a provider that is configured"
+        : "Tick the consent box, or turn on No-send";
   const next = () => {
     if (step === 1 && !projectId) return void connect();
     setStep(step + 1);
@@ -183,7 +198,8 @@ export default function OnboardingPage() {
             type="button"
             className={`step ${i + 1 < step ? "done" : i + 1 === step ? "on" : ""}`}
             aria-current={i + 1 === step ? "step" : undefined}
-            disabled={i === 1 && !projectId}
+            disabled={i > 0 && !projectId}
+            title={i > 0 && !projectId ? "Connect a repository first" : undefined}
             onClick={() => setStep(i + 1)}
           >
             <span className="sc">{i + 1}</span>
@@ -285,7 +301,7 @@ export default function OnboardingPage() {
                     id="ob-name"
                     className="inp"
                     value={name}
-                    placeholder={type === "sample" ? "KavachBank sample" : "kavachbank-core"}
+                    placeholder={suggestedName || "my-service"}
                     onChange={(e) => setName(e.target.value)}
                   />
                 </div>
@@ -513,14 +529,20 @@ export default function OnboardingPage() {
         </Button>
         <div className="row">
           <Link className="btn" to={projectId ? `/projects/${projectId}` : "/projects"}>
-            Save and exit
+            {projectId ? "Save and exit" : "Cancel"}
           </Link>
           {step < 5 ? (
             <Button variant="primary" onClick={next} loading={create.isPending || progress !== null}>
               Continue
             </Button>
           ) : (
-            <Button variant="primary" onClick={() => void launch()} disabled={!canLaunch} loading={start.isPending}>
+            <Button
+              variant="primary"
+              onClick={() => void launch()}
+              disabled={!canLaunch}
+              loading={start.isPending}
+              title={canLaunch ? undefined : launchBlocker}
+            >
               Launch scan
             </Button>
           )}
