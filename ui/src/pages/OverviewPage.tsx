@@ -185,7 +185,7 @@ export default function OverviewPage() {
       </section>
 
       <section className="g g-side">
-        <TrendCard trend={trend} loading={!stats} />
+        <TrendCard trend={trend} loading={loading || !stats} />
         <RiskMatrix findings={open} loading={loading || findingsQ.isLoading} />
       </section>
 

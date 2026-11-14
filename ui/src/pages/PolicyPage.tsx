@@ -49,7 +49,7 @@ export default function PolicyPage() {
   const save = useSavePolicy();
   const toast = useToast();
   const { can } = useSession();
-  const { scanId, project } = useSelectedScan();
+  const { scanId, project, loading: scansLoading } = useSelectedScan();
   const findings = useFindings(scanId).data;
   const doc = useMemo(() => policyDoc(q.data), [q.data]);
   const [rules, setRules] = useState<PathRule[]>([]);
@@ -387,7 +387,7 @@ export default function PolicyPage() {
               <Guard result="pass">
                 Dry run on {project?.name ?? "the project"} · {files.length} files with findings resolved
               </Guard>
-            ) : scanId ? (
+            ) : scanId || scansLoading ? (
               <Skeleton />
             ) : (
               <Empty title="No scan to dry-run against">Run a scan to see how many files each rule matches.</Empty>
