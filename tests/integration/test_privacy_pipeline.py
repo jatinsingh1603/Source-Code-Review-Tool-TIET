@@ -610,6 +610,35 @@ def test_a_secret_is_never_counted_against_the_review_limit(
     assert {failures[s] for s in secrets} == {SLICE_FAILED}
 
 
+def test_a_finding_without_a_code_slice_is_never_counted_against_the_review_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Configuration findings fail slicing with or without a limit, so the limit is not why."""
+    monkeypatch.setattr(sys.modules[__name__], "STAGES", (*STAGES, "analyse-iac"))
+    unlimited = run_and_capture(
+        copy_fixture(tmp_path / "a"), home="home-iac", overrides={"llm": {"tasks": ["triage"]}}
+    )
+    config = {str(c.id) for c in unlimited.candidates if c.kind is CandidateKind.MISCONFIGURATION}
+    assert config
+    unsliced = {
+        key for key, code in failures_of(unlimited.outcome, "privacy-prepare").items()
+        if code == SLICE_FAILED
+    }  # fmt: skip
+    run = run_and_capture(
+        copy_fixture(tmp_path / "b"),
+        home="home-iac1",
+        overrides={"llm": {"tasks": ["triage"], "review_limit": 1}},
+    )
+    assert len(run.payloads) == 1
+    failures = failures_of(run.outcome, "privacy-prepare")
+    by_fingerprint = {c.fingerprint: str(c.id) for c in run.candidates}
+    before = {c.fingerprint for c in unlimited.candidates if str(c.id) in unsliced}
+    assert before
+    assert {failures[by_fingerprint[f]] for f in before} == {SLICE_FAILED}
+    assert REVIEW_LIMIT in failures.values()  # the sliceable rest still carries the limit
+    assert len(unlimited.payloads) == 1 + list(failures.values()).count(REVIEW_LIMIT)
+
+
 def test_the_combined_review_sends_one_request_per_payload(tmp_path: Path) -> None:
     root = copy_fixture(tmp_path)
     run = run_and_capture(

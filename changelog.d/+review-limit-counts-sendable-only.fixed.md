@@ -1,0 +1,1 @@
+A quick review (Model review "Live demo" or "Quick") no longer counts dependency and configuration findings as held back by the review limit: they have no code slice to send at any limit, so the log now reads "11 candidates kept ... (review limit)" and "45 ... no code slice to send" for the KavachBank live demo, instead of 42 and 14.

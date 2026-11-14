@@ -24,6 +24,8 @@ arrive first, and each queued candidate is announced with an ``item.queued`` eve
 limit (``llm.review_limit``, or the provider's ``options.review_limit``) only the N most severe
 candidates that policy lets leave are prepared at all; the rest keep their deterministic evidence
 and are recorded with ``llm_review_limit``, which the report lists as not reviewed by the model.
+A candidate with no code slice (a secret, a dependency, a configuration finding) is recorded as
+``privacy_slice_failed`` at any limit, so the limit counts only what it actually held back.
 ``llm.review_only`` (finding fingerprints) restricts the scan's review to those candidates, for the
 on-demand review of one finding. Neither changes what one payload contains: every candidate's
 slice is still prepared, guarded and sent on its own.
@@ -374,8 +376,11 @@ class PrivacyPrepareStage:
                     ctx.fail_item(str(candidate.id), SLICE_FAILED)
                     continue
                 if limit is not None and len(payloads) >= limit:
-                    ctx.fail_item(str(candidate.id), REVIEW_LIMIT)  # kept, not sent
-                    limited += 1
+                    # A dependency or configuration finding has no code slice either: it would
+                    # not have been sent without the limit, so the limit is not its reason.
+                    sliceable = self._sliceable(ctx, candidate, level, index=index, budget=budget)
+                    ctx.fail_item(str(candidate.id), REVIEW_LIMIT if sliceable else SLICE_FAILED)
+                    limited += sliceable  # kept, not sent
                     continue
                 with guard_item(ctx, str(candidate.id), ITEM_EXCEPTION):
                     try:
@@ -446,7 +451,45 @@ class PrivacyPrepareStage:
         ctx.artefacts.put(keys.PAYLOADS_SANITISED, payloads, persist=False)
 
     @staticmethod
+    def _slice(
+        ctx: RunContext,
+        candidate: Candidate,
+        level: PrivacyLevel,
+        *,
+        index: ParseIndex,
+        budget: SliceBudget,
+    ) -> CodeSlice:
+        """The original slice ``level`` sends for ``candidate`` (raises ``_FailedError``)."""
+        try:
+            selector = StrategySelector.from_settings(ctx.config)
+            ceiling = plan_for(level).strategy_ceiling
+            if ceiling is not None:  # L1 and L2 work on whole files, not the thin slice
+                selector = StrategySelector(ceiling=ceiling)
+                budget = SliceBudget(budget.max_tokens * UNIT_BUDGET_FACTOR)
+            return selector.build(candidate, index, budget=budget)
+        except (SlicingError, KeyError):
+            raise _FailedError(SLICE_FAILED) from None
+
+    @classmethod
+    def _sliceable(
+        cls,
+        ctx: RunContext,
+        candidate: Candidate,
+        level: PrivacyLevel,
+        *,
+        index: ParseIndex,
+        budget: SliceBudget,
+    ) -> bool:
+        """Whether ``candidate`` has a code slice to send (nothing is redacted or recorded)."""
+        try:
+            cls._slice(ctx, candidate, level, index=index, budget=budget)
+        except _FailedError:
+            return False
+        return True
+
+    @classmethod
     def _one(
+        cls,
         ctx: RunContext,
         candidate: Candidate,
         level: PrivacyLevel,
@@ -459,15 +502,7 @@ class PrivacyPrepareStage:
         engine: Pseudonymiser,
         vault: Vault,
     ) -> _Outcome:
-        try:
-            selector = StrategySelector.from_settings(ctx.config)
-            ceiling = plan_for(level).strategy_ceiling
-            if ceiling is not None:  # L1 and L2 work on whole files, not the thin slice
-                selector = StrategySelector(ceiling=ceiling)
-                budget = SliceBudget(budget.max_tokens * UNIT_BUDGET_FACTOR)
-            slice_ = selector.build(candidate, index, budget=budget)
-        except (SlicingError, KeyError):
-            raise _FailedError(SLICE_FAILED) from None
+        slice_ = cls._slice(ctx, candidate, level, index=index, budget=budget)
         try:
             layout = engine.layout(slice_, level)
             spans = detect_all(
