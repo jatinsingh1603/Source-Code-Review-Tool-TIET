@@ -273,7 +273,7 @@ export default function LedgerPage() {
         <div className="banner warn sm">
           <span>
             <b>{scan?.provider === "mock" ? "Mock provider" : "Dry run"}:</b> the ledger shows what{" "}
-            <i>would</i> have been sent. Nothing left this laptop.
+            <i>would</i> have been sent. Nothing left this machine.
           </span>
         </div>
       )}

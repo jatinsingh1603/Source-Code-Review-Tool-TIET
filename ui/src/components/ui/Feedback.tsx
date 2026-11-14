@@ -69,6 +69,21 @@ export function Empty({
   );
 }
 
+/** Server permissions (server/rbac.py) in words, with the lowest role that holds each. */
+const PERMISSION_WORDS: Record<string, string> = {
+  "privacy:read_original": "the Auditor role, because it shows original code or payload text",
+  "audit:read": "the Auditor role",
+  "finding:review": "the Auditor role",
+  "privacy:read_ledger": "the Developer role",
+  "finding:triage": "the Developer role",
+  "scan:run": "the Developer role",
+  "project:write": "the Developer role",
+  "provider:test": "the Developer role",
+  "sync:github": "the Developer role",
+  "settings:write": "the Admin role",
+  "users:admin": "the Admin role",
+};
+
 export function errorText(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 404) {
@@ -77,6 +92,14 @@ export function errorText(error: unknown): string {
       return what
         ? `This ${what} does not exist, or it was deleted. Check the address, or open it from the list.`
         : `${error.message} Check the address, or open it from the list.`;
+    }
+    if (error.status === 403) {
+      // "the role developer lacks the permission privacy:read_original" reads as a server log.
+      const m = /role (\w+) lacks the permission ([\w:]+)/i.exec(error.message);
+      const need = m ? (PERMISSION_WORDS[m[2]!] ?? "a role with more access") : "a role with more access";
+      return m
+        ? `Your role (${m[1]}) cannot open this: it needs ${need}. Ask an administrator if you need access.`
+        : `Your role cannot open this. Ask an administrator if you need access.`;
     }
     const quiet = !error.code || error.code.startsWith("http_") || error.code === "validation_error";
     return `${error.message}${quiet ? "" : ` (${error.code})`}`;

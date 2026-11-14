@@ -8,6 +8,8 @@ import { suggestName, validateGitUrl } from "@/lib/validate";
 import { permissionsFor } from "@/lib/permissions";
 import { languageLabel } from "@/lib/display";
 import { pathRulesOf } from "@/lib/policy";
+import { ApiError } from "@/api/client";
+import { errorText } from "@/components/ui/Feedback";
 import { providerName } from "@/lib/domain";
 import type { ProviderInfo } from "@/api/types";
 
@@ -152,5 +154,14 @@ describe("suggestName", () => {
     expect(suggestName("upload", "", "", new File(["x"], "demo-shopfront.zip"))).toBe("demo-shopfront");
     expect(suggestName("path", "", "", null)).toBe("");
     expect(validateGitUrl("github.com/octocat/Hello-World")).toMatch(/^Add https:\/\//);
+  });
+});
+
+describe("errorText", () => {
+  it("words a 403 for a person, not as a permission code", () => {
+    const e = new ApiError(403, "forbidden", "the role developer lacks the permission privacy:read_original");
+    const text = errorText(e);
+    expect(text).toMatch(/^Your role \(developer\) cannot open this: it needs the Auditor role/);
+    expect(text).not.toContain("privacy:read_original");
   });
 });

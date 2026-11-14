@@ -70,7 +70,7 @@ export default function DemoPage() {
       <div className="banner info">
         <Icon name="info" />
         <span>
-          <b>Mock provider:</b> the ledger shows what <i>would</i> have been sent. Nothing left this laptop.
+          <b>Mock provider:</b> the ledger shows what <i>would</i> have been sent. Nothing left this machine.
         </span>
       </div>
 
