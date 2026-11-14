@@ -1,7 +1,10 @@
 /**
  * Per-user display preferences (Settings → Appearance, Language and region).
- * The API has no preferences endpoint yet, so they live in this browser only.
+ * Kept in this browser (and on the server when it stores preferences); the time zone and date
+ * form apply to every date the dashboard shows.
  */
+import { setDisplayPrefs } from "@/lib/display";
+
 export interface Prefs {
   density: "comfortable" | "compact";
   severityShapes: boolean;
@@ -47,4 +50,5 @@ export function applyPreferences(p: Prefs = readPrefs()): void {
   b.classList.toggle("reduce-motion", p.reduceMotion);
   b.classList.toggle("no-shapes", !p.severityShapes);
   b.classList.toggle("comfortable", p.density === "comfortable");
+  setDisplayPrefs(p.timeZone, p.dateFormat === "iso");
 }

@@ -28,12 +28,31 @@ export const LEVEL_CAPTION: Record<PrivacyLevel, string> = {
   L1: "secrets and PII removed",
 };
 
-const TZ = "Asia/Kolkata";
+let TZ = "Asia/Kolkata";
+let ISO_DATES = false;
+
+/** Settings → Language and region: the time zone and date form every helper below uses. */
+export function setDisplayPrefs(timeZone: string, isoDates: boolean): void {
+  try {
+    new Intl.DateTimeFormat("en-GB", { timeZone }); // an unknown zone throws: keep the last good one
+    TZ = timeZone;
+  } catch {
+    /* keep the current zone */
+  }
+  ISO_DATES = isoDates;
+}
+
+/** The time zone label of the current preference ("IST", "AEDT"). */
+export function zoneLabel(iso?: string | null): string {
+  return tzLabel(iso ? new Date(iso) : new Date(), TZ);
+}
 
 function tzLabel(d: Date, tz: string): string {
   if (tz === "Asia/Kolkata") return "IST";
   try {
-    const part = new Intl.DateTimeFormat("en-GB", { timeZone: tz, timeZoneName: "short" })
+    // en-GB names Sydney "GMT+11"; en-AU gives the name an Australian reader expects ("AEDT").
+    const locale = tz.startsWith("Australia/") ? "en-AU" : "en-GB";
+    const part = new Intl.DateTimeFormat(locale, { timeZone: tz, timeZoneName: "short" })
       .formatToParts(d)
       .find((p) => p.type === "timeZoneName");
     return part?.value ?? "";
@@ -46,6 +65,10 @@ function parse(iso?: string | null): Date | null {
   if (!iso) return null;
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function isoDay(d: Date, tz: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 }
 
 function parts(d: Date, tz: string) {
@@ -75,6 +98,7 @@ export function fmtLong(iso?: string | null, tz: string = TZ): string {
   const d = parse(iso);
   if (!d) return "—";
   const p = parts(d, tz);
+  if (ISO_DATES) return `${isoDay(d, tz)} ${p.hour}:${p.minute} ${tzLabel(d, tz)}`.trim();
   return `${p.day} ${p.month} ${p.year}, ${p.hour}:${p.minute} ${tzLabel(d, tz)}`.trim();
 }
 
@@ -82,6 +106,7 @@ export function fmtLong(iso?: string | null, tz: string = TZ): string {
 export function fmtDate(iso?: string | null, tz: string = TZ): string {
   const d = parse(iso);
   if (!d) return "—";
+  if (ISO_DATES) return isoDay(d, tz);
   const p = parts(d, tz);
   return `${p.day} ${p.month} ${p.year}`;
 }
@@ -91,6 +116,7 @@ export function fmtShort(iso?: string | null, tz: string = TZ): string {
   const d = parse(iso);
   if (!d) return "—";
   const p = parts(d, tz);
+  if (ISO_DATES) return `${isoDay(d, tz)} ${p.hour}:${p.minute}`;
   return `${p.day} ${p.month}, ${p.hour}:${p.minute}`;
 }
 

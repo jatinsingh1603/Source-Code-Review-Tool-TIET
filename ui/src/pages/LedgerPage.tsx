@@ -19,6 +19,7 @@ import {
   fmtTime,
   findingLabel,
   scanLabel,
+  zoneLabel,
 } from "@/lib/display";
 import { FilterMenu } from "@/components/FilterMenu";
 import { MarkedCode } from "@/components/Marked";
@@ -231,7 +232,7 @@ export default function LedgerPage() {
             </div>
             <div className="xs faint" style={{ marginTop: 2 }}>
               {result?.verified_at
-                ? `Verified offline at ${fmtTime(result.verified_at)} IST`
+                ? `Verified offline at ${fmtTime(result.verified_at)} ${zoneLabel(result.verified_at)}`
                 : "Checked when the scan finished"}
               {head ? ` against head ${fmtHash(head)}` : ""}
             </div>

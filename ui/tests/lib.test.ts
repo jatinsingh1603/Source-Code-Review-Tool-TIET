@@ -6,7 +6,7 @@ import { atLeastAsStrict, confidenceFraction, LEVELS_BY_STRICTNESS } from "@/lib
 import { egressSummary } from "@/lib/egress";
 import { suggestName, validateGitUrl } from "@/lib/validate";
 import { permissionsFor } from "@/lib/permissions";
-import { languageLabel } from "@/lib/display";
+import { fmtDate, fmtLong, languageLabel, setDisplayPrefs } from "@/lib/display";
 import { pathRulesOf } from "@/lib/policy";
 import { ApiError } from "@/api/client";
 import { errorText } from "@/components/ui/Feedback";
@@ -163,5 +163,21 @@ describe("errorText", () => {
     const text = errorText(e);
     expect(text).toMatch(/^Your role \(developer\) cannot open this: it needs the Auditor role/);
     expect(text).not.toContain("privacy:read_original");
+  });
+});
+
+describe("display preferences", () => {
+  it("dates follow the chosen time zone and date form", () => {
+    const at = "2026-11-14T11:46:00Z";
+    try {
+      expect(fmtLong(at)).toBe("14 Nov 2026, 17:16 IST");
+      setDisplayPrefs("Australia/Sydney", false);
+      expect(fmtLong(at)).toBe("14 Nov 2026, 22:46 AEDT");
+      setDisplayPrefs("UTC", true);
+      expect(fmtDate(at)).toBe("2026-11-14");
+      expect(fmtLong(at)).toMatch(/^2026-11-14 11:46/);
+    } finally {
+      setDisplayPrefs("Asia/Kolkata", false);
+    }
   });
 });
