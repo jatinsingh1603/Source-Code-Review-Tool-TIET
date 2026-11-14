@@ -438,7 +438,6 @@ function TopBar({ onSearch }: { onSearch: () => void }) {
       <button
         type="button"
         className="search"
-        role="search"
         aria-label="Search findings, files, scans (Ctrl+K)"
         onClick={onSearch}
       >

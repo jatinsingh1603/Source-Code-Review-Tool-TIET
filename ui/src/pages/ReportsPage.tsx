@@ -134,7 +134,7 @@ export default function ReportsPage() {
               <th>Formats</th>
               <th>Integrity manifest</th>
               <th>Generated</th>
-              <th />
+              <th><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>

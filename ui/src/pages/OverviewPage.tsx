@@ -437,13 +437,13 @@ function RiskMatrix({ findings, loading }: { findings: Finding[]; loading: boole
         <Skeleton rows={2} />
       ) : (
         <>
-          <div className="rm" role="table" aria-label="Open findings by likelihood and impact">
+          <div className="rm" role="group" aria-label="Open findings by likelihood and impact">
             {grid.map((row, r) => (
               <RmRow key={r} lik={5 - r} row={row} cls={RM[r]!} />
             ))}
-            <span />
+            <span aria-hidden="true" />
             {[1, 2, 3, 4, 5].map((n) => (
-              <span key={n} className="ax">
+              <span key={n} className="ax" aria-hidden="true">
                 {n}
               </span>
             ))}
@@ -461,7 +461,9 @@ function RiskMatrix({ findings, loading }: { findings: Finding[]; loading: boole
 function RmRow({ lik, row, cls }: { lik: number; row: number[]; cls: string[] }) {
   return (
     <>
-      <span className="ax">{lik}</span>
+      <span className="ax" aria-hidden="true">
+        {lik}
+      </span>
       {row.map((n, i) =>
         n ? (
           <Link
@@ -470,11 +472,12 @@ function RmRow({ lik, row, cls }: { lik: number; row: number[]; cls: string[] })
             to={`/findings?likelihood=${lik}&impact=${i + 1}`}
             style={{ textDecoration: "none" }}
             title={`Likelihood ${lik}, impact ${i + 1}: ${n}`}
+            aria-label={`Likelihood ${lik}, impact ${i + 1}: ${n} open ${n === 1 ? "finding" : "findings"}`}
           >
             {n}
           </Link>
         ) : (
-          <span key={i} className={`c ${cls[i]}`} />
+          <span key={i} className={`c ${cls[i]}`} aria-hidden="true" />
         ),
       )}
     </>

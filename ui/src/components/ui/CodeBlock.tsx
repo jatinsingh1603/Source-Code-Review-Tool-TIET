@@ -28,6 +28,8 @@ export interface CodeBlockProps {
   after?: (line: CodeLineInput) => ReactNode;
   /** Id prefix for line anchors, e.g. `L` gives `id="L58"`. */
   anchor?: string;
+  /** Accessible name of the scrollable code region; defaults to a string `title`. */
+  label?: string;
 }
 
 /**
@@ -47,6 +49,7 @@ export function CodeBlock({
   renderLine,
   after,
   anchor,
+  label,
 }: CodeBlockProps) {
   const rows: CodeLineInput[] =
     lines ?? (code ?? "").replace(/\n$/, "").split("\n").map((text, i) => ({ number: startLine + i, text }));
@@ -59,7 +62,13 @@ export function CodeBlock({
           {titleRight}
         </div>
       )}
-      <div className={cn("code", className)} style={style}>
+      <div
+        className={cn("code", className)}
+        style={style}
+        tabIndex={0}
+        role="region"
+        aria-label={label ?? (typeof title === "string" ? title : "Code")}
+      >
         {rows.map((r) => {
           const kind = kindOf?.(r.number) ?? (isHl(r.number) ? "hl" : undefined);
           const hl = kind !== undefined && kind !== "out";
@@ -71,7 +80,9 @@ export function CodeBlock({
                 data-line={r.number}
                 data-highlighted={hl || undefined}
               >
-                <span className="n">{r.number}</span>
+                <span className="n" aria-hidden="true">
+                  {r.number}
+                </span>
                 {renderLine ? renderLine(r) : r.text}
               </div>
               {after?.(r)}

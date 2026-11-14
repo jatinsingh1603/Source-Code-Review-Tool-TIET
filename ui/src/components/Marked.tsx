@@ -57,6 +57,7 @@ export function MarkedCode({
       kindOf={kindOf}
       title={title}
       titleRight={titleRight}
+      label={side === "payload" ? "Payload prepared for the model" : "Original code"}
       after={after}
       style={style}
       renderLine={(r) => {

@@ -235,7 +235,7 @@ export default function ScanLaunchPage() {
             <div className="bar">
               <i style={{ width: "0%" }} />
             </div>
-            <div className="pipe-wrap">
+            <div className="pipe-wrap" tabIndex={0} role="region" aria-label="Pipeline stages">
               <div className="pipe">
                 {STAGES.map((s) => (
                   <div key={s.n} className={`stage wait${s.guard ? " guardz" : ""}`}>

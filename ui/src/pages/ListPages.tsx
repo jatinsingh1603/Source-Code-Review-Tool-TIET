@@ -246,6 +246,7 @@ export function ProjectDetailPage() {
 export function NotFoundPage() {
   return (
     <Content>
+      <h1 className="sr-only">Page not found</h1>
       <div className="card">
         <Empty title="Page not found" action="Back to Overview" to="/">
           This address does not match any screen.

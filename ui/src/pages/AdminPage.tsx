@@ -125,7 +125,7 @@ function UsersTable() {
             <th>Status</th>
             <th>Sign-in</th>
             <th>Last active</th>
-            <th />
+            <th><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>

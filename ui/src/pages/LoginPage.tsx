@@ -63,7 +63,7 @@ export default function LoginPage() {
   const host = typeof window !== "undefined" ? window.location.host : "";
 
   return (
-    <div className="ck" style={{ display: "flex", flexWrap: "wrap", minHeight: "100vh" }}>
+    <main className="ck" style={{ display: "flex", flexWrap: "wrap", minHeight: "100vh" }}>
       <section
         style={{
           flex: "1 1 520px",
@@ -194,6 +194,6 @@ export default function LoginPage() {
           </p>
         </form>
       </section>
-    </div>
+    </main>
   );
 }

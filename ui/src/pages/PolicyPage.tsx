@@ -203,7 +203,7 @@ export default function PolicyPage() {
                       <th>Rule ID</th>
                       <th>Action</th>
                       <th className="num">Matches</th>
-                      <th />
+                      <th><span className="sr-only">Remove</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -243,7 +243,12 @@ export default function PolicyPage() {
                         <td className="num mono">{counted ? ruleMatches(i) : "—"}</td>
                         <td>
                           {editable && (
-                            <button className="btn sm ghost" type="button" onClick={() => setRules((rs) => rs.filter((_, k) => k !== i))}>
+                            <button
+                              className="btn sm ghost"
+                              type="button"
+                              aria-label={`Remove rule ${i + 1}`}
+                              onClick={() => setRules((rs) => rs.filter((_, k) => k !== i))}
+                            >
                               Remove
                             </button>
                           )}
@@ -329,10 +334,12 @@ export default function PolicyPage() {
                 {errors.length ? "Invalid" : `Valid · ${validation?.schema ?? `version ${doc.policy_version ?? 1}`}`}
               </StatusDot>
             </div>
-            <div className="code" style={{ fontSize: 12, lineHeight: "20px" }}>
+            <div className="code" style={{ fontSize: 12, lineHeight: "20px" }} tabIndex={0} role="region" aria-label="kavach-policy.toml">
               {tomlLines.map((l, i) => (
                 <div key={i} className={selRange && i >= selRange[0]! && i <= selRange[1]! ? "ln hl" : "ln"}>
-                  <span className="n">{i + 1}</span>
+                  <span className="n" aria-hidden="true">
+                    {i + 1}
+                  </span>
                   {l.startsWith("#") ? (
                     <span className="tc">{l}</span>
                   ) : l.startsWith("[[") ? (

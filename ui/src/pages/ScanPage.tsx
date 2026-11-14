@@ -330,7 +330,7 @@ export default function ScanPage() {
             <div className="bar" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label="Scan progress">
               <i style={{ width: `${progress}%` }} />
             </div>
-            <div className="pipe-wrap">
+            <div className="pipe-wrap" tabIndex={0} role="region" aria-label="Pipeline stages">
               <div className="pipe">
                 {stages.map((s) => (
                   <div

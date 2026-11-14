@@ -53,10 +53,12 @@ function Snippet({ title, path, text }: { title: string; path: string; text: str
           Copy
         </Button>
       </div>
-      <div className="code" style={{ fontSize: 12, lineHeight: "20px" }}>
+      <div className="code" style={{ fontSize: 12, lineHeight: "20px" }} tabIndex={0} role="region" aria-label={title}>
         {text.split("\n").map((l, i) => (
           <div key={i} className="ln">
-            <span className="n">{i + 1}</span>
+            <span className="n" aria-hidden="true">
+              {i + 1}
+            </span>
             {l}
           </div>
         ))}
@@ -136,7 +138,7 @@ export default function IntegrationsPage() {
                 <thead>
                   <tr>
                     <th>Finding status</th>
-                    <th />
+                    <th><span className="sr-only">Maps to</span></th>
                     <th>Board column</th>
                     <th className="num">Cards</th>
                   </tr>
