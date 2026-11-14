@@ -415,7 +415,10 @@ function PasswordCard() {
     try {
       const r = await endpoints.changeMyPassword({ current_password: form.current, new_password: form.next });
       setForm({ current: "", next: "", again: "" });
-      toast.success("Password changed", r.revoked ? `Signed out elsewhere: ${r.revoked} other session(s) and token(s).` : "This session stays signed in.");
+      toast.success(
+        "Password changed",
+        r.revoked === 1 ? "Ended 1 other session or token; this one stays signed in." : r.revoked ? `Ended ${r.revoked} other sessions and tokens; this one stays signed in.` : "This session stays signed in.",
+      );
     } catch (e) {
       setErr(e instanceof Error ? e.message : "The password was not changed.");
     } finally {
