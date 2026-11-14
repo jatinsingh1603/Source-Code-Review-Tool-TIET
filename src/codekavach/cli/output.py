@@ -307,6 +307,9 @@ def get_output(ctx: click.Context) -> Output:
 
 
 def _plain(value: "JsonValue") -> str:
+    # A list of words or paths (codekavach demo's files) reads one per line, not as JSON.
+    if isinstance(value, list) and all(isinstance(item, (str, int, float)) for item in value):
+        return "\n".join(str(item) for item in value) if value else "none"
     if isinstance(value, (dict, list)):
         return json.dumps(value, ensure_ascii=False)
     return "" if value is None else str(value)
