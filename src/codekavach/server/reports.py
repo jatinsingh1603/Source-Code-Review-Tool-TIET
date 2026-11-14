@@ -196,6 +196,51 @@ def render_manifest(
     return manifest
 
 
+def render_delta(
+    *,
+    current: tuple[Path, Path, "Sequence[Finding]"],
+    baseline: tuple[Path, Path, "Sequence[Finding]"],
+    settings: "Settings",
+    out: Path,
+    project_name: str | None = None,
+) -> Path:
+    """Write the retest delta (new, regressed, still open, fixed) of two scans as HTML.
+
+    ``current`` and ``baseline`` are each ``(scan_json, state_dir, findings)``; findings are
+    matched by fingerprint.
+    """
+    from codekavach.core.models.scan import Scan  # noqa: PLC0415
+    from codekavach.report.model.build import (  # noqa: PLC0415
+        build_report_document,
+        summarise_ledger,
+    )
+    from codekavach.report.render.bundle import build_delta, render_delta_html  # noqa: PLC0415
+
+    def document(scan_json: Path, state_dir: Path, findings: "Sequence[Finding]") -> Any:
+        scan = Scan.model_validate(json.loads(scan_json.read_text(encoding="utf-8")))
+        return build_report_document(
+            scan,
+            list(findings),
+            settings,
+            summarise_ledger(state_dir, str(scan.id), settings),
+            project_name=project_name,
+            scan_reference=scan_label(scan_json.parent.name),
+        )
+
+    now = document(*current)
+    before = document(*baseline)
+    delta = build_delta(now, before)
+    # Name each scan by the id the dashboard shows, with the pipeline id beside it.
+    labels = {
+        "baseline_scan": (before.scan_reference, delta.baseline_scan),
+        "current_scan": (now.scan_reference, delta.current_scan),
+    }
+    delta = delta.model_copy(
+        update={key: f"{label} ({core})" for key, (label, core) in labels.items() if label}
+    )
+    return render_delta_html(delta, now, out)
+
+
 def is_fresh(path: Path, changed_at: datetime | None) -> bool:
     """Whether a rendered file is newer than the last triage change."""
     if not path.is_file():

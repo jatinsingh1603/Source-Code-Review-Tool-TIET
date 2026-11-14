@@ -1,0 +1,1 @@
+The dashboard downloads a retest delta report: on **Reports**, choose an earlier scan as the baseline and press **Download delta report** for one HTML file listing the new, regressed, still open and fixed findings, matched by fingerprint (`GET /api/v1/scans/{id}/delta?baseline=...`). Before, the baseline only changed the on-screen preview.

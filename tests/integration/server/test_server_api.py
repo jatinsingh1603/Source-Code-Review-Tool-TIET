@@ -405,6 +405,32 @@ def test_compliance_annex_never_replaces_the_html_report(
         assert entry["sha256"] == hashlib.sha256(manifest.content).hexdigest()
 
 
+def test_delta_report_compares_two_scans_of_a_project(
+    server: tuple[TestClient, Any],
+    scan: dict[str, Any],
+    admin: dict[str, str],
+    users: dict[str, dict[str, str]],
+) -> None:
+    client, state = server
+    created = client.post(
+        f"/api/v1/projects/{scan['project_id']}/scans",
+        json={"privacy_level": "L3", "provider": "mock", "send": True},
+        headers=admin,
+    )
+    assert created.status_code == 201, created.text
+    later = _finish(client, state, created.json()["id"], admin)
+    assert later["status"] == "completed", later
+    url = f"/api/v1/scans/{later['id']}/delta"
+    delta = client.get(url, params={"baseline": scan["id"]}, headers=users["viewer"])
+    assert delta.status_code == 200, delta.text
+    assert delta.headers["content-disposition"].endswith(f'.delta-{scan["id"]}.html"')
+    label = "SCN-" + scan["id"].removeprefix("scn_")[:6].upper()
+    assert b"Retest delta report" in delta.content
+    assert label.encode() in delta.content
+    itself = client.get(url, params={"baseline": later["id"]}, headers=users["viewer"])
+    assert itself.status_code == 422
+
+
 def test_stats_and_settings(
     server: tuple[TestClient, Any], scan: dict[str, Any], admin: dict[str, str]
 ) -> None:

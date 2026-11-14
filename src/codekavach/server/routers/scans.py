@@ -44,6 +44,7 @@ from codekavach.server.reports import (
     available_formats,
     is_fresh,
     render,
+    render_delta,
     render_manifest,
     report_file,
 )
@@ -928,6 +929,57 @@ def _report_response(
         )
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
     return response
+
+
+@router.get("/scans/{scan_id}/delta")
+def download_delta(
+    scan_id: str,
+    baseline: str,
+    request: Request,
+    state: StateDep,
+    session: SessionDep,
+    principal: Any = ReportDep,
+) -> FileResponse:
+    """The retest delta of this scan against an earlier scan of the same project, as HTML."""
+    row = get_scan_row(session, scan_id)
+    base_row = get_scan_row(session, baseline)
+    if base_row.id == row.id or base_row.project_id != row.project_id:
+        raise ApiError(422, "baseline_invalid",
+                       "the baseline must be another scan of the same project")  # fmt: skip
+    paths, core_id = _completed(row)
+    base_paths, base_core = _completed(base_row)
+
+    def findings_of(item: ScanRow, item_paths: ScanPaths, item_core: str) -> list[Any]:
+        statuses = {
+            f.id: f.status
+            for f in session.scalars(select(FindingRow).where(FindingRow.scan_id == item.id))
+        }
+        return apply_statuses(read_findings(item_paths, item_core), statuses)
+
+    results = scan_results(state, row)
+    target = paths.reports / f"delta-{base_row.id}.html"
+    try:
+        render_delta(
+            current=(paths.scan_json, paths.state_dir, findings_of(row, paths, core_id)),
+            baseline=(base_paths.scan_json, base_paths.state_dir,
+                      findings_of(base_row, base_paths, base_core)),
+            settings=state.report_settings(results.settings),
+            out=target,
+            project_name=_project_name(session, row),
+        )  # fmt: skip
+    except Exception as error:  # noqa: BLE001 - reported as an API error, not a 500
+        raise ApiError(503, "report_failed", "the delta report could not be rendered",
+                       hint=type(error).__name__) from None  # fmt: skip
+    audit.record(state.db, actor=principal.username, action="report.download",
+                 resource=f"{scan_id}.delta", client=client_of(request),
+                 detail={"baseline": base_row.id})  # fmt: skip
+    project = session.get(Project, row.project_id)
+    base = re.sub(r"[^A-Za-z0-9]+", "-", project.name if project else "project").strip("-")
+    return FileResponse(
+        target,
+        media_type="text/html; charset=utf-8",
+        filename=f"codekavach-{base.lower() or 'project'}-{scan_id}.delta-{base_row.id}.html",
+    )
 
 
 @router.post("/scans/{scan_id}/sync/github")
