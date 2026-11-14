@@ -89,4 +89,4 @@ def test_vault_key_origin_names_the_environment_variable(
     with TestClient(create_app(config)) as client:
         admin = _login(client, "admin", "kavach-admin")
         vault = client.get(f"{API}/vault", headers=admin).json()
-    assert vault["key_source"] == f"passphrase (environment variable {VAULT_PASSPHRASE_ENV})"
+    assert vault["key_source"] == "passphrase (environment variable)"

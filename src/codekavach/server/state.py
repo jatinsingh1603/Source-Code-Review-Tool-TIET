@@ -114,7 +114,7 @@ def _passphrase_origin(config: ServerConfig) -> str:
         from_file = False
     if from_file:
         return "passphrase (server-generated file, mode 0600)"
-    return f"passphrase (environment variable {VAULT_PASSPHRASE_ENV})"
+    return "passphrase (environment variable)"
 
 
 class ServerState:
