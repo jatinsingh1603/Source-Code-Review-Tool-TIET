@@ -108,22 +108,29 @@ export const usePrivacy = (scanId: string | undefined) => {
   });
 };
 
-export const useLedger = (scanId: string | undefined) =>
-  useQuery({
+export const useLedger = (scanId: string | undefined) => {
+  // The server writes every refused request to the audit log as a denied access, so a page a
+  // viewer opens must not ask for the ledger: an auditor would read it as an attempt.
+  const allowed = useCan("privacy:read");
+  return useQuery({
     queryKey: qk.ledger(scanId ?? ""),
     queryFn: () => endpoints.ledger(scanId!),
-    enabled: !!scanId,
+    enabled: !!scanId && allowed,
     retry: false,
   });
+};
 
-export const useLedgerEntry = (scanId: string | undefined, seq: number | null) =>
-  useQuery({
+/** One payload beside its original. Only auditors and admins may read it; others do not ask. */
+export const useLedgerEntry = (scanId: string | undefined, seq: number | null) => {
+  const allowed = useCan("privacy:read_original");
+  return useQuery({
     queryKey: qk.ledgerEntry(scanId ?? "", seq ?? -1),
     queryFn: () => endpoints.ledgerEntry(scanId!, seq!),
-    enabled: !!scanId && seq !== null,
+    enabled: !!scanId && seq !== null && allowed,
     retry: false,
     gcTime: 0,
   });
+};
 
 export const useReports = (scanId: string | undefined) =>
   useQuery({

@@ -174,6 +174,11 @@ export function useCan(permission: Permission): boolean {
   return v ? v.can(permission) : true;
 }
 
+/** The signed-in user's role, or undefined outside a session (unit tests). */
+export function useRole(): User["role"] | undefined {
+  return useContext(Ctx)?.user?.role;
+}
+
 /** Presentation-only guard; the server still enforces every request. */
 export function RequirePermission({ permission, children }: { permission: Permission; children: ReactNode }) {
   const { can } = useSession();

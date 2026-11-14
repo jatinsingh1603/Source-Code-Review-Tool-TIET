@@ -5,7 +5,7 @@ import { cvssRating, parseVector } from "@/lib/cvss";
 import { atLeastAsStrict, confidenceFraction, fmtRemediation, LEVELS_BY_STRICTNESS } from "@/lib/format";
 import { egressSummary } from "@/lib/egress";
 import { suggestName, validateGitUrl } from "@/lib/validate";
-import { permissionsFor } from "@/lib/permissions";
+import { permissionsFor, refusalText } from "@/lib/permissions";
 import { auditTarget, fmtDate, fmtDayMonth, fmtLong, languageLabel, setDisplayPrefs } from "@/lib/display";
 import { pathRulesOf } from "@/lib/policy";
 import { loadPrefsFor } from "@/lib/prefs";
@@ -164,6 +164,11 @@ describe("errorText", () => {
     const text = errorText(e);
     expect(text).toMatch(/^Your role \(Developer\) cannot do this: it needs the Auditor role/);
     expect(text).not.toContain("privacy:read_original");
+  });
+
+  it("gives the same refusal without asking the server, which would log a denied access", () => {
+    const asked = errorText(new ApiError(403, "forbidden", "the role viewer lacks the permission privacy:read_original"));
+    expect(refusalText("viewer", "privacy:read_original")).toBe(asked);
   });
 });
 

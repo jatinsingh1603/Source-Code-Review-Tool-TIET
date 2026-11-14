@@ -101,3 +101,12 @@ export function forbiddenText(message: string): string {
   const need = PERMISSION_WORDS[m[2]!] ?? "a role with more access";
   return `Your role (${roleLabel(m[1]!.toLowerCase() as Role)}) cannot do this: it needs ${need}. Ask an administrator if you need access.`;
 }
+
+/**
+ * The refusal the server would give ``role`` for a server permission, worded the same way, for a
+ * page that does not send a request it knows is refused (the server writes each refusal to the
+ * audit log as a denied access).
+ */
+export function refusalText(role: Role | undefined, permission: string): string {
+  return forbiddenText(`the role ${role ?? "viewer"} lacks the permission ${permission}`);
+}

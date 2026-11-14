@@ -1,0 +1,1 @@
+A Viewer or Developer who opens a finding, the Demo page or an Egress Ledger record no longer leaves a "denied" entry in the audit log: the dashboard shows the same refusal ("needs the Auditor role, because it shows original code or payload text") without asking the server for a payload it would refuse.

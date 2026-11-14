@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useCan, useRole } from "@/app/session";
 import { useSelectedScan } from "@/app/useSelectedScan";
+import { refusalText } from "@/lib/permissions";
 import {
   useLedger,
   useLedgerEntry,
@@ -86,6 +88,8 @@ export default function LedgerPage() {
   const [shown, setShown] = useState(10);
   const seq = params.get("seq") ? Number(params.get("seq")) : null;
   const detail = useLedgerEntry(scanId, seq);
+  const canOriginal = useCan("privacy:read_original");
+  const role = useRole();
 
   const entries = useMemo(
     () => [...(ledgerQ.data ?? [])].sort((a, b) => b.seq - a.seq),
@@ -456,7 +460,12 @@ export default function LedgerPage() {
                 <Icon name="close" />
               </IconButton>
             </div>
-            {detail.isLoading ? (
+            {!canOriginal ? (
+              <ErrorBanner
+                what="This record could not be loaded."
+                error={new Error(refusalText(role, "privacy:read_original"))}
+              />
+            ) : detail.isLoading ? (
               <Skeleton rows={2} />
             ) : detail.isError || !detail.data ? (
               <ErrorBanner what="This record could not be loaded." error={detail.error} />

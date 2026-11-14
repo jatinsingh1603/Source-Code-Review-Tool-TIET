@@ -17,7 +17,8 @@ import {
   type PrivacyLevel,
   type TaintStep,
 } from "@/api/types";
-import { useSession } from "@/app/session";
+import { useCan, useRole, useSession } from "@/app/session";
+import { refusalText } from "@/lib/permissions";
 import { useShell } from "@/app/shell-context";
 import { ApiError } from "@/api/client";
 import { useFollowScanProject } from "@/app/useSelectedScan";
@@ -965,6 +966,8 @@ function SawTab({
   seq: number | null;
   ledger: ReturnType<typeof useLedgerEntry>;
 }) {
+  const canOriginal = useCan("privacy:read_original");
+  const role = useRole();
   if (seq === null) {
     return (
       <Empty title="Nothing was sent for this finding">
@@ -972,6 +975,14 @@ function SawTab({
         have no code slice to send, a quick review sends only the most severe candidates, the privacy
         policy can keep a path local (never-send), and at L0 nothing leaves.
       </Empty>
+    );
+  }
+  if (!canOriginal) {
+    return (
+      <ErrorBanner
+        what="The payload could not be loaded."
+        error={new Error(refusalText(role, "privacy:read_original"))}
+      />
     );
   }
   if (ledger.isLoading) return <Skeleton rows={2} />;
