@@ -113,7 +113,16 @@ def test_a_renamed_file_is_a_delete_and_an_add(remote: Path) -> None:
     assert "renamed.py" in result.changed and "b.py" in result.deleted
 
 
-@pytest.mark.parametrize("since", ["nope", "--output=/tmp/x", "refs/../x", "", "a b"])
+def test_diff_against_an_ancestor_of_head(remote: Path) -> None:
+    for since in ("HEAD~1", "HEAD^", "HEAD~1^0"):
+        result = diff_against_ref(remote, since)
+        assert result is not None, since
+        assert result.changed == {"a.py", "c.py"}
+
+
+@pytest.mark.parametrize(
+    "since", ["nope", "--output=/tmp/x", "refs/../x", "", "a b", "~1", "-x~1", "HEAD~1..v1"]
+)
 def test_an_unresolvable_or_dangerous_base_gives_none(remote: Path, since: str) -> None:
     assert diff_against_ref(remote, since) is None
     assert changed_paths(remote, since) is None

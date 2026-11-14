@@ -46,6 +46,9 @@ _log = get_logger("codekavach.ingest.diff")
 GIT_TIMEOUT_SECONDS: Final = 60.0
 _SCAN_ID: Final = re.compile(r"^scan_[0-9A-HJKMNP-TV-Z]{26}$")
 _DELETED: Final = "D"
+# A plain ref with ancestry steps, as in ``HEAD~1`` or ``main^2``: the steps are checked here and
+# the name by ``check_ref``, so nothing that reads as an option or a range reaches git.
+_ANCESTRY: Final = re.compile(r"^(?P<name>.+?)(?P<steps>(?:[~^][0-9]{0,4}){1,8})$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,8 +92,9 @@ def diff_against_ref(
     root: Path, since: str, *, runner: GitRunner = run_git, git: str = "git"
 ) -> DiffResult | None:
     """The paths below ``root`` that differ from git ref ``since``, or ``None`` if unresolvable."""
+    steps = _ANCESTRY.match(since)
     try:
-        base = check_ref(since)
+        base = check_ref(steps["name"]) + steps["steps"] if steps else check_ref(since)
     except ValueError:
         return None
     code, _ = _git(runner, git, root, "rev-parse", "--verify", "--quiet", f"{base}^{{commit}}")
