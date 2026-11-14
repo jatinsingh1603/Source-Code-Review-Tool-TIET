@@ -361,7 +361,7 @@ function CoverPage(p: {
           </tr>
           <tr>
             <td>Version</td>
-            <td>Generated from scan {scanLabel(p.scanId)}</td>
+            <td>1.0 · generated from scan {scanLabel(p.scanId)}</td>
           </tr>
           <tr>
             <td>Classification</td>
@@ -372,7 +372,7 @@ function CoverPage(p: {
             <td>{p.org}</td>
           </tr>
           <tr>
-            <td>Integrity</td>
+            <td title="SHA-256 of the privacy attestation, as on the Privacy Centre; not a hash of this report file">Attestation digest</td>
             <td style={{ fontFamily: "'IBM Plex Mono', monospace", wordBreak: "break-all" }}>{p.digest ? `sha256 ${p.digest.slice(0, 6)}…${p.digest.slice(-4)}` : "—"}</td>
           </tr>
         </tbody>
