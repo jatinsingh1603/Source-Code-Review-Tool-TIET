@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/format";
 import { Icon } from "@/components/ui";
+import { usePopover } from "@/components/ui/Popover";
 
 /** A `.btn.sm` filter dropdown with checkboxes ("Severity: Critical, High ▾"). */
 export function FilterMenu({
@@ -17,28 +17,14 @@ export function FilterMenu({
   value: string[];
   onChange: (v: string[]) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
+  const { open, toggle, ref } = usePopover();
   const names = options.filter((o) => value.includes(o.value)).map((o) => o.label);
   const text = names.length ? `${label}: ${names.length > 2 ? `${names.slice(0, 2).join(", ")} +${names.length - 2}` : names.join(", ")}` : all
       ? `${label}: all`
       : label;
   return (
     <div className="ck-pop" ref={ref}>
-      <button type="button" className={cn("btn sm")} aria-haspopup="true" aria-expanded={open} onClick={() => setOpen((x) => !x)}>
+      <button type="button" className={cn("btn sm")} aria-haspopup="true" aria-expanded={open} onClick={toggle}>
         {text}
         <Icon name="chevron-down" />
       </button>

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState, type MouseEvent } from "react";
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useSession } from "@/app/session";
 import { useCurrentProject } from "@/app/project-context";
@@ -14,6 +14,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { endpoints } from "@/api/endpoints";
 import { pickDefault } from "@/app/useSelectedScan";
 import { Avatar, Icon, Logo, Skeleton, type IconName } from "@/components/ui";
+import { usePopover } from "@/components/ui/Popover";
 import { CommandPalette } from "./CommandPalette";
 import { useA11yShell } from "@/lib/a11y";
 import { providerName } from "@/lib/domain";
@@ -182,29 +183,10 @@ function Sidebar() {
   );
 }
 
-function useDismiss(open: boolean, close: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) close();
-    };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open, close]);
-  return ref;
-}
-
 function ProjectPill() {
   const { projects, current, setCurrentId } = useCurrentProject();
   const o = useShellOverrides();
-  const [open, setOpen] = useState(false);
-  const ref = useDismiss(open, () => setOpen(false));
+  const { open, toggle, close, ref } = usePopover();
   const navigate = useNavigate();
   if (o.projectPill) {
     return (
@@ -221,7 +203,7 @@ function ProjectPill() {
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((x) => !x)}
+        onClick={toggle}
       >
         {current?.name ?? "No project"}
         <Icon name="chevron-down" />
@@ -238,7 +220,7 @@ function ProjectPill() {
               className={cn("mi", p.id === current?.id && "on")}
               onClick={() => {
                 setCurrentId(p.id);
-                setOpen(false);
+                close(true);
               }}
             >
               <Icon name="folder" />
@@ -251,7 +233,7 @@ function ProjectPill() {
             type="button"
             className="mi"
             onClick={() => {
-              setOpen(false);
+              close();
               navigate("/projects/new");
             }}
           >
@@ -309,8 +291,7 @@ function ProviderPill() {
 }
 
 function Bell() {
-  const [open, setOpen] = useState(false);
-  const ref = useDismiss(open, () => setOpen(false));
+  const { open, toggle: flip, close, ref } = usePopover();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const feed = useQuery({
@@ -320,8 +301,8 @@ function Bell() {
     retry: false,
   }).data;
   const unread = feed?.unread ?? 0;
-  const toggle = () => {
-    setOpen((x) => !x);
+  const toggle = (e: MouseEvent) => {
+    flip(e);
     if (!open && unread) {
       void endpoints.markNotificationsRead().then(
         () => qc.invalidateQueries({ queryKey: ["notifications"] }),
@@ -335,6 +316,7 @@ function Bell() {
         className="iconbtn"
         type="button"
         aria-label={`Notifications, ${unread ? `${unread} unread` : "none unread"}`}
+        aria-haspopup="true"
         aria-expanded={open}
         onClick={toggle}
       >
@@ -357,7 +339,7 @@ function Bell() {
                   gap: 2,
                 }}
                 onClick={() => {
-                  setOpen(false);
+                  close();
                   if (n.link) navigate(n.link);
                 }}
               >
@@ -381,8 +363,7 @@ function Bell() {
 
 function UserMenu() {
   const { user, logout } = useSession();
-  const [open, setOpen] = useState(false);
-  const ref = useDismiss(open, () => setOpen(false));
+  const { open, toggle, close, ref } = usePopover();
   if (!user) return null;
   const name = user.display_name || user.full_name || user.username;
   return (
@@ -392,7 +373,7 @@ function UserMenu() {
         className="user linkbtn"
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((x) => !x)}
+        onClick={toggle}
         style={{ textAlign: "left" }}
       >
         <Avatar name={name} />
@@ -415,7 +396,7 @@ function UserMenu() {
             </div>
           </div>
           <div className="hr" style={{ margin: "2px 0 4px" }} />
-          <Link role="menuitem" className="mi" to="/settings" onClick={() => setOpen(false)}>
+          <Link role="menuitem" className="mi" to="/settings" onClick={() => close()}>
             <Icon name="cog" />
             Settings
           </Link>
