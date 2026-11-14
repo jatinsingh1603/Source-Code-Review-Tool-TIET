@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { useSelectedScan } from "@/app/useSelectedScan";
 import { useFindings, useOptional, usePolicy, usePrivacy, useProviders } from "@/api/queries";
 import { downloadApiFile, endpoints, fetchReport, saveBlob } from "@/api/endpoints";
@@ -181,9 +180,11 @@ export default function PrivacyPage() {
             <div className="card">
               <div className="card-h">
                 <h2>Exposure budget</h2>
-                <Link className="btn sm" to="/privacy/policy">
-                  Adjust
-                </Link>
+                <span title="Budgets are set in the server's privacy configuration (privacy.egress.*), not from the dashboard. The policy page sets levels per path.">
+                  <Button size="sm" disabled>
+                    Adjust
+                  </Button>
+                </span>
               </div>
               {!p ? (
                 <Skeleton rows={2} />
@@ -222,7 +223,7 @@ export default function PrivacyPage() {
               )}
               {invariants && !invariants.recorded && invariants.how_to_record && (
                 <p className="xs faint" style={{ marginTop: 8 }}>
-                  I4 and I6 show this scan&apos;s evidence. To show the CI results, run <span className="mono">{invariants.how_to_record}</span> on the server.
+                  I4 and I6 show this scan&apos;s evidence. To show the CI results, run <span className="mono" style={{ overflowWrap: "anywhere" }}>{invariants.how_to_record}</span> on the server.
                 </p>
               )}
             </div>
