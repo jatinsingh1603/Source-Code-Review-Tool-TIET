@@ -131,7 +131,15 @@ export default function OnboardingPage() {
       });
       if (type === "upload" && file) {
         setProgress(0);
-        await uploadArchive(p.id, file, setProgress);
+        try {
+          await uploadArchive(p.id, file, setProgress);
+        } catch (uploadError) {
+          // A refused archive must not leave an empty project behind: the next try would
+          // create a second one with the same name.
+          await endpoints.deleteProject(p.id).catch(() => undefined);
+          void qc.invalidateQueries({ queryKey: qk.projects });
+          throw uploadError;
+        }
         setProgress(null);
         void qc.invalidateQueries({ queryKey: qk.project(p.id) });
       }
@@ -270,13 +278,13 @@ export default function OnboardingPage() {
                 {type === "path" && (
                   <div className="fld">
                     <label htmlFor="ob-path">Folder</label>
-                    <input id="ob-path" className="inp mono" value={path} placeholder="/srv/repos/kavachbank-core" onChange={(e) => setPath(e.target.value)} />
+                    <input id="ob-path" className="inp mono" maxLength={4096} value={path} placeholder="/srv/repos/kavachbank-core" onChange={(e) => setPath(e.target.value)} />
                   </div>
                 )}
                 {type === "git" && (
                   <div className="fld">
                     <label htmlFor="ob-url">Repository URL</label>
-                    <input id="ob-url" className="inp mono" value={url} placeholder="https://github.com/org/repo.git" onChange={(e) => setUrl(e.target.value)} />
+                    <input id="ob-url" className="inp mono" maxLength={2048} value={url} placeholder="https://github.com/org/repo.git" onChange={(e) => setUrl(e.target.value)} />
                   </div>
                 )}
                 {type === "sample" && (
@@ -305,6 +313,7 @@ export default function OnboardingPage() {
                   <input
                     id="ob-name"
                     className="inp"
+                    maxLength={128}
                     value={name}
                     placeholder={suggestedName || "my-service"}
                     onChange={(e) => setName(e.target.value)}
@@ -314,7 +323,7 @@ export default function OnboardingPage() {
               {type === "git" && (
                 <div className="fld">
                   <label htmlFor="ob-br">Branch</label>
-                  <input id="ob-br" className="inp mono" value={ref} placeholder="default branch" onChange={(e) => setRef(e.target.value)} />
+                  <input id="ob-br" className="inp mono" maxLength={256} value={ref} placeholder="default branch" onChange={(e) => setRef(e.target.value)} />
                 </div>
               )}
               {progress !== null && (
