@@ -78,6 +78,13 @@ def sync_scan(
             502, "github_sync_failed", f"the GitHub sync failed: {type(error).__name__}"
         ) from None
     out = dict(result)
+    # sync_findings opens issues from medium up; say so, or the counts look short of the scan's.
+    below = sum(1 for item in items if str(item.get("severity", "")).lower() in {"low", "info"})
+    if below:
+        notes.append(
+            f"{below} low or informational finding{'s are' if below != 1 else ' is'} not synced: "
+            "issues start at medium severity"
+        )
     if notes:
         rest = [n for n in out.get("notes") or [] if not str(n).startswith("no token")]
         out["notes"] = [*notes, *rest]

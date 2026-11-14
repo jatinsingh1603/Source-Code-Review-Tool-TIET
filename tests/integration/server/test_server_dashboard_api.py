@@ -334,6 +334,8 @@ def test_sync_github_dry_run_without_a_token(
     preview = client.post(url, json=body, headers=admin)
     assert preview.status_code == 200, preview.text
     assert preview.json()["notes"][0].startswith("env:CK_TEST_UNSET_GITHUB_TOKEN is not set")
+    # The KavachBank sample has low findings; the preview says why they are not in the plan.
+    assert any("not synced" in note for note in preview.json()["notes"])
     applied = client.post(url, json={**body, "dry_run": False}, headers=admin)
     assert applied.status_code == 400
     assert applied.json()["error"]["code"] == "token_unresolved"
