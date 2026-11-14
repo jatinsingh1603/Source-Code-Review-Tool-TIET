@@ -71,6 +71,12 @@ def executive_summary(
             + (f" ({counts}" + (f", {info} informational)" if info else ")") if counts else "")
             + "."
         )
+        if facts.closed:
+            found += (
+                f" {_n(facts.total - facts.closed).capitalize()} remain open; "
+                f"{_n(facts.closed)} {'was' if facts.closed == 1 else 'were'} closed by the "
+                "reviewers (fixed, false positive or accepted risk)."
+            )
     else:
         found = "The review identified no findings."
     stance = f"The overall security posture is rated {_POSTURE_TEXT[facts.posture]}."

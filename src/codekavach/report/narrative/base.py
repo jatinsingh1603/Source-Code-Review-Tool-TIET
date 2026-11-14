@@ -10,7 +10,7 @@ can tell template prose from model prose if a model-assisted mode is added.
 
 from collections import Counter
 from collections.abc import Sequence
-from typing import ClassVar, Literal
+from typing import ClassVar, Final, Literal
 
 from pydantic import Field
 
@@ -57,6 +57,10 @@ class RoadmapItem(KavachModel):
     report_ids: tuple[str, ...] = ()
 
 
+CLOSED_STATUSES: Final = frozenset({"fixed", "false_positive", "accepted_risk", "suppressed"})
+"""Statuses a reviewer has closed; the dashboard does not count them as open."""
+
+
 class AggregatedFacts(KavachModel):
     """Counts and public labels only: no code, no paths, no identifiers."""
 
@@ -72,6 +76,7 @@ class AggregatedFacts(KavachModel):
     reviewed_by_model: int = 0
     confirmed_by_model: int = 0
     taint_confirmed: int = 0
+    closed: int = 0
     privacy_level: str = "L3"
     posture: str = "Low"
 
@@ -120,6 +125,7 @@ class AggregatedFacts(KavachModel):
             reviewed_by_model=len(reviewed),
             confirmed_by_model=sum(1 for v in reviewed if v.verdict and v.verdict.is_vulnerable),
             taint_confirmed=sum(1 for view in views if view.flow),
+            closed=sum(1 for view in views if view.status in CLOSED_STATUSES),
             privacy_level=privacy_level,
             posture=posture(severities),
         )
