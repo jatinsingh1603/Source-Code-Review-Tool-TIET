@@ -69,7 +69,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setUser(null);
       qc.clear();
       if (!window.location.pathname.startsWith("/login")) {
-        navigate("/login", { replace: true, state: { from: window.location.pathname, expired: true } });
+        signOutNotice.expired = true;
+        navigate("/login", { replace: true, state: { from: window.location.pathname } });
       }
     });
     return () => api.onUnauthorised(null);
@@ -103,6 +104,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const res = await endpoints.login(username, password);
     api.setToken(res.token, remember);
     signOutNotice.elsewhere = false;
+    signOutNotice.expired = false;
     setUser(res.user);
     return res.user;
   }, []);

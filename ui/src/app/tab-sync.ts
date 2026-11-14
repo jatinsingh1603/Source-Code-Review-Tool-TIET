@@ -35,8 +35,11 @@ export function openTabChannel(onMessage: (m: TabMessage) => void): { post: (m: 
   };
 }
 
-/** Set when another tab signed out, so the sign-in page can say why it is showing. */
-export const signOutNotice = { elsewhere: false };
+/**
+ * Why the sign-in page is showing: another tab signed out, or the server refused the token
+ * (expired or revoked). Router state cannot carry this: the auth guard redirects first.
+ */
+export const signOutNotice = { elsewhere: false, expired: false };
 
 /** How long a new tab waits for an open tab to answer before showing the sign-in page. */
 export const ASK_TIMEOUT_MS = 250;

@@ -13,6 +13,7 @@ export default function LoginPage() {
   const location = useLocation();
   const state = (location.state ?? {}) as { from?: string; expired?: boolean };
   const signedOutElsewhere = signOutNotice.elsewhere;
+  const expired = !!state.expired || signOutNotice.expired;
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -140,7 +141,9 @@ export default function LoginPage() {
             <span className="xs faint">or local account</span>
             <div className="hr" style={{ flex: 1 }} />
           </div>
-          {state.expired && !error && <div className="banner warn sm">Your session has ended. Sign in again.</div>}
+          {expired && !signedOutElsewhere && !error && (
+            <div className="banner warn sm">Your session has ended. Sign in again; you will return to the page you were on.</div>
+          )}
           {signedOutElsewhere && !error && (
             <div className="banner sm">You signed out in another tab. Sign in again to continue.</div>
           )}
