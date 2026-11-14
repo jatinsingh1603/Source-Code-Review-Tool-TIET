@@ -65,7 +65,8 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const qc = useQueryClient();
-  const { setCurrentId } = useCurrentProject();
+  const { projects, setCurrentId } = useCurrentProject();
+  const existingSample = projects.find((p) => p.source.type === "sample");
   const settings = useSettings().data;
   const providersQ = useProviders();
   const policy = usePolicy().data;
@@ -294,6 +295,12 @@ export default function OnboardingPage() {
                       KavachBank, a synthetic banking application with planted vulnerabilities, secrets and personal data. It ships
                       with CodeKavach; nothing is fetched.
                     </p>
+                    {existingSample && (
+                      <p className="sm">
+                        The sample is already set up as <Link to={`/projects/${existingSample.id}`}>{existingSample.name}</Link>. Open it to
+                        scan it again; continuing here adds a second copy.
+                      </p>
+                    )}
                   </div>
                 )}
                 {type === "upload" && (
