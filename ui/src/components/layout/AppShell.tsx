@@ -16,6 +16,7 @@ import { pickDefault } from "@/app/useSelectedScan";
 import { Avatar, Icon, Logo, Skeleton, type IconName } from "@/components/ui";
 import { CommandPalette } from "./CommandPalette";
 import { useA11yShell } from "@/lib/a11y";
+import { providerName } from "@/lib/domain";
 
 interface NavItem {
   to: string;
@@ -304,8 +305,7 @@ function ProviderPill() {
   const settings = useSettings().data;
   const providers = useProviders().data;
   if (o.hideProvider || !settings) return null;
-  const p = providers?.find((x) => x.id === settings.default_provider);
-  return <span className="pill">{o.providerPill ?? p?.name ?? settings.default_provider}</span>;
+  return <span className="pill">{o.providerPill ?? providerName(settings.default_provider, providers)}</span>;
 }
 
 function Bell() {

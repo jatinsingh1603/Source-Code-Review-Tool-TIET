@@ -8,7 +8,16 @@ import { suggestName, validateGitUrl } from "@/lib/validate";
 import { permissionsFor } from "@/lib/permissions";
 import { languageLabel } from "@/lib/display";
 import { pathRulesOf } from "@/lib/policy";
+import { providerName } from "@/lib/domain";
 import type { ProviderInfo } from "@/api/types";
+
+describe("providerName", () => {
+  it("names built-in providers before the provider list has loaded", () => {
+    expect(providerName("mock")).toBe("Mock (offline)");
+    expect(providerName("agentrouter", undefined)).toBe("AgentRouter (OpenAI Responses)");
+    expect(providerName("custom-gw")).toBe("custom-gw");
+  });
+});
 
 describe("segmentLines", () => {
   it("applies markup ranges and splits across lines", () => {

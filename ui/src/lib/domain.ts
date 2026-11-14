@@ -52,10 +52,22 @@ export function verdictOf(
   return { kind: "like", conf: c };
 }
 
+/** The server's names for built-in providers (server/providers.py NAMES), shown while /providers loads. */
+const BUILT_IN_NAMES: Record<string, string> = {
+  mock: "Mock (offline)",
+  replay: "Replay (recorded answers)",
+  agentrouter: "AgentRouter (OpenAI Responses)",
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  gemini: "Google Gemini",
+  ollama: "Ollama (local)",
+};
+
 export function providerName(id: string | null | undefined, providers?: ProviderInfo[]): string {
   if (!id) return "—";
   if (id === "none") return "None (local only)";
-  return providers?.find((p) => p.id === id)?.name ?? id;
+  // Without the fallback the raw id ("mock") showed for a second on every page load.
+  return providers?.find((p) => p.id === id)?.name ?? BUILT_IN_NAMES[id] ?? id;
 }
 
 /** The provider a scan used: none at L0, whatever provider was recorded (nothing is sent at L0). */
