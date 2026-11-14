@@ -439,7 +439,9 @@ def preflight(
         raise UsageError(
             f"unknown provider '{provider_id}'",
             code="unknown_provider",
-            hint=f"configured providers: {', '.join(sorted(llm.providers))}",
+            hint="providers: "
+            + ", ".join(sorted({name for name, _, _ in _listed_providers(cli_ctx.settings)}))
+            + " (codekavach providers list shows each one)",
         )
     if not provider.enabled:
         raise UsageError(f"provider '{provider_id}' is disabled", code="provider_disabled")
