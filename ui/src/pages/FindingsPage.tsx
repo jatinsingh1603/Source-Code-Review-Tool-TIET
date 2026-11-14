@@ -11,6 +11,7 @@ import { bySeverity, enginesOf, isOpen, locationOf, sortScans, verdictOf } from 
 import { confidenceFraction, SEVERITY_LABEL, STATUS_LABEL } from "@/lib/format";
 import { engineLabel, findingLabel, LEVEL_NAME, riskLevel, scanLabel } from "@/lib/display";
 import { parseOwasp } from "@/lib/taxonomy";
+import { filterCsv } from "@/lib/csv";
 import { FilterMenu } from "@/components/FilterMenu";
 import { GithubSyncDialog } from "@/components/GithubSyncDialog";
 import {
@@ -381,7 +382,23 @@ export default function FindingsPage() {
     if (!scanId) return;
     try {
       const { blob, filename } = await fetchReport(scanId, "csv");
-      saveBlob(blob, filename);
+      // The report CSV holds every finding of the scan; export the rows this
+      // view shows (a tab, filters or a search), matched by fingerprint.
+      if (filtered.length === all.length) {
+        saveBlob(blob, filename);
+        return;
+      }
+      const keep = new Set(filtered.map((f) => f.fingerprint ?? "").filter(Boolean));
+      const cut = filterCsv(await blob.text(), "fingerprint", keep);
+      if (!cut) {
+        saveBlob(blob, filename);
+        toast.info("Exported every finding", "This report's CSV has no fingerprint column to match the view against.");
+        return;
+      }
+      saveBlob(new Blob([cut.text], { type: "text/csv;charset=utf-8" }), filename.replace(/\.csv$/i, "-view.csv"));
+      if (cut.rows !== filtered.length) {
+        toast.info(`Exported ${cut.rows} of ${filtered.length} findings`, "The others are not in this scan's report.");
+      }
     } catch (e) {
       toast.error("Export failed", e instanceof Error ? e.message : undefined);
     }
