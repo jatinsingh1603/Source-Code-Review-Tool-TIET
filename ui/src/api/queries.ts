@@ -66,7 +66,15 @@ export const useProject = (id: string | undefined) =>
   useQuery({ queryKey: qk.project(id ?? ""), queryFn: () => endpoints.project(id!), enabled: !!id });
 
 export const useScans = (projectId?: string, opts: Opts<Awaited<ReturnType<typeof endpoints.scans>>> = {}) =>
-  useQuery({ queryKey: qk.scans(projectId), queryFn: () => endpoints.scans(projectId), ...opts });
+  useQuery({
+    queryKey: qk.scans(projectId),
+    queryFn: () => endpoints.scans(projectId),
+    // A scan started in another tab, by a colleague or by CI shows up without a reload; the
+    // interval pauses while the tab is hidden and a refetch on focus catches up.
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
+    ...opts,
+  });
 
 export const useScan = (id: string | undefined, opts: Opts<Awaited<ReturnType<typeof endpoints.scan>>> = {}) =>
   useQuery({ queryKey: qk.scan(id ?? ""), queryFn: () => endpoints.scan(id!), enabled: !!id, ...opts });
