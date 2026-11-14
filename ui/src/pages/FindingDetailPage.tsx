@@ -964,8 +964,8 @@ function SawTab({
     return (
       <Empty title="Nothing was sent for this finding">
         The engines' evidence stands on its own: secrets, dependencies and configuration findings
-        have no code slice to send, a quick review sends only the most severe candidates, and at L0
-        nothing leaves.
+        have no code slice to send, a quick review sends only the most severe candidates, the privacy
+        policy can keep a path local (never-send), and at L0 nothing leaves.
       </Empty>
     );
   }
