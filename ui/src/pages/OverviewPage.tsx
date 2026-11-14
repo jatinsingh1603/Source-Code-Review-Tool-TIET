@@ -354,6 +354,9 @@ function TrendCard({ trend, loading }: { trend: TrendPoint[]; loading: boolean }
   // and two scans in the same minute get seconds so their labels differ.
   const when = (t: TrendPoint) => t.started ?? t.date;
   const minute = trend.map((t) => fmtHM(when(t)));
+  // Two scans in the same minute need seconds to tell apart; then every time label gets them, so
+  // the axis reads alike ("16:50:47, 16:50:52, 16:51:30", not "16:50:52, 16:51").
+  const withSeconds = minute.some((m, i) => i > 0 && m === minute[i - 1]);
   return (
     <div className="card">
       <div className="card-h">
@@ -414,8 +417,7 @@ function TrendCard({ trend, loading }: { trend: TrendPoint[]; loading: boolean }
             {trend.map((t, i) => {
               const prevDay = i > 0 ? fmtDayMonth(when(trend[i - 1]!)) : "";
               const day = fmtDayMonth(when(t));
-              const clash = minute[i - 1] === minute[i] || minute[i + 1] === minute[i];
-              const time = clash ? fmtTime(when(t)) : minute[i];
+              const time = withSeconds ? fmtTime(when(t)) : minute[i];
               return <span key={t.scan_id}>{day === prevDay ? time : day}</span>;
             })}
           </div>
@@ -578,7 +580,7 @@ function HmRow({
             style={{ textDecoration: "none" }}
             to={
               c === "LLM"
-                ? `/findings?owasp=${code}`
+                ? `/findings?owasp=${code}&verdict=conf,like,rev,fp,reviewed`
                 : `/findings?owasp=${code}&engine=${c.toLowerCase()}`
             }
             title={`${code} · ${c}: ${n}`}
