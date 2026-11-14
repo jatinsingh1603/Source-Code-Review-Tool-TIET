@@ -184,7 +184,7 @@ export default function ProvidersPage() {
                       {p.min_level ? ` · needs ${p.min_level} or stricter` : ""}
                     </dd>
                     <dt>Cost</dt>
-                    <dd className={p.local ? undefined : "faint"}>{p.kind === "mock" || p.kind === "replay" ? "None" : p.local ? "Your hardware" : "[set by admin]"}</dd>
+                    <dd className={p.local ? undefined : "faint"}>{p.kind === "mock" || p.kind === "replay" ? "None" : p.local ? "Your hardware" : "Not tracked in this build"}</dd>
                   </dl>
                 </div>
               );
@@ -286,7 +286,7 @@ export default function ProvidersPage() {
             </div>
           )}
           <p className="xs faint" style={{ marginTop: 12 }}>
-            Costs appear once an admin sets a rate card for each paid provider.
+            This build does not track provider costs; the token counts come from the egress ledger.
           </p>
         </div>
       </section>
