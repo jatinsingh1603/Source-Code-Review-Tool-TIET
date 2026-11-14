@@ -1,0 +1,1 @@
+Findings, Egress Ledger, Privacy Centre and Privacy Inspect show a placeholder until the project and its scan list have loaded, instead of "No findings yet", "No scans yet", "No payloads to inspect" or "No files to explain" for a moment on a seeded server.

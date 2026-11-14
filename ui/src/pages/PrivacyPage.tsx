@@ -62,7 +62,7 @@ export const INVARIANTS_LONG: [string, string][] = [
 
 /** Privacy Centre (SCREENS.md §11). */
 export default function PrivacyPage() {
-  const { scanId, scans, project } = useSelectedScan();
+  const { scanId, scans, project, loading: scansLoading } = useSelectedScan();
   const canOriginal = useCan("privacy:read_original");
   const sorted = useMemo(() => sortScans(scans), [scans]);
   const scan = sorted.find((s) => s.id === scanId);
@@ -131,7 +131,11 @@ export default function PrivacyPage() {
       />
 
       {privacyQ.isError && <ErrorBanner what="The privacy summary could not be loaded." error={privacyQ.error} />}
-      {!scanId && !scans.length ? (
+      {scansLoading && !scanId ? (
+        <div className="card">
+          <Skeleton rows={4} />
+        </div>
+      ) : !scanId && !scans.length ? (
         <div className="card">
           <Empty title="No scans yet" action="Run the KavachBank demo" to="/demo">
             Privacy measurements appear after the first scan.
@@ -276,7 +280,9 @@ export default function PrivacyPage() {
             </div>
             <div className="card stack">
               <h2>Privacy explain</h2>
-              {files.length === 0 ? (
+              {!findings ? (
+                <Skeleton rows={2} />
+              ) : files.length === 0 ? (
                 <Empty title="No files to explain">Files with findings in this scan appear here.</Empty>
               ) : (
                 <>

@@ -28,14 +28,15 @@ function LatestPayload() {
   const { current } = useCurrentProject();
   const [params] = useSearchParams();
   const linked = params.get("scan");
-  const all = sortScans(useScans(current?.id).data ?? []).filter((s) => s.status === "completed");
+  const scansQ = useScans(current?.id);
+  const all = sortScans(scansQ.data ?? []).filter((s) => s.status === "completed");
   const withPayloads = all.filter((s) => (s.payloads ?? 1) > 0 && s.privacy_level !== "L0");
   const scan = linked ? all.find((s) => s.id === linked) ?? { id: linked, privacy_level: undefined } : withPayloads[0];
   const latest = all[0];
   const ledger = useLedger(scan?.id);
   const entry = ledger.data?.find((e) => e.outcome === "sent" && e.finding_id) ?? ledger.data?.find((e) => e.outcome === "sent");
   if (entry && scan) return <Navigate to={`/privacy/inspect/${scan.id}/${entry.seq}`} replace />;
-  const loading = !current || ledger.isLoading || (scan && !ledger.data);
+  const loading = !current || scansQ.isLoading || ledger.isLoading || (scan && !ledger.data);
   return (
     <Content>
       <div className="ph">

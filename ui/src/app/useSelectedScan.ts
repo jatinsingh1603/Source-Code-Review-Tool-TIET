@@ -24,7 +24,7 @@ export function useFollowScanProject(scanId: string | null | undefined) {
 
 export function useSelectedScan() {
   const [params, setParams] = useSearchParams();
-  const { current } = useCurrentProject();
+  const { current, loading: projectsLoading } = useCurrentProject();
   useFollowScanProject(params.get("scan"));
   const scansQ = useScans(current?.id);
   const scans = useMemo(() => scansQ.data ?? [], [scansQ.data]);
@@ -39,7 +39,8 @@ export function useSelectedScan() {
     },
     [params, setParams],
   );
-  return { scanId, setScanId, scans, loading: scansQ.isLoading, project: current };
+  // Until the project and its scan list have loaded, "no scans" is not known yet.
+  return { scanId, setScanId, scans, loading: projectsLoading || scansQ.isLoading, project: current };
 }
 
 export function pickDefault(scans: Scan[]): Scan | undefined {

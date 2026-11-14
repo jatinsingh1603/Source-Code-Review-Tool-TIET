@@ -74,7 +74,7 @@ function download(name: string, text: string, type: string) {
 /** Egress Ledger (SCREENS.md §12): every outbound payload, hash-chained. */
 export default function LedgerPage() {
   const [params, setParams] = useSearchParams();
-  const { scanId, scans } = useSelectedScan();
+  const { scanId, scans, loading: scansLoading } = useSelectedScan();
   const scan = scans.find((s) => s.id === scanId);
   const ledgerQ = useLedger(scanId);
   const privacy = usePrivacy(scanId).data;
@@ -434,7 +434,7 @@ export default function LedgerPage() {
                   </button>
                 </Empty>
               )}
-              {!scanId && !scans.length && (
+              {!scansLoading && !scanId && !scans.length && (
                 <Empty title="No scans yet" action="Run a scan" to="/projects/new" />
               )}
             </div>

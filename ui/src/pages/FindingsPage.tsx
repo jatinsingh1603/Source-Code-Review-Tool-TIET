@@ -151,7 +151,7 @@ function shownConfidence(f: Finding): number | null {
 export default function FindingsPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
-  const { scanId, scans } = useSelectedScan();
+  const { scanId, scans, loading: scansLoading } = useSelectedScan();
   const sorted = useMemo(() => sortScans(scans), [scans]);
   const scan = sorted.find((s) => s.id === scanId);
   const baseline = useMemo(() => {
@@ -405,7 +405,7 @@ export default function FindingsPage() {
   };
 
   const triage = can("findings:triage");
-  const noScans = !scanId && scans.length === 0;
+  const noScans = !scansLoading && !scanId && scans.length === 0;
 
   return (
     <Content>
