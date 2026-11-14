@@ -376,3 +376,22 @@ body {
 .ck .console .wl {
   color: #b54708; /* warnings in the log: --warn is 3.3:1 on --code-bg */
 }
+
+/*
+ * Narrow screens: a screen-reader caption (.sr-only, absolutely positioned) inside a
+ * scrolling table was placed against the page, not the table, and widened the page at
+ * 390px. Long compliance tags wrap instead of running off the screen.
+ */
+.ck .tbl-wrap {
+  position: relative;
+}
+.ck .tag {
+  max-width: 100%;
+}
+@media (max-width: 640px) {
+  .ck .tag {
+    white-space: normal;
+    height: auto;
+    min-height: 22px;
+  }
+}
