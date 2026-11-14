@@ -453,7 +453,7 @@ export default function PrivacyPage() {
                   </dd>
                   <dt>Payloads</dt>
                   <dd className="sm">
-                    {fmtInt(p.payloads)} {p.send === false || p.provider_tier === "local" ? "recorded" : "sent"} · {fmtInt(p.tokens_sent)} tokens
+                    {fmtInt(p.payloads)} {p.send === false || p.provider_tier === "local" ? "recorded" : "sent"} · {fmtInt(p.tokens_sent)} prompt tokens, review instructions included
                     {p.disclosure?.repository_fraction_pct !== undefined ? ` · ${p.disclosure.repository_fraction_pct}% of repository lines` : ""}
                   </dd>
                   <dt>Checks</dt>
