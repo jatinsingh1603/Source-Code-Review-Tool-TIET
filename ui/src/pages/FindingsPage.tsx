@@ -234,9 +234,12 @@ export default function FindingsPage() {
   const rows = filtered.slice((pg - 1) * PAGE, pg * PAGE);
   const allSel = rows.length > 0 && rows.every((r) => selected.has(r.id));
 
+  // Facet counts follow the selected tab, so "Low 5" under "All open" matches the rows shown.
+  const inTab = all.filter((f) => inView(f, view));
   const opts = (k: ListKey, label?: (v: string) => string) => {
     const m = new Map<string, number>();
-    for (const f of all) {
+    for (const v of list(k)) m.set(v, 0);
+    for (const f of inTab) {
       const v = valueOf[k](f);
       m.set(v, (m.get(v) ?? 0) + 1);
     }
@@ -391,8 +394,8 @@ export default function FindingsPage() {
           value={list("severity")}
           onChange={(v) => setParam("severity", v.join(",") || null)}
           options={sevOrder
-            .map((s) => ({ value: s, label: SEVERITY_LABEL[s], count: all.filter((f) => f.severity === s).length }))
-            .filter((o) => o.count)}
+            .map((s) => ({ value: s, label: SEVERITY_LABEL[s], count: inTab.filter((f) => f.severity === s).length }))
+            .filter((o) => o.count || list("severity").includes(o.value))}
         />
         <FilterMenu label="CWE" value={list("cwe")} onChange={(v) => setParam("cwe", v.join(",") || null)} options={opts("cwe")} />
         <FilterMenu label="OWASP" value={list("owasp")} onChange={(v) => setParam("owasp", v.join(",") || null)} options={opts("owasp")} />
