@@ -522,7 +522,8 @@ function ReportRow({ scan: s, selected, title, onOpen }: { scan: Scan; selected:
       <td className="mono sm">{scanLabel(s.id)}</td>
       <td className="sm">Technical</td>
       <td>
-        <div className="row" style={{ gap: 4 }}>
+        {/* A minimum width keeps the tags on two or three lines on a phone, not one tag per line. */}
+        <div className="row" style={{ gap: 4, minWidth: 200 }}>
           {rendered.map((f) => (
             <span key={f.format} className="tag">
               {FORMAT_NAME[f.format] ?? f.format.toUpperCase()}
