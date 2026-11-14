@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 
 const ITEMS = ".ck-menu button:not([disabled]), .ck-menu a[href], .ck-menu input:not([disabled])";
 
@@ -23,6 +23,18 @@ export function usePopover() {
     focusFirst.current = e?.detail === 0;
     setOpen((x) => !x);
   }, []);
+
+  // Keep the menu on screen, before it is painted: on a phone the top bar
+  // wraps, so a right-aligned menu on a left-edge trigger opened off-screen
+  // (and a menu past the right edge zoomed the whole page out).
+  useLayoutEffect(() => {
+    const menu = open ? ref.current?.querySelector<HTMLElement>(".ck-menu") : null;
+    if (!menu) return;
+    const r = menu.getBoundingClientRect();
+    const room = document.documentElement.clientWidth - 8;
+    const shift = r.left < 8 ? 8 - r.left : r.right > room ? room - r.right : 0;
+    if (shift) menu.style.transform = `translateX(${Math.round(shift)}px)`;
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
