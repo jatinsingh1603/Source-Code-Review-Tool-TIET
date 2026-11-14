@@ -35,6 +35,7 @@ import {
   riskLevel,
   scanLabel,
 } from "@/lib/display";
+import { fmtRemediation } from "@/lib/format";
 import { CWE_SHORT, OWASP_TOP10, parseOwasp } from "@/lib/taxonomy";
 import {
   ButtonLink,
@@ -311,11 +312,13 @@ function MttrKpi({
       value = total / fixed.length / 86_400_000;
     }
   }
+  // Under a day reads in hours or minutes: findings fixed by a re-scan the same hour said "0.0 days".
+  const [shown, unit] = fmtRemediation(value);
   return (
     <Kpi
       label="Mean time to remediate"
-      value={value === null ? "—" : value.toFixed(1)}
-      unit={value === null ? "" : "days"}
+      value={shown}
+      unit={unit}
       detailClass={delta ? (delta < 0 ? "down" : "up") : undefined}
       detail={
         delta ? (

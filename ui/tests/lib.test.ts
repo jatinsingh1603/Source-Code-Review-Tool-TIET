@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { countPlaceholders, segmentLines } from "@/lib/markup";
 import { applyFiltersToParams, filtersFromParams, toggleListValue } from "@/lib/filters";
 import { cvssRating, parseVector } from "@/lib/cvss";
-import { atLeastAsStrict, confidenceFraction, LEVELS_BY_STRICTNESS } from "@/lib/format";
+import { atLeastAsStrict, confidenceFraction, fmtRemediation, LEVELS_BY_STRICTNESS } from "@/lib/format";
 import { egressSummary } from "@/lib/egress";
 import { suggestName, validateGitUrl } from "@/lib/validate";
 import { permissionsFor } from "@/lib/permissions";
@@ -179,5 +179,15 @@ describe("display preferences", () => {
     } finally {
       setDisplayPrefs("Asia/Kolkata", false);
     }
+  });
+});
+
+describe("fmtRemediation", () => {
+  it("reads under a day in hours or minutes, never 0.0 days", () => {
+    expect(fmtRemediation(null)).toEqual(["—", ""]);
+    expect(fmtRemediation(2.25)).toEqual(["2.3", "days"]);
+    expect(fmtRemediation(0.25)).toEqual(["6.0", "hours"]);
+    expect(fmtRemediation(20 / 86_400)).toEqual(["1", "min"]);
+    expect(fmtRemediation(0.01)).toEqual(["14", "min"]);
   });
 });

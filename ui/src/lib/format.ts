@@ -51,6 +51,14 @@ export function fmtDuration(start?: string | null, end?: string | null): string 
   return `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
+/** A time to remediate given in days, as [value, unit]: under a day reads in hours or minutes. */
+export function fmtRemediation(days: number | null): [string, string] {
+  if (days === null || Number.isNaN(days)) return ["—", ""];
+  if (days >= 1) return [days.toFixed(1), "days"];
+  if (days * 24 >= 1) return [(days * 24).toFixed(1), "hours"];
+  return [String(Math.max(1, Math.round(days * 1440))), "min"];
+}
+
 export const fmtNum = (n?: number | null) => (n === undefined || n === null ? "—" : nf.format(n));
 
 export function fmtConfidence(c: number | string | undefined | null): string {
