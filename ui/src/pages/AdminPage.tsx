@@ -618,15 +618,18 @@ function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void })
   const toast = useToast();
   const [form, setForm] = useState({ username: "", display_name: "", email: "", password: "", role: "developer" as Role });
   const [err, setErr] = useState<string | null>(null);
+  const [errors, setErrors] = useState<InviteErrors>({});
   const submit = async () => {
     setErr(null);
-    if (!/^[a-z0-9._-]{3,}$/i.test(form.username)) return setErr("Username: at least 3 letters, digits, dots, dashes or underscores.");
-    if (form.email.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) return setErr("Email: enter a full address, for example name@thapar.edu, or leave it empty.");
-    if (form.password.length < 10) return setErr("Password: at least 10 characters.");
+    // Every field is checked at once, so the admin fixes all of them in one pass.
+    const found = inviteErrors(form);
+    setErrors(found);
+    if (Object.keys(found).length) return;
     try {
       await create.mutateAsync({ ...form, email: form.email.trim() });
       toast.success("User created", `${form.username} can sign in now.`);
       setForm({ username: "", display_name: "", email: "", password: "", role: "developer" });
+      setErrors({});
       onClose();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "The user was not created.");
@@ -650,14 +653,14 @@ function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void })
       }
     >
       <div className="g g-2" style={{ gap: 12 }}>
-        <Field label="Username" required>
-          {(id) => <Input id={id} value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} autoComplete="off" />}
+        <Field label="Username" required error={errors.username}>
+          {(id, d) => <Input id={id} aria-describedby={d} aria-invalid={!!errors.username || undefined} value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} autoComplete="off" />}
         </Field>
         <Field label="Display name">
           {(id) => <Input id={id} value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />}
         </Field>
-        <Field label="Email">
-          {(id) => <Input id={id} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />}
+        <Field label="Email" error={errors.email}>
+          {(id, d) => <Input id={id} aria-describedby={d} aria-invalid={!!errors.email || undefined} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />}
         </Field>
         <Field label="Role">
           {(id) => (
@@ -671,10 +674,27 @@ function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void })
           )}
         </Field>
       </div>
-      <Field label="Initial password" required help="At least 10 characters">
-        {(id, d) => <Input id={id} aria-describedby={d} type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />}
+      <Field label="Initial password" required help="At least 10 characters" error={errors.password}>
+        {(id, d) => <Input id={id} aria-describedby={d} aria-invalid={!!errors.password || undefined} type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />}
       </Field>
+      {Object.keys(errors).length > 1 && (
+        <div className="banner bad sm" role="status">
+          {Object.keys(errors).length} fields need attention.
+        </div>
+      )}
       {err && <div className="banner bad sm">{err}</div>}
     </Dialog>
   );
+}
+
+type InviteErrors = Partial<Record<"username" | "email" | "password", string>>;
+
+/** Every problem with the invite form, by field; empty when it can be sent. */
+function inviteErrors(form: { username: string; email: string; password: string }): InviteErrors {
+  const errors: InviteErrors = {};
+  if (!/^[a-z0-9._-]{3,}$/i.test(form.username)) errors.username = "At least 3 letters, digits, dots, dashes or underscores.";
+  const email = form.email.trim();
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) errors.email = "Enter a full address, for example name@thapar.edu, or leave it empty.";
+  if (form.password.length < 10) errors.password = "At least 10 characters.";
+  return errors;
 }
