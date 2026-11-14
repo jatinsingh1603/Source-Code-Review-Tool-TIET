@@ -432,12 +432,39 @@ def _impact(data: dict[str, Any], cwes: list[int]) -> dict[str, Any]:
     return impact
 
 
+OFFLINE_PROVIDERS: Final = frozenset({"mock"})
+
+
+def _offline_review_only(data: dict[str, Any]) -> bool:
+    """Whether every model review of the finding came from the offline mock provider."""
+    reviews = (data.get("provenance") or {}).get("llm_reviews") or []
+    return bool(reviews) and all(review.get("provider") in OFFLINE_PROVIDERS for review in reviews)
+
+
+def _library_text(data: dict[str, Any], cwes: list[int], entry: Any) -> dict[str, Any]:
+    """``data`` with the mock provider's placeholder impact and remediation replaced.
+
+    The mock answers on the machine with fixed text ("Mock impact: ...", ``safe_call(...)  # mock
+    example``); the page shows the weakness library's text instead, as the report does.
+    """
+    from codekavach.report.model.library import lookup  # noqa: PLC0415
+
+    library = lookup(tuple(cwes))
+    remediation = getattr(entry, "remediation", None) or (
+        f"{library.short_term}\n\n{library.long_term}"
+    )
+    impact = {**(data.get("impact") or {}), "narrative": library.impact}
+    return {**data, "impact": impact, "remediation": remediation}
+
+
 def finding_detail(row: Any, source_root: Path | None = None) -> dict[str, Any]:
     """The detail JSON of a finding row: everything the dashboard's finding page shows."""
-    data: dict[str, Any] = dict(row.data or {})
+    raw: dict[str, Any] = dict(row.data or {})
     detail = finding_summary(row)
-    cwes = _cwe_numbers(data)
+    cwes = _cwe_numbers(raw)
     entry = _kb_entry(cwes)
+    offline = _offline_review_only(raw)
+    data = _library_text(raw, cwes, entry) if offline else raw
     asvs = _taxonomy(data, "asvs") or list(getattr(entry, "asvs", ()) or ())
     capec = _taxonomy(data, "capec") or [
         f"CAPEC-{item}" for item in getattr(entry, "capec", ()) or ()
@@ -454,6 +481,9 @@ def finding_detail(row: Any, source_root: Path | None = None) -> dict[str, Any]:
     ]
     code, snippet = _code(data)
     verdict = _verdict(data)
+    if verdict is not None and offline:
+        verdict["impact"] = data["impact"]["narrative"]
+        verdict["remediation"] = data["remediation"]
     detail.update(
         {
             "description": data.get("description", ""),
@@ -482,7 +512,7 @@ def finding_detail(row: Any, source_root: Path | None = None) -> dict[str, Any]:
             "references": references,
             "provenance": data.get("provenance") or {},
             "risk": data.get("risk"),
-            "raw": data,
+            "raw": raw,
         }
     )
     return detail

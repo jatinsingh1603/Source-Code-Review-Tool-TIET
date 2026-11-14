@@ -198,10 +198,12 @@ def finding_json(
         llm["consensus"] = consensus(runs)
         llm["temperature"] = None
         llm["exploit_scenario"] = exploit_scenario(
-            llm.get("impact") or (data.get("impact") or {}).get("narrative")
+            llm.get("impact") or (detail.get("impact_detail") or {}).get("narrative")
         )
         llm["remediation_example"] = remediation_example(llm.get("remediation"))
-    detail["exploit_scenario"] = exploit_scenario((data.get("impact") or {}).get("narrative"))
+    detail["exploit_scenario"] = exploit_scenario(
+        (detail.get("impact_detail") or {}).get("narrative")
+    )
     detail["remediation_example"] = remediation_example(detail.get("remediation"))
     detail["remediation_diff"] = None
     history = session.scalars(
