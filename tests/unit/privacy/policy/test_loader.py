@@ -114,3 +114,14 @@ def test_symlinked_policy_is_refused(tmp_path: Path) -> None:
 def test_messages_name_no_file_contents() -> None:
     error = refused('[[path]]\npattern = "/etc/**"\nlevel = "L4"\n# SECRET_MARKER\n')
     assert "SECRET_MARKER" not in str(error)
+
+
+def test_001_names_the_line_of_a_toml_syntax_error_but_no_contents() -> None:
+    error = refused('policy_version = 1\n[[path]\npattern = "SECRET_MARKER"\n')
+    assert error.code == "CK-POL-001"
+    assert error.line == 2
+    assert "SECRET_MARKER" not in str(error)
+    assert "TOMLDecodeError" not in str(error)
+    duplicate = refused("policy_version = 1\nSECRET_KEY = 1\nSECRET_KEY = 2\n")
+    assert duplicate.line == 3
+    assert "SECRET_KEY" not in str(duplicate)

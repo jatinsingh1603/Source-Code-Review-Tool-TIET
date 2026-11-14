@@ -29,6 +29,7 @@ from codekavach.privacy.policy.model import MAX_RULES, PolicyDocument
 
 POLICY_FILE: Final = "codekavach.policy.toml"
 MAX_DOCUMENT_BYTES: Final = 256 * 1024
+_TOML_POSITION: Final = re.compile(r"at line (\d+), column (\d+)")
 _AXES: Final = ("path", "language", "rule", "classification")
 _TOP: Final = frozenset({"policy_version", "provider_tiers", *_AXES})
 _TIERS: Final = frozenset(t.value for t in TrustTier)
@@ -162,11 +163,19 @@ def load_document(
     try:
         text = raw.decode("utf-8")
         data = tomllib.loads(text)
-    except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+    except UnicodeDecodeError:
+        raise PolicyError(
+            PolicyErrorCode.UNREADABLE, "policy is not valid UTF-8 text", file=file
+        ) from None
+    except tomllib.TOMLDecodeError as exc:
+        # Only the position is kept: tomllib's own wording can quote a key or a character of
+        # the document, and an error message names no file contents.
+        at = _TOML_POSITION.search(str(exc))
         raise PolicyError(
             PolicyErrorCode.UNREADABLE,
-            f"policy is not valid UTF-8 TOML ({type(exc).__name__})",
+            "policy is not valid TOML" + (f" (column {at.group(2)})" if at else ""),
             file=file,
+            line=int(at.group(1)) if at else None,
         ) from None
     return _validate(data, text, file), sha256_hex(raw)
 
