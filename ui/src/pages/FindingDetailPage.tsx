@@ -214,6 +214,7 @@ export default function FindingDetailPage() {
           what="This finding could not be loaded."
           error={q.error}
           onRetry={() => void q.refetch()}
+          back={{ label: "All findings", to: "/findings" }}
         />
       </Content>
     );

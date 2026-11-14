@@ -7,7 +7,7 @@ import { atLeastAsStrict } from "@/lib/format";
 import { LEVEL_NAME } from "@/lib/display";
 import { egressSummary } from "@/lib/egress";
 import { shortProviderName } from "@/lib/domain";
-import { Button, Content, PageHeader, Skeleton, useToast } from "@/components/ui";
+import { Button, Content, ErrorBanner, PageHeader, Skeleton, useToast } from "@/components/ui";
 import { ENGINE_GROUPS, STAGES } from "@/lib/pipeline";
 
 /** Scan launch: the live view's left form, unlocked (SCREENS.md §07). */
@@ -46,8 +46,8 @@ export default function ScanLaunchPage() {
   }, [list, settings.data, settings.isLoading, ready]);
 
   useEffect(() => {
-    if (id) setCurrentId(id);
-  }, [id, setCurrentId]);
+    if (project.data?.id) setCurrentId(project.data.id);
+  }, [project.data?.id, setCurrentId]);
 
   const floorBlocked = !!provider?.min_level && level !== "L0" && !atLeastAsStrict(level, provider.min_level);
   const summary = egressSummary(level, provider, !dryRun);
@@ -74,6 +74,15 @@ export default function ScanLaunchPage() {
   };
 
   const p = project.data;
+  if (project.isError) {
+    // A stale or mistyped link must not fall back to another project's form.
+    return (
+      <Content>
+        <PageHeader crumbs={[{ label: "Scans", to: "/scans" }, { label: "New scan" }]} title="New scan" />
+        <ErrorBanner what="No scan can be started here." error={project.error} back={{ label: "All projects", to: "/projects" }} />
+      </Content>
+    );
+  }
   return (
     <Content>
       <PageHeader crumbs={[{ label: p?.name ?? "Project", to: "/" }, { label: "Scans", to: "/scans" }, { label: "New scan" }]} title="New scan" />

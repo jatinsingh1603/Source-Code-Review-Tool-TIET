@@ -162,7 +162,7 @@ export function ProjectDetailPage() {
   if (q.isError) {
     return (
       <Content>
-        <ErrorBanner what="This project could not be loaded." error={q.error} />
+        <ErrorBanner what="This project could not be loaded." error={q.error} back={{ label: "All projects", to: "/projects" }} />
       </Content>
     );
   }

@@ -146,7 +146,7 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
       </div>
 
       {q.isError ? (
-        <ErrorBanner what="This payload could not be loaded." error={q.error} onRetry={() => void q.refetch()} />
+        <ErrorBanner what="This payload could not be loaded." error={q.error} onRetry={() => void q.refetch()} back={{ label: "Egress ledger", to: "/privacy/ledger" }} />
       ) : (
         <>
           <section className="card" style={{ padding: 0 }}>

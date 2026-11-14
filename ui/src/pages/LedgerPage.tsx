@@ -330,6 +330,7 @@ export default function LedgerPage() {
               what="The ledger could not be loaded."
               error={ledgerQ.error}
               onRetry={() => void ledgerQ.refetch()}
+              back={{ label: "All scans", to: "/scans" }}
             />
           ) : (
             <div className="tbl-wrap">

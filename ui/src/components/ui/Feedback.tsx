@@ -71,7 +71,15 @@ export function Empty({
 
 export function errorText(error: unknown): string {
   if (error instanceof ApiError) {
-    return `${error.message}${error.code && !error.code.startsWith("http_") ? ` (${error.code})` : ""}`;
+    if (error.status === 404) {
+      // "scan not found" -> "This scan does not exist..." reads better than a code.
+      const what = /^(\w+) not found$/i.exec(error.message)?.[1]?.toLowerCase();
+      return what
+        ? `This ${what} does not exist, or it was deleted. Check the address, or open it from the list.`
+        : `${error.message} Check the address, or open it from the list.`;
+    }
+    const quiet = !error.code || error.code.startsWith("http_") || error.code === "validation_error";
+    return `${error.message}${quiet ? "" : ` (${error.code})`}`;
   }
   if (error instanceof Error) return error.message;
   return "Unknown error";
@@ -82,24 +90,34 @@ export function ErrorBanner({
   error,
   what,
   onRetry,
+  back,
   className,
 }: {
   error?: unknown;
   /** What failed, e.g. "Findings could not be loaded." */
   what: string;
   onRetry?: () => void;
+  /** Where to go instead when the thing does not exist (404), e.g. the list it came from. */
+  back?: { label: string; to: string };
   className?: string;
 }) {
+  // Retrying a missing or malformed address gives the same answer; offer a way out instead.
+  const final = error instanceof ApiError && (error.status === 404 || error.status === 422);
   return (
     <div role="alert" className={cn("banner bad sm", className)}>
       <span>
         <b>{what}</b>
         {error !== undefined && error !== null && <> {errorText(error)}</>}
       </span>
-      {onRetry && (
+      {onRetry && !final && (
         <button type="button" className="btn sm" style={{ marginLeft: "auto" }} onClick={onRetry}>
           Try again
         </button>
+      )}
+      {back && final && (
+        <Link className="btn sm" style={{ marginLeft: "auto" }} to={back.to}>
+          {back.label}
+        </Link>
       )}
     </div>
   );
