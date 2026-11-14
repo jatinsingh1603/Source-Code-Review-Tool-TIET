@@ -15,8 +15,13 @@ export function useFocusTrap(open: boolean, ref: React.RefObject<HTMLElement>, o
     if (!open) return;
     const opener = document.activeElement as HTMLElement | null;
     const node = ref.current;
+    // The field to fill in first, before the header's Close button.
     const first =
-      node?.querySelector<HTMLElement>("[data-autofocus]") ?? node?.querySelector<HTMLElement>(FOCUSABLE);
+      node?.querySelector<HTMLElement>("[data-autofocus]") ??
+      node?.querySelector<HTMLElement>(
+        ".body input:not([disabled]):not([type=hidden]), .body textarea:not([disabled]), .body select:not([disabled])",
+      ) ??
+      node?.querySelector<HTMLElement>(FOCUSABLE);
     (first ?? node)?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -43,7 +48,14 @@ export function useFocusTrap(open: boolean, ref: React.RefObject<HTMLElement>, o
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
-      opener?.focus?.();
+      // Back to the opener; when the dialog's action removed or disabled it
+      // (a bulk bar that goes once the selection is cleared), to the page.
+      if (opener?.isConnected) opener.focus?.();
+      window.setTimeout(() => {
+        if (document.activeElement === document.body || !document.activeElement) {
+          document.getElementById("main")?.focus({ preventScroll: true });
+        }
+      }, 0);
     };
   }, [open, ref]);
 }

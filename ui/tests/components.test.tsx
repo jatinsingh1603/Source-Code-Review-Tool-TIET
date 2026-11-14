@@ -92,6 +92,15 @@ describe("primitives", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("Dialog focuses its first field, not the Close button", () => {
+    render(
+      <Dialog open onClose={() => undefined} title="Suppress">
+        <textarea aria-label="Reason" />
+      </Dialog>,
+    );
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Reason" }));
+  });
+
   it("DataTable sorts by a column", () => {
     const rows = [
       { id: "1", n: 2 },
