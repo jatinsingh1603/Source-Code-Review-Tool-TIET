@@ -58,7 +58,7 @@ describe("ApiClient", () => {
   it("maps errors to ApiError", async () => {
     const c = new ApiClient((async () =>
       jsonResponse(404, { error: { code: "not_found", message: "scan not found" } })) as unknown as typeof fetch, null);
-    await expect(c.get("/scans/x")).rejects.toMatchObject({ status: 404, code: "not_found", message: "scan not found" });
+    await expect(c.get("/scans/x")).rejects.toMatchObject({ status: 404, code: "not_found", message: "Scan not found." });
   });
 
   it("clears the token and calls the handler on 401", async () => {
@@ -81,7 +81,7 @@ describe("ApiClient", () => {
 
   it("surfaces the Retry-After hint on 429", async () => {
     const c = new ApiClient((async () => jsonResponse(429, { detail: "slow down" }, { "Retry-After": "7" })) as unknown as typeof fetch, null);
-    await expect(c.get("/stats")).rejects.toMatchObject({ retryAfter: 7, message: "slow down Try again in 7 s." });
+    await expect(c.get("/stats")).rejects.toMatchObject({ retryAfter: 7, message: "Slow down. Try again in 7 s." });
   });
 
   it("reports a network failure as status 0", async () => {

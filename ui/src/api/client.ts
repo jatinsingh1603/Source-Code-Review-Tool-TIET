@@ -136,6 +136,19 @@ export function humanizeValidation(message: string): string {
     .join(" ");
 }
 
+/**
+ * Server messages are written in lower case without a full stop ("the current password is not
+ * correct"), for logs and the CLI; on screen they read as a sentence. Validation lists
+ * are worded by humanizeValidation first.
+ */
+export function asSentence(message: string): string {
+  const m = message.trim();
+  if (!m) return m;
+  const first = m.charAt(0);
+  const capital = first.toLowerCase() === first && first.toUpperCase() !== first ? first.toUpperCase() + m.slice(1) : m;
+  return /[.!?)]$/.test(capital) ? capital : `${capital}.`;
+}
+
 function defaultMessage(status: number): string {
   if (status === 0) return "The CodeKavach server could not be reached.";
   if (status === 400) return "The request was not valid.";
@@ -264,7 +277,7 @@ export class ApiClient {
       const env = parseErrorEnvelope(res.status, parsed);
       const ra = res.headers.get("Retry-After");
       const retryAfter = ra !== null && ra !== "" && !Number.isNaN(Number(ra)) ? Number(ra) : null;
-      let message = env.message;
+      let message = asSentence(env.message);
       if (res.status === 429 && retryAfter !== null) {
         message = `${message} Try again in ${retryAfter} s.`;
       }
