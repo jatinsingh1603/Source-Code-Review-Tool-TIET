@@ -76,6 +76,8 @@ KavachBank (sample)
 done: 3 projects, 8 scans, 80 findings, 76 still open
 ```
 
+The totals depend on which external engines the server has, not on chance: the run above had Bandit installed. Without any external engine (Opengrep, Bandit, ESLint), as on a fresh laptop or in the container, the same script prints KavachBank at 59 findings (15 critical, 25 high, 14 payloads) and `done: 3 projects, 8 scans, 69 findings, 65 still open` (measured 14 Nov). Each scan log then says "No external engine ... is installed". Rehearse the numbers on the demo machine itself.
+
 It uses only the REST API (so it works against a container), the offline `mock` provider (no key, nothing leaves the machine) and real scans. It creates:
 
 | Project | Scans | What it shows |
