@@ -51,3 +51,14 @@ def test_never_send_candidates_are_named_in_the_scan_log(tmp_path: Path) -> None
         after = _scan(client, headers)
         kept = [m for m in after if "privacy policy keeps their files local" in m]
         assert len(kept) == 1 and kept[0].split()[0].isdigit() and int(kept[0].split()[0]) > 0
+        # Asking the model about a finding in a never-send file sends nothing, and says why.
+        scans = client.get(f"{API}/scans", headers=headers).json()
+        latest = scans["items"][0] if isinstance(scans, dict) else scans[0]
+        findings = client.get(
+            f"{API}/scans/{latest['id']}/findings", params={"limit": 200}, headers=headers
+        ).json()
+        web = next(f for f in findings if "services/web/renderer.js" in str(f))
+        reply = client.post(f"{API}/findings/{web['id']}/review", json={}, headers=headers)
+        assert reply.status_code == 422, reply.text
+        assert reply.json()["error"]["code"] == "nothing_to_send"
+        assert "privacy policy" in reply.json()["error"]["message"]

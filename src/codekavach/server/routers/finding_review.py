@@ -32,7 +32,13 @@ from codekavach.server.auth.dependencies import SessionDep, StateDep, client_of,
 from codekavach.server.db.models import FindingEvent, FindingRow, ScanRow, utcnow
 from codekavach.server.errors import ApiError, not_found
 from codekavach.server.rbac import Permission
-from codekavach.server.results import ScanPaths, finding_columns, read_findings, scan_env
+from codekavach.server.results import (
+    ScanPaths,
+    finding_columns,
+    policy_withheld,
+    read_findings,
+    scan_env,
+)
 from codekavach.server.routers.findings import get_finding
 from codekavach.server.state import ServerState
 
@@ -97,6 +103,8 @@ def _run_review(state: ServerState, paths: ScanPaths, overrides: Any, provider: 
         {f.error_code for f in outcome.result.item_failures if f.stage == "llm-review"}
         | {f.error_code for f in outcome.result.item_failures if f.stage == "privacy-prepare"}
     )
+    if not failures and policy_withheld(paths, str(outcome.scan.id)):
+        failures = ["policy_withheld"]
     return read_findings(paths, str(outcome.scan.id)), failures
 
 
@@ -139,6 +147,13 @@ def review_finding(
     found = next((f for f in findings if f.fingerprint == row.fingerprint), None)
     if found is None or not found.provenance.llm_reviews:
         reason = ", ".join(failures) or "no_verdict"
+        if failures == ["policy_withheld"]:
+            raise ApiError(
+                422,
+                "nothing_to_send",
+                "nothing was sent: the privacy policy keeps this finding's file local (a "
+                "never-send path, or L4, which fails closed); the engine evidence stands",
+            )
         if failures and all(code.startswith("privacy_") for code in failures):
             # The privacy layer withheld the request (I4): the model was never asked, so this is
             # not a gateway failure and must not read like one.
