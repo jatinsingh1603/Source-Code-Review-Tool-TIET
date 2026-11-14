@@ -115,7 +115,9 @@ export default function ReportsPage() {
     try {
       const { blob } = await fetchReport(scanId, "html");
       // The sandbox blocks the report's scripts anyway; dropping them keeps the console clean.
-      setPreview((await blob.text()).replace(/<script\b[\s\S]*?<\/script>/gi, ""));
+      // Without its script the report's Expand all, Theme and Print buttons do nothing, so hide them.
+      const hide = "<style>#ck-expand,#ck-theme,#ck-print{display:none}</style>";
+      setPreview((await blob.text()).replace(/<script\b[\s\S]*?<\/script>/gi, "").replace(/<\/head>/i, `${hide}</head>`));
     } catch (e) {
       toast.error("Preview failed", e instanceof Error ? e.message : undefined);
     }
@@ -308,7 +310,7 @@ export default function ReportsPage() {
           </div>
         </section>
       )}
-      <Dialog open={preview !== null} onClose={() => setPreview(null)} title="HTML report" size="lg" description="Shown in a sandbox: scripts in the report do not run.">
+      <Dialog open={preview !== null} onClose={() => setPreview(null)} title="HTML report" size="lg" description="Shown in a sandbox without the report's script. Download the HTML report to expand every finding, switch theme or print.">
         {preview !== null && (
           <iframe title="HTML report preview" sandbox="" srcDoc={preview} style={{ width: "100%", height: "70vh", border: "1px solid var(--border)", borderRadius: 6 }} />
         )}
