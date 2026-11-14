@@ -1,4 +1,4 @@
-import { lazy, type ReactNode } from "react";
+import { lazy, useEffect, type ReactNode } from "react";
 import { createBrowserRouter, Navigate, Outlet, useRouteError } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
 import { Content, ErrorBanner, ToastProvider } from "@/components/ui";
@@ -50,8 +50,36 @@ function Authed() {
   );
 }
 
+// A tab opened before the server was upgraded asks for page chunks that the new build no
+// longer has. Reload once to pick up the new build; if that does not help, say so plainly.
+const STALE_BUILD = /dynamically imported module|Importing a module script failed|Loading chunk|error loading dynamically/i;
+const RELOAD_KEY = "ck-stale-build-reload";
+
 function RouteError() {
   const error = useRouteError();
+  const stale = error instanceof Error && STALE_BUILD.test(error.message);
+  useEffect(() => {
+    if (!stale) return;
+    try {
+      const last = Number(sessionStorage.getItem(RELOAD_KEY) ?? 0);
+      if (Date.now() - last < 30_000) return;
+      sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+    } catch {
+      return;
+    }
+    window.location.reload();
+  }, [stale]);
+  if (stale) {
+    return (
+      <Content>
+        <ErrorBanner
+          what="CodeKavach was updated while this tab was open."
+          error={new Error("Reload the page to load the new version.")}
+          onRetry={() => window.location.reload()}
+        />
+      </Content>
+    );
+  }
   return (
     <Content>
       <ErrorBanner what="This page could not be displayed." error={error} onRetry={() => window.location.reload()} />
