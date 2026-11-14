@@ -301,6 +301,15 @@ def put_settings(
 ) -> dict[str, Any]:
     """Change server settings (admin)."""
     values = body.model_dump(exclude_none=True)
+    # A model belongs to its provider. Switching the default provider (to Mock, say) without
+    # naming a model clears the old one; kept, every Mock scan recorded the remote model's name
+    # in its ledger and attestation.
+    switched = values.get("default_provider", None) not in (
+        None,
+        state.get_settings().get("default_provider"),
+    )
+    if body.default_model is None and (switched or "default_model" in body.model_fields_set):
+        values["default_model"] = None
     try:
         updated = state.put_settings(values)
     except ValueError as error:

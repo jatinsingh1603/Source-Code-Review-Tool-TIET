@@ -483,6 +483,29 @@ def test_stats_and_settings(
     assert json.dumps(client.get("/api/v1/providers", headers=admin).json())
 
 
+def test_switching_the_default_provider_back_drops_the_old_model(
+    server: tuple[TestClient, Any], admin: dict[str, str]
+) -> None:
+    """The fallback to Mock must not keep the remote model, or Mock scans record its name."""
+    client = server[0]
+    remote = {"default_provider": "agentrouter", "default_model": "gpt-5.6-sol"}
+    assert client.put("/api/v1/settings", json=remote, headers=admin).status_code == 200
+    # As the dashboard sends it: Mock has no model, so the field is null.
+    back = client.put(
+        "/api/v1/settings", json={"default_provider": "mock", "default_model": None}, headers=admin
+    ).json()
+    assert back["default_provider"] == "mock" and back["default_model"] is None
+    client.put("/api/v1/settings", json=remote, headers=admin)
+    # A client that names only the provider gets the same.
+    only = client.put("/api/v1/settings", json={"default_provider": "mock"}, headers=admin).json()
+    assert only["default_model"] is None
+    # Other fields leave the model alone.
+    client.put("/api/v1/settings", json=remote, headers=admin)
+    kept = client.put("/api/v1/settings", json={"org_name": "Thapar"}, headers=admin).json()
+    assert kept["default_model"] == "gpt-5.6-sol"
+    client.put("/api/v1/settings", json={"default_provider": "mock"}, headers=admin)
+
+
 def test_cancel_a_queued_scan(server: tuple[TestClient, Any], admin: dict[str, str]) -> None:
     client, state = server
     projects = client.get("/api/v1/projects", headers=admin).json()

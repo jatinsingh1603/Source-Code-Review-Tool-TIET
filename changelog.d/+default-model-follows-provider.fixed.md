@@ -1,0 +1,1 @@
+Switching **Settings**, Organisation defaults, from `agentrouter` back to Mock now clears the default model. It used to stay `gpt-5.6-sol`, so every later Mock scan recorded that model in its scan settings, ledger and privacy attestation although nothing was sent to it.
