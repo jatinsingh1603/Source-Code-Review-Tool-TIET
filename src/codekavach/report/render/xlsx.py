@@ -284,5 +284,19 @@ class XlsxRenderer:
             for row, (key, value) in enumerate(facts, start=2):
                 wp.write_string(row, 0, key, head)
                 wp.write_string(row, 1, safe_cell(value), cell)
+        # Printed or saved as PDF, each sheet is one page wide (the Findings sheet spread over
+        # 160 portrait pages), with the heading row repeated and the report id in the footer.
+        for sheet in book.worksheets():
+            sheet.set_paper(9)  # A4
+            sheet.set_landscape()
+            sheet.fit_to_pages(1, 0)
+            sheet.set_footer(f"&L{_footer_text(doc.report_id)}&RPage &P of &N")
+            if sheet.name != "Summary":
+                sheet.repeat_rows(0)
         book.close()
         return out
+
+
+def _footer_text(text: str) -> str:
+    """``text`` for an Excel header or footer, where ``&`` starts a control code."""
+    return text.replace("&", "&&")
