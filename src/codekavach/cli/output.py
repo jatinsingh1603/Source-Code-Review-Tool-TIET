@@ -189,7 +189,10 @@ class Output:
         if human is not None:
             human(console)
         elif isinstance(jsonable, dict):
-            console.print(kv_table(None, [(key, _plain(value)) for key, value in jsonable.items()]))
+            # A field with no value (codekavach demo's state_dir without --keep-state) is left out
+            # of the table rather than printed as a label with nothing after it.
+            rows = [(key, _plain(value)) for key, value in jsonable.items() if value is not None]
+            console.print(kv_table(None, rows))
         else:
             console.print(_plain(jsonable), markup=False)
 

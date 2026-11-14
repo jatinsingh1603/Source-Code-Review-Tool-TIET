@@ -153,6 +153,18 @@ def test_output_error_method(capsys: pytest.CaptureFixture[str]) -> None:
     assert json.loads(written)["errors"][0]["code"] == "internal"
 
 
+def test_human_result_leaves_out_empty_fields(capsys: pytest.CaptureFixture[str]) -> None:
+    """A field without a value is not printed as a bare label (codekavach demo's state_dir)."""
+    Output(json_mode=False, quiet=True, command="x").result({"findings": 66, "state_dir": None})
+    written = capsys.readouterr().out
+    assert "findings" in written
+    assert "state_dir" not in written
+    machine = Output(json_mode=True, quiet=True, command="x")
+    machine.result({"findings": 66, "state_dir": None})
+    machine.finish(0)
+    assert json.loads(capsys.readouterr().out)["data"] == {"findings": 66, "state_dir": None}
+
+
 class Colour(enum.Enum):
     RED = "red"
 
