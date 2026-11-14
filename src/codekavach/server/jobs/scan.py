@@ -464,6 +464,15 @@ def _zero_leak_words(zero_leak: dict[str, Any]) -> str:
     return f"zero-leak FAILED ({found} occurrence{'s' if found != 1 else ''})"
 
 
+def _opening_words(scan: dict[str, Any], *, remote: bool) -> str:
+    """The scan log's privacy line; an L0 scan says nothing goes to a model, not "payloads sent"."""
+    if str(scan["level"]) == "L0":
+        return "Privacy level L0; no model review: nothing is sent to a model (local engines only)"
+    where = "remote" if remote else "local"
+    sent = "sent" if scan["send"] else "recorded only"
+    return f"Privacy level {scan['level']}; provider {scan['provider']} ({where}); payloads {sent}"
+
+
 def _low_confidence(confidence: object) -> bool:
     """True when the dashboard shows this verdict as "Needs review" (below 0.65, as in the UI)."""
     if isinstance(confidence, int | float):
@@ -501,12 +510,7 @@ def _run_pipeline(
                 row.model = str(model)
         if remote and scan["send"]:
             consent = ConsentDecision(granted=True, source="flag")
-    where = "remote" if remote else "local"
-    progress.log.append(
-        "log",
-        {"level": "info", "message": f"Privacy level {scan['level']}; provider "
-         f"{scan['provider']} ({where}); payloads {'sent' if scan['send'] else 'recorded only'}"},
-    )  # fmt: skip
+    progress.log.append("log", {"level": "info", "message": _opening_words(scan, remote=remote)})
     bus = InMemoryEventBus()
     unsubscribe = bus.subscribe(progress.handle)
     try:

@@ -4,7 +4,7 @@ from importlib.metadata import entry_points
 from typing import Any
 
 from codekavach.core.pipeline.events import ItemReviewed, WarningRaised
-from codekavach.server.jobs.scan import STAGE_LABELS, _Progress
+from codekavach.server.jobs.scan import STAGE_LABELS, _opening_words, _Progress
 
 
 class _Log:
@@ -69,3 +69,11 @@ def test_every_built_in_stage_has_a_label_for_the_log() -> None:
     names = {entry.name for entry in entry_points(group="codekavach.stages")}
     assert names
     assert names - set(STAGE_LABELS) == set()
+
+
+def test_an_l0_scan_does_not_say_payloads_are_sent() -> None:
+    l0 = _opening_words({"level": "L0", "provider": "mock", "send": True}, remote=False)
+    assert "payloads sent" not in l0
+    assert "nothing is sent to a model" in l0
+    l3 = _opening_words({"level": "L3", "provider": "mock", "send": True}, remote=False)
+    assert l3 == "Privacy level L3; provider mock (local); payloads sent"
