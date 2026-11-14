@@ -395,3 +395,13 @@ body {
     min-height: 22px;
   }
 }
+
+/* A read-only segmented control (Policy, Floor level) looked exactly like a live one, so a
+   click did nothing with no hint why; the tooltip still explains where the value is set. */
+.seg button:disabled {
+  cursor: not-allowed;
+  color: var(--faint);
+}
+.seg button:disabled.on {
+  color: var(--muted);
+}
