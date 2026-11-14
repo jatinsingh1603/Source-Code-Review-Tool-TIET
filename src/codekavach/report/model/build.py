@@ -156,7 +156,8 @@ def summarise_ledger(
                 blocked += 1
             elif record.ref_seq is None:
                 sent += 1
-            prompt += record.token_counts.prompt
+                # A response record repeats its request's prompt count; count each request once.
+                prompt += record.token_counts.prompt
             completion += record.token_counts.completion or 0
         try:
             report = reader.verify_chain()

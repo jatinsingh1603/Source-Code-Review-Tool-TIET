@@ -234,6 +234,11 @@ def test_attestation_json(
     assert body["levels_used"].get("L3", 0) > 0
     assert len(body["digest"]) == 64
     assert body["ledger_head_hash"]
+    # Each request is counted once, not again on its response record.
+    ledger = client.get(f"{API}/scans/{scan['id']}/ledger", headers=admin).json()
+    sent = sum(e["tokens_prompt"] for e in ledger["entries"] if e["outcome"] == "sent")
+    assert sent > 0
+    assert body["attestation"]["tokens_sent"] == sent
     assert client.get(f"{API}/scans/{scan['id']}/privacy/attestation.xml",
                       headers=admin).status_code == 404  # fmt: skip
     audit.flush(state.db)

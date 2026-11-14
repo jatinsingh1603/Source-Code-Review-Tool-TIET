@@ -207,7 +207,9 @@ def build_attestation(  # noqa: PLR0912, PLR0915 - one linear gather-and-summari
             entries += 1
             head = record.entry_hash
             provider, model = record.provider, record.model
-            tokens += record.token_counts.prompt
+            # A response record repeats its request's prompt count; count each request once.
+            if record.outcome.value == "sent":
+                tokens += record.token_counts.prompt
             blocked += record.outcome.value == "blocked"
     except Exception:  # noqa: BLE001 - nothing sent means no ledger to read
         _log.info("attestation_ledger_unreadable")
