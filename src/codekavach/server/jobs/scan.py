@@ -42,6 +42,7 @@ from codekavach.server.results import (
     ScanPaths,
     ScanResults,
     finding_columns,
+    policy_withheld,
     read_findings,
     scan_env,
     with_attestation,
@@ -425,6 +426,20 @@ def execute_scan(job: ScanJob) -> None:
         _finish(job, "failed", error=message)
 
 
+def _log_policy_withheld(outcome: Any, paths: ScanPaths, core_id: str, log: EventLog) -> None:
+    """Say how many candidates the policy kept local; L0 and L4 scans say so on their own."""
+    level = outcome.scan.privacy_level.value if outcome.scan.privacy_level else None
+    kept = policy_withheld(paths, core_id) if level in {"L1", "L2", "L3"} else 0
+    if kept:
+        log.append(
+            "log",
+            {"level": "info",
+             "message": f"{kept} candidate{'s' if kept != 1 else ''} not sent to the model: the "
+             "privacy policy keeps their files local (a never-send path, or L4, which fails "
+             "closed); reported with deterministic evidence"},
+        )  # fmt: skip
+
+
 def _safe_message(error: Exception) -> str:
     """A short error text that names the error and, for our own errors, their message."""
     name = type(error).__name__
@@ -547,6 +562,7 @@ def _store(  # noqa: PLR0917 - the parts of one result
              "message": f"{carried} unchanged finding{'s' if carried != 1 else ''} kept the "
              "reviewer's status from the previous scan"},
         )  # fmt: skip
+    _log_policy_withheld(outcome, paths, core_id, log)
     for finding in findings:
         log.append(
             "finding",

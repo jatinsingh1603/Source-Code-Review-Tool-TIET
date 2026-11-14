@@ -173,6 +173,23 @@ def read_findings(paths: ScanPaths, core_scan_id: str) -> "list[Finding]":
     return list(store.get_list(keys.FINDINGS, Finding)) if store.has(keys.FINDINGS) else []
 
 
+def policy_withheld(paths: ScanPaths, core_scan_id: str) -> int:
+    """How many candidates the privacy policy withheld from the model (0 when unrecorded)."""
+    from codekavach.core.pipeline import keys  # noqa: PLC0415
+    from codekavach.core.store.artefacts import OnDiskArtefactStore  # noqa: PLC0415
+    from codekavach.core.store.layout import StateLayout  # noqa: PLC0415
+    from codekavach.privacy.policy.records import PolicyDecisionRow  # noqa: PLC0415
+
+    try:
+        store = OnDiskArtefactStore.open_existing(StateLayout(paths.state_dir), core_scan_id)
+        if not store.has(keys.POLICY_DECISIONS):
+            return 0
+        rows = store.get_list(keys.POLICY_DECISIONS, PolicyDecisionRow)
+    except Exception:  # noqa: BLE001 - a log line, never a reason to fail the scan
+        return 0
+    return sum(1 for row in rows if row.withheld)
+
+
 def finding_columns(finding: "Finding") -> dict[str, Any]:
     """The indexed columns of a finding row."""
     location = finding.locations[0] if finding.locations else None
