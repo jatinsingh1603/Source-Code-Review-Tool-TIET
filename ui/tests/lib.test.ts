@@ -6,7 +6,7 @@ import { atLeastAsStrict, confidenceFraction, fmtRemediation, LEVELS_BY_STRICTNE
 import { egressSummary } from "@/lib/egress";
 import { suggestName, validateGitUrl } from "@/lib/validate";
 import { permissionsFor } from "@/lib/permissions";
-import { fmtDate, fmtLong, languageLabel, setDisplayPrefs } from "@/lib/display";
+import { auditTarget, fmtDate, fmtLong, languageLabel, setDisplayPrefs } from "@/lib/display";
 import { pathRulesOf } from "@/lib/policy";
 import { ApiError } from "@/api/client";
 import { errorText } from "@/components/ui/Feedback";
@@ -189,5 +189,14 @@ describe("fmtRemediation", () => {
     expect(fmtRemediation(0.25)).toEqual(["6.0", "hours"]);
     expect(fmtRemediation(20 / 86_400)).toEqual(["1", "min"]);
     expect(fmtRemediation(0.01)).toEqual(["14", "min"]);
+  });
+});
+
+describe("auditTarget", () => {
+  it("shows scan ids as the dashboard does elsewhere", () => {
+    expect(auditTarget("scn_59a7a66d9c42b21d5fc7#1")).toBe("SCN-59A7A6 #1");
+    expect(auditTarget("scn_38e61cad98c75c52f8ab.pdf")).toBe("SCN-38E61C.pdf");
+    expect(auditTarget("prj_kavachbank_sample")).toBe("prj_kavachbank_sample");
+    expect(auditTarget(null)).toBe("—");
   });
 });

@@ -208,6 +208,12 @@ export function scanLabel(id?: string | null): string {
   return id;
 }
 
+/** An audit target with its scan ids in display form: `scn_59a7…#1` → "SCN-59A7A6 #1". */
+export function auditTarget(resource?: string | null): string {
+  if (!resource) return "—";
+  return resource.replace(/scn_[0-9a-z]+/gi, (id) => scanLabel(id)).replace(/(SCN-[0-9A-Z]{6})#/g, "$1 #");
+}
+
 /** Display form of a finding id: `find_01M78…5TCC` → "KF-…5TCC" style short id. */
 export function findingLabel(id?: string | null): string {
   if (!id) return "—";

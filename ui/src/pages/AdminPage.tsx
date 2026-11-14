@@ -8,7 +8,7 @@ import { useAudit, useCreateUser, useHealth, useOptional, useProviders, useSetti
 import { endpoints } from "@/api/endpoints";
 import { ROLES, type AuditEvent, type PersonalToken, type Role, type User } from "@/api/types";
 import { roleLabel } from "@/lib/permissions";
-import { fmtBytesText, fmtDate, fmtInt, fmtShort, LEVEL_NAME } from "@/lib/display";
+import { auditTarget, fmtBytesText, fmtDate, fmtInt, fmtShort, LEVEL_NAME } from "@/lib/display";
 import {
   Avatar,
   Button,
@@ -489,7 +489,7 @@ function AuditPanel({ limit }: { limit?: number }) {
                       {e.action}
                       {e.outcome && e.outcome !== "allowed" ? <span className="badc"> · {e.outcome}</span> : null}
                     </td>
-                    <td className="mono xs">{e.resource || "—"}</td>
+                    <td className="mono xs" title={e.resource || undefined}>{auditTarget(e.resource)}</td>
                     <td className="mono xs">{e.client || "local"}</td>
                   </tr>
                 ))
