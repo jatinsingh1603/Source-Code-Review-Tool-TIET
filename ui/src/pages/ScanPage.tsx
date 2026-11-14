@@ -33,7 +33,7 @@ const ENGINE_NAME: Record<string, string> = {
   secrets: "Secrets",
   iac: "IaC checks",
   sca: "SCA · OSV",
-  engines: "External engines (Opengrep, Bandit, ESLint)",
+  engines: "External engines (Opengrep, Bandit, ESLint) when installed",
 };
 
 /** Collect a scan's events: the server replays history, then streams until `done`. */

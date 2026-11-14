@@ -15,6 +15,22 @@ class _Log:
         self.lines.append((kind, data))
 
 
+def _engines_ended(total: int | None) -> list[str]:
+    log = _Log()
+    progress = _Progress.__new__(_Progress)
+    progress.log = log  # type: ignore[assignment]
+    progress.done, progress.total, progress.limited, progress.failed = 0, 10, {}, {}
+    progress.counts = {} if total is None else {"analyse-engines": (total, total)}
+    progress._update = lambda **_: None  # type: ignore[method-assign]
+    progress._stage_ended("stage.finished", "analyse-engines", "Running external engines", {})
+    return [str(data["message"]) for kind, data in log.lines if kind == "log"]
+
+
+def test_the_log_says_when_no_external_engine_ran() -> None:
+    assert any(line.startswith("No external engine") for line in _engines_ended(None))
+    assert not any(line.startswith("No external engine") for line in _engines_ended(2))
+
+
 def _logged(code: str) -> str:
     log = _Log()
     progress = _Progress.__new__(_Progress)

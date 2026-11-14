@@ -108,6 +108,11 @@ VERDICT_WORDS: Final = {
     "undecided": "undecided by the model",
 }
 POLICY_FILE: Final = "codekavach.policy.toml"
+# Finding counts depend on which external engines a machine has, so the log says when none ran.
+NO_EXTERNAL_ENGINES: Final = (
+    "No external engine (Opengrep, Bandit, ESLint) is installed for these languages on this "
+    "server; CodeKavach's own engines ran. A machine with one installed reports more findings"
+)
 EAGER_FORMATS: Final = ("html", "json", "sarif")
 
 
@@ -184,6 +189,8 @@ class _Progress:
         elif kind == "stage.finished":
             took = data.get("duration_ms")
             self.log.append("log", {"level": "info", "message": f"{label} done in {took} ms"})
+            if stage == "analyse-engines" and not total:
+                self.log.append("log", {"level": "info", "message": NO_EXTERNAL_ENGINES})
         percent = self.percent()
         self.log.append("progress", {"percent": percent, "message": f"{label} {status}"})
         self._update(progress=percent)
