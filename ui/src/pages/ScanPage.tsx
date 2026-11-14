@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { subscribeScanEvents, type StreamState } from "@/api/events";
 import { qk, useCancelScan, usePrivacy, useProject, useProviders, useScan } from "@/api/queries";
 import type { PrivacySummary, Scan, ScanEvent } from "@/api/types";
 import { useSession } from "@/app/session";
 import { useShell } from "@/app/shell-context";
 import { useCurrentProject } from "@/app/project-context";
+import { useScanTimeline, type Ev } from "@/app/useScanTimeline";
 import { fmtBytes, fmtClock, fmtElapsed, fmtInt, fmtTime, findingLabel, LEVEL_NAME, scanLabel, secondsBetween } from "@/lib/display";
 import { providerName, scanProviderId, shortProviderName } from "@/lib/domain";
 import {
@@ -25,8 +25,6 @@ import {
 } from "@/components/ui";
 import { ENGINE_GROUPS, STAGES } from "@/lib/pipeline";
 
-type Ev = ScanEvent & { t: number };
-
 const ENGINE_NAME: Record<string, string> = {
   rules: "Rules (SAST)",
   taint: "Taint engine",
@@ -35,35 +33,6 @@ const ENGINE_NAME: Record<string, string> = {
   sca: "SCA · OSV",
   engines: "External engines (Opengrep, Bandit, ESLint) when installed",
 };
-
-/** Collect a scan's events: the server replays history, then streams until `done`. */
-function useScanTimeline(scanId: string | undefined, enabled: boolean) {
-  const [events, setEvents] = useState<Ev[]>([]);
-  const [stream, setStream] = useState<StreamState>("connecting");
-  useEffect(() => {
-    setEvents([]);
-    if (!scanId || !enabled) return;
-    const buf: Ev[] = [];
-    let raf: number | null = null;
-    const flush = () => {
-      raf = null;
-      setEvents([...buf]);
-    };
-    const stop = subscribeScanEvents(scanId, {
-      onEvent: (e) => {
-        const t = e.at ? Date.parse(e.at) : Date.now();
-        buf.push({ ...e, t: Number.isNaN(t) ? Date.now() : t });
-        if (raf === null) raf = window.setTimeout(flush, 80) as unknown as number;
-      },
-      onState: setStream,
-    });
-    return () => {
-      stop();
-      if (raf !== null) clearTimeout(raf);
-    };
-  }, [scanId, enabled]);
-  return { events, stream };
-}
 
 const SHORT: [RegExp, string][] = [
   [/^(intake|ingest)$/, "ingest"],
@@ -155,8 +124,8 @@ export default function ScanPage() {
   const scan = scanQ.data;
   const project = useProject(scan?.project_id).data;
   const providers = useProviders().data;
-  const { events } = useScanTimeline(id, !!scan);
   const running = scan?.status === "running" || scan?.status === "queued";
+  const { events, ready } = useScanTimeline(id, !!scan, !!scan && !running);
   const doneEv = events.find((e) => e.type === "done") as (Ev & { type: "done" }) | undefined;
   const status = doneEv?.status ?? scan?.status;
   const finished = status === "completed";
@@ -354,7 +323,7 @@ export default function ScanPage() {
                       {s.state === "run" ? " running" : ""}
                     </span>
                     <span className="st-t">{s.title}</span>
-                    <span className={`cnt${s.state === "fail" ? " badc" : ""}`}>{stageCount(s.n, s.state, scan, events, egress, p)}</span>
+                    <span className={`cnt${s.state === "fail" ? " badc" : ""}`}>{ready ? stageCount(s.n, s.state, scan, events, egress, p) : "…"}</span>
                   </div>
                 ))}
               </div>
@@ -442,14 +411,14 @@ export default function ScanPage() {
             <div className="card-h">
               <h2>Log</h2>
               <div className="row">
-                <span className="xs faint">{running ? "streaming" : `${lines.length} lines`}</span>
+                <span className="xs faint">{running ? "streaming" : ready ? `${lines.length} lines` : "loading"}</span>
                 <Button size="sm" onClick={download} disabled={!lines.length}>
                   Download log
                 </Button>
               </div>
             </div>
             <div className="console" role="log" aria-live="polite" ref={consoleRef} tabIndex={0}>
-              {lines.length === 0 && <div>{running ? "Waiting for the first event…" : "No log for this scan."}</div>}
+              {lines.length === 0 && <div>{running ? "Waiting for the first event…" : ready ? "No log for this scan." : "Loading the log…"}</div>}
               {lines.map((l, i) => (
                 <div key={i}>
                   <span className="t">{fmtTime(l.t)}</span>

@@ -1,0 +1,1 @@
+A finished scan's page no longer shows every pipeline stage as skipped and "No log for this scan" while its history loads, then count up through it; it shows a placeholder until the whole log is in. The Overview trend and the policy dry run wait for the project and its scans before saying there are none.
