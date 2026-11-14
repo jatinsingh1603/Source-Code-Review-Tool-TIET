@@ -73,11 +73,14 @@ export default function SettingsPage() {
     setNotif(Object.fromEntries(Object.entries(serverNotif.events).map(([k, v]) => [k, { app: v.in_app, email: v.email }])));
   }, [serverNotif]);
 
-  // Arriving with a #section (Admin's "+ New token" links to #tokens): the shell scrolls to it;
-  // mark it in the section list straight away.
+  // Arriving with a #section (Admin's "+ New token" links to #tokens): on a fresh load this page
+  // renders after the shell's scroll (it is loaded lazily), so it scrolls to the section itself.
   useEffect(() => {
     const id = window.location.hash.slice(1);
-    if (id && document.getElementById(id)) setActive(id);
+    const el = id ? document.getElementById(id) : null;
+    if (!el) return;
+    el.scrollIntoView({ block: "start" });
+    setActive(id);
   }, []);
 
   useEffect(() => {
