@@ -75,6 +75,18 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         }
       }
     }
+    if (t) {
+      // Projects by name: findings are searched in the current project only, so this is the way
+      // to reach another project's code from the search box.
+      for (const p of projects.filter((p) => p.name.toLowerCase().includes(t)).slice(0, 4)) {
+        out.push({
+          key: `j-${p.id}`,
+          lead: <span className="pal-k">PROJECT</span>,
+          text: p.name,
+          go: go(`/projects/${p.id}`),
+        });
+      }
+    }
     for (const f of findings.slice(0, 6)) {
       out.push({
         key: `f-${f.id}`,
@@ -189,7 +201,13 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
               {i === sel && <span className="kbd">↵</span>}
             </div>
           ))}
-          {items.length === 0 && <div className="pal-i faint">No matches</div>}
+          {items.length === 0 && (
+            <div className="pal-i faint">
+              {latest
+                ? `No matches. Findings are searched in the latest scan of ${current?.name ?? "the current project"}; type a project name to open another.`
+                : "No matches."}
+            </div>
+          )}
         </div>
       </div>
     </div>,
