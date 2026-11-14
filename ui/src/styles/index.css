@@ -280,6 +280,14 @@ body {
   }
 }
 
+/* The kit's tab underline overlaps the strip's border by 1px (margin-bottom: -1px), so with
+   overflow-x: auto the strip overflows vertically by that pixel, and browsers with classic
+   scrollbars (Edge and Chrome on Windows) draw a tiny up/down scrollbar at its right end. The
+   strip still scrolls sideways by touch, trackpad or shift+wheel on a narrow screen. */
+.tabs {
+  scrollbar-width: none;
+}
+
 /* Tabs with a trailing action on the same underline (Findings "+ Save view"). */
 .tabs-row {
   display: flex;
