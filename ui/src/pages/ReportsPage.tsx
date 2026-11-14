@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useCurrentProject } from "@/app/project-context";
 import { useFollowScanProject } from "@/app/useSelectedScan";
 import { useFindings, usePrivacy, useReports, useScans, useSettings } from "@/api/queries";
-import { fetchReport, saveBlob } from "@/api/endpoints";
+import { downloadApiFile, fetchReport, saveBlob } from "@/api/endpoints";
 import type { Finding, Scan, Severity } from "@/api/types";
 import { isOpen, sevCounts, sortScans } from "@/lib/domain";
 import { fmtDate, fmtInt, fmtShort, scanLabel } from "@/lib/display";
@@ -94,6 +94,19 @@ export default function ReportsPage() {
     setProgress(null);
     void reportsQ.refetch();
     if (ok) toast.success("Report generated", `${ok} file${ok === 1 ? "" : "s"} downloaded.`);
+  };
+
+  const [deltaBusy, setDeltaBusy] = useState(false);
+  const downloadDelta = async (current: string, base: string) => {
+    setDeltaBusy(true);
+    try {
+      await downloadApiFile(`/scans/${encodeURIComponent(current)}/delta`, { baseline: base }, `codekavach-${current}.delta.html`);
+      toast.success("Delta report downloaded", `${scanLabel(current)} compared with ${scanLabel(base)}.`);
+    } catch (e) {
+      toast.error("Delta report failed", e instanceof Error ? e.message : undefined);
+    } finally {
+      setDeltaBusy(false);
+    }
   };
 
   const [preview, setPreview] = useState<string | null>(null);
@@ -188,6 +201,18 @@ export default function ReportsPage() {
                 ))}
                 <option value="">None</option>
               </select>
+              {baseline && scanId ? (
+                <Button
+                  size="sm"
+                  loading={deltaBusy}
+                  onClick={() => void downloadDelta(scanId, baseline.id)}
+                  title="New, still open and fixed findings, matched by fingerprint, as one HTML file."
+                >
+                  Download delta report
+                </Button>
+              ) : (
+                <span className="xs faint">Choose an earlier scan to compare with.</span>
+              )}
             </div>
             <div className="stack s6">
               <span className="lbl">Sections</span>
