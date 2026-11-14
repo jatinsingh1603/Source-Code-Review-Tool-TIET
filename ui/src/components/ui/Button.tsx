@@ -36,6 +36,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   // (one that takes `loading`) ignores a second click for a moment: two scans, two
   // projects or two reports from one impatient double click is never what was meant.
   const lockedUntil = useRef(0);
+  const loadingNow = useRef(loading);
+  loadingNow.current = loading;
   useEffect(() => {
     if (!loading) lockedUntil.current = 0;
   }, [loading]);
@@ -47,6 +49,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         return;
       }
       lockedUntil.current = now + 1500;
+      // A click that started nothing (a form that refused its input) must not swallow the next
+      // one: once a double click is over, unlock unless a request is running.
+      window.setTimeout(() => {
+        if (!loadingNow.current) lockedUntil.current = 0;
+      }, 400);
     }
     onClick?.(e);
   };

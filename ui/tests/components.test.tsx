@@ -20,6 +20,24 @@ describe("primitives", () => {
     fireEvent.click(b);
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+  it("an action Button that started nothing takes the next click after a moment", () => {
+    vi.useFakeTimers();
+    try {
+      const onClick = vi.fn();
+      render(
+        <Button loading={false} onClick={onClick}>
+          Create user
+        </Button>,
+      );
+      const b = screen.getByRole("button", { name: "Create user" });
+      fireEvent.click(b); // the form refused its input: no request, `loading` stays false
+      vi.advanceTimersByTime(500);
+      fireEvent.click(b); // the corrected form is submitted on the first try
+      expect(onClick).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it("a plain Button passes every click through", () => {
     const onClick = vi.fn();
     render(<Button onClick={onClick}>Next</Button>);
