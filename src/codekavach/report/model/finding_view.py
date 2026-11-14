@@ -16,7 +16,7 @@ one, otherwise a taxonomy reference of the matching scheme. A field that is abse
 """
 
 from collections.abc import Iterable
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar, Final, Literal
 
 from pydantic import Field
 
@@ -342,11 +342,16 @@ class FindingView(KavachModel):
         if description.strip() == finding.title.strip():
             description = f"{finding.title.rstrip('.')}. {entry.description}"
         narrative = finding.impact.narrative.strip()
-        if narrative.startswith("CVSS v4.0"):
-            # The rate stage's fallback is a rating summary, which the facts grid already shows.
+        placeholder = _offline_review_only(finding)
+        if narrative.startswith("CVSS v4.0") or placeholder:
+            # The rate stage's fallback is a rating summary, which the facts grid already shows;
+            # the offline mock provider's impact text is a placeholder, not an assessment.
             narrative = ""
         impact = mask_text(narrative) or entry.impact
-        short, long_ = _remediation(finding, entry)
+        if placeholder:
+            short, long_ = entry.short_term, entry.long_term
+        else:
+            short, long_ = _remediation(finding, entry)
         evidence = tuple(_evidence(item, context_lines) for item in finding.evidence)
         flow = _flow(finding)
         title = mask_text(finding.title)
@@ -502,6 +507,18 @@ def _compliance(
         )
     _ = entry
     return tuple(derived)
+
+
+OFFLINE_PROVIDERS: Final = frozenset({"mock"})
+
+
+def _offline_review_only(finding: Finding) -> bool:
+    """Whether every model review of ``finding`` came from the offline mock provider.
+
+    Its impact and remediation text are placeholders, so the report uses the library's instead.
+    """
+    reviews = finding.provenance.llm_reviews
+    return bool(reviews) and all(review.provider in OFFLINE_PROVIDERS for review in reviews)
 
 
 def _remediation(finding: Finding, entry: CweEntry) -> tuple[str, str]:

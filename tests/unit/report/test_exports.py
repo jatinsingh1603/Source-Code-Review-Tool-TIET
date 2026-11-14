@@ -47,6 +47,12 @@ def make_finding(**overrides: object) -> Finding:
     return _make_finding(**overrides)
 
 
+def _unreviewed(**overrides: object) -> Finding:
+    """A sample finding no model reviewed, so its own text is reported as is."""
+    finding = make_finding(**overrides)
+    return finding.evolve(provenance=finding.provenance.model_copy(update={"llm_reviews": ()}))
+
+
 def _doc(*findings: object) -> ReportDocument:
     items = findings or (
         make_finding(severity=Severity.HIGH, title="SQL built from input", cwe=(89,)),
@@ -153,9 +159,45 @@ def test_markdown_names_the_dashboard_scan_id() -> None:
     assert f"**Scan** SCN-6B14BE (pipeline {doc.scan.id})" in build_markdown(labelled)
 
 
+def test_every_export_names_the_dashboard_scan_id(tmp_path: Path) -> None:
+    doc = _doc().model_copy(update={"scan_reference": "SCN-6B14BE"})
+    run = build_sarif(doc)["runs"][0]
+    assert run["properties"]["scan_reference"] == "SCN-6B14BE"
+    assert run["properties"]["scan_id"] == str(doc.scan.id)
+    registry = renderer_registry(Settings())
+    data = json.loads(registry.get("json").render(doc, tmp_path / "r.json").read_text())
+    assert data["scan"]["reference"] == "SCN-6B14BE"
+    with registry.get("csv").render(doc, tmp_path / "r.csv").open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    assert rows and {row["scan_id"] for row in rows} == {"SCN-6B14BE"}
+    manifest, _ = write_manifest([tmp_path / "r.json", tmp_path / "r.csv"], tmp_path, doc=doc)
+    assert json.loads(manifest.read_text())["scan_reference"] == "SCN-6B14BE"
+
+
+def test_a_cli_scan_without_a_dashboard_id_uses_the_pipeline_id(tmp_path: Path) -> None:
+    doc = _doc()
+    out = renderer_registry(Settings()).get("csv").render(doc, tmp_path / "r.csv")
+    with out.open(encoding="utf-8") as handle:
+        assert {row["scan_id"] for row in csv.DictReader(handle)} == {str(doc.scan.id)}
+
+
+def test_mock_review_text_stays_out_of_the_report() -> None:
+    placeholder = make_finding(
+        impact=make_finding().impact.model_copy(update={"narrative": "Mock impact: x."}),
+        remediation="safe_call(validated_input)  # mock example",
+    )
+    view = _doc(placeholder).views[0]
+    assert "Mock" not in view.impact and "mock example" not in view.remediation_short_term
+    summary = " ".join(
+        part for block in _doc(placeholder).executive for part in (*block.paragraphs, *block.bullets)
+    )
+    assert "Mock impact" not in summary
+    assert "No language model reviewed the code" in summary
+
+
 def test_sarif_help_markdown_has_no_links_images_or_mentions() -> None:
     hostile = "[Download hotfix](https://evil.example/fix.sh) ![b](https://evil.example/p) @org"
-    sarif = build_sarif(_doc(make_finding(remediation=hostile)))
+    sarif = build_sarif(_doc(_unreviewed(remediation=hostile)))
     help_md = sarif["runs"][0]["tool"]["driver"]["rules"][0]["help"]["markdown"]
     assert "\\[Download hotfix\\](https://evil" in help_md
     assert "\\!\\[b\\]" in help_md and "@org" not in help_md

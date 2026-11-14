@@ -13,7 +13,12 @@ from pathlib import Path
 from typing import Any, Final
 
 from codekavach.report.model.document import ReportDocument
-from codekavach.report.render.exports import CSV_COLUMNS, finding_row, safe_cell
+from codekavach.report.render.exports import (
+    CSV_COLUMNS,
+    finding_row,
+    safe_cell,
+    scan_display_id,
+)
 from codekavach.report.render.html import compliance_rows, disclosure_label
 from codekavach.report.render.theme import DEFAULT_THEME, Theme
 
@@ -189,7 +194,7 @@ class XlsxRenderer:
         wf.set_row(0, 30)
         due_base = doc.generated_at.replace(tzinfo=None)
         for row, view in enumerate(doc.views, start=1):
-            values = finding_row(view)
+            values = finding_row(view, scan_display_id(doc))
             for col, value in enumerate(values):
                 name = CSV_COLUMNS[col]
                 if name == "severity":

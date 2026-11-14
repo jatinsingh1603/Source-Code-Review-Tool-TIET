@@ -234,6 +234,7 @@ def write_manifest(
         "schema": "codekavach.report-manifest/v1",
         "report_id": doc.report_id,
         "scan_id": str(doc.scan.id),
+        "scan_reference": doc.scan_reference,
         "project": doc.project_name,
         "classification": doc.classification,
         "codekavach_version": doc.scan.codekavach_version,

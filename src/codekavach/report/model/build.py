@@ -353,6 +353,16 @@ def _tools(scan: Scan, findings: Sequence[Finding]) -> tuple[ToolRecord, ...]:
     return tuple(tools.values())
 
 
+def offline_provider_kind(provider: str | None, settings: Settings | None) -> str | None:
+    """``mock`` or ``replay`` when the scan's provider answers without a model, else ``None``."""
+    if provider is None:
+        return None
+    if settings is not None and provider in settings.llm.providers:
+        kind = settings.llm.providers[provider].kind.value
+        return kind if kind in {"mock", "replay"} else None
+    return provider if provider in {"mock", "replay"} else None
+
+
 def build_report_document(
     scan: Scan,
     findings: Sequence[Finding],
@@ -433,6 +443,7 @@ def build_report_document(
     start = scan.started_at.strftime("%d %B %Y")
     end = (scan.finished_at or scan.started_at).strftime("%d %B %Y")
     period = f"on {start}" if start == end else f"between {start} and {end}"
+    offline = offline_provider_kind(scan.provider, settings)
     executive = executive_summary(
         facts,
         views,
@@ -440,8 +451,9 @@ def build_report_document(
         client=client,
         project=project,
         period=period,
-        provider=scan.provider if scan.provider not in {"mock", "replay"} else None,
+        provider=None if offline or scan.provider in {None, "none"} else scan.provider,
         model=scan.model,
+        offline=offline,
     )
     report_id = f"CK-RPT-{year}-{str(scan.id)[-8:].upper()}"
     issue_date = now.strftime("%d %B %Y")

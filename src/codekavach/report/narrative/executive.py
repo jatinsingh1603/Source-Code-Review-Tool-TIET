@@ -36,6 +36,28 @@ def _first_sentence(text: str) -> str:
     return sentence + "."
 
 
+def _approach(provider: str | None, offline: str | None) -> str:
+    """How the review was made, in words; never claims a model review that did not happen."""
+    if provider:
+        return (
+            "combining deterministic rule and taint analysis with model-assisted triage under a "
+            "privacy-preserving egress policy."
+        )
+    if offline == "replay":
+        return (
+            "using deterministic rule and taint analysis. No language model was contacted: model "
+            "answers recorded in an earlier run were replayed, and every finding rests on the "
+            "deterministic evidence."
+        )
+    if offline:
+        return (
+            "using deterministic rule and taint analysis. No language model reviewed the code: "
+            "the run used the offline mock provider, which answers on the machine without a "
+            "model, so every finding and severity rests on the deterministic evidence."
+        )
+    return "using deterministic rule and taint analysis; no language model was used."
+
+
 def executive_summary(
     facts: AggregatedFacts,
     views: Sequence[FindingView],
@@ -46,8 +68,13 @@ def executive_summary(
     period: str,
     provider: str | None,
     model: str | None,
+    offline: str | None = None,
 ) -> tuple[NarrativeBlock, ...]:
-    """The executive summary blocks: overview, posture, key findings, recommendations."""
+    """The executive summary blocks: overview, posture, key findings, recommendations.
+
+    ``provider`` is a live model provider; ``offline`` names an offline one (``mock`` or
+    ``replay``), in which case the summary says plainly that no model reviewed the code.
+    """
     counts = ", ".join(
         f"{count} {name}" for name, count in facts.by_severity if count and name != "info"
     )
@@ -58,10 +85,10 @@ def executive_summary(
         if client != project
         else f"This report presents the secure source code review of {project}."
     )
+    approach = _approach(provider, offline)
     overview = (
         f"{opening[0].upper()}{opening[1:]} The review was performed {period} with "
-        "CodeKavach, combining deterministic rule and taint analysis "
-        f"with model-assisted triage under a privacy-preserving egress policy. "
+        f"CodeKavach, {approach} "
         f"{facts.files_analysed} files and {facts.lines_analysed:,} lines of {languages} code "
         "were analysed."
     )

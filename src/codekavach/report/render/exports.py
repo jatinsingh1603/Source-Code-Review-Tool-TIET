@@ -263,6 +263,8 @@ def build_sarif(doc: ReportDocument) -> dict[str, Any]:  # noqa: PLR0912
                 "results": results,
                 "properties": {
                     "report_id": doc.report_id,
+                    "scan_id": str(doc.scan.id),
+                    "scan_reference": doc.scan_reference,
                     "truncated": len(doc.views) > MAX_SARIF_RESULTS,
                 },
             }
@@ -304,6 +306,7 @@ def build_json(doc: ReportDocument) -> dict[str, Any]:
         },
         "scan": {
             "id": str(doc.scan.id),
+            "reference": doc.scan_reference,
             "started_at": doc.scan.started_at.isoformat(),
             "finished_at": doc.scan.finished_at.isoformat() if doc.scan.finished_at else None,
             "privacy_level": str(doc.scan.privacy_level.value),
@@ -376,6 +379,7 @@ CSV_COLUMNS: Final = (
     "remediation",
     "compliance",
     "fingerprint",
+    "scan_id",
 )
 
 
@@ -387,8 +391,13 @@ def safe_cell(value: object) -> str:
     return text
 
 
-def finding_row(view: FindingView) -> list[str]:
-    """One row of ``CSV_COLUMNS`` for ``view``."""
+def scan_display_id(doc: ReportDocument) -> str:
+    """The scan id a reader knows: the dashboard's ``SCN-6B14BE``, else the pipeline id."""
+    return doc.scan_reference or str(doc.scan.id)
+
+
+def finding_row(view: FindingView, scan_id: str = "") -> list[str]:
+    """One row of ``CSV_COLUMNS`` for ``view`` found by the scan ``scan_id``."""
     values: list[object] = [
         view.report_id,
         view.severity,
@@ -415,6 +424,7 @@ def finding_row(view: FindingView) -> list[str]:
         view.remediation_short_term,
         "; ".join(f"{c.framework} {c.clause}" for c in view.compliance),
         view.fingerprint,
+        scan_id,
     ]
     return [safe_cell(value) for value in values]
 
@@ -433,8 +443,9 @@ class CsvRenderer:
         buffer = io.StringIO()
         writer = csv.writer(buffer, lineterminator="\n")
         writer.writerow(CSV_COLUMNS)
+        scan_id = scan_display_id(doc)
         for view in doc.views:
-            writer.writerow(finding_row(view))
+            writer.writerow(finding_row(view, scan_id))
         return _write(out, buffer.getvalue())
 
 
