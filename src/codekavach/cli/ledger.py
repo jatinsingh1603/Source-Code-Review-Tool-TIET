@@ -283,7 +283,8 @@ def terms_step(context: VerifyContext) -> StepResult:
             )
         )
     summary_lines = [
-        f"terms: {len(terms)} checked, {len(short)} skipped (too short), {len(hits)} occurrence(s)",
+        f"terms: {len(terms)} checked, {len(short)} skipped (too short), "
+        f"{len(hits)} occurrence{'' if len(hits) == 1 else 's'}",
         *lines,
     ]
     if failing:

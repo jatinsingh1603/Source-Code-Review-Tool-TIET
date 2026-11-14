@@ -364,7 +364,8 @@ def _renderer(
         for candidate_id in never_send:
             console.print(f"candidate {candidate_id}: no payload: policy never-send", markup=False)
         if hidden:
-            console.print(f"{hidden} more payload(s); use --limit 0 to show all", markup=False)
+            noun = "payload" if hidden == 1 else "payloads"
+            console.print(f"{hidden} more {noun}; use --limit 0 to show all", markup=False)
 
     return render
 

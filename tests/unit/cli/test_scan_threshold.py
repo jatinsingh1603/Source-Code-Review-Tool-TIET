@@ -196,11 +196,11 @@ def test_exit_errors_carry_the_documented_codes() -> None:
 def test_threshold_lines() -> None:
     failing = ThresholdResult(True, Severity.HIGH, 5, Severity.CRITICAL, 2)
     assert threshold_lines(failing) == [
-        "threshold: high; 5 finding(s) at or above it: failing (exit 1)",
+        "threshold: high; 5 findings at or above it: failing (exit 1)",
         "2 finding(s) not counted (suppressed, accepted or false positive)",
     ]
     passing = ThresholdResult(False, Severity.CRITICAL, 0, Severity.HIGH)
-    assert threshold_lines(passing) == ["threshold: critical; 0 finding(s) at or above it: passing"]
+    assert threshold_lines(passing) == ["threshold: critical; 0 findings at or above it: passing"]
     assert threshold_lines(ThresholdResult(False, "none", 0, None)) == [
         "threshold: none; the severity gate is disabled"
     ]
@@ -265,7 +265,7 @@ def test_not_counted_findings_do_not_fail(
     result = run_scan_cli(cli, project, monkeypatch, findings, "--fail-on", "low")
     assert result.exit_code == 0, result.stderr
     assert "2 finding(s) not counted" in result.stdout
-    assert "threshold: low; 0 finding(s) at or above it: passing" in result.stdout
+    assert "threshold: low; 0 findings at or above it: passing" in result.stdout
 
 
 def test_threshold_comes_from_settings(
@@ -273,7 +273,7 @@ def test_threshold_comes_from_settings(
 ) -> None:
     default = run_scan_cli(cli, project, monkeypatch, HIGH_AND_LOW)
     assert default.exit_code == 1
-    assert "threshold: high; 1 finding(s) at or above it: failing (exit 1)" in default.stdout
+    assert "threshold: high; 1 finding at or above it: failing (exit 1)" in default.stdout
     demo = run_scan_cli(cli, project, monkeypatch, HIGH_AND_LOW, "--profile", "demo")
     assert demo.exit_code == 0, demo.stderr
     assert "threshold: none" in demo.stdout

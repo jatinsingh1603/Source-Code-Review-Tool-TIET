@@ -32,7 +32,7 @@ $ codekavach doctor
 PASS  runtime:python              3.12.16
 PASS  runtime:package             0.1.0.dev0
 PASS  runtime:platform            Linux x86_64, stdout utf-8
-PASS  config:valid                profile none, 0 warning(s)
+PASS  config:valid                profile none, 0 warnings
 PASS  storage:state-dir           does not exist yet and can be created
 SKIP  storage:artefacts           not available in this build
 PASS  storage:database            no database yet; the first scan creates it
@@ -44,7 +44,7 @@ PASS  parsing:grammar:go          grammar loads, version 0.9.0
 WARN  privacy:ner-model           name recognition is off: library missing
 WARN  secrets:keyring             the keyring backend is insecure and is refused
 PASS  plugins:load                every allowed plugin loads
-PASS  plugins:pipeline            13 stage(s) resolve into a valid order
+PASS  plugins:pipeline            13 stages resolve into a valid order
 SKIP  engine:bandit               not installed
 SKIP  engine:brakeman             not installed
 SKIP  engine:cppcheck             not installed
@@ -131,12 +131,12 @@ scan_01M78KC0DK409S6AJJ
 │ info     │        0 │
 └──────────┴──────────┘
 findings: 59
-threshold: high; 42 finding(s) at or above it: failing (exit 1)
+threshold: high; 42 findings at or above it: failing (exit 1)
 LLM provider: mock (local), level L3, payloads recorded: 40, blocked by guard: 2
 provider is local/mock: payloads were recorded but not transmitted
 next: codekavach privacy inspect --scan scan_01M78KC0DK409S6AJJ8QDRRMF1
 next: codekavach report --scan scan_01M78KC0DK409S6AJJ8QDRRMF1
-error[threshold_exceeded]: 42 finding(s) at or above high
+error[threshold_exceeded]: 42 findings at or above high
   proves: engines and the model find the planted issues; the summary names the provider and what was recorded
 
 == Step 6: Privacy: what would the model see? ==
@@ -223,7 +223,7 @@ $ codekavach privacy inspect . --list
 │                                │    │    │ :1 │    │    │    │    │     │    │
 │                                │    │    │ 5  │    │    │    │    │     │    │
 └────────────────────────────────┴────┴────┴────┴────┴────┴────┴────┴─────┴────┘
-11 more payload(s); use --limit 0 to show all
+11 more payloads; use --limit 0 to show all
   proves: a payload is a slice with pseudonyms, not the file
 
 == Step 7: Privacy: side by side ==
@@ -360,7 +360,7 @@ Payload (what the provider receives)
   6     """xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"""
   7     return hashlib.md5(param_6.encode("xxx-x")).hexdigest()
 
-11 more payload(s); use --limit 0 to show all
+11 more payloads; use --limit 0 to show all
   proves: secrets are typed placeholders and identifiers are renamed, on one page that loads nothing from the network
 
 == Step 8: Privacy: audit the ledger ==
@@ -368,7 +368,7 @@ Hash chain, payload hashes, and a search for every planted term in every payload
 $ codekavach privacy ledger verify . --check-terms <repo>/fixtures/kavachbank/ground-truth/terms.txt --include-blocked
 chain intact: 84 records
 payloads: 15 checked, 0 mismatches
-terms: 31 checked, 0 skipped (too short), 0 occurrence(s)
+terms: 31 checked, 0 skipped (too short), 0 occurrences
 verbatim check only; structural leakage is measured by 'codekavach eval leakage'
   proves: no listed secret or domain term occurs verbatim in anything prepared for a model, and the log cannot be edited unnoticed
 

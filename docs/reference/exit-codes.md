@@ -48,7 +48,7 @@ The scan renders its result first and decides the exit code afterwards, in one p
 - The threshold is `--fail-on`, else `scan.fail_on` (`high` by default; the `demo` profile sets `none`). Accepted values are `critical`, `high`, `medium`, `low`, `info` and `none`.
 - Only findings with status `open` or `confirmed` count. Findings that are `suppressed`, `accepted_risk`, `false_positive` or `fixed` do not fail the scan; the summary prints how many were not counted.
 - The gate compares the final severity of each finding. An LLM verdict does not lower it: a deterministic finding that a model judged harmless stays `open` until a person or a suppression rule changes its status.
-- The human summary ends with `threshold: high; 5 finding(s) at or above it: failing (exit 1)` (or `passing`); the JSON `data` holds `"threshold": {"fail_on": "high", "exceeded": true, "counted": 5}`.
+- The human summary ends with `threshold: high; 5 findings at or above it: failing (exit 1)` (or `passing`); the JSON `data` holds `"threshold": {"fail_on": "high", "exceeded": true, "counted": 5}`.
 - `--strict-privacy` makes a blocked payload exit 3. The guard refuses the payload with or without the flag.
 
 Diagnostics go to stderr as `error[<code>]: <message>`, optionally followed by `hint: ...`.

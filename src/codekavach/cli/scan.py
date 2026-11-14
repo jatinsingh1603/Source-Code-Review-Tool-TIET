@@ -485,8 +485,8 @@ def threshold_lines(threshold: ThresholdResult) -> list[str]:
     else:
         verdict = "failing (exit 1)" if threshold.exceeded else "passing"
         lines = [
-            f"threshold: {threshold.fail_on}; {threshold.counted_at_or_above} finding(s) at or "
-            f"above it: {verdict}"
+            f"threshold: {threshold.fail_on}; {threshold.counted_at_or_above} "
+            f"finding{'' if threshold.counted_at_or_above == 1 else 's'} at or above it: {verdict}"
         ]
     if threshold.not_counted:
         lines.append(
@@ -779,6 +779,8 @@ def exit_error(
         )
     if code is ExitCode.FINDINGS:
         return ThresholdExceeded(
-            f"{threshold.counted_at_or_above} finding(s) at or above {threshold.fail_on}"
+            f"{threshold.counted_at_or_above} "
+            f"finding{'' if threshold.counted_at_or_above == 1 else 's'} at or above "
+            f"{threshold.fail_on}"
         )
     return None

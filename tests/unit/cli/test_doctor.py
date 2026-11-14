@@ -203,7 +203,7 @@ def test_exit_code_table(
 def fixed_results() -> list[CheckResult]:
     return [
         CheckResult("runtime:python", "runtime", CheckStatus.PASS, "3.12.6", required=True),
-        CheckResult("config:valid", "config", CheckStatus.PASS, "profile demo, 0 warning(s)"),
+        CheckResult("config:valid", "config", CheckStatus.PASS, "profile demo, 0 warnings"),
         CheckResult(
             "secrets:keyring",
             "secrets",

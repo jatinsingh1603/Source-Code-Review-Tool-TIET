@@ -1,5 +1,5 @@
 PASS  runtime:python          3.12.6
-PASS  config:valid            profile demo, 0 warning(s)
+PASS  config:valid            profile demo, 0 warnings
 WARN  secrets:keyring         no keyring backend; passphrase mode will be used
 FAIL  parsing:grammar:python  grammar could not be loaded
 SKIP  storage:artefacts       not available in this build

@@ -37,7 +37,7 @@ $ codekavach doctor
 PASS  runtime:python              3.12.3
 PASS  runtime:package             0.1.0.dev0
 PASS  runtime:platform            Linux x86_64, stdout utf-8
-PASS  config:valid                profile none, 0 warning(s)
+PASS  config:valid                profile none, 0 warnings
 PASS  storage:state-dir           does not exist yet and can be created
 SKIP  storage:artefacts           not available in this build
 PASS  storage:database            no database yet; the first scan creates it
@@ -49,7 +49,7 @@ PASS  parsing:grammar:go          grammar loads, version 0.9.0
 WARN  privacy:ner-model           name recognition is off: library missing
 WARN  secrets:keyring             the keyring backend is insecure and is refused
 PASS  plugins:load                every allowed plugin loads
-PASS  plugins:pipeline            0 stage(s) resolve into a valid order
+PASS  plugins:pipeline            0 stages resolve into a valid order
 PASS  provider:mock:configured    kind mock
 SKIP  provider:mock:reachable     use --probe-providers
 hint  privacy:ner-model           optional: install spaCy and a model such as en_core_web_sm offline

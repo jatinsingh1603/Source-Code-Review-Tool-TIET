@@ -380,7 +380,8 @@ def _config(ctx: CliContext) -> Outcome:
         "project_config": str(loaded.project_config) if loaded.project_config else None,
         "warnings": warnings,
     }
-    summary = f"profile {loaded.profile or 'none'}, {warnings} warning(s)"
+    noun = "warning" if warnings == 1 else "warnings"
+    summary = f"profile {loaded.profile or 'none'}, {warnings} {noun}"
     return Outcome(CheckStatus.WARN if warnings else CheckStatus.PASS, summary, details)
 
 
@@ -542,7 +543,8 @@ def _plugin_pipeline(ctx: CliContext) -> Outcome:
             f"the installed plugins do not form a runnable pipeline ({problems} problem(s))",
             {"order": list(report.order), "problems": problems},
         )
-    summary = f"{len(report.order)} stage(s) resolve into a valid order"
+    stages = len(report.order)
+    summary = f"{stages} stage{'' if stages == 1 else 's'} resolve into a valid order"
     return Outcome(CheckStatus.PASS, summary, {"order": list(report.order)})
 
 

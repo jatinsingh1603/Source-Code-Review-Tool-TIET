@@ -125,7 +125,7 @@ def test_pairs_in_order_with_limit(cli: Cli, project: Path, source: FakeSource) 
     assert "recorded (mock provider: not transmitted)" in result.stdout
     limited = inspect(cli, project, "--limit", "1")
     assert f"candidate {SECOND}" not in limited.stdout
-    assert "1 more payload(s); use --limit 0 to show all" in limited.stdout
+    assert "1 more payload; use --limit 0 to show all" in limited.stdout
 
 
 def test_list_shows_no_code(cli: Cli, project: Path, source: FakeSource) -> None:

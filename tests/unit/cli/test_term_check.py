@@ -159,7 +159,7 @@ def test_failing_run_never_prints_the_term(
         assert result.exit_code == 3
         assert "error[ledger_term_found]" in result.stderr
         assert f"{terms_file}:3 found in seq 1, 3" in result.stdout
-        assert "terms: 3 checked, 2 skipped (too short), 1 occurrence(s)" in result.stdout
+        assert "terms: 3 checked, 2 skipped (too short), 1 occurrence" in result.stdout
         assert "warning[terms_too_short]" in result.stderr
         for text in (result.stdout, result.stderr, caplog.text):
             assert TERM not in text
