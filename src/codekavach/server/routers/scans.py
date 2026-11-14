@@ -47,6 +47,7 @@ from codekavach.server.reports import (
     render_delta,
     render_manifest,
     report_file,
+    scan_label,
 )
 from codekavach.server.results import (
     SEVERITY_ORDER,
@@ -684,7 +685,8 @@ def verification_report(
                  resource=scan_id, client=client_of(request))  # fmt: skip
     if format == "txt":
         lines = [
-            f"CodeKavach egress ledger verification for scan {scan_id}",
+            f"CodeKavach egress ledger verification for scan {scan_label(scan_id) or scan_id}"
+            + (f" ({scan_id})" if scan_label(scan_id) else ""),
             f"Verified at {result['verified_at'].isoformat()}",
             f"Result: {'PASS' if result['ok'] else 'FAIL'}",
             f"Chain: {'intact' if result['chain_ok'] else 'broken'} over {result['entries']} "

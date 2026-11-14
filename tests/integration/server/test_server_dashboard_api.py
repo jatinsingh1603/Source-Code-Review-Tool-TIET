@@ -216,6 +216,8 @@ def test_verify_and_verification_report(
     text = client.get(url, params={"format": "txt"}, headers=admin)
     assert text.status_code == 200
     assert "Result: PASS" in text.text
+    label = "SCN-" + scan["id"].removeprefix("scn_")[:6].upper()
+    assert f"for scan {label} ({scan['id']})" in text.text.splitlines()[0]
     assert "distinct; identical payloads are stored and checked once" in text.text
     assert "attachment" in text.headers["content-disposition"]
     assert json.loads(client.get(url, headers=admin).text)["ok"] is True
