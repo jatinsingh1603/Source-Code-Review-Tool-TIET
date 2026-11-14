@@ -31,7 +31,8 @@ def test_recover_fails_orphaned_scans_in_words(tmp_path: Path) -> None:
         session.add(ScanRow(id="scn_done", project_id="prj_a", status="completed", started_at=now))
     logs: dict[str, _Log] = {}
     hub = SimpleNamespace(log=lambda scan_id: logs.setdefault(scan_id, _Log()))
-    jobs = JobRunner(SimpleNamespace(db=db, hub=hub), workers=1)
+    state: Any = SimpleNamespace(db=db, hub=hub)
+    jobs = JobRunner(state, workers=1)
     try:
         assert jobs.recover() == 1
     finally:
