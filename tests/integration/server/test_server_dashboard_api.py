@@ -871,6 +871,11 @@ def test_profile_preferences_and_notifications(
     assert feed["unread"] >= 1
     client.post(f"{API}/notifications/read", headers=viewer)
     assert client.get(f"{API}/notifications", headers=viewer).json()["unread"] == 0
+    # Switching "Scan completed" off in Settings takes those events off the bell.
+    off = {"events": {"scan_completed": {"in_app": False}}}
+    client.patch(f"{API}/me/notifications", json=off, headers=viewer)
+    feed = client.get(f"{API}/notifications", headers=viewer).json()
+    assert not any(item["event"] == "scan_completed" for item in feed["items"])
 
 
 def test_openapi_lists_the_new_routes(server: tuple[TestClient, Any]) -> None:

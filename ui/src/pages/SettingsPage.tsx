@@ -281,7 +281,7 @@ export default function SettingsPage() {
               </table>
             </div>
             <p className="xs faint" style={{ marginTop: 8 }}>
-              {serverNotif ? "Stored on the server. In-app notifications appear under the bell; the server sends no e-mail." : "Kept in this browser."}
+              {serverNotif ? "Stored on the server. The bell shows finished and failed scans and findings assigned to you, as switched on here; this build raises no Critical or ledger alerts and sends no e-mail." : "Kept in this browser."}
             </p>
           </div>
 

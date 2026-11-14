@@ -280,6 +280,12 @@ def notifications(
     """Recent events for the caller: finished scans and findings assigned to them."""
     size = max(1, min(limit, 200))
     names = {row.id: row.name for row in session.scalars(select(Project))}
+    # The "In app" switches in Settings decide what the bell shows.
+    shown = {
+        event
+        for event, switches in get_notification_settings(principal, session)["events"].items()
+        if switches.get("in_app", True)
+    }
     items: list[dict[str, Any]] = []
     scans = session.scalars(
         select(ScanRow)
@@ -308,6 +314,7 @@ def notifications(
         items.append({"id": f"assign:{event.id}", "event": "finding_assigned",
                       "at": as_utc(event.at), "title": f"Assigned to you: {title}",
                       "link": f"/findings/{event.finding_id}"})  # fmt: skip
+    items = [item for item in items if item["event"] in shown]
     items.sort(key=lambda item: item["at"] or utcnow(), reverse=True)
     items = items[:size]
     read_at = _read_at(session, principal.user_id)
