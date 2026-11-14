@@ -242,13 +242,17 @@ class _Progress:
         if current and total:
             # Two candidates of the same class otherwise read as one verdict, then its opposite.
             label = f"{current} of {total} · {label} ({severity})"
+        words = VERDICT_WORDS.get(verdict, verdict)
+        if verdict == "vulnerable" and _low_confidence(data.get("confidence")):
+            # The findings table shows these as "Needs review"; the log must not say "confirmed".
+            words = "vulnerable per the model, low confidence: needs review"
         self.log.append(
             "finding",
             {
                 "id": item,
                 "phase": "verdict",
                 "severity": severity,
-                "title": f"{label}: {VERDICT_WORDS.get(verdict, verdict)}",
+                "title": f"{label}: {words}",
                 "verdict": verdict,
                 "confidence": data.get("confidence"),
                 "cwe": cwe,
@@ -438,7 +442,15 @@ def _zero_leak_words(zero_leak: dict[str, Any]) -> str:
         return "zero-leak check not run (no listed project terms)"
     if zero_leak.get("passed"):
         return f"zero-leak passed ({checked} listed terms)"
-    return f"zero-leak FAILED ({zero_leak.get('occurrences', 0)} occurrence(s))"
+    found = int(zero_leak.get("occurrences") or 0)
+    return f"zero-leak FAILED ({found} occurrence{'s' if found != 1 else ''})"
+
+
+def _low_confidence(confidence: object) -> bool:
+    """True when the dashboard shows this verdict as "Needs review" (below 0.65, as in the UI)."""
+    if isinstance(confidence, int | float):
+        return float(confidence if confidence <= 1 else confidence / 100) < 0.65
+    return str(confidence).lower() in {"low", "medium", "very low"}
 
 
 def _run_pipeline(
