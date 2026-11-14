@@ -259,7 +259,11 @@ export function useSaveSettings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Partial<Settings>) => endpoints.saveSettings(body),
-    onSuccess: (data) => qc.setQueryData(qk.settings, data),
+    onSuccess: (data) => {
+      qc.setQueryData(qk.settings, data);
+      // The network pill follows the default provider.
+      void qc.invalidateQueries({ queryKey: qk.health });
+    },
   });
 }
 

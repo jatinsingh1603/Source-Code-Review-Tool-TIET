@@ -511,6 +511,19 @@ def test_health_network_and_system_health(
     assert client.get(f"{API}/system/health", headers=users["auditor"]).status_code == 403
 
 
+def test_health_network_follows_the_default_provider_at_once(
+    server: tuple[TestClient, Any], admin: dict[str, str]
+) -> None:
+    client = server[0]
+    assert client.get(f"{API}/health").json()["network"] == "offline"
+    remote = {"default_provider": "agentrouter", "default_model": "gpt-5.6-sol"}
+    assert client.put(f"{API}/settings", json=remote, headers=admin).status_code == 200
+    assert client.get(f"{API}/health").json()["network"] == "online"
+    local = {"default_provider": "mock", "default_model": "mock-1"}
+    assert client.put(f"{API}/settings", json=local, headers=admin).status_code == 200
+    assert client.get(f"{API}/health").json()["network"] == "offline"
+
+
 def test_invariants_report_recorded_results(
     server: tuple[TestClient, Any], users: dict[str, dict[str, str]], scan: dict[str, Any]
 ) -> None:

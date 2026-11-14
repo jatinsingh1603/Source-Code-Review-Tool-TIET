@@ -305,6 +305,9 @@ def put_settings(
         updated = state.put_settings(values)
     except ValueError as error:
         raise ApiError(400, "key_not_reference", str(error)) from None
+    # The top bar's "Offline" pill follows the default provider: say so on the next health
+    # check, not up to 30 seconds after the admin switched to a remote provider.
+    _posture.clear()
     audit.record(state.db, actor=principal.username, action="settings.update",
                  client=client_of(request), detail={"fields": sorted(values)})  # fmt: skip
     return updated
