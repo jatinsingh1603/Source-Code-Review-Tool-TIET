@@ -271,6 +271,9 @@ export default function SettingsPage() {
                             className="chk"
                             aria-label={`${label}: ${ch === "app" ? "in app" : "email"}`}
                             checked={ev(k)[ch]}
+                            // This server sends no e-mail (no SMTP relay): the column is shown, not offered.
+                            disabled={ch === "email" && !!serverNotif}
+                            title={ch === "email" && serverNotif ? "Not in this build: the server sends no e-mail." : undefined}
                             onChange={(e) => {
                               setNotif((n) => ({ ...n, [k]: { ...ev(k), [ch]: e.target.checked } }));
                               setDirty(true);
