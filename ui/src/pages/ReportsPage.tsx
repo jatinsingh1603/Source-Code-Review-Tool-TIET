@@ -42,7 +42,9 @@ export default function ReportsPage() {
   const scan = scans.find((s) => s.id === scanId);
   const idx = scans.findIndex((s) => s.id === scanId);
   const [baselineId, setBaselineId] = useState<string | null>(null);
-  const baseline = baselineId === "" ? undefined : scans.find((s) => s.id === baselineId) ?? scans[idx + 1];
+  // Only an older scan can be the baseline; a choice made for another scan falls back to the previous one.
+  const older = idx >= 0 ? scans.slice(idx + 1) : [];
+  const baseline = baselineId === "" ? undefined : older.find((s) => s.id === baselineId) ?? older[0];
   const reportsQ = useReports(scanId);
   const settings = useSettings().data;
   const findings = useFindings(scanId).data;
@@ -179,7 +181,7 @@ export default function ReportsPage() {
             <div className="fld">
               <label htmlFor="rb-base">Baseline for delta</label>
               <select id="rb-base" className="inp" value={baseline?.id ?? ""} onChange={(e) => setBaselineId(e.target.value)}>
-                {scans.slice(idx + 1).map((s) => (
+                {older.map((s) => (
                   <option key={s.id} value={s.id}>
                     {scanLabel(s.id)} · {fmtDate(s.finished_at)}
                   </option>
