@@ -200,7 +200,9 @@ def test_mock_review_text_stays_out_of_the_report() -> None:
     view = _doc(placeholder).views[0]
     assert "Mock" not in view.impact and "mock example" not in view.remediation_short_term
     summary = " ".join(
-        part for block in _doc(placeholder).executive for part in (*block.paragraphs, *block.bullets)
+        part
+        for block in _doc(placeholder).executive
+        for part in (*block.paragraphs, *block.bullets)
     )
     assert "Mock impact" not in summary
     assert "No language model reviewed the code" in summary
