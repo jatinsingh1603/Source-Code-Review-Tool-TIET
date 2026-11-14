@@ -170,7 +170,10 @@ def test_delta_sorts_new_fixed_and_regressed(tmp_path: Path) -> None:
     delta = build_delta(_doc(raised, added), _doc(kept, gone))
     assert delta.counts == {"new": 1, "fixed": 1, "regressed": 1, "unchanged": 0}
     out = render_delta_html(delta, _doc(raised, added), tmp_path / "delta.html")
-    assert "Retest delta report" in out.read_text(encoding="utf-8")
+    page = out.read_text(encoding="utf-8")
+    assert "Retest delta report" in page
+    # the finding that is gone keeps its baseline report ID, marked as such
+    assert re.search(r'CK-\d{4}-\d{3} <span class="small muted">baseline</span>', page)
 
 
 def test_manifest_detects_a_changed_file(tmp_path: Path) -> None:
