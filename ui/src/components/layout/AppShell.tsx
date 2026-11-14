@@ -15,6 +15,7 @@ import { endpoints } from "@/api/endpoints";
 import { pickDefault } from "@/app/useSelectedScan";
 import { Avatar, Icon, Logo, Skeleton, type IconName } from "@/components/ui";
 import { CommandPalette } from "./CommandPalette";
+import { useA11yShell } from "@/lib/a11y";
 
 interface NavItem {
   to: string;
@@ -473,6 +474,7 @@ export function AppShell() {
     if (target) target.scrollIntoView({ block: "start" });
     else window.scrollTo(0, 0);
   }, [pathname]);
+  useA11yShell(pathname);
   return (
     <ShellProvider>
       <a className="btn pri sm skip" href="#main">
