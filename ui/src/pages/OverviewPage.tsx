@@ -20,7 +20,7 @@ import type {
   Scan,
   TrendPoint,
 } from "@/api/types";
-import { isOpen, providerName, scanPayloads, scanTarget, sevCounts, sortScans } from "@/lib/domain";
+import { isOpen, providerName, scanPayloads, scanProviderId, scanTarget, sevCounts, sortScans } from "@/lib/domain";
 import {
   ENGINE_COLUMNS,
   engineColumn,
@@ -743,7 +743,7 @@ export function ScansTable({
                   <td>
                     <LevelBadge level={s.privacy_level} />
                   </td>
-                  <td>{providerName(s.provider, providers)}</td>
+                  <td>{providerName(scanProviderId(s), providers)}</td>
                   <td className="num mono">{s.status === "completed" ? fmtInt(total) : "—"}</td>
                   <td className="num mono">{fmtInt(scanPayloads(s))}</td>
                   <td>

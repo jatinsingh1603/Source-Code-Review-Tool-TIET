@@ -8,7 +8,7 @@ import { useSession } from "@/app/session";
 import { useShell } from "@/app/shell-context";
 import { useCurrentProject } from "@/app/project-context";
 import { fmtBytes, fmtClock, fmtElapsed, fmtInt, fmtTime, findingLabel, LEVEL_NAME, scanLabel, secondsBetween } from "@/lib/display";
-import { providerName, shortProviderName } from "@/lib/domain";
+import { providerName, scanProviderId, shortProviderName } from "@/lib/domain";
 import {
   Button,
   Content,
@@ -173,7 +173,7 @@ export default function ScanPage() {
   useShell({
     levelPill: scan ? `${scan.privacy_level} · ${LEVEL_NAME[scan.privacy_level] ?? ""}` : undefined,
     // An L0 scan used no provider; say so rather than fall back to the default provider's pill.
-    providerPill: scan && scan.provider ? providerName(scan.provider, providers) : undefined,
+    providerPill: scan && scan.provider ? providerName(scanProviderId(scan), providers) : undefined,
   });
   useEffect(() => {
     if (scan?.project_id) setCurrentId(scan.project_id);
@@ -544,8 +544,8 @@ function LaunchSummary({
       <div className="g" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
         <div className="fld">
           <label htmlFor="sc-p">Provider</label>
-          <select id="sc-p" className="inp" disabled value="x" title={providerName(scan.provider, providers as never)}>
-            <option value="x">{shortProviderName(providerName(scan.provider, providers as never))}</option>
+          <select id="sc-p" className="inp" disabled value="x" title={providerName(scanProviderId(scan), providers as never)}>
+            <option value="x">{shortProviderName(providerName(scanProviderId(scan), providers as never))}</option>
           </select>
         </div>
         <div className="fld">

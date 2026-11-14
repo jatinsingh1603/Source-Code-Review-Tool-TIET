@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useCurrentProject } from "@/app/project-context";
 import { useSession } from "@/app/session";
 import { useDeleteProject, useProject, useProviders, useScans } from "@/api/queries";
@@ -26,7 +26,10 @@ export function ScansPage() {
   const providers = useProviders().data;
   const { projects, current } = useCurrentProject();
   const { can } = useSession();
-  const [project, setProject] = useState("");
+  // The project filter lives in the URL, so Back from a scan returns to the same list.
+  const [params, setParams] = useSearchParams();
+  const project = params.get("project") ?? "";
+  const setProject = (id: string) => setParams(id ? { project: id } : {}, { replace: true });
   const target = project || current?.id || projects[0]?.id;
   const scans = useMemo(
     () => sortScans(scansQ.data ?? []).filter((s) => !project || s.project_id === project),

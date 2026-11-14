@@ -58,6 +58,11 @@ export function providerName(id: string | null | undefined, providers?: Provider
   return providers?.find((p) => p.id === id)?.name ?? id;
 }
 
+/** The provider a scan used: none at L0, whatever provider was recorded (nothing is sent at L0). */
+export function scanProviderId(scan: Pick<Scan, "provider" | "privacy_level">): string | null | undefined {
+  return scan.privacy_level === "L0" ? "none" : scan.provider;
+}
+
 /** "AgentRouter (OpenAI Responses)" → "AgentRouter", for narrow form columns. */
 export function shortProviderName(name: string): string {
   return name.replace(/\s*\([^)]*\)\s*$/, "") || name;
