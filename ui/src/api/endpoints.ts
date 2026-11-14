@@ -73,7 +73,7 @@ export async function optional<T>(p: Promise<T>): Promise<T | null> {
 }
 
 export const endpoints = {
-  audit: (limit = 50) => api.get<AuditLog>("/audit", { limit }),
+  audit: (limit = 50, offset = 0) => api.get<AuditLog>("/audit", { limit, offset }),
   notifications: () => optional(api.get<NotificationFeed>("/notifications", { limit: 20 })),
   markNotificationsRead: () => api.post<unknown>("/notifications/read"),
   evaluation: () => optional(api.get<unknown>("/evaluation")),

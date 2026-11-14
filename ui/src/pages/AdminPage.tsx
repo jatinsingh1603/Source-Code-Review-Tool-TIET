@@ -396,8 +396,25 @@ function KeysCard() {
 function AuditPanel({ limit }: { limit?: number }) {
   const q = useAudit();
   const events = (q.data?.events ?? []).slice(0, limit ?? 200);
-  const exportLog = () => {
-    const blob = new Blob([(q.data?.events ?? []).map((e) => JSON.stringify(e)).join("\n") + "\n"], { type: "application/x-ndjson" });
+  const toast = useToast();
+  const [exporting, setExporting] = useState(false);
+  // The table shows the newest events; the export pages through the whole log.
+  const exportLog = async () => {
+    setExporting(true);
+    const all: AuditEvent[] = [];
+    try {
+      for (;;) {
+        const page = await endpoints.audit(1000, all.length);
+        all.push(...page.events);
+        if (!page.events.length || all.length >= (page.total ?? 0)) break;
+      }
+    } catch (e) {
+      toast.error("Audit log export failed", e instanceof Error ? e.message : undefined);
+      return;
+    } finally {
+      setExporting(false);
+    }
+    const blob = new Blob([all.map((e) => JSON.stringify(e)).join("\n") + "\n"], { type: "application/x-ndjson" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -416,7 +433,7 @@ function AuditPanel({ limit }: { limit?: number }) {
             </StatusDot>
           )}
         </div>
-        <Button size="sm" onClick={exportLog} disabled={!q.data?.events.length}>
+        <Button size="sm" onClick={() => void exportLog()} loading={exporting} disabled={!q.data?.events.length} title="Download every audit event as JSON Lines">
           Export
         </Button>
       </div>
@@ -454,6 +471,11 @@ function AuditPanel({ limit }: { limit?: number }) {
             </tbody>
           </table>
           {!q.isLoading && events.length === 0 && <Empty title="No audit events yet" />}
+          {!!q.data?.total && q.data.total > events.length && (
+            <p className="xs faint" style={{ padding: "8px 12px" }}>
+              Showing the newest {fmtInt(events.length)} of {fmtInt(q.data.total)} events. Export downloads all of them.
+            </p>
+          )}
         </div>
       )}
     </div>

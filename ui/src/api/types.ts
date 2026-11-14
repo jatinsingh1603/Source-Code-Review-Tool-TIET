@@ -74,6 +74,7 @@ export interface AuditEvent {
 export interface AuditLog {
   chain_intact?: boolean;
   checked?: number;
+  total?: number;
   events: AuditEvent[];
 }
 
