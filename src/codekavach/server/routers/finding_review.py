@@ -148,11 +148,13 @@ def review_finding(
     if found is None or not found.provenance.llm_reviews:
         reason = ", ".join(failures) or "no_verdict"
         if failures == ["policy_withheld"]:
+            why = (
+                "the scan is at L4, which this build does not deliver, so it fails closed"
+                if str(scan.privacy_level) == "L4"
+                else "the privacy policy keeps this finding's file local (a never-send path)"
+            )
             raise ApiError(
-                422,
-                "nothing_to_send",
-                "nothing was sent: the privacy policy keeps this finding's file local (a "
-                "never-send path, or L4, which fails closed); the engine evidence stands",
+                422, "nothing_to_send", f"nothing was sent: {why}; the engine evidence stands"
             )
         if failures and all(code.startswith("privacy_") for code in failures):
             # The privacy layer withheld the request (I4): the model was never asked, so this is
