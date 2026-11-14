@@ -38,6 +38,9 @@ body {
 .ck .btn.pri:disabled:hover {
   background: var(--text);
 }
+.ck .inp[aria-invalid="true"] {
+  border-color: var(--crit);
+}
 .ck .inp:disabled {
   background: var(--surface-2);
   color: var(--muted);
@@ -274,6 +277,65 @@ body {
   background: var(--warn-bg);
   border-bottom: 1px solid var(--warn-line);
   color: var(--text);
+}
+/* Sidebar: a column on a laptop, a drawer behind the Menu button on a phone (760 px and below,
+   the breakpoint of the design's shell). */
+.ck .side-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.ck .side-close,
+.ck .menu-btn {
+  display: none;
+}
+@media (max-width: 760px) {
+  .ck .side {
+    position: fixed;
+    z-index: 45;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(280px, 84vw);
+    max-width: none;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+    border-bottom: 0;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 0.18s ease,
+      visibility 0s linear 0.18s;
+  }
+  .ck .side.open {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.18s ease;
+  }
+  .ck .side .nav {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+  .ck .side .nav a.subnav {
+    padding-left: 36px;
+  }
+  .ck .side .side-foot {
+    display: flex;
+  }
+  .ck .side-close,
+  .ck .menu-btn {
+    display: inline-grid;
+  }
+  .ck .menu-btn {
+    margin-left: -8px;
+    color: var(--text);
+  }
+  .ck .side-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 44;
+    background: rgba(16, 24, 40, 0.32);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .ck *,

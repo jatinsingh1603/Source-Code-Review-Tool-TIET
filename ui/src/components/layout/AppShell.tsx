@@ -107,7 +107,7 @@ const NAV: NavEntry[] = [
   { to: "/settings", label: "Settings", icon: "cog", match: (p) => p.startsWith("/settings") },
 ];
 
-function Sidebar() {
+function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { can } = useSession();
   const { pathname } = useLocation();
   const version = useVersion().data?.version;
@@ -125,15 +125,20 @@ function Sidebar() {
   const demoOn = pathname.startsWith("/demo");
   const howOn = pathname.startsWith("/how-it-works");
   return (
-    <aside className="side" aria-label="Main navigation">
-      <Link className="brand" to="/">
-        <Logo />
-        <span>
-          <span className="brand-name">CodeKavach</span>
-          <br />
-          <span className="brand-sub">कवच · secure code review</span>
-        </span>
-      </Link>
+    <aside id="main-nav" className={cn("side", open && "open")} aria-label="Main navigation">
+      <div className="side-head">
+        <Link className="brand" to="/">
+          <Logo />
+          <span>
+            <span className="brand-name">CodeKavach</span>
+            <br />
+            <span className="brand-sub">कवच · secure code review</span>
+          </span>
+        </Link>
+        <button type="button" className="iconbtn side-close" aria-label="Close menu" onClick={onClose}>
+          <Icon name="close" />
+        </button>
+      </div>
       <nav className="nav">
         {visible.map((e) =>
           "heading" in e ? (
@@ -410,9 +415,19 @@ function UserMenu() {
   );
 }
 
-function TopBar({ onSearch }: { onSearch: () => void }) {
+function TopBar({ onSearch, navOpen, onMenu }: { onSearch: () => void; navOpen: boolean; onMenu: () => void }) {
   return (
     <header className="top">
+      <button
+        type="button"
+        className="iconbtn menu-btn"
+        aria-label="Menu"
+        aria-controls="main-nav"
+        aria-expanded={navOpen}
+        onClick={onMenu}
+      >
+        <Icon name="menu" />
+      </button>
       <ProjectPill />
       <LevelPill />
       <NetworkPill />
@@ -436,7 +451,23 @@ function TopBar({ onSearch }: { onSearch: () => void }) {
 
 export function AppShell() {
   const [palette, setPalette] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const { pathname } = useLocation();
+  // On a phone the sidebar is a drawer: it closes on navigation and on Escape, and moves focus
+  // into itself when it opens so a keyboard or screen reader user lands on the links.
+  useEffect(() => setNavOpen(false), [pathname]);
+  useEffect(() => {
+    if (!navOpen) return;
+    document.querySelector<HTMLElement>("#main-nav .nav a")?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setNavOpen(false);
+        document.querySelector<HTMLElement>(".menu-btn")?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [navOpen]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -462,15 +493,16 @@ export function AppShell() {
       <a className="btn pri sm skip" href="#main">
         Skip to content
       </a>
-      <div className="app">
-        <Sidebar />
+      <div className={cn("app", navOpen && "nav-open")}>
+        <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
+        {navOpen && <div className="side-scrim" aria-hidden onClick={() => setNavOpen(false)} />}
         <div className="main">
           {api.isMock && (
             <div className="mockbar">
               Demo data mode: the dashboard is showing built-in sample data, not a live server.
             </div>
           )}
-          <TopBar onSearch={() => setPalette(true)} />
+          <TopBar onSearch={() => setPalette(true)} navOpen={navOpen} onMenu={() => setNavOpen((x) => !x)} />
           <Suspense
             fallback={
               <main className="content">
