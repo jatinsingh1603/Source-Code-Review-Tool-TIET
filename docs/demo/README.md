@@ -71,12 +71,12 @@ A dashboard with history is more convincing than an empty one. With the server r
 $ export CODEKAVACH_ADMIN_PASSWORD=...          # the admin password from .env; omit for the default
 $ uv run python scripts/seed_demo.py            # two to five minutes; add --url http://host:8080 for another address
 KavachBank (sample)
-  KavachBank at L1: completed, 66 findings (19 critical, 26 high), 18 payloads, 0 blocked
+  KavachBank at L1: completed, 59 findings (11 critical, 26 high), 14 payloads, 0 blocked
   ...
-done: 3 projects, 8 scans, 80 findings, 76 still open
+done: 3 projects, 8 scans, 69 findings, 65 still open
 ```
 
-The totals depend on which external engines the server has, not on chance: the run above had Bandit installed. Without any external engine (Opengrep, Bandit, ESLint), as on a fresh laptop or in the container, the same script prints KavachBank at 59 findings (15 critical, 25 high, 14 payloads) and `done: 3 projects, 8 scans, 69 findings, 65 still open` (measured 14 Nov). Each scan log then says "No external engine ... is installed". Rehearse the numbers on the demo machine itself.
+The totals depend on which external engines the server has, not on chance: the run above (14 Nov, after secrets were rated by type) had no external engine (Opengrep, Bandit, ESLint), as on a fresh laptop or in the container; each scan log then says "No external engine ... is installed". KavachBank's 59 are 11 critical, 26 high, 16 medium and 6 low. With Bandit installed the same script reported 66 findings and 18 payloads before that change; its critical count is lower now (Bandit's own hits are unchanged, the secrets engine's are re-rated), and it has not been re-measured. Rehearse the numbers on the demo machine itself.
 
 It uses only the REST API (so it works against a container), the offline `mock` provider (no key, nothing leaves the machine) and real scans. It creates:
 
@@ -95,11 +95,11 @@ Honest notes for the presenter, as observed with the engines of the day:
 - Evaluation shows bundled sample results (marked "Sample results") until **Run benchmark** is pressed. A run takes about a minute with the mock provider and replaces the sample, including its AgentRouter row, with this server's mock-only figures, where the model review does not change F1. Decide before the session which one you want on screen.
 - The first PDF of a scan takes up to a minute to render on a laptop (later downloads are instant). Download the PDF of the scan you will show once before the session.
 - Scans with the mock provider say so in the summary: the ledger shows what **would** have been sent.
-- Triage survives a re-scan. When the live scan of KavachBank finishes, its unchanged findings keep the seeded decisions (4 confirmed, 2 accepted risk), so the Overview still reads 64 open, not 66, and each carried finding's Activity says "Kept the reviewer's decision from SCN-...". A finding marked **fixed** that comes back opens again (a regression). Say this if asked "what happens to my false positives on the next scan".
-- The PDF's executive summary counts every finding of the scan and then says how many remain open ("66 findings ... 64 remain open; two were closed by the reviewers"); the Overview shows the open count. Both are right; point at the second sentence if the numbers are compared.
+- Triage survives a re-scan. When the live scan of KavachBank finishes, its unchanged findings keep the seeded decisions (4 confirmed, 2 accepted risk), so the Overview still reads 57 open, not 59 (64 of 66 with Bandit), and each carried finding's Activity says "Kept the reviewer's decision from SCN-...". A finding marked **fixed** that comes back opens again (a regression). Say this if asked "what happens to my false positives on the next scan".
+- The PDF's executive summary counts every finding of the scan and then says how many remain open ("59 findings ... 57 remain open; two were closed by the reviewers"); the Overview shows the open count. Both are right; point at the second sentence if the numbers are compared.
 - The live log and the findings table agree on the model's confidence: a vulnerable verdict with low or medium confidence reads "vulnerable per the model, low confidence: needs review" in the log and **Needs review** in the table. The mock provider gives varied confidences, so a mock scan shows a mix; the real model usually answers with high confidence ("confirmed by the model").
-- The Findings filter menus count within the selected tab: under **All open** the Severity menu says Low 5, not 7 (the two accepted-risk findings are under **Suppressed** and **All**).
-- The Findings trend counts every finding each scan reported, by severity (66 per KavachBank scan); the Open findings card counts what is still open (64). Bars are labelled by the scan's start time, as in Recent scans.
+- The Findings filter menus count within the selected tab: under **All open** the Severity menu says Low 4, not 6 (the two accepted-risk findings, among them the Razorpay key ID, are under **Suppressed** and **All**).
+- The Findings trend counts every finding each scan reported, by severity (59 per KavachBank scan); the Open findings card counts what is still open (57). Bars are labelled by the scan's start time, as in Recent scans.
 - Findings without a model verdict show the weakness's impact statement (the same text as the report), not a CVSS line. Taint and secret findings read in words: "Data from a request parameter reaches an SQL query (cur.execute)", "Hard-coded credential: AWS access key". Search for **SQL query**, not "sql sink", to open the SQL injection finding.
 - Bandit findings read in words too ("A subprocess call runs its command through a shell (shell=True).", "Possible hard-coded password."). A project scanned before 14 Nov keeps Bandit's own wording ("subprocess call with shell=True identified, security issue.") on its old scans until it is scanned again; seed on a fresh volume, or re-scan each project once, after updating.
 - The attestation in the Privacy Centre gives payload bytes (the code slices, about 6.5 KB for KavachBank) and prompt tokens (about 35,500), which include the fixed review instructions sent with every slice. If asked why tokens exceed bytes, that is the reason; the report's privacy annex splits them into prompt and completion tokens.
@@ -108,6 +108,12 @@ Honest notes for the presenter, as observed with the engines of the day:
 - The admin audit log names scans as the rest of the dashboard does (`SCN-AD99A5 #35` = payload 35 of that scan); hover a target for the internal id. Action names (`privacy.read_original`) stay as they are, as in the design.
 - On a phone (390 px) the Overview trend shows only its first and last labels; the other scan times are in Recent scans below it. On a laptop every bar is labelled.
 - `codekavach demo` (air-gapped profile) no longer prints an empty `state_dir` line at the end; the table ends with the note about the mock provider.
+- Hard-coded secrets are rated by what they give an attacker, not all as Critical 9.1: the private key, AWS secret key, connection string and Razorpay key secrets are Critical (CVSS 9.3), the AWS access key id High (8.3), the two low-entropy generic passwords Medium (6.3), and the Razorpay key ID, a public identifier shipped to browsers, Low (2.0). The finding page says "representative ... vector matching the engine's rating of this secret instance". The report and every export carry the same severity and score. If asked: the severity comes from the detector's type and confidence, not from a model.
+- A report of a mock scan says so in its executive summary: "No language model reviewed the code: the run used the offline mock provider ...". The mock's placeholder impact and remediation text no longer appear in the report; the library text does. Detailed findings still show "Model assessment: ... (mock-1)", labelled as the mock's.
+- Every export names the dashboard scan id: the JSON `scan.reference`, a `scan_id` column in the CSV and XLSX, `scan_reference` in the SARIF run properties and in the integrity manifest (beside the pipeline id `scan_...`).
+- Saving a policy under **Privacy**, **Policy** no longer adds a file to the scanned code: the next scan of KavachBank still reads 29 files and no TOML. The policy stays in the server's data directory and wins over any `codekavach.policy.toml` the project ships; a never-send rule on `services/web/**` shows in the scan log as "11 candidates not sent to the model: the privacy policy keeps their files local".
+- On a phone (760 px and narrower) the sidebar is a drawer behind the menu button at the left of the top bar; it closes on a link, on Escape, on the scrim or on its close button.
+- **Admin**, **Invite user** shows every field error at once (username, email, password), each under its field, with a count above the buttons.
 
 ## Real-model timings
 
