@@ -17,10 +17,10 @@
 <div class="kpis">
   <div class="kpi high"><div class="v">{{ delta.new|length }}</div><div class="l">New</div></div>
   <div class="kpi critical"><div class="v">{{ delta.regressed|length }}</div><div class="l">Regressed</div></div>
-  <div class="kpi info"><div class="v">{{ delta.unchanged|length }}</div><div class="l">Still open</div></div>
+  <div class="kpi info"><div class="v">{{ delta.unchanged|length }}</div><div class="l">Still present</div></div>
   <div class="kpi low"><div class="v">{{ delta.fixed|length }}</div><div class="l">Fixed</div></div>
 </div>
-{% for name, items in [('New findings', delta.new), ('Regressed (severity raised)', delta.regressed), ('Still open', delta.unchanged), ('Fixed or no longer present', delta.fixed)] %}
+{% for name, items in [('New findings', delta.new), ('Regressed (severity raised)', delta.regressed), ('Still present (status shows the triage)', delta.unchanged), ('Fixed or no longer present', delta.fixed)] %}
 <h3>{{ name }} ({{ items|length }})</h3>
 <table><thead><tr><th>ID</th><th>Severity</th><th>Title</th><th>Location</th><th>Status</th></tr></thead><tbody>
 {% for e in items %}<tr><td class="mono nowrap">{{ e.report_id }}{% if items is sameas delta.fixed and e.previous_status is none %} <span class="small muted">baseline</span>{% endif %}</td><td><span class="sev sev-{{ e.severity }}">{{ e.severity }}</span>{% if e.previous_severity and e.previous_severity != e.severity %} <span class="small muted">was {{ e.previous_severity }}</span>{% endif %}</td><td>{{ e.title }}</td><td class="mono small">{{ e.location }}</td><td class="status">{{ e.status|replace('_',' ') }}</td></tr>

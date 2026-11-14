@@ -233,7 +233,7 @@ export default function ReportsPage() {
                   size="sm"
                   loading={deltaBusy}
                   onClick={() => void downloadDelta(scanId, baseline.id)}
-                  title="New, still open and fixed findings, matched by fingerprint, as one HTML file."
+                  title="New, still present and fixed findings, matched by fingerprint, as one HTML file."
                 >
                   Download delta report
                 </Button>
