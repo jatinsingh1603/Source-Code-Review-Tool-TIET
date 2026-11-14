@@ -55,7 +55,8 @@ const NAV: NavEntry[] = [
     to: "/privacy/inspect",
     label: "Privacy Inspect",
     sub: true,
-    permission: "privacy:read",
+    // Inspect is the original beside the payload; a role without originals can read nothing there.
+    permission: "privacy:read_original",
     match: (p) => p.startsWith("/privacy/inspect"),
   },
   {

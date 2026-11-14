@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSelectedScan } from "@/app/useSelectedScan";
+import { useCan } from "@/app/session";
 import { useFindings, useOptional, usePolicy, usePrivacy, useProviders } from "@/api/queries";
 import { downloadApiFile, endpoints, fetchReport, saveBlob } from "@/api/endpoints";
 import type { Budgets, PrivacyLevel, PrivacySummary } from "@/api/types";
@@ -62,6 +63,7 @@ export const INVARIANTS_LONG: [string, string][] = [
 /** Privacy Centre (SCREENS.md §11). */
 export default function PrivacyPage() {
   const { scanId, scans, project } = useSelectedScan();
+  const canOriginal = useCan("privacy:read_original");
   const sorted = useMemo(() => sortScans(scans), [scans]);
   const scan = sorted.find((s) => s.id === scanId);
   const prev = useMemo(() => {
@@ -122,7 +124,7 @@ export default function PrivacyPage() {
         sub="How much this project discloses, why, and how that is verified."
         actions={
           <>
-            <ButtonLink to="/privacy/inspect">Inspect a payload</ButtonLink>
+            {canOriginal && <ButtonLink to="/privacy/inspect">Inspect a payload</ButtonLink>}
             <ButtonLink to="/privacy/policy">Edit policy</ButtonLink>
           </>
         }
