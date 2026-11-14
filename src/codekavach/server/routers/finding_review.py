@@ -139,6 +139,17 @@ def review_finding(
     found = next((f for f in findings if f.fingerprint == row.fingerprint), None)
     if found is None or not found.provenance.llm_reviews:
         reason = ", ".join(failures) or "no_verdict"
+        if failures and all(code.startswith("privacy_") for code in failures):
+            # The privacy layer withheld the request (I4): the model was never asked, so this is
+            # not a gateway failure and must not read like one.
+            raise ApiError(
+                422,
+                "nothing_to_send",
+                f"nothing was sent: no sanitised code slice could be prepared for this finding at "
+                f"{scan.privacy_level} (a language CodeKavach cannot slice yet, or a secret, "
+                f"dependency or configuration finding), so the request was withheld ({reason}); "
+                "the engine evidence stands",
+            )
         raise ApiError(502, "review_failed", f"the model gave no usable verdict ({reason})")
     previous: dict[str, Any] = dict(row.data or {})
     data = found.model_dump(mode="json")

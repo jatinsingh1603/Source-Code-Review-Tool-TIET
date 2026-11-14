@@ -19,6 +19,7 @@ import {
 } from "@/api/types";
 import { useSession } from "@/app/session";
 import { useShell } from "@/app/shell-context";
+import { ApiError } from "@/api/client";
 import { useFollowScanProject } from "@/app/useSelectedScan";
 import { enginesOf, locationOf, verdictOf } from "@/lib/domain";
 import {
@@ -223,7 +224,9 @@ export default function FindingDetailPage() {
           setTab("reason");
         },
         onError: (e) =>
-          toast.error("Model review failed", e instanceof Error ? e.message : undefined),
+          e instanceof ApiError && e.code === "nothing_to_send"
+            ? toast.info("Nothing was sent", e.message)
+            : toast.error("Model review failed", e instanceof Error ? e.message : undefined),
       },
     );
   };

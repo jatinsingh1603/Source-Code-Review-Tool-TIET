@@ -622,3 +622,16 @@ def test_a_quick_review_then_an_on_demand_review_of_one_finding(
     assert entry.json()["entry"]["seq"] == seq
     missing = client.post("/api/v1/findings/nope/review", headers=users["auditor"])
     assert missing.status_code == 404
+    # A finding with no code slice (a secret) is withheld by the privacy layer: the model was
+    # never asked, so the answer says so instead of a gateway error.
+    secret = next(
+        item
+        for item in again
+        if not item["llm_reviewed"] and str(item.get("cwe") or "") in {"CWE-798", "CWE-321"}
+    )
+    withheld = client.post(
+        f"/api/v1/findings/{secret['id']}/review", json={}, headers=users["auditor"]
+    )
+    assert withheld.status_code == 422, withheld.text
+    assert withheld.json()["error"]["code"] == "nothing_to_send"
+    assert "nothing was sent" in withheld.json()["error"]["message"]
