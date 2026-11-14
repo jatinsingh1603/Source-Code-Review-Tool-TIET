@@ -18,6 +18,7 @@ import {
   type TaintStep,
 } from "@/api/types";
 import { useSession } from "@/app/session";
+import { useShell } from "@/app/shell-context";
 import { useFollowScanProject } from "@/app/useSelectedScan";
 import { enginesOf, locationOf, verdictOf } from "@/lib/domain";
 import {
@@ -149,6 +150,9 @@ export default function FindingDetailPage() {
   const f = q.data;
   const history = useFindingHistory(id);
   useFollowScanProject(f?.scan_id);
+  // The top bar names the level of this finding's scan, not of the project's latest scan.
+  const scanLevel = f?.scan?.privacy_level as PrivacyLevel | undefined;
+  useShell({ levelPill: scanLevel ? `${scanLevel} · ${LEVEL_NAME[scanLevel] ?? ""}` : undefined });
   const reviews = f?.provenance?.llm_reviews ?? [];
   const seq =
     reviews.find((r) => r.ledger_seq !== null && r.ledger_seq !== undefined)?.ledger_seq ?? null;

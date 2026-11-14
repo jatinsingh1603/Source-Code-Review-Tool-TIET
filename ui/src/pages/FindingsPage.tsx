@@ -142,6 +142,9 @@ export default function FindingsPage() {
   }, [sorted, scanId]);
   const findingsQ = useFindings(scanId);
   const baseQ = useFindings(baseline?.id);
+  // Triage carries forward only when a scan runs, so decisions on an older scan stay there.
+  const newest = sorted.find((s) => s.status === "completed");
+  const olderScan = !!scan && !!newest && scan.status === "completed" && newest.id !== scan.id;
   const { user, can } = useSession();
   const { current } = useCurrentProject();
   const users = useUsers().data;
@@ -395,6 +398,13 @@ export default function FindingsPage() {
         }
       />
 
+      {olderScan && (
+        <div className="banner warn sm">
+          This is an earlier scan of {scan?.project_name ?? current?.name ?? "this project"}. Status changes made here are not copied to the latest
+          scan, {scanLabel(newest!.id)};{" "}
+          <Link to={`/findings?scan=${newest!.id}`}>triage the latest scan</Link> so the decisions carry into future scans.
+        </div>
+      )}
       <Tabs
         label="Saved views"
         value={savedView ? rawView : view}
@@ -710,6 +720,7 @@ export default function FindingsPage() {
         open={dialog === "save"}
         onClose={() => setDialog(null)}
         filters={dialog === "save" ? currentFilters() : {}}
+        taken={[...tabs.map((t) => t.label), ...saved.map((v) => v.name)]}
         onSaved={(v) => {
           setDialog(null);
           qc.setQueryData(["views"], (old: unknown) => [...(Array.isArray(old) ? old : []), v]);
@@ -833,11 +844,14 @@ function SaveViewDialog({
   onClose,
   filters,
   onSaved,
+  taken = [],
 }: {
   open: boolean;
   onClose: () => void;
   filters: Record<string, string>;
   onSaved: (v: SavedView) => void;
+  /** Names already in use: views and built-in tabs, so two tabs never read the same. */
+  taken?: string[];
 }) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -849,8 +863,9 @@ function SaveViewDialog({
     }
   }, [open]);
   const entries = Object.entries(filters);
+  const clash = taken.some((t) => t.trim().toLowerCase() === name.trim().toLowerCase());
   const save = async () => {
-    if (!name.trim() || busy) return;
+    if (!name.trim() || clash || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -872,7 +887,7 @@ function SaveViewDialog({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={!name.trim()} loading={busy} onClick={() => void save()}>
+          <Button variant="primary" disabled={!name.trim() || clash} loading={busy} onClick={() => void save()}>
             Save view
           </Button>
         </>
@@ -885,7 +900,7 @@ function SaveViewDialog({
           void save();
         }}
       >
-        <Field label="Name">
+        <Field label="Name" error={clash ? "A tab with this name already exists. Choose another name." : undefined}>
           {(id) => (
             <Input id={id} value={name} maxLength={128} autoFocus placeholder="For example: Open injection flaws" onChange={(e) => setName(e.target.value)} />
           )}
