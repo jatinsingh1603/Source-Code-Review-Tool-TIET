@@ -99,3 +99,14 @@ def test_list_filters_and_unknown_finding(monkeypatch: pytest.MonkeyPatch, tmp_p
         }
     )
     assert miss["result"]["isError"] is True
+
+
+def test_help_and_version_answer_without_serving(capsys: pytest.CaptureFixture[str]) -> None:
+    server.main(["--help"])
+    assert "codekavach-mcp" in capsys.readouterr().out
+    server.main(["--version"])
+    assert capsys.readouterr().out.startswith("codekavach-mcp ")
+    with pytest.raises(SystemExit) as info:
+        server.main(["--port", "8080"])
+    assert info.value.code == 2
+    assert "takes no arguments" in capsys.readouterr().err

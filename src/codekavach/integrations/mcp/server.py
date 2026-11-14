@@ -258,8 +258,37 @@ def serve(stdin: TextIO = sys.stdin, stdout: TextIO = sys.stdout) -> None:
             stdout.flush()
 
 
-def main() -> None:
+USAGE: Final = """\
+Usage: codekavach-mcp
+
+Local MCP server for coding assistants (newline-delimited JSON-RPC 2.0 on stdin and stdout).
+Start it from the assistant's MCP configuration, not by hand, for example:
+
+  {"mcpServers": {"codekavach": {"command": "codekavach-mcp"}}}
+
+Tools: scan, list_findings, get_finding, privacy_summary. Read-only; no vault data (I3).
+Evidence code lines are left out unless CODEKAVACH_MCP_INCLUDE_CODE=1 is set.
+"""
+
+
+def main(argv: list[str] | None = None) -> None:
     """Entry point: ``codekavach-mcp`` or ``python -m codekavach.integrations.mcp.server``."""
+    args = sys.argv[1:] if argv is None else argv
+    if any(arg in {"-h", "--help"} for arg in args):
+        sys.stdout.write(USAGE)
+        return
+    if any(arg in {"-V", "--version"} for arg in args):
+        sys.stdout.write(f"codekavach-mcp {SERVER_INFO['version']}\n")
+        return
+    if args:
+        sys.stderr.write(f"codekavach-mcp takes no arguments (got {args[0]!r}); see --help\n")
+        raise SystemExit(2)
+    if sys.stdin.isatty():
+        # Typed in a terminal, the server would sit silently waiting for JSON-RPC.
+        sys.stderr.write(
+            "codekavach-mcp is waiting for an MCP client on stdin (Ctrl+D to stop); "
+            "see codekavach-mcp --help\n"
+        )
     serve()
 
 
