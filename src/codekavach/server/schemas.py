@@ -6,7 +6,7 @@ Responses are plain JSON objects documented in ``docs/api.md``; request bodies a
 so a malformed request is refused with 422 and a ``validation_error`` code before a handler runs.
 """
 
-from typing import Literal
+from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -101,6 +101,10 @@ class PolicyBody(_Body):
     toml: str = Field(max_length=200_000)
 
 
+# Empty (not set) or one plausible address; the server sends no mail, so this only catches typos.
+EMAIL_PATTERN: Final = r"^$|^[^@\s]+@[^@\s]+\.[^@\s]+$"
+
+
 class UserCreate(_Body):
     """``POST /users``."""
 
@@ -109,7 +113,7 @@ class UserCreate(_Body):
     role: RoleName = "viewer"
     full_name: str = Field(default="", max_length=128)
     display_name: str | None = Field(default=None, max_length=128)
-    email: str = Field(default="", max_length=256)
+    email: str = Field(default="", max_length=256, pattern=EMAIL_PATTERN)
 
 
 class UserUpdate(_Body):
@@ -119,7 +123,7 @@ class UserUpdate(_Body):
     role: RoleName | None = None
     full_name: str | None = Field(default=None, max_length=128)
     display_name: str | None = Field(default=None, max_length=128)
-    email: str | None = Field(default=None, max_length=256)
+    email: str | None = Field(default=None, max_length=256, pattern=EMAIL_PATTERN)
     active: bool | None = None
 
 
@@ -150,7 +154,14 @@ class ProfileUpdate(_Body):
     """``PATCH /me``: the caller's own name and e-mail address."""
 
     display_name: str | None = Field(default=None, max_length=128)
-    email: str | None = Field(default=None, max_length=256)
+    email: str | None = Field(default=None, max_length=256, pattern=EMAIL_PATTERN)
+
+
+class PasswordChange(_Body):
+    """``POST /me/password``: the caller's own password, confirmed with the current one."""
+
+    current_password: str = Field(min_length=1, max_length=256)
+    new_password: str = Field(min_length=10, max_length=256)
 
 
 class PreferencesBody(BaseModel):

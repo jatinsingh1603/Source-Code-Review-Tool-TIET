@@ -25,7 +25,8 @@ from codekavach.server.auth.dependencies import (
     client_of,
     require,
 )
-from codekavach.server.auth.tokens import issue_api_token
+from codekavach.server.auth.passwords import hash_password, verify_password
+from codekavach.server.auth.tokens import issue_api_token, revoke_user_tokens, token_hash
 from codekavach.server.db.engine import as_utc
 from codekavach.server.db.models import (
     ApiToken,
@@ -33,6 +34,7 @@ from codekavach.server.db.models import (
     FindingRow,
     Project,
     ScanRow,
+    SessionToken,
     User,
     UserPreference,
     utcnow,
@@ -43,6 +45,7 @@ from codekavach.server.routers.admin import token_json
 from codekavach.server.routers.auth import user_json
 from codekavach.server.schemas import (
     NotificationsBody,
+    PasswordChange,
     PreferencesBody,
     ProfileUpdate,
     TokenCreate,
@@ -121,6 +124,33 @@ def update_me(
     audit.record(state.db, actor=principal.username, action="user.profile", resource=user.id,
                  client=client_of(request), detail={"fields": sorted(changes)})  # fmt: skip
     return user_json(user)
+
+
+@router.post("/me/password")
+def change_my_password(
+    body: PasswordChange,
+    request: Request,
+    principal: PrincipalDep,
+    state: StateDep,
+    session: SessionDep,
+) -> dict[str, Any]:
+    """Change the caller's own password; every other session and personal token is revoked."""
+    user = _user(session, principal)
+    if not verify_password(body.current_password, user.password_hash):
+        audit.record(state.db, actor=principal.username, action="user.password", outcome="failed",
+                     resource=user.id, client=client_of(request))  # fmt: skip
+        raise ApiError(400, "wrong_password", "the current password is not correct")
+    if body.new_password == body.current_password:
+        raise ApiError(400, "same_password", "the new password is the same as the current one")
+    user.password_hash = hash_password(body.new_password)
+    revoked = revoke_user_tokens(session, user.id)
+    current = session.get(SessionToken, token_hash(principal.token))
+    if current is not None and current.revoked:
+        current.revoked = False
+        revoked -= 1
+    audit.record(state.db, actor=principal.username, action="user.password", resource=user.id,
+                 client=client_of(request), detail={"revoked": revoked})  # fmt: skip
+    return {"ok": True, "revoked": revoked}
 
 
 @router.get("/me/preferences")
