@@ -1,0 +1,1 @@
+Display preferences (time zone and date form) belong to the signed-in user and load from the server at sign-in, so they follow the user between browsers and no longer leak to another user on a shared browser.
