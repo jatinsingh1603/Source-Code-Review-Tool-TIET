@@ -103,6 +103,11 @@ Honest notes for the presenter, as observed with the engines of the day:
 - Findings without a model verdict show the weakness's impact statement (the same text as the report), not a CVSS line. Taint and secret findings read in words: "Data from a request parameter reaches an SQL query (cur.execute)", "Hard-coded credential: AWS access key". Search for **SQL query**, not "sql sink", to open the SQL injection finding.
 - Bandit findings read in words too ("A subprocess call runs its command through a shell (shell=True).", "Possible hard-coded password."). A project scanned before 14 Nov keeps Bandit's own wording ("subprocess call with shell=True identified, security issue.") on its old scans until it is scanned again; seed on a fresh volume, or re-scan each project once, after updating.
 - The attestation in the Privacy Centre gives payload bytes (the code slices, about 6.5 KB for KavachBank) and prompt tokens (about 35,500), which include the fixed review instructions sent with every slice. If asked why tokens exceed bytes, that is the reason; the report's privacy annex splits them into prompt and completion tokens.
+- The live log names every stage in words ("Scanning for secrets done in 362 ms", "Checking dependencies against OSV done in 398 ms"); it no longer shows internal names such as `analyse-secrets`. An L0 scan opens with "no model review: nothing is sent to a model (local engines only)". Shopfront's seeded L0 scan was made on a fresh volume, so it has the new wording; a volume seeded before 14 Nov keeps "payloads sent" in that old log.
+- Mean time to remediate on Ledgerly and Shopfront reads "1 min": the seed script fixes those findings with a re-scan a few seconds later. Say so if asked; it is the seed, not a claim about a team. Real fixes over days read in days.
+- The admin audit log names scans as the rest of the dashboard does (`SCN-AD99A5 #35` = payload 35 of that scan); hover a target for the internal id. Action names (`privacy.read_original`) stay as they are, as in the design.
+- On a phone (390 px) the Overview trend shows only its first and last labels; the other scan times are in Recent scans below it. On a laptop every bar is labelled.
+- `codekavach demo` (air-gapped profile) no longer prints an empty `state_dir` line at the end; the table ends with the note about the mock provider.
 
 ## Real-model timings
 
