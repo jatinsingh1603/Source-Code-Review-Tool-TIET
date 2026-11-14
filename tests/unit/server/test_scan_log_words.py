@@ -1,9 +1,10 @@
 """The scan log words pipeline warning codes for people (no raw machine codes on screen)."""
 
+from importlib.metadata import entry_points
 from typing import Any
 
 from codekavach.core.pipeline.events import ItemReviewed, WarningRaised
-from codekavach.server.jobs.scan import _Progress
+from codekavach.server.jobs.scan import STAGE_LABELS, _Progress
 
 
 class _Log:
@@ -61,3 +62,10 @@ def test_a_low_confidence_verdict_reads_needs_review_like_the_findings_table() -
         assert "confirmed" not in line
         assert line.endswith("low confidence: needs review")
     assert _verdict_line("not_vulnerable", "low").endswith("judged not exploitable by the model")
+
+
+def test_every_built_in_stage_has_a_label_for_the_log() -> None:
+    """The live log says "Scanning for secrets done in 431 ms", never "analyse-secrets done"."""
+    names = {entry.name for entry in entry_points(group="codekavach.stages")}
+    assert names
+    assert names - set(STAGE_LABELS) == set()
