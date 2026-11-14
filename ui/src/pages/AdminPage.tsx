@@ -307,8 +307,42 @@ function TokensCard() {
   const qc = useQueryClient();
   const toast = useToast();
   const tokens = (Array.isArray(q.data) ? q.data : []) as PersonalToken[];
+  const [confirm, setConfirm] = useState<PersonalToken | null>(null);
+  const [busy, setBusy] = useState(false);
+  const revoke = (t: PersonalToken) => {
+    setBusy(true);
+    void endpoints
+      .revokeToken(t.id)
+      .then(
+        () => {
+          toast.success("Token revoked", `${t.name}${t.username ? ` (${t.username})` : ""} no longer works.`);
+          void qc.invalidateQueries({ queryKey: ["optional", "admin-tokens"] });
+        },
+        (e: Error) => toast.error("Not revoked", e.message),
+      )
+      .finally(() => {
+        setBusy(false);
+        setConfirm(null);
+      });
+  };
   return (
     <div className="card">
+      <Dialog
+        open={!!confirm}
+        onClose={() => setConfirm(null)}
+        title="Revoke token?"
+        description={confirm ? `${confirm.name}${confirm.username ? `, owned by ${confirm.username},` : ""} stops working at once: scripts and CI jobs that use it get 401. This cannot be undone; the owner can create a new token in Settings.` : undefined}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirm(null)}>
+              Cancel
+            </Button>
+            <Button variant="danger" loading={busy} onClick={() => confirm && revoke(confirm)}>
+              Revoke token
+            </Button>
+          </>
+        }
+      />
       <div className="card-h">
         <h2>API tokens</h2>
         <Link className="btn sm" to="/settings#tokens">
@@ -338,15 +372,7 @@ function TokensCard() {
               <button
                 className="btn sm ghost"
                 type="button"
-                onClick={() =>
-                  void endpoints.revokeToken(t.id).then(
-                    () => {
-                      toast.success("Token revoked");
-                      void qc.invalidateQueries({ queryKey: ["optional", "admin-tokens"] });
-                    },
-                    (e: Error) => toast.error("Not revoked", e.message),
-                  )
-                }
+                onClick={() => setConfirm(t)}
               >
                 Revoke
               </button>
