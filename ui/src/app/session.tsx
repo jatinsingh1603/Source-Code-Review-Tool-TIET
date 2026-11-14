@@ -15,6 +15,7 @@ import { endpoints } from "@/api/endpoints";
 import { ASK_TIMEOUT_MS, openTabChannel, signOutNotice } from "@/app/tab-sync";
 import type { User } from "@/api/types";
 import { minimumRoleFor, permissionsFor, roleLabel, type Permission } from "@/lib/permissions";
+import { loadPrefsFor } from "@/lib/prefs";
 import { Content, Empty, Skeleton } from "@/components/ui";
 
 interface Session {
@@ -27,6 +28,11 @@ interface Session {
 }
 
 const Ctx = createContext<Session | null>(null);
+
+/** Dates render in the signed-in user's time zone and form, so their preferences load first. */
+function withPrefs(user: User | null): Promise<void> {
+  return loadPrefsFor(user?.username ?? null, () => endpoints.myPreferences());
+}
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -46,7 +52,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         api.setToken(m.token);
         endpoints
           .me()
-          .then((u) => setUser(u))
+          .then(async (u) => {
+            await withPrefs(u);
+            setUser(u);
+          })
           .catch(() => api.setToken(null))
           .finally(() => setLoading(false));
       } else if (m.type === "signed-out" && api.getToken()) {
@@ -92,7 +101,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     let live = true;
     endpoints
       .me()
-      .then((u) => live && setUser(u))
+      .then(async (u) => {
+        await withPrefs(u);
+        if (live) setUser(u);
+      })
       .catch(() => live && setUser(null))
       .finally(() => live && setLoading(false));
     return () => {
@@ -105,6 +117,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     api.setToken(res.token, remember);
     signOutNotice.elsewhere = false;
     signOutNotice.expired = false;
+    await withPrefs(res.user);
     setUser(res.user);
     return res.user;
   }, []);
@@ -117,6 +130,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
     api.setToken(null);
     tabs.current?.post({ type: "signed-out" });
+    void withPrefs(null);
     setUser(null);
     qc.clear();
     navigate("/login", { replace: true });

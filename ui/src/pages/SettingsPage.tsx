@@ -6,7 +6,7 @@ import { endpoints } from "@/api/endpoints";
 import { PRIVACY_LEVELS, type PersonalToken, type PrivacyLevel, type Settings } from "@/api/types";
 import { roleLabel } from "@/lib/permissions";
 import { fmtDate, LEVEL_NAME } from "@/lib/display";
-import { readPrefs, writePrefs, type Prefs } from "@/lib/prefs";
+import { prefsFromServer, readPrefs, writePrefs, type Prefs } from "@/lib/prefs";
 import { Avatar, Button, Content, Segmented, Skeleton, useToast } from "@/components/ui";
 
 const SECTIONS: [string, string][] = [
@@ -60,13 +60,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!serverPrefs) return;
-    setPrefs((p) => ({
-      ...p,
-      density: serverPrefs.density === "comfortable" || serverPrefs.density === "compact" ? serverPrefs.density : p.density,
-      reduceMotion: typeof serverPrefs.reduce_motion === "boolean" ? serverPrefs.reduce_motion : p.reduceMotion,
-      timeZone: typeof serverPrefs.time_zone === "string" ? serverPrefs.time_zone : p.timeZone,
-      dateFormat: serverPrefs.date_format === "iso" ? "iso" : p.dateFormat,
-    }));
+    setPrefs((p) => prefsFromServer(serverPrefs, p));
   }, [serverPrefs]);
   useEffect(() => {
     if (!serverNotif?.events) return;

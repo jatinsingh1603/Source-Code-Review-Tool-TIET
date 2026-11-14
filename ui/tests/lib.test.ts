@@ -8,6 +8,7 @@ import { suggestName, validateGitUrl } from "@/lib/validate";
 import { permissionsFor } from "@/lib/permissions";
 import { auditTarget, fmtDate, fmtDayMonth, fmtLong, languageLabel, setDisplayPrefs } from "@/lib/display";
 import { pathRulesOf } from "@/lib/policy";
+import { loadPrefsFor } from "@/lib/prefs";
 import { ApiError } from "@/api/client";
 import { errorText } from "@/components/ui/Feedback";
 import { providerName } from "@/lib/domain";
@@ -182,6 +183,24 @@ describe("display preferences", () => {
       expect(fmtDayMonth("2026-11-14T13:15:00Z")).toBe("11-15");
     } finally {
       setDisplayPrefs("Asia/Kolkata", false);
+    }
+  });
+});
+
+describe("per-user preferences", () => {
+  it("each user who signs in on a shared browser gets their own time zone", async () => {
+    const at = "2026-11-14T13:15:00Z";
+    try {
+      await loadPrefsFor("admin", async () => ({ time_zone: "Australia/Sydney", date_format: "iso" }));
+      expect(fmtLong(at)).toMatch(/^2026-11-15 00:15 AEDT/);
+      await loadPrefsFor("vera", async () => ({ time_zone: "Asia/Kolkata", date_format: "long" }));
+      expect(fmtLong(at)).toBe("14 Nov 2026, 18:45 IST");
+      // without the server's copy, this browser's copy for that user still applies
+      await loadPrefsFor("admin", async () => null);
+      expect(fmtDate(at)).toBe("2026-11-15");
+    } finally {
+      await loadPrefsFor(null, async () => null);
+      localStorage.clear();
     }
   });
 });
