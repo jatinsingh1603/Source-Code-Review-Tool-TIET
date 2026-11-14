@@ -10,7 +10,7 @@ import jsonschema
 import pytest
 
 from codekavach.config import Settings
-from codekavach.core.models.enums import Language, Severity
+from codekavach.core.models.enums import FindingStatus, Language, Severity
 from codekavach.core.models.evidence import Evidence
 from codekavach.core.models.finding import Finding
 from codekavach.core.models.ids import new_finding_id
@@ -181,6 +181,17 @@ def test_delta_sorts_new_fixed_and_regressed(tmp_path: Path) -> None:
     assert "Retest delta report" in page
     # the finding that is gone keeps its baseline report ID, marked as such
     assert re.search(r'CK-\d{4}-\d{3} <span class="small muted">baseline</span>', page)
+
+
+def test_delta_still_present_splits_open_from_triaged(tmp_path: Path) -> None:
+    open_one = make_finding(title="Still open")
+    accepted = make_finding(title="Accepted", status=FindingStatus.ACCEPTED_RISK)
+    current = _doc(open_one, accepted)
+    delta = build_delta(current, _doc(open_one, accepted))
+    assert delta.counts["unchanged"] == 2
+    page = render_delta_html(delta, current, tmp_path / "delta.html").read_text(encoding="utf-8")
+    # the dashboard counts open findings; the delta says how its 2 relate to that number
+    assert "1 open · 1 closed by triage" in page
 
 
 def test_manifest_detects_a_changed_file(tmp_path: Path) -> None:
