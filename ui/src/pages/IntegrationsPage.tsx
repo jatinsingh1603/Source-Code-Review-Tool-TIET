@@ -119,7 +119,7 @@ export default function IntegrationsPage() {
                 ["Include payload hash", "Adds the ledger record to each issue · not available yet", false],
               ] as const
             ).map(([t, d, on]) => (
-              <label key={t} className="swrow">
+              <label key={t} className="swrow" title={on ? "Always on in this build; not a setting" : "Not available in this build yet"}>
                 <input type="checkbox" className="sw" checked={on} readOnly disabled aria-readonly="true" />{" "}
                 <span>
                   <b className="sm">{t}</b>

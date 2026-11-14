@@ -405,3 +405,8 @@ body {
 .seg button:disabled.on {
   color: var(--muted);
 }
+
+/* Read-only switches (Integrations capabilities) show a not-allowed cursor, not a hand. */
+.swrow:has(.sw:disabled) {
+  cursor: not-allowed;
+}

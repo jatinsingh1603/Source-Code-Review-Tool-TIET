@@ -23,7 +23,13 @@ export function GithubSyncDialog({
   const [error, setError] = useState<string | null>(null);
   const sync = useGithubSync();
   const toast = useToast();
-  const repoOk = /^[\w.-]+\/[\w.-]+$/.test(repo.trim());
+  // A pasted https://github.com/owner/name(.git) URL is taken as owner/name.
+  const repoName = repo
+    .trim()
+    .replace(/^(https?:\/\/)?(www\.)?github\.com\//i, "")
+    .replace(/\.git$/i, "")
+    .replace(/\/+$/, "");
+  const repoOk = /^[\w.-]+\/[\w.-]+$/.test(repoName);
   const only = !!findingIds?.length;
   const one = findingIds?.length === 1;
 
@@ -31,7 +37,7 @@ export function GithubSyncDialog({
     setError(null);
     setResult(null);
     try {
-      const r = await sync.mutateAsync({ scanId, body: { repo: repo.trim(), token_ref: tokenRef.trim(), dry_run: dryRun, ...(only ? { finding_ids: findingIds } : {}) } });
+      const r = await sync.mutateAsync({ scanId, body: { repo: repoName, token_ref: tokenRef.trim(), dry_run: dryRun, ...(only ? { finding_ids: findingIds } : {}) } });
       setResult(r);
       if (!dryRun) toast.success("GitHub issues synchronised", `${r.created} created, ${r.updated} updated, ${r.closed} closed.`);
     } catch (e) {
@@ -59,7 +65,7 @@ export function GithubSyncDialog({
       }
     >
       <div className="g g-2" style={{ gap: 12 }}>
-        <Field label="Repository" required help="owner/name" error={repo && !repoOk ? "Use the owner/name form." : undefined}>
+        <Field label="Repository" required help="owner/name" error={repo && !repoOk ? "Use the owner/name form, for example kavachbank/core." : undefined}>
           {(id, d) => (
             <Input id={id} mono aria-describedby={d} value={repo} onChange={(e) => setRepo(e.target.value)} placeholder="kavachbank/core" />
           )}
