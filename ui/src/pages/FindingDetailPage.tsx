@@ -645,6 +645,14 @@ export default function FindingDetailPage() {
                   </span>
                 )}
               </dd>
+              {f.fingerprint && (
+                <>
+                  <dt title="Printed with this finding in every report format">Fingerprint</dt>
+                  <dd className="mono xs" style={{ wordBreak: "break-all" }}>
+                    {f.fingerprint}
+                  </dd>
+                </>
+              )}
               <dt>Engines</dt>
               <dd>
                 {engines.join(", ")}

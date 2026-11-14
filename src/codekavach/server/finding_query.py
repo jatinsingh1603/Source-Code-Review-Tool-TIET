@@ -108,6 +108,7 @@ def _sql(scan_ids: Sequence[str], filters: FindingFilters, me: str | None) -> An
             | FindingRow.rule_id.ilike(pattern)
             | FindingRow.cwe.ilike(pattern)
             | FindingRow.id.ilike(pattern)
+            | FindingRow.fingerprint.ilike(pattern)
         )
     return query.order_by(FindingRow.severity_rank.desc(), FindingRow.path, FindingRow.line)
 

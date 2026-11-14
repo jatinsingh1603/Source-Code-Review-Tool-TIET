@@ -218,7 +218,8 @@ export default function FindingsPage() {
     if (bs && !bs.split(",").includes(stateOf(f) ?? "")) return false;
     const text = get("q").toLowerCase();
     if (text) {
-      const hay = `${f.title} ${f.id} ${findingLabel(f.id)} ${locationOf(f)?.path ?? ""} ${f.cwe ?? ""}`.toLowerCase();
+      // Every report format prints the fingerprint, so a report's finding can be found here.
+      const hay = `${f.title} ${f.id} ${findingLabel(f.id)} ${locationOf(f)?.path ?? ""} ${f.cwe ?? ""} ${f.fingerprint ?? ""}`.toLowerCase();
       if (!hay.includes(text)) return false;
     }
     return true;

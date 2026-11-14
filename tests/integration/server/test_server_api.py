@@ -405,6 +405,16 @@ def test_compliance_annex_never_replaces_the_html_report(
         assert entry["sha256"] == hashlib.sha256(manifest.content).hexdigest()
 
 
+def test_findings_search_matches_the_report_fingerprint(
+    server: tuple[TestClient, Any], scan: dict[str, Any], users: dict[str, dict[str, str]]
+) -> None:
+    client = server[0]
+    url = f"/api/v1/scans/{scan['id']}/findings"
+    first = client.get(url, headers=users["viewer"]).json()[0]
+    found = client.get(url, params={"q": first["fingerprint"]}, headers=users["viewer"]).json()
+    assert [item["id"] for item in found] == [first["id"]]
+
+
 def test_manifest_is_stable_while_the_reports_do_not_change(
     server: tuple[TestClient, Any], scan: dict[str, Any], users: dict[str, dict[str, str]]
 ) -> None:
