@@ -18,6 +18,16 @@ from codekavach.report.render.html import compliance_rows, disclosure_label
 from codekavach.report.render.theme import DEFAULT_THEME, Theme
 
 _DUE_DAYS: Final = {"critical": 7, "high": 30, "medium": 90, "low": 180, "info": 365}
+
+
+def _is_number(value: str) -> bool:
+    try:
+        float(value)
+    except ValueError:
+        return False
+    return True
+
+
 _STATUSES: Final = ["open", "confirmed", "false_positive", "accepted_risk", "suppressed", "fixed"]
 # Findings sheet headings; any other column is its CSV name in sentence case.
 _HEADINGS: Final = {
@@ -91,6 +101,7 @@ class XlsxRenderer:
             {"font_name": "Consolas", "font_size": 9, "valign": "top", "border": 1}
         )
         date = book.add_format({"num_format": "yyyy-mm-dd", "valign": "top", "border": 1})
+        score = book.add_format({"num_format": "0.0", "valign": "top", "border": 1})
         sev_fmt = {
             name: book.add_format(
                 {
@@ -187,6 +198,9 @@ class XlsxRenderer:
                     wf.write_string(row, col, value, mono)
                 elif name in {"line", "likelihood", "impact", "risk_score"} and value.isdigit():
                     wf.write_number(row, col, int(value), cell)
+                elif name in {"cvss4_score", "cvss31_score"} and _is_number(value):
+                    # A number, not text, so the column sorts and filters as a score.
+                    wf.write_number(row, col, round(float(value), 1), score)
                 else:
                     wf.write_string(row, col, value, cell)
             extra = len(CSV_COLUMNS)

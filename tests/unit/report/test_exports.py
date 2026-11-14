@@ -191,3 +191,16 @@ def test_office_formats_are_valid_archives(tmp_path: Path, fmt: str) -> None:
     out = renderer_registry().get(fmt).render(_doc(), tmp_path / f"r.{fmt}")
     with zipfile.ZipFile(out) as archive:
         assert archive.testzip() is None
+
+
+def test_xlsx_writes_cvss_scores_as_numbers(tmp_path: Path) -> None:
+    doc = _doc(make_finding(severity=Severity.CRITICAL, title="SQL built from input", cwe=(89,)))
+    out = renderer_registry().get("xlsx").render(doc, tmp_path / "r.xlsx")
+    with zipfile.ZipFile(out) as archive:
+        sheet = archive.read("xl/worksheets/sheet2.xml").decode()
+    cell = re.search(r'<c r="I2"([^>]*)>(.*?)</c>', sheet)
+    assert cell is not None
+    assert 't="s"' not in cell.group(1)
+    value = re.search(r"<v>(.*?)</v>", cell.group(2))
+    assert value is not None
+    assert float(value.group(1)) == pytest.approx(9.3)
