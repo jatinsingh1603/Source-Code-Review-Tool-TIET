@@ -44,6 +44,13 @@ CodeKavach is running.
 
 Build or pull the image the day before: the first build downloads base images and takes a few minutes.
 
+What the audience will see (checked on 14 Nov against a fresh `docker compose up -d --build`):
+
+- `id` prints `uid=10001(codekavach)`; the `docker inspect` line prints `true`; Opengrep `1.33.1`, Bandit `1.9.4`.
+- `doctor` from `/data` ends `17 passed, 1 warning, 0 failed, 12 skipped`; the warning is the optional name-recognition model.
+- The air-gapped `demo` takes a little over a minute and prints `findings 66`, `payloads 18`, `zero_leak_passed True`. Its first line is a log warning, `engine_network_not_isolated`: inside a container without extra privileges the external engines cannot get their own network namespace. Say what it means: Opengrep and Bandit read a read-only copy of the code, nothing is sent to a model, and this container has no route out anyway. `reviewed 0` is expected too: `codekavach demo` is a no-send run, so the ledger records the 18 payloads the model would have received and no verdicts come back.
+- The container name in the `docker inspect` line is `<project>-codekavach-1`; with the repository's compose file and no `-p`, that is `codekavach-codekavach-1`.
+
 ## Handover commands for the Thapar team
 
 Without cloning anything:
