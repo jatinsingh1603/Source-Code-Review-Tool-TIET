@@ -388,7 +388,7 @@ export default function PrivacyPage() {
               <div className="row between">
                 <div>
                   <h2>Privacy attestation</h2>
-                  <p className="sub">Signed summary for auditors and customers</p>
+                  <p className="sub">Summary for auditors and customers, with a SHA-256 digest (not signed)</p>
                 </div>
                 <div className="row">
                   <Button
@@ -513,7 +513,7 @@ function ExposureBudget({ p, budgets }: { p: PrivacySummary; budgets?: Budgets |
               <i style={{ width: `${Math.min(100, b.usage_pct ?? 0)}%` }} />
             </div>
             <div className="xs faint" style={{ marginTop: 4 }}>
-              {b.usage_pct === null ? b.note ?? "not measured" : `${b.usage_pct}% used`}
+              {b.usage_pct === null ? b.note ?? "not measured" : `${b.usage_pct}% used${b.note ? `. ${b.note}` : ""}`}
             </div>
           </div>
         ))

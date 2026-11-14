@@ -249,7 +249,11 @@ export default function LedgerPage() {
             <StatusDot tone={chainOk === false ? "bad" : "ok"} className="sm">
               {fmtInt(sent)} sent
               {result?.hashes_ok !== undefined &&
-                ` · ${fmtInt(result.hashes_ok)} distinct ${result.hashes_ok === 1 ? "payload matches" : "payloads match"}`}{" "}
+                ` · ${fmtInt(result.hashes_ok + (result.hashes_mismatched ?? 0))} distinct, ${
+                  result.hashes_mismatched
+                    ? `${fmtInt(result.hashes_mismatched)} hash mismatch${result.hashes_mismatched === 1 ? "" : "es"}`
+                    : "every hash matches"
+                }`}{" "}
               · {fmtInt(result?.blocked ?? blocked)} blocked
             </StatusDot>
           </div>
@@ -376,7 +380,13 @@ export default function LedgerPage() {
                             )}
                           </td>
                           <td className="num mono">
-                            {fmtInt(hasBytes ? (e.bytes ?? 0) : e.tokens)}
+                            {e.ref_seq != null ? (
+                              <span className="faint" title={`Response to record ${fmtSeq(e.ref_seq)}; its payload size is on that row`}>
+                                —
+                              </span>
+                            ) : (
+                              fmtInt(hasBytes ? (e.bytes ?? 0) : e.tokens)
+                            )}
                           </td>
                           <td>
                             <Hash value={e.entry_hash} copy={false} />

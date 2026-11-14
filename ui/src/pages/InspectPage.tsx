@@ -228,10 +228,10 @@ function Inspect({ scanId, seq }: { scanId: string; seq: number }) {
                   <b>Payload</b>{" "}
                   <span className="mono muted">
                     {isSent
-                      ? `payload #${fmtSeq(seq)} · as sent`
+                      ? `#${fmtSeq(seq)} · as sent`
                       : shown?.source_scan_id
-                        ? `payload #${fmtSeq(shown.source_seq ?? shown.entry.seq)} · as sent at ${level} in ${scanLabel(shown.source_scan_id)}`
-                        : `payload #${fmtSeq(seq)} at ${level}`}
+                        ? `#${fmtSeq(shown.source_seq ?? shown.entry.seq)} · as sent at ${level} in ${scanLabel(shown.source_scan_id)}`
+                        : `#${fmtSeq(seq)} at ${level}`}
                   </span>
                 </span>
                 <span style={{ color: "var(--high-t)" }}>{d?.entry.outcome?.startsWith("blocked") ? "Blocked · not sent" : shown ? "Prepared for the model" : ""}</span>

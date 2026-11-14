@@ -259,7 +259,7 @@ function EgressKpi({ p, scan }: { p?: PrivacySummary; scan?: Scan }) {
     return (
       <Kpi
         to="/privacy/ledger"
-        label="Bytes egressed, this scan"
+        label={p.send === false || p.provider_tier === "local" ? "Payload bytes recorded, this scan" : "Payload bytes egressed, this scan"}
         value={b.v}
         unit={b.unit}
         detail={detail}
