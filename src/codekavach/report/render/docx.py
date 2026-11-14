@@ -309,7 +309,12 @@ def build_docx(doc: ReportDocument, out: Path, theme: Theme) -> None:  # noqa: P
                 ("Classification", f"{c.classification.label}. {c.classification.handling_note}"),
                 ("Prepared by", c.prepared_by),
                 ("Prepared for", c.prepared_for),
-                ("Scan identifier", str(doc.scan.id)),
+                (
+                    "Scan identifier",
+                    f"{doc.scan_reference} (pipeline {doc.scan.id})"
+                    if doc.scan_reference
+                    else str(doc.scan.id),
+                ),
             ]
         )
         b.para()

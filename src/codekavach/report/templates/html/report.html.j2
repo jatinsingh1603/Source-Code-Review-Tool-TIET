@@ -60,7 +60,7 @@
   <tr><th>Classification</th><td><strong>{{ doc.control.classification.label }}</strong>. {{ doc.control.classification.handling_note }}</td></tr>
   <tr><th>Prepared by</th><td>{{ doc.control.prepared_by }}</td></tr>
   <tr><th>Prepared for</th><td>{{ doc.control.prepared_for }}</td></tr>
-  <tr><th>Scan identifier</th><td class="mono">{{ doc.scan.id }}</td></tr>
+  <tr><th>Scan identifier</th><td class="mono">{% if doc.scan_reference %}{{ doc.scan_reference }} (pipeline {{ doc.scan.id }}){% else %}{{ doc.scan.id }}{% endif %}</td></tr>
   <tr><th>Configuration digest</th><td class="mono">{{ doc.scan.config_hash }}</td></tr>
   {% if doc.scan.git_commit %}<tr><th>Commit</th><td class="mono">{{ doc.scan.git_commit }}{% if doc.scan.git_branch %} ({{ doc.scan.git_branch }}){% endif %}</td></tr>{% endif %}
 </table>

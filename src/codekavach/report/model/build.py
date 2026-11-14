@@ -364,6 +364,7 @@ def build_report_document(
     project_name: str | None = None,
     previous_ids: dict[str, str] | None = None,
     id_scheme: ReportIdScheme | None = None,
+    scan_reference: str | None = None,
 ) -> ReportDocument:
     """The document for ``scan``: control, narrative, findings, attestation and appendices.
 
@@ -456,7 +457,8 @@ def build_report_document(
                 version="1.0",
                 date=issue_date,
                 author=org,
-                change="Report issued from scan " + str(scan.id),
+                change="Report issued from scan "
+                + (f"{scan_reference} ({scan.id})" if scan_reference else str(scan.id)),
             ),
         ),
         distribution=(
@@ -528,6 +530,7 @@ def build_report_document(
         auditor=reporting.auditor if reporting else None,
         generated_at=now,
         scan=scan,
+        scan_reference=scan_reference,
         summary=summary,
         findings=ordered,
         not_reviewed=ledger_summary.not_reviewed if ledger_summary else (),

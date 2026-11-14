@@ -117,7 +117,10 @@ class XlsxRenderer:
         rows = [
             ("Prepared for", doc.prepared_for),
             ("Prepared by", doc.organisation),
-            ("Scan", str(doc.scan.id)),
+            (
+                "Scan",
+                f"{doc.scan_reference} ({doc.scan.id})" if doc.scan_reference else str(doc.scan.id),
+            ),
             ("Generated", doc.generated_at.strftime("%Y-%m-%d %H:%M UTC")),
             ("Overall risk", doc.facts.posture if doc.facts else "n/a"),
             ("Privacy level", str(doc.scan.privacy_level.value)),

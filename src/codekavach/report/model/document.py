@@ -125,6 +125,8 @@ class ReportDocument(KavachModel):
     auditor: str | None = None
     generated_at: datetime
     scan: Scan
+    scan_reference: str | None = None
+    """The id a reader knows the scan by (the dashboard's ``SCN-...``), when it differs."""
     summary: ScanSummary
     findings: tuple[Finding, ...] = ()
     not_reviewed: tuple[tuple[str, int], ...] = ()

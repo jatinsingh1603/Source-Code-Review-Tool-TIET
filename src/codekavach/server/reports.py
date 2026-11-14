@@ -111,6 +111,13 @@ def apply_statuses(findings: "Sequence[Finding]", statuses: dict[str, str]) -> "
     return updated
 
 
+def scan_label(server_scan_id: str) -> str | None:
+    """The id the dashboard shows for a server scan (``scn_6b14be...`` is ``SCN-6B14BE``)."""
+    if not server_scan_id.startswith("scn_"):
+        return None
+    return "SCN-" + server_scan_id.removeprefix("scn_")[:6].upper()
+
+
 def render(
     fmt: str,
     *,
@@ -149,7 +156,7 @@ def render(
     document = build_report_document(
         scan, list(findings), settings, summarise_ledger(state_dir, str(scan.id), settings,
                                                          zero_leak=leak),
-        project_name=project_name,
+        project_name=project_name, scan_reference=scan_label(scan_json.parent.name),
     )  # fmt: skip
     out_dir.mkdir(parents=True, exist_ok=True)
     extension = str(getattr(renderer, "extension", fmt)).lstrip(".") or fmt
@@ -183,6 +190,7 @@ def render_manifest(
         settings,
         summarise_ledger(state_dir, str(scan.id), settings),
         project_name=project_name,
+        scan_reference=scan_label(scan_json.parent.name),
     )
     manifest, _sums = write_manifest(files, out_dir, doc=document)
     return manifest
