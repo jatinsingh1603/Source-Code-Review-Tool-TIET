@@ -186,13 +186,13 @@ export default function OverviewPage() {
 
       <section className="g g-side">
         <TrendCard trend={trend} loading={!stats} />
-        <RiskMatrix findings={open} loading={findingsQ.isLoading} />
+        <RiskMatrix findings={open} loading={loading || findingsQ.isLoading} />
       </section>
 
       <section className="g g-side">
-        <OwaspCard findings={open} loading={findingsQ.isLoading} />
+        <OwaspCard findings={open} loading={loading || findingsQ.isLoading} />
         <div className="stack s16">
-          <TopCwes findings={open} loading={findingsQ.isLoading} />
+          <TopCwes findings={open} loading={loading || findingsQ.isLoading} />
           <GuardCard report={invariants} privacy={privacyQ.data} />
         </div>
       </section>
@@ -536,7 +536,8 @@ function OwaspCard({ findings, loading }: { findings: Finding[]; loading: boolea
     <div className="card">
       <div className="card-h">
         <div>
-          <h2>OWASP Top 10:{year} coverage</h2>
+          {/* No year while loading: the edition comes from the findings, so a guess would flicker. */}
+          <h2>{loading ? "OWASP Top 10 coverage" : `OWASP Top 10:${year} coverage`}</h2>
           <p className="sub">Findings per category and detection source</p>
         </div>
         <MoreLink to="/findings">Open findings</MoreLink>

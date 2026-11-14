@@ -1,0 +1,1 @@
+Overview: the OWASP, risk matrix and Top CWE cards wait for the scan list as well as the findings, so the OWASP card no longer reads "Top 10:2025" for a moment before showing the 2021 edition the findings carry.
