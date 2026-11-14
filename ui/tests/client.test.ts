@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ApiClient, ApiError, parseErrorEnvelope } from "@/api/client";
+import { ApiClient, ApiError, humanizeValidation, parseErrorEnvelope } from "@/api/client";
 import { normaliseFormats, unwrapList } from "@/api/endpoints";
 
 function jsonResponse(status: number, body: unknown, headers: Record<string, string> = {}): Response {
@@ -19,7 +19,17 @@ describe("parseErrorEnvelope", () => {
   it("reads FastAPI validation errors", () => {
     const env = parseErrorEnvelope(422, { detail: [{ loc: ["body", "name"], msg: "Field required" }] });
     expect(env.code).toBe("validation_error");
-    expect(env.message).toBe("name: Field required");
+    expect(env.message).toBe("Name is required.");
+  });
+  it("words the server's validation messages for people", () => {
+    const env = parseErrorEnvelope(422, {
+      error: { code: "validation_error", message: "body.username: String should have at most 64 characters" },
+    });
+    expect(env.message).toBe("Username is too long (64 characters at most).");
+    expect(humanizeValidation("path.seq: Input should be a valid integer, unable to parse string as an integer")).toBe(
+      "Payload number must be a whole number.",
+    );
+    expect(humanizeValidation("body.name: Value error, name is empty")).toBe("Name: name is empty.");
   });
   it("falls back to a status message", () => {
     expect(parseErrorEnvelope(500, null).message).toMatch(/server/);

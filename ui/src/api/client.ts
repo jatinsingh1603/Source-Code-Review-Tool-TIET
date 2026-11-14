@@ -48,9 +48,11 @@ export function parseErrorEnvelope(
   const b = body as Record<string, unknown>;
   if (b.error && typeof b.error === "object") {
     const e = b.error as Record<string, unknown>;
+    const code = typeof e.code === "string" ? e.code : fallback.code;
+    const message = typeof e.message === "string" ? e.message : fallback.message;
     return {
-      code: typeof e.code === "string" ? e.code : fallback.code,
-      message: typeof e.message === "string" ? e.message : fallback.message,
+      code,
+      message: code === "validation_error" ? humanizeValidation(message) : message,
       detail: e.detail ?? body,
     };
   }
@@ -64,11 +66,11 @@ export function parseErrorEnvelope(
         if (d && typeof d === "object") {
           const dd = d as Record<string, unknown>;
           const loc = Array.isArray(dd.loc) ? dd.loc.filter((x) => x !== "body").join(".") : "";
-          return loc ? `${loc}: ${String(dd.msg)}` : String(dd.msg);
+          return humanizeValidation(loc ? `${loc}: ${String(dd.msg)}` : String(dd.msg));
         }
         return String(d);
       })
-      .join("; ");
+      .join(" ");
     return { code: "validation_error", message: msgs || fallback.message, detail: body };
   }
   if (b.detail && typeof b.detail === "object") {
@@ -83,6 +85,55 @@ export function parseErrorEnvelope(
     return { code: typeof b.code === "string" ? b.code : fallback.code, message: b.message, detail: body };
   }
   return fallback;
+}
+
+const FIELD_NAMES: Record<string, string> = {
+  seq: "Payload number",
+  repo_url: "Repository URL",
+  git_url: "Repository URL",
+  url: "URL",
+};
+
+function fieldLabel(loc: string): string {
+  const parts = loc.split(".").filter((p) => p && !/^(body|path|query|header)$/.test(p) && !/^\d+$/.test(p));
+  const last = parts[parts.length - 1] ?? "";
+  if (!last) return "";
+  if (FIELD_NAMES[last]) return FIELD_NAMES[last];
+  const words = last.replace(/_/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function humanizeRule(msg: string): string {
+  let m: RegExpMatchArray | null;
+  if ((m = msg.match(/should have at most (\d+) (characters?|items?)/))) return `is too long (${m[1]} ${m[2]} at most)`;
+  if ((m = msg.match(/should have at least (\d+) (characters?|items?)/))) return `is too short (at least ${m[1]} ${m[2]})`;
+  if (/^Field required/.test(msg)) return "is required";
+  if (/valid integer/.test(msg)) return "must be a whole number";
+  if ((m = msg.match(/less than or equal to (\S+)/))) return `must be ${m[1]} or less`;
+  if ((m = msg.match(/greater than or equal to (\S+)/))) return `must be ${m[1]} or more`;
+  if (/should match pattern/.test(msg)) return "has characters that are not allowed";
+  if ((m = msg.match(/^Value error, (.+)$/))) return `: ${m[1]}`;
+  if ((m = msg.match(/^Input should be (.+)$/))) return `should be ${m[1]}`;
+  return `: ${msg}`;
+}
+
+/**
+ * Word the server's `body.username: String should have at most 64 characters` as
+ * `Username is too long (64 characters at most).`, which a person can act on.
+ */
+export function humanizeValidation(message: string): string {
+  return message
+    .split("; ")
+    .map((part) => {
+      const i = part.indexOf(": ");
+      if (i < 0) return part;
+      const label = fieldLabel(part.slice(0, i));
+      const rule = humanizeRule(part.slice(i + 2).trim());
+      if (!label) return rule.replace(/^: /, "");
+      const text = rule.startsWith(": ") ? `${label}${rule}` : `${label} ${rule}`;
+      return /[.!?]$/.test(text) ? text : `${text}.`;
+    })
+    .join(" ");
 }
 
 function defaultMessage(status: number): string {
