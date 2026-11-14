@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useSession } from "@/app/session";
+import { signOutNotice } from "@/app/tab-sync";
 import { ApiError } from "@/api/client";
 import { api } from "@/api/client";
 import { Icon, Logo } from "@/components/ui";
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const state = (location.state ?? {}) as { from?: string; expired?: boolean };
+  const signedOutElsewhere = signOutNotice.elsewhere;
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -139,6 +141,9 @@ export default function LoginPage() {
             <div className="hr" style={{ flex: 1 }} />
           </div>
           {state.expired && !error && <div className="banner warn sm">Your session has ended. Sign in again.</div>}
+          {signedOutElsewhere && !error && (
+            <div className="banner sm">You signed out in another tab. Sign in again to continue.</div>
+          )}
           {demoHint && !error && (
             <div className="banner info sm">Sign in with your local account to open the demo.</div>
           )}

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -11,6 +12,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { endpoints } from "@/api/endpoints";
+import { ASK_TIMEOUT_MS, openTabChannel, signOutNotice } from "@/app/tab-sync";
 import type { User } from "@/api/types";
 import { minimumRoleFor, permissionsFor, roleLabel, type Permission } from "@/lib/permissions";
 import { Content, Empty, Skeleton } from "@/components/ui";
@@ -28,9 +30,39 @@ const Ctx = createContext<Session | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(() => api.getToken() !== null);
+  // Without a token of its own, a tab first asks the other open tabs (see tab-sync.ts).
+  const [loading, setLoading] = useState<boolean>(() => !api.isMock || api.getToken() !== null);
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const tabs = useRef<ReturnType<typeof openTabChannel> | null>(null);
+
+  useEffect(() => {
+    const channel = openTabChannel((m) => {
+      if (m.type === "ask") {
+        const token = api.getToken();
+        if (token) channel.post({ type: "token", token });
+      } else if (m.type === "token") {
+        if (api.getToken()) return;
+        api.setToken(m.token);
+        endpoints
+          .me()
+          .then((u) => setUser(u))
+          .catch(() => api.setToken(null))
+          .finally(() => setLoading(false));
+      } else if (m.type === "signed-out" && api.getToken()) {
+        api.setToken(null);
+        signOutNotice.elsewhere = true;
+        setUser(null);
+        qc.clear();
+        navigate("/login", { replace: true, state: { from: window.location.pathname } });
+      }
+    });
+    tabs.current = channel;
+    return () => {
+      channel.close();
+      tabs.current = null;
+    };
+  }, [navigate, qc]);
 
   useEffect(() => {
     api.onUnauthorised(() => {
@@ -45,8 +77,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!api.getToken()) {
-      setLoading(false);
-      return;
+      if (api.isMock) {
+        setLoading(false);
+        return;
+      }
+      tabs.current?.post({ type: "ask" });
+      // No open tab answered: show the sign-in page.
+      const t = window.setTimeout(() => {
+        if (!api.getToken()) setLoading(false);
+      }, ASK_TIMEOUT_MS);
+      return () => window.clearTimeout(t);
     }
     let live = true;
     endpoints
@@ -62,6 +102,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (username: string, password: string, remember = false) => {
     const res = await endpoints.login(username, password);
     api.setToken(res.token, remember);
+    signOutNotice.elsewhere = false;
     setUser(res.user);
     return res.user;
   }, []);
@@ -73,6 +114,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       /* the token is dropped locally either way */
     }
     api.setToken(null);
+    tabs.current?.post({ type: "signed-out" });
     setUser(null);
     qc.clear();
     navigate("/login", { replace: true });
