@@ -68,11 +68,13 @@ export function usePopover() {
         : at - 1;
       list[next]?.focus();
     };
-    // Tabbing to something outside closes the menu (a null target is a click
-    // on a non-focusable spot, which the mousedown handler deals with).
+    // Tabbing to something outside closes the menu. A click on a non-focusable
+    // spot (an option's text) moves focus to null or, in Chromium and Edge, to
+    // the nearest scrollable ancestor such as <main>; the mousedown handler
+    // deals with those clicks, so focus landing on an ancestor is not "out".
     const onFocusOut = (e: FocusEvent) => {
       const to = e.relatedTarget as Node | null;
-      if (to && !node.contains(to)) setOpen(false);
+      if (to && !node.contains(to) && !to.contains(node)) setOpen(false);
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);

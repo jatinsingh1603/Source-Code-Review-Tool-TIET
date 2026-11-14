@@ -41,6 +41,23 @@ describe("usePopover (FilterMenu)", () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  it("stays open when a click on an option's text moves focus to a scrollable ancestor", () => {
+    render(
+      <main tabIndex={-1} data-testid="main">
+        <Host />
+      </main>,
+    );
+    const trigger = screen.getByRole("button", { name: /Severity/ });
+    fireEvent.click(trigger, { detail: 1 });
+    const label = screen.getByText("High");
+    // Chromium focuses the scrollable <main> on mousedown over non-focusable text.
+    fireEvent.mouseDown(label);
+    fireEvent.focusOut(trigger, { relatedTarget: screen.getByTestId("main") });
+    expect(screen.getAllByRole("checkbox")).toHaveLength(3);
+    fireEvent.click(label);
+    expect((screen.getAllByRole("checkbox")[1] as HTMLInputElement).checked).toBe(true);
+  });
+
   it("closes when focus moves out of it", () => {
     render(<Host />);
     const trigger = screen.getByRole("button", { name: /Severity/ });
