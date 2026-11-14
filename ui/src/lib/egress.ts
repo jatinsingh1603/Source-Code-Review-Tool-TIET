@@ -23,7 +23,7 @@ export function egressSummary(level: PrivacyLevel, provider: ProviderInfo | unde
     };
   }
   const base: Record<Exclude<PrivacyLevel, "L0" | "L4">, string> = {
-    L3: "At level L3 CodeKavach sends a minimal slice of the code around each candidate finding. Before sending, detected secrets and personal data are replaced by typed placeholders, internal names are replaced by neutral pseudonyms, comments and docstrings are removed, and string literals keep their shape but lose domain words. Public library and framework names are kept so that the model can recognise sources and sinks.",
+    L3: "At level L3 CodeKavach sends a minimal slice of the code around each candidate finding. Before sending, detected secrets and personal data are replaced by typed placeholders, internal names are replaced by neutral pseudonyms, the text of comments and docstrings is removed (a docstring leaves a placeholder of the same length), and string literals keep their shape but lose domain words. Public library and framework names are kept so that the model can recognise sources and sinks.",
     L2: "At level L2 CodeKavach sends the relevant files in full, with secrets and personal data replaced by typed placeholders and identifiers, literals and comments pseudonymised. This discloses more of the repository than L3 in exchange for more context.",
     L1: "At level L1 CodeKavach sends source code with only secrets and personal data replaced by typed placeholders. Identifiers, literals and comments are sent as written, so use this level only with a model you trust with your code.",
   };

@@ -128,7 +128,7 @@ export default function ScanLaunchPage() {
               <button className="on" type="button" aria-pressed="true">
                 Branch
               </button>
-              <button type="button" disabled title="Diff scans need server support for a base ref.">
+              <button type="button" disabled title="Not in this build: a diff scan against a base ref. Scan the whole branch.">
                 Diff
               </button>
             </div>

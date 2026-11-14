@@ -168,7 +168,7 @@ export const LEVEL_INFO: Record<
     use: "Public LLM APIs",
     detail: [
       "Secrets and personal data are replaced by typed placeholders before sending.",
-      "Internal names are replaced by neutral pseudonyms; comments and docstrings are removed.",
+      "Internal names are replaced by neutral pseudonyms; the text of comments and docstrings is removed (a docstring leaves a same-length placeholder).",
       "String literals keep their security-relevant shape but lose domain words.",
       "Visible to the provider: the structure of the slice, the stack via public library names, and the suspected weakness class.",
     ],
