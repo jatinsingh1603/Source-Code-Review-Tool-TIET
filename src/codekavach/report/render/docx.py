@@ -286,6 +286,25 @@ def _finding(b: _Builder, v: FindingView) -> None:
         )
 
 
+def _fill_contents(b: _Builder, toc: Any) -> None:
+    """Write the main headings as the contents field's current result.
+
+    Word fills a TOC field only when its fields are updated; until then a reader saw a "press
+    F9" note under Contents. The headings stand in until Word adds the page numbers.
+    """
+    skip = {"Document control", "Contents"}
+    names = [
+        p.text
+        for p in b.doc.paragraphs
+        if p.style is not None and p.style.name == "Heading 1" and p.text not in skip
+    ]
+    result = toc.runs[1]  # begin and separate, the result, then end (see _Builder.field)
+    for index, name in enumerate(names):
+        if index:
+            result.add_break()
+        result.add_text(name)
+
+
 def build_docx(doc: ReportDocument, out: Path, theme: Theme) -> None:  # noqa: PLR0912, PLR0915
     """Write the Word document for ``doc`` to ``out``."""
     b = _Builder(theme)
@@ -326,11 +345,8 @@ def build_docx(doc: ReportDocument, out: Path, theme: Theme) -> None:  # noqa: P
         b.para(c.disclaimer, size=8, colour=theme.muted)
     b.doc.add_heading("Contents", level=1)
     toc = b.doc.add_paragraph()
-    b.field(
-        toc,
-        'TOC \\o "1-3" \\h \\z \\u',
-        "Right-click and choose Update Field (or press F9) to build the table of contents.",
-    )
+    b.field(toc, 'TOC \\o "1-3" \\h \\z \\u', "")
+    b.para("Page numbers appear when Word updates the contents (F9).", size=8, colour=theme.muted)
     b.doc.add_page_break()  # type: ignore[no-untyped-call]
 
     b.doc.add_heading("1 Executive summary", level=1)
@@ -476,6 +492,7 @@ def build_docx(doc: ReportDocument, out: Path, theme: Theme) -> None:  # noqa: P
     b.doc.add_heading("Limitations", level=2)
     for limitation in doc.limitations:
         b.para(f"{limitation.id} ({limitation.kind}): {limitation.statement}", style="List Bullet")
+    _fill_contents(b, toc)
     props = b.doc.core_properties
     props.title = _xml(f"{doc.title}: {doc.project_name}")
     props.author = _xml(doc.organisation)

@@ -89,6 +89,17 @@ def test_docx_renders_xml_invalid_control_characters(tmp_path: Path) -> None:
     assert not re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", body)
 
 
+def test_docx_contents_lists_the_sections_before_word_updates_it(tmp_path: Path) -> None:
+    docx = pytest.importorskip("docx")
+    out = renderer_registry().get("docx").render(_doc(), tmp_path / "r.docx")
+    paragraphs = docx.Document(str(out)).paragraphs
+    at = next(i for i, p in enumerate(paragraphs) if p.text == "Contents")
+    contents = paragraphs[at + 1]
+    assert 'TOC \\o "1-3"' in contents._p.xml
+    assert contents.text.startswith("1 Executive summary\n2 Scope and approach")
+    assert "Update Field" not in contents.text and "Contents" not in contents.text
+
+
 def test_report_ids_are_stable_and_ordered() -> None:
     findings = [make_finding(severity=Severity.HIGH), make_finding(severity=Severity.LOW)]
     ids = assign_report_ids(findings, year=2026)
@@ -267,3 +278,16 @@ def test_xlsx_writes_cvss_scores_as_numbers(tmp_path: Path) -> None:
     value = re.search(r"<v>(.*?)</v>", cell.group(2))
     assert value is not None
     assert float(value.group(1)) == pytest.approx(9.3)
+
+
+def test_xlsx_prints_each_sheet_one_page_wide(tmp_path: Path) -> None:
+    out = renderer_registry().get("xlsx").render(_doc(), tmp_path / "r.xlsx")
+    with zipfile.ZipFile(out) as archive:
+        findings = archive.read("xl/worksheets/sheet2.xml").decode()
+        book = archive.read("xl/workbook.xml").decode()
+    setup = re.search(r"<pageSetup [^>]*>", findings)
+    assert setup is not None
+    for attribute in ('paperSize="9"', 'orientation="landscape"', 'fitToHeight="0"'):
+        assert attribute in setup.group(0)
+    assert re.search(r'<pageSetUpPr [^>]*fitToPage="1"', findings)
+    assert "Findings!$1:$1" in book  # the heading row repeats on every printed page
