@@ -179,6 +179,10 @@ details.finding > summary::-webkit-details-marker { display: none; }
 }
 .ck-chart .ink { fill: var(--ink); }
 .ck-chart .mut { fill: var(--muted); }
+/* Just above that width (a 720 px preview pane), long file paths in the findings summary wrap instead of widening the page. */
+@media (min-width: 721px) {
+  #summary-table td { overflow-wrap: anywhere; }
+}
 /* Narrow screens: wide tables scroll inside their own box instead of widening the page. */
 @media (max-width: 720px) {
   table:not(.kv) { display: block; overflow-x: auto; max-width: 100%; }
