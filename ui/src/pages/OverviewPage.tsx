@@ -55,6 +55,7 @@ import {
 export default function OverviewPage() {
   const { current, loading: projLoading } = useCurrentProject();
   const canRun = useCan("scans:run");
+  const canPrivacy = useCan("privacy:read");
   const scansQ = useScans(current?.id);
   const scans = useMemo(() => sortScans(scansQ.data ?? []), [scansQ.data]);
   const completed = scans.filter((s) => s.status === "completed");
@@ -141,10 +142,10 @@ export default function OverviewPage() {
                 </>
               }
             />
-            <PrivacyScoreKpi p={privacyQ.data} prev={prevPrivacy} />
-            <EgressKpi p={privacyQ.data} scan={last} />
+            <PrivacyScoreKpi p={privacyQ.data} prev={prevPrivacy} locked={!canPrivacy} />
+            <EgressKpi p={privacyQ.data} scan={last} locked={!canPrivacy} />
             <Kpi
-              to="/privacy/ledger"
+              to={canPrivacy ? "/privacy/ledger" : undefined}
               label="Zero-leak check"
               value={
                 privacyQ.data?.zero_leak.checked ? fmtInt(privacyQ.data.zero_leak.occurrences) : "—"
@@ -155,7 +156,9 @@ export default function OverviewPage() {
                   ? `${fmtInt(privacyQ.data.zero_leak.checked)} listed terms, verbatim`
                   : privacyQ.data
                     ? "not run: no listed terms for this project"
-                    : "not checked"
+                    : canPrivacy
+                      ? "not checked"
+                      : LOCKED
               }
             />
             <Kpi
@@ -208,7 +211,10 @@ export default function OverviewPage() {
   );
 }
 
-function PrivacyScoreKpi({ p, prev }: { p?: PrivacySummary; prev?: PrivacySummary }) {
+/** Shown where the privacy figures exist but this role may not read them. */
+const LOCKED = "shown to developers and auditors";
+
+function PrivacyScoreKpi({ p, prev, locked }: { p?: PrivacySummary; prev?: PrivacySummary; locked?: boolean }) {
   const score = p?.privacy_score;
   const d =
     score !== null &&
@@ -219,7 +225,7 @@ function PrivacyScoreKpi({ p, prev }: { p?: PrivacySummary; prev?: PrivacySummar
       : null;
   return (
     <Kpi
-      to="/privacy"
+      to={locked ? undefined : "/privacy"}
       label="Privacy score"
       value={score ?? "—"}
       unit="/ 100"
@@ -228,6 +234,8 @@ function PrivacyScoreKpi({ p, prev }: { p?: PrivacySummary; prev?: PrivacySummar
         d === null ? (
           p ? (
             `${p.level} · ${p.payloads} payloads`
+          ) : locked ? (
+            LOCKED
           ) : (
             "not computed"
           )
@@ -244,7 +252,7 @@ function PrivacyScoreKpi({ p, prev }: { p?: PrivacySummary; prev?: PrivacySummar
   );
 }
 
-function EgressKpi({ p, scan }: { p?: PrivacySummary; scan?: Scan }) {
+function EgressKpi({ p, scan, locked }: { p?: PrivacySummary; scan?: Scan; locked?: boolean }) {
   const payloads = p?.payloads ?? (scan ? scanPayloads(scan) : null);
   // The core's measure: distinct repository lines disclosed over inventory lines. Payload bytes
   // over repository bytes would count the prompt text and repeated context, and can pass 100%.
@@ -269,7 +277,7 @@ function EgressKpi({ p, scan }: { p?: PrivacySummary; scan?: Scan }) {
   const tokens = p?.tokens_sent ?? scan?.privacy_summary?.tokens_sent;
   return (
     <Kpi
-      to="/privacy/ledger"
+      to={locked ? undefined : "/privacy/ledger"}
       label="Tokens out, this scan"
       value={
         tokens === undefined ? "—" : tokens >= 10_000 ? (tokens / 1000).toFixed(1) : fmtInt(tokens)
