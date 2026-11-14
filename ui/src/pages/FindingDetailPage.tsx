@@ -903,7 +903,11 @@ function describe(
   if (h.to_status && h.to_status !== h.from_status) {
     return `changed status ${h.from_status ? `from ${STATUS_LABEL[h.from_status as FindingStatus] ?? h.from_status} ` : ""}to ${STATUS_LABEL[h.to_status as FindingStatus] ?? h.to_status}`;
   }
-  if (h.action === "assign" || h.assignee) {
+  // Every entry carries the assignee at that moment; only an assign entry is about it.
+  if (h.action === "comment") return "commented";
+  if (h.action === "carried")
+    return h.assignee ? `kept the assignment to ${personName(h.assignee, users)}` : "kept the reviewer's decision";
+  if (h.action === "assign") {
     if (h.assignee && h.assignee === h.actor) return "took this finding";
     return `assigned to ${personName(h.assignee, users)}`;
   }
