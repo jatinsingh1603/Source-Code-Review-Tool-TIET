@@ -724,10 +724,10 @@ export default function FindingDetailPage() {
             <div className="timeline">
               {hist.map((h, i) => (
                 <div className="tl-i" key={h.id ?? i}>
-                  <Avatar name={h.actor} />
+                  <Avatar name={personName(h.actor, users)} />
                   <div>
                     <div>
-                      <b>{h.actor}</b> <span className="muted">{describe(h)}</span>
+                      <b>{personName(h.actor, users)}</b> <span className="muted">{describe(h, users)}</span>
                     </div>
                     {h.comment && (
                       <p className="sm" style={{ marginTop: 4 }}>
@@ -835,17 +835,31 @@ function Pair({ k, children }: { k: string; children: ReactNode }) {
   );
 }
 
-function describe(h: {
-  action: string;
-  from_status?: string | null;
-  to_status?: string | null;
-  comment?: string | null;
-  assignee?: string | null;
-}): string {
+/** A user's display name for a username or id in the history ("admin" → "Administrator"). */
+function personName(who: string | null | undefined, users?: { id: string; username: string; display_name?: string | null }[] | null): string {
+  if (!who) return "someone";
+  const u = users?.find((x) => x.id === who || x.username === who);
+  return u?.display_name || who;
+}
+
+function describe(
+  h: {
+    action: string;
+    actor?: string | null;
+    from_status?: string | null;
+    to_status?: string | null;
+    comment?: string | null;
+    assignee?: string | null;
+  },
+  users?: { id: string; username: string; display_name?: string | null }[] | null,
+): string {
   if (h.to_status && h.to_status !== h.from_status) {
     return `changed status ${h.from_status ? `from ${STATUS_LABEL[h.from_status as FindingStatus] ?? h.from_status} ` : ""}to ${STATUS_LABEL[h.to_status as FindingStatus] ?? h.to_status}`;
   }
-  if (h.action === "assign" || h.assignee) return `assigned to ${h.assignee ?? "someone"}`;
+  if (h.action === "assign" || h.assignee) {
+    if (h.assignee && h.assignee === h.actor) return "took this finding";
+    return `assigned to ${personName(h.assignee, users)}`;
+  }
   if (h.action === "llm_review") return "asked the model";
   if (h.comment) return "commented";
   return h.action;
