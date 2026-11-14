@@ -98,6 +98,7 @@ A client who wants their own workflow to call a real provider adds the key as a 
 
 A green run of this pipeline on `main`, checked while preparing this runbook:
 
+- <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43590207032>: commit `14460e7`, 14 November 2026 11:39 UTC, every job green (`ci-ok` success), the second green run in a row. `test (ubuntu-latest, 3.12)` took 8 minutes 21 seconds, `test (ubuntu-latest, 3.13)` 6 minutes 9 seconds, `perf` 4 minutes 29 seconds, `docker` 57 seconds, `ui` 25 seconds.
 - <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43421402124>: commit `0254b15`, 13 November 2026 12:12 UTC, every job green (`ci-ok` success). `test (ubuntu-latest, 3.12)` took 9 minutes 2 seconds, `test (ubuntu-latest, 3.13)` 9 minutes 58 seconds, `perf` 5 minutes 54 seconds.
 - <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43334263876>: commit `f05fcb2`, 13 November 2026, every job green (`ci-ok` success). `test (ubuntu-latest, 3.12)` took 10 minutes 44 seconds, `test (ubuntu-latest, 3.13)` 9 minutes 54 seconds, `perf` 4 minutes 24 seconds.
 - <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43331968149>: commit `eea512c`, 12 November 2026, every job green (`ci-ok` success), including the four test cells, `perf`, `ui`, `docker`, `demo`, `detector-eval` and `provider-conformance`. The test step of `test (ubuntu-latest, 3.12)` took 11 minutes 23 seconds, the whole job 11 minutes 39 seconds, against its 20-minute limit.
