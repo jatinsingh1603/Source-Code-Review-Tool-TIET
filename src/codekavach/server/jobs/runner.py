@@ -28,6 +28,13 @@ _log = get_logger("codekavach.server.jobs.runner")
 # How long a shutdown waits for cancelled jobs to reach their next checkpoint.
 SHUTDOWN_WAIT_SECONDS = 10.0
 
+# Shown on the scan page of a scan the previous server process left unfinished.
+RESTARTED_MESSAGE = (
+    "The server stopped while this scan was running, so the scan did not finish. "
+    "Start it again with Run again with changes; anything already sent is listed in the "
+    "egress ledger."
+)
+
 
 class JobRunner:
     """Runs scan jobs on a fixed pool of worker threads."""
@@ -96,7 +103,7 @@ class JobRunner:
             ).all()
             for row in rows:
                 row.status = "failed"
-                row.error = "server_restarted: the server stopped while this scan was active"
+                row.error = RESTARTED_MESSAGE
                 row.finished_at = utcnow()
             ids = [row.id for row in rows]
         for scan_id in ids:
