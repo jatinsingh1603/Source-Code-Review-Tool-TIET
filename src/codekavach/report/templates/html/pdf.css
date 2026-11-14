@@ -66,8 +66,8 @@ td.status { white-space: nowrap; }
 .callout { padding: 5px 9px; margin: 5px 0; }
 .finding .fbody ul.small { margin: 2px 0; }
 #roadmap-table, #annex-table { table-layout: fixed; width: 100%; }
-#roadmap-table th:nth-child(1) { width: 9%; } #roadmap-table th:nth-child(2) { width: 14%; }
-#roadmap-table th:nth-child(3) { width: 16%; } #roadmap-table th:nth-child(4) { width: 29%; }
+#roadmap-table th:nth-child(1) { width: 11%; } #roadmap-table th:nth-child(2) { width: 14%; }
+#roadmap-table th:nth-child(3) { width: 16%; } #roadmap-table th:nth-child(4) { width: 27%; }
 #roadmap-table th:nth-child(5) { width: 9%; } #roadmap-table th:nth-child(6) { width: 23%; }
 #annex-table th:nth-child(1) { width: 17%; } #annex-table th:nth-child(2) { width: 13%; }
 #annex-table th:nth-child(3) { width: 25%; } #annex-table th:nth-child(4) { width: 45%; }
