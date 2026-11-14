@@ -131,7 +131,10 @@ export default function SettingsPage() {
     }
   };
 
+  const [creatingToken, setCreatingToken] = useState(false);
   const createToken = async () => {
+    if (creatingToken) return;
+    setCreatingToken(true);
     try {
       const t = await endpoints.createMyToken(tokenName.trim() || "cli");
       setNewToken(t.token);
@@ -139,6 +142,8 @@ export default function SettingsPage() {
       void qc.invalidateQueries({ queryKey: ["optional", "me-tokens"] });
     } catch (e) {
       toast.error("Token not created", e instanceof Error ? e.message : undefined);
+    } finally {
+      setCreatingToken(false);
     }
   };
 
@@ -180,6 +185,7 @@ export default function SettingsPage() {
                 <label htmlFor="st-n">Name</label>
                 <input
                   id="st-n"
+                  maxLength={128}
                   className="inp"
                   value={name}
                   onChange={(e) => {
@@ -290,10 +296,11 @@ export default function SettingsPage() {
                   style={{ width: 160 }}
                   placeholder="laptop-cli"
                   aria-label="Token name"
+                  maxLength={128}
                   value={tokenName}
                   onChange={(e) => setTokenName(e.target.value)}
                 />
-                <Button size="sm" onClick={() => void createToken()} disabled={!tokensQ.data && !tokensQ.isLoading}>
+                <Button size="sm" loading={creatingToken} onClick={() => void createToken()} disabled={!tokensQ.data && !tokensQ.isLoading}>
                   + New personal token
                 </Button>
               </div>
@@ -533,7 +540,7 @@ function OrgDefaults() {
             </div>
             <div className="fld">
               <label htmlFor="od-o">Organisation name</label>
-              <input id="od-o" className="inp" value={form.org_name ?? ""} onChange={(e) => setForm({ ...form, org_name: e.target.value })} />
+              <input id="od-o" className="inp" maxLength={200} value={form.org_name ?? ""} onChange={(e) => setForm({ ...form, org_name: e.target.value })} />
             </div>
           </div>
           <div>

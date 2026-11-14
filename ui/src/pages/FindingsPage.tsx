@@ -509,7 +509,7 @@ export default function FindingsPage() {
             <Button size="sm" onClick={() => setDialog("suppress")} disabled={busy}>
               Suppress with reason
             </Button>
-            <Button size="sm" disabled={busy} onClick={() => void patchAll({ status: "false_positive" }, "marked false positive")}>
+            <Button size="sm" loading={busy} onClick={() => void patchAll({ status: "false_positive" }, "marked false positive")}>
               Mark false positive
             </Button>
             {can("github:sync") && (
