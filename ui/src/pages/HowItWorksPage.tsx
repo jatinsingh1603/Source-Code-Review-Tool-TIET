@@ -33,7 +33,7 @@ export default function HowItWorksPage() {
         </ButtonLink>
       </div>
 
-      <section className="card" style={{ padding: 24, overflowX: "auto" }}>
+      <section className="card" style={{ padding: 24, overflowX: "auto" }} data-scroll-x aria-label="Where the code goes">
         <div
           role="img"
           aria-label="Stages 1 to 3 and 7 to 9 run on your machine. Stage 4, the privacy layer, sanitises what leaves; stage 5, the model, receives only that slice; stage 6 maps verdicts back locally."

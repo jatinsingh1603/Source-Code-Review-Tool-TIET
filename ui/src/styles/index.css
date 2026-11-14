@@ -224,6 +224,11 @@ body {
   color: var(--text);
   min-width: 0;
 }
+/* Filter fields draw the input borderless inside `.search`; ring the field. */
+.ck label.search:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .ck .search {
   cursor: pointer;
   text-align: left;
@@ -340,6 +345,12 @@ body {
   .ck .banner.split > div:last-child {
     border-bottom: 0;
   }
+}
+
+/* A visually hidden header label (`.sr-only`, position:absolute) inside a wide
+ * table must stay inside the scroller, or it widens the page on a phone. */
+.ck .tbl-wrap {
+  position: relative;
 }
 
 /*
