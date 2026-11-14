@@ -77,7 +77,7 @@ def test_a_low_confidence_verdict_reads_needs_review_like_the_findings_table() -
     for confidence in ("low", "medium"):
         line = _verdict_line("vulnerable", confidence)
         assert "confirmed" not in line
-        assert line.endswith("low confidence: needs review")
+        assert line.endswith(f"vulnerable per the model, {confidence} confidence: needs review")
     assert _verdict_line("not_vulnerable", "low").endswith("judged not exploitable by the model")
 
 

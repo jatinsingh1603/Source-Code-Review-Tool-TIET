@@ -265,7 +265,12 @@ class _Progress:
         words = VERDICT_WORDS.get(verdict, verdict)
         if verdict == "vulnerable" and _low_confidence(data.get("confidence")):
             # The findings table shows these as "Needs review"; the log must not say "confirmed".
-            words = "vulnerable per the model, low confidence: needs review"
+            # Name the model's own confidence: the real model often answers "medium", and the
+            # log said "low confidence" next to a table showing 0.60.
+            words = (
+                f"vulnerable per the model, {_confidence_words(data.get('confidence'))}: "
+                "needs review"
+            )
         self.log.append(
             "finding",
             {
@@ -542,6 +547,15 @@ def _opening_words(scan: dict[str, Any], *, remote: bool) -> str:
     where = "remote" if remote else "local"
     sent = "sent" if scan["send"] else "recorded only"
     return f"Privacy level {scan['level']}; provider {scan['provider']} ({where}); payloads {sent}"
+
+
+def _confidence_words(confidence: object) -> str:
+    """``medium confidence`` or ``confidence 0.60``, as the model gave it."""
+    if isinstance(confidence, int | float):
+        value = float(confidence if confidence <= 1 else confidence / 100)
+        return f"confidence {value:.2f}"
+    text = str(confidence or "").strip().lower()
+    return f"{text} confidence" if text else "low confidence"
 
 
 def _low_confidence(confidence: object) -> bool:
