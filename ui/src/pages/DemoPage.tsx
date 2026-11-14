@@ -97,8 +97,9 @@ function LastRun({ scanId, started, finished }: { scanId: string; started?: stri
   const entry = useLedgerEntry(scanId, head?.seq ?? null).data;
   const open = (findings ?? []).filter(isOpen);
   const c = sevCounts(open);
-  const sentLines = entry ? payloadLineCount(entry.payload_text) : null;
-  const totalLines = entry ? lineCount(entry.original_text) : null;
+  // Same figures as Privacy Inspect: lines of the file that left, out of the whole file.
+  const totalLines = entry ? entry.lines_total ?? lineCount(entry.original_text) : null;
+  const sentLines = entry ? Math.min(entry.slice_lines?.length ?? payloadLineCount(entry.payload_text), totalLines ?? Infinity) : null;
   const top = [...new Set(open.filter((f) => f.severity === "critical" || f.severity === "high").map((f) => f.cwe && CWE_SHORT[f.cwe]).filter(Boolean))].slice(0, 3);
   const secrets = open.filter((f) => /secret/.test(f.engine ?? "")).length;
   const formats = (reports ?? []).filter((r) => r.available).map((r) => r.format.toUpperCase());
