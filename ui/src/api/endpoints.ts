@@ -1,5 +1,5 @@
 /** One typed function per REST endpoint of the shared server contract. */
-import { api, ApiError, parseErrorEnvelope } from "./client";
+import { api, ApiError, asSentence, parseErrorEnvelope } from "./client";
 import type {
   Finding,
   FindingFilters,
@@ -324,7 +324,7 @@ export function uploadArchive(
       if (xhr.status >= 200 && xhr.status < 300) resolve(body as Project);
       else {
         const env = parseErrorEnvelope(xhr.status, body);
-        reject(new ApiError(xhr.status, env.code, env.message, env.detail));
+        reject(new ApiError(xhr.status, env.code, asSentence(env.message), env.detail));
       }
     };
     xhr.onerror = () => reject(new ApiError(0, "network_error", "Upload failed."));

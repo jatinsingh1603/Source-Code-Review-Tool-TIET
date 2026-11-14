@@ -73,7 +73,7 @@ export function errorText(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 404) {
       // "scan not found" -> "This scan does not exist..." reads better than a code.
-      const what = /^(\w+) not found$/i.exec(error.message)?.[1]?.toLowerCase();
+      const what = /^(\w+) not found\.?$/i.exec(error.message)?.[1]?.toLowerCase();
       return what
         ? `This ${what} does not exist, or it was deleted. Check the address, or open it from the list.`
         : `${error.message} Check the address, or open it from the list.`;
