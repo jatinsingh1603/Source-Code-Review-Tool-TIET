@@ -225,7 +225,7 @@ export default function FindingDetailPage() {
         },
         onError: (e) =>
           e instanceof ApiError && e.code === "nothing_to_send"
-            ? toast.info("Nothing was sent", e.message)
+            ? toast.info("Nothing was sent", capitalise(e.message.replace(/^nothing was sent:\s*/i, "")))
             : toast.error("Model review failed", e instanceof Error ? e.message : undefined),
       },
     );
