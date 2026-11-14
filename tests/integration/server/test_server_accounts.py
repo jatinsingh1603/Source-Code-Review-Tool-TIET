@@ -67,6 +67,7 @@ def test_change_own_password_keeps_this_session_and_ends_the_others(
     # pragma: allowlist nextline secret
     short = {"current_password": "first-password", "new_password": "short"}
     assert client.post(f"{API}/me/password", json=short, headers=mine).status_code == 422
+    # pragma: allowlist nextline secret
     good = {"current_password": "first-password", "new_password": "second-password"}
     assert client.post(f"{API}/me/password", json=good, headers=mine).status_code == 200
     assert client.get(f"{API}/auth/me", headers=mine).status_code == 200
