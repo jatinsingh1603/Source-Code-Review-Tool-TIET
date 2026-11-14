@@ -471,6 +471,9 @@ def build_markdown(doc: ReportDocument, *, limit: int = MARKDOWN_LIMIT) -> str:
         f"**Generated** {doc.generated_at.strftime('%Y-%m-%d %H:%M UTC')}",
         "",
     ]
+    if doc.scan_reference:
+        # The id the dashboard shows, so a reader can tie the file to the scan it came from.
+        lines += [f"**Scan** {md(doc.scan_reference)} (pipeline {md(str(doc.scan.id))})", ""]
     if facts:
         lines += [
             f"**Overall risk: {facts.posture}** · {facts.total} findings",

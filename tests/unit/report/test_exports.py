@@ -146,6 +146,13 @@ def test_markdown_neutralises_mentions_and_html() -> None:
     assert "@octocat" not in text and "<b>" not in text and "\\|" in text
 
 
+def test_markdown_names_the_dashboard_scan_id() -> None:
+    doc = _doc()
+    assert "**Scan**" not in build_markdown(doc)
+    labelled = doc.model_copy(update={"scan_reference": "SCN-6B14BE"})
+    assert f"**Scan** SCN-6B14BE (pipeline {doc.scan.id})" in build_markdown(labelled)
+
+
 def test_sarif_help_markdown_has_no_links_images_or_mentions() -> None:
     hostile = "[Download hotfix](https://evil.example/fix.sh) ![b](https://evil.example/p) @org"
     sarif = build_sarif(_doc(make_finding(remediation=hostile)))
