@@ -431,6 +431,12 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
   };
 
   if (a === "auth" && b === "me") return delay(publicUser(user));
+  if (a === "me" && b === "password" && method === "POST") {
+    const stored = state.users.find((x) => x.id === user.id);
+    if (!stored || stored.password !== body.current_password) err(400, "wrong_password", "The current password is not correct.");
+    else stored.password = String(body.new_password);
+    return delay({ ok: true, revoked: 0 });
+  }
   if (a === "auth" && b === "logout") {
     return delay(null);
   }

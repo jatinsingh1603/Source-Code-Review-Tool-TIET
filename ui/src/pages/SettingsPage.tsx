@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "@/app/session";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOptional, useProviders, useSaveSettings, useSettings } from "@/api/queries";
@@ -13,9 +13,12 @@ const SECTIONS: [string, string][] = [
   ["profile", "Profile"],
   ["appearance", "Appearance"],
   ["notifications", "Notifications"],
+  ["password", "Password"],
   ["tokens", "CLI and API tokens"],
   ["language", "Language and region"],
 ];
+const ORG_SECTION: [string, string] = ["organisation", "Organisation defaults"];
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 const EVENTS: [string, string][] = [
   ["critical_finding", "New Critical or High finding"],
@@ -49,6 +52,9 @@ export default function SettingsPage() {
   const [active, setActive] = useState("profile");
   const [prefs, setPrefs] = useState<Prefs>(readPrefs);
   const [name, setName] = useState(user?.display_name ?? user?.full_name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const orgAdmin = can("settings:write");
+  const sections = useMemo(() => (orgAdmin ? [...SECTIONS, ORG_SECTION] : SECTIONS), [orgAdmin]);
   const [notif, setNotif] = useState<Notif>(readNotif);
   const [dirty, setDirty] = useState(false);
 
@@ -67,8 +73,15 @@ export default function SettingsPage() {
     setNotif(Object.fromEntries(Object.entries(serverNotif.events).map(([k, v]) => [k, { app: v.in_app, email: v.email }])));
   }, [serverNotif]);
 
+  // Arriving with a #section (Admin's "+ New token" links to #tokens): the shell scrolls to it;
+  // mark it in the section list straight away.
   useEffect(() => {
-    const els = SECTIONS.map(([id]) => document.getElementById(id)).filter((x): x is HTMLElement => !!x);
+    const id = window.location.hash.slice(1);
+    if (id && document.getElementById(id)) setActive(id);
+  }, []);
+
+  useEffect(() => {
+    const els = sections.map(([id]) => document.getElementById(id)).filter((x): x is HTMLElement => !!x);
     const obs = new IntersectionObserver(
       (entries) => {
         const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
@@ -78,9 +91,14 @@ export default function SettingsPage() {
     );
     els.forEach((e) => obs.observe(e));
     return () => obs.disconnect();
-  }, []);
+  }, [sections]);
 
   const save = async () => {
+    const mail = email.trim();
+    if (mail && !EMAIL_RE.test(mail)) {
+      toast.error("Settings not saved", "The email address does not look right, for example name@thapar.edu.");
+      return;
+    }
     writePrefs(prefs);
     setBusy(true);
     try {
@@ -90,6 +108,7 @@ export default function SettingsPage() {
     }
     try {
       if (user && name.trim() && name !== (user.display_name ?? "")) await endpoints.patchMe({ display_name: name.trim() });
+      if (user && mail !== (user.email ?? "")) await endpoints.patchMe({ email: mail });
       if (serverPrefs) {
         await endpoints.patchPreferences({
           density: prefs.density,
@@ -141,7 +160,7 @@ export default function SettingsPage() {
       </div>
       <section className="g g-side-l">
         <nav className="subnav-list" aria-label="Settings sections">
-          {SECTIONS.map(([id, label]) => (
+          {sections.map(([id, label]) => (
             <a key={id} className={`btn ghost${active === id ? " on" : ""}`} href={`#${id}`} aria-current={active === id ? "true" : undefined} onClick={() => setActive(id)}>
               {label}
             </a>
@@ -171,7 +190,18 @@ export default function SettingsPage() {
               </div>
               <div className="fld">
                 <label htmlFor="st-e">Email</label>
-                <input id="st-e" className="inp" value={user?.email ?? ""} placeholder="Not set · an admin can add it" disabled />
+                <input
+                  id="st-e"
+                  className="inp"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  placeholder="Not set"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setDirty(true);
+                  }}
+                />
               </div>
             </div>
             <div className="g g-2">
@@ -249,6 +279,8 @@ export default function SettingsPage() {
             </p>
           </div>
 
+          <PasswordCard />
+
           <div className="card stack" id="tokens">
             <div className="row between">
               <h2>CLI and API tokens</h2>
@@ -303,7 +335,10 @@ export default function SettingsPage() {
                     size="sm"
                     onClick={() =>
                       void endpoints.deleteMyToken(t.id).then(
-                        () => void qc.invalidateQueries({ queryKey: ["optional", "me-tokens"] }),
+                        () => {
+                          toast.success("Token revoked", `${t.name} no longer works.`);
+                          void qc.invalidateQueries({ queryKey: ["optional", "me-tokens"] });
+                        },
                         (e: Error) => toast.error("Not revoked", e.message),
                       )
                     }
@@ -348,10 +383,71 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {can("settings:write") && <OrgDefaults />}
+          {orgAdmin && <OrgDefaults />}
         </div>
       </section>
     </Content>
+  );
+}
+
+/** The caller's own password; the server keeps this session and signs out the others. */
+function PasswordCard() {
+  const toast = useToast();
+  const [form, setForm] = useState({ current: "", next: "", again: "" });
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    setErr(null);
+    if (!form.current) return setErr("Enter your current password.");
+    if (form.next.length < 10) return setErr("The new password needs at least 10 characters.");
+    if (form.next !== form.again) return setErr("The two new passwords are not the same.");
+    setBusy(true);
+    try {
+      const r = await endpoints.changeMyPassword({ current_password: form.current, new_password: form.next });
+      setForm({ current: "", next: "", again: "" });
+      toast.success("Password changed", r.revoked ? `Signed out elsewhere: ${r.revoked} other session(s) and token(s).` : "This session stays signed in.");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "The password was not changed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form
+      className="card stack"
+      id="password"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void submit();
+      }}
+    >
+      <h2>Password</h2>
+      <div className="fld">
+        <label htmlFor="pw-c">Current password</label>
+        <input id="pw-c" className="inp" type="password" autoComplete="current-password" value={form.current} onChange={(e) => setForm({ ...form, current: e.target.value })} />
+      </div>
+      <div className="g g-2">
+        <div className="fld">
+          <label htmlFor="pw-n">New password</label>
+          <input id="pw-n" className="inp" type="password" autoComplete="new-password" value={form.next} onChange={(e) => setForm({ ...form, next: e.target.value })} />
+        </div>
+        <div className="fld">
+          <label htmlFor="pw-a">New password again</label>
+          <input id="pw-a" className="inp" type="password" autoComplete="new-password" value={form.again} onChange={(e) => setForm({ ...form, again: e.target.value })} />
+        </div>
+      </div>
+      <p className="xs faint">At least 10 characters. Your other sessions and personal tokens are signed out; this one stays.</p>
+      {err && (
+        <div className="banner bad sm" role="alert">
+          {err}
+        </div>
+      )}
+      <div>
+        <Button type="submit" loading={busy}>
+          Change password
+        </Button>
+      </div>
+    </form>
   );
 }
 

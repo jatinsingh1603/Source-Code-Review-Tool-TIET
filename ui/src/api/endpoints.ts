@@ -100,6 +100,8 @@ export const endpoints = {
   revokeUser: (id: string) => api.post<unknown>(`/users/${enc(id)}/revoke?disable=true`),
   myProfile: () => optional(api.get<User & { preferences?: Record<string, unknown> }>("/me")),
   patchMe: (body: { display_name?: string; email?: string }) => api.patch<User>("/me", body),
+  changeMyPassword: (body: { current_password: string; new_password: string }) =>
+    api.post<{ ok: boolean; revoked: number }>("/me/password", body),
   myPreferences: () => optional(api.get<Record<string, unknown>>("/me/preferences")),
   patchPreferences: (body: Record<string, unknown>) => api.patch<Record<string, unknown>>("/me/preferences", body),
   myNotifications: () => optional(api.get<MyNotifications>("/me/notifications")),

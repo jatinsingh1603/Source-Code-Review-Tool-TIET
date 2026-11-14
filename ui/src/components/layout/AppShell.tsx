@@ -465,7 +465,13 @@ export function AppShell() {
     return () => document.removeEventListener("keydown", onKey);
   }, []);
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // A link to /page#section (Admin's "+ New token" opens /settings#tokens) lands on the
+    // section; any other navigation starts at the top. This runs after the page's own effects,
+    // so the section is on the page by now when the page renders it straight away.
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    const target = id ? document.getElementById(id) : null;
+    if (target) target.scrollIntoView({ block: "start" });
+    else window.scrollTo(0, 0);
   }, [pathname]);
   return (
     <ShellProvider>
