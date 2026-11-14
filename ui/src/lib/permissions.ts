@@ -70,3 +70,34 @@ export function minimumRoleFor(p: Permission): Role {
   }
   return "admin";
 }
+
+/** The role a permission needs, in words, for refusals. */
+const PERMISSION_WORDS: Record<string, string> = {
+  "privacy:read_original": "the Auditor role, because it shows original code or payload text",
+  "audit:read": "the Auditor role",
+  "finding:review": "the Auditor role",
+  "privacy:read_ledger": "the Developer role",
+  "finding:triage": "the Developer role",
+  "scan:run": "the Developer role",
+  "project:write": "the Developer role",
+  "provider:test": "the Developer role",
+  "sync:github": "the Developer role",
+  "settings:write": "the Admin role",
+  "users:admin": "the Admin role",
+};
+
+/**
+ * A refusal (HTTP 403) worded for a person: the server's "the role viewer lacks the permission
+ * settings:write" becomes "Your role (Viewer) cannot do this: it needs the Admin role. ...".
+ * Text that is already worded is kept.
+ */
+export function forbiddenText(message: string): string {
+  const m = /role (\w+) lacks the permission ([\w:]+)/i.exec(message);
+  if (!m) {
+    return message.startsWith("Your role")
+      ? message
+      : "Your role cannot do this. Ask an administrator if you need access.";
+  }
+  const need = PERMISSION_WORDS[m[2]!] ?? "a role with more access";
+  return `Your role (${roleLabel(m[1]!.toLowerCase() as Role)}) cannot do this: it needs ${need}. Ask an administrator if you need access.`;
+}

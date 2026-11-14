@@ -10,6 +10,7 @@
  * - In mock mode every call is answered by the in-browser mock backend.
  */
 import { isMockMode } from "@/lib/env";
+import { forbiddenText } from "@/lib/permissions";
 
 export const API_PREFIX = "/api/v1";
 const TOKEN_KEY = "ck-token";
@@ -281,6 +282,8 @@ export class ApiClient {
       if (res.status === 429 && retryAfter !== null) {
         message = `${message} Try again in ${retryAfter} s.`;
       }
+      // Every refusal reads as the role it needs, in toasts as well as on pages.
+      if (res.status === 403) message = forbiddenText(message);
       if (res.status === 401) this.handleUnauthorised(path);
       throw new ApiError(res.status, env.code, message, env.detail, retryAfter);
     }

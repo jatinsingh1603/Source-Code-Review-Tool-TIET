@@ -162,7 +162,7 @@ describe("errorText", () => {
   it("words a 403 for a person, not as a permission code", () => {
     const e = new ApiError(403, "forbidden", "the role developer lacks the permission privacy:read_original");
     const text = errorText(e);
-    expect(text).toMatch(/^Your role \(developer\) cannot open this: it needs the Auditor role/);
+    expect(text).toMatch(/^Your role \(Developer\) cannot do this: it needs the Auditor role/);
     expect(text).not.toContain("privacy:read_original");
   });
 });
