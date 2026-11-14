@@ -421,7 +421,14 @@ function TrendCard({ trend, loading }: { trend: TrendPoint[]; loading: boolean }
               const prevDay = i > 0 ? fmtDayMonth(when(trend[i - 1]!)) : "";
               const day = fmtDayMonth(when(t));
               const time = withSeconds ? fmtTime(when(t)) : minute[i];
-              return <span key={t.scan_id}>{day === prevDay ? time : day}</span>;
+              // A phone keeps only the first and last label (styles/index.css): seven or more
+              // "17:18:29" labels are wider than the card and pushed the page sideways at 390px.
+              const end = i === 0 ? "end first" : i === trend.length - 1 ? "end last" : undefined;
+              return (
+                <span key={t.scan_id} className={end}>
+                  {day === prevDay ? time : day}
+                </span>
+              );
             })}
           </div>
         </>

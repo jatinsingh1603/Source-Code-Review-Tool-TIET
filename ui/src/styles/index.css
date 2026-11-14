@@ -406,6 +406,30 @@ body {
   }
 }
 
+/* Findings trend: a time label may be narrower than its text, so seven or more scans no longer
+   widen the card. On a phone the empty slots go, the bars share the width, and only the first
+   and last labels show (the other times are in each bar's tooltip). */
+.ck .xax span {
+  min-width: 0;
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .ck .vbars .col:empty,
+  .ck .xax span:empty {
+    display: none;
+  }
+  .ck .xax span:not(.end) {
+    visibility: hidden;
+  }
+  .ck .xax span.first {
+    text-align: left;
+  }
+  .ck .xax span.last {
+    display: flex;
+    justify-content: flex-end; /* a label wider than its bar runs to the left, not off the card */
+  }
+}
+
 /* A read-only segmented control (Policy, Floor level) looked exactly like a live one, so a
    click did nothing with no hint why; the tooltip still explains where the value is set. */
 .seg button:disabled {
