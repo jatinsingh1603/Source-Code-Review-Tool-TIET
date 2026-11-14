@@ -418,6 +418,8 @@ def test_stats_extras(
     assert body["mttr_samples"] == 1
     assert "mttr_delta_days" in body
     assert all("info" in point for point in body["trend"])
+    # the dashboard labels each bar by when the scan started, as the Recent scans table does
+    assert all(point["started"] for point in body["trend"])
     matrix = body["risk_matrix"]
     assert sum(cell["count"] for cell in matrix) == scan["findings_total"]
     assert all(1 <= cell["likelihood"] <= 5 and 1 <= cell["impact"] <= 5 for cell in matrix)

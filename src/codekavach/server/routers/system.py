@@ -185,6 +185,7 @@ def stats(session: SessionDep, project_id: str | None = None) -> dict[str, Any]:
             "scan_id": row.id,
             "project_id": row.project_id,
             "date": as_utc(row.finished_at),
+            "started": as_utc(row.started_at or row.created_at),
             **{name: int((row.counts or {}).get(name, 0)) for name in SEVERITY_ORDER},
         }
         for row in completed[-20:]

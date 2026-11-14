@@ -85,6 +85,8 @@ export interface VersionInfo {
 export interface TrendPoint {
   scan_id: string;
   date: string;
+  /** When the scan started; the dashboard labels scans by it. */
+  started?: string | null;
   critical: number;
   high: number;
   medium: number;

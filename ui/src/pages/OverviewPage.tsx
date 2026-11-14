@@ -31,6 +31,7 @@ import {
   fmtInt,
   fmtLong,
   fmtShort,
+  fmtTime,
   riskLevel,
   scanLabel,
 } from "@/lib/display";
@@ -347,15 +348,19 @@ function TrendCard({ trend, loading }: { trend: TrendPoint[]; loading: boolean }
   const tot = (t?: TrendPoint) => (t ? t.critical + t.high + t.medium + t.low + (t.info ?? 0) : 0);
   const label =
     trend.length > 1
-      ? `Open findings went from ${tot(first)} to ${tot(lastT)} over ${trend.length} scans`
-      : "Open findings by severity";
+      ? `Findings went from ${tot(first)} to ${tot(lastT)} over ${trend.length} scans`
+      : "Findings by severity";
+  // Label each bar by the time the scan started, as Recent scans does; the date marks a new day,
+  // and two scans in the same minute get seconds so their labels differ.
+  const when = (t: TrendPoint) => t.started ?? t.date;
+  const minute = trend.map((t) => fmtHM(when(t)));
   return (
     <div className="card">
       <div className="card-h">
         <div>
           <h2>Findings trend</h2>
           <p className="sub">
-            Open findings by severity,{" "}
+            Findings found by each scan, by severity;{" "}
             {trend.length === 1 ? "last scan" : `last ${trend.length || 12} scans`}
           </p>
         </div>
@@ -389,7 +394,7 @@ function TrendCard({ trend, loading }: { trend: TrendPoint[]; loading: boolean }
               <div className="col" key={`pad-${i}`} />
             ))}
             {trend.map((t) => (
-              <div className="col" key={t.scan_id} title={`${fmtShort(t.date)}: ${tot(t)} open`}>
+              <div className="col" key={t.scan_id} title={`${fmtShort(when(t))}: ${tot(t)} ${tot(t) === 1 ? "finding" : "findings"}`}>
                 <i style={{ height: t.critical * scale, background: "var(--crit)" }} />
                 <i style={{ height: t.high * scale, background: "var(--high)" }} />
                 <i style={{ height: t.medium * scale, background: "var(--med)" }} />
@@ -407,9 +412,11 @@ function TrendCard({ trend, loading }: { trend: TrendPoint[]; loading: boolean }
               <span key={`pad-${i}`} />
             ))}
             {trend.map((t, i) => {
-              const prevDay = i > 0 ? fmtDayMonth(trend[i - 1]!.date) : "";
-              const day = fmtDayMonth(t.date);
-              return <span key={t.scan_id}>{day === prevDay ? fmtHM(t.date) : day}</span>;
+              const prevDay = i > 0 ? fmtDayMonth(when(trend[i - 1]!)) : "";
+              const day = fmtDayMonth(when(t));
+              const clash = minute[i - 1] === minute[i] || minute[i + 1] === minute[i];
+              const time = clash ? fmtTime(when(t)) : minute[i];
+              return <span key={t.scan_id}>{day === prevDay ? time : day}</span>;
             })}
           </div>
         </>
