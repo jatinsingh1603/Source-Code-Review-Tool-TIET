@@ -8,6 +8,26 @@ import { MarkedCode } from "@/components/Marked";
 import type { LedgerDetail } from "@/api/types";
 
 describe("primitives", () => {
+  it("an action Button ignores the second click of a double click", () => {
+    const onClick = vi.fn();
+    render(
+      <Button loading={false} onClick={onClick}>
+        Start scan
+      </Button>,
+    );
+    const b = screen.getByRole("button", { name: "Start scan" });
+    fireEvent.click(b);
+    fireEvent.click(b);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+  it("a plain Button passes every click through", () => {
+    const onClick = vi.fn();
+    render(<Button onClick={onClick}>Next</Button>);
+    const b = screen.getByRole("button", { name: "Next" });
+    fireEvent.click(b);
+    fireEvent.click(b);
+    expect(onClick).toHaveBeenCalledTimes(2);
+  });
   it("Button shows loading and is disabled", () => {
     const onClick = vi.fn();
     render(

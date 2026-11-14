@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useEffect, useRef, type ButtonHTMLAttributes, type MouseEvent, type ReactNode } from "react";
 import { Link, type LinkProps } from "react-router-dom";
 import { cn } from "@/lib/format";
 import { Icon } from "./Icon";
@@ -29,9 +29,27 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = "secondary", size = "md", loading, icon, className, children, disabled, type, ...rest },
+  { variant = "secondary", size = "md", loading, icon, className, children, disabled, type, onClick, ...rest },
   ref,
 ) {
+  // A double click lands both clicks before `loading` re-renders, so an action button
+  // (one that takes `loading`) ignores a second click for a moment: two scans, two
+  // projects or two reports from one impatient double click is never what was meant.
+  const lockedUntil = useRef(0);
+  useEffect(() => {
+    if (!loading) lockedUntil.current = 0;
+  }, [loading]);
+  const guardedClick = (e: MouseEvent<HTMLButtonElement>) => {
+    if (loading !== undefined) {
+      const now = Date.now();
+      if (now < lockedUntil.current) {
+        e.preventDefault();
+        return;
+      }
+      lockedUntil.current = now + 1500;
+    }
+    onClick?.(e);
+  };
   return (
     <button
       ref={ref}
@@ -39,6 +57,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={btnClass(variant, size, className)}
+      onClick={guardedClick}
       {...rest}
     >
       {icon}
