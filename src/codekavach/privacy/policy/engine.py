@@ -125,13 +125,18 @@ class PolicyEngine:
         return cls(settings, document, digest)
 
     @classmethod
-    def for_scan(cls, settings: Settings, *, project_root: Path) -> PolicyEngine:
-        """The one construction point of a scan: the project's policy file, or settings only.
+    def for_scan(
+        cls, settings: Settings, *, project_root: Path, policy_file: Path | None = None
+    ) -> PolicyEngine:
+        """The one construction point of a scan: the policy file, or settings only.
+
+        ``policy_file`` (the server's policy, kept outside the scanned tree) replaces the
+        project's own file when given.
 
         Raises:
             PolicyError: the policy file is refused; the run must not proceed (I4).
         """
-        loaded = load_policy(settings, project_root=project_root)
+        loaded = load_policy(settings, project_root=project_root, override=policy_file)
         return cls(settings) if loaded is None else cls(settings, *loaded)
 
     @classmethod

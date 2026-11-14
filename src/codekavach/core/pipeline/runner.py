@@ -255,6 +255,7 @@ def run_scan(
     no_send: bool = False,
     ingest_options: Mapping[str, object] | None = None,
     keep_work: bool = False,
+    policy_file: Path | None = None,
 ) -> ScanOutcome:
     """Run one scan of ``target`` with the loaded configuration.
 
@@ -334,6 +335,7 @@ def run_scan(
         state_dir=layout.root,
         consent=consent,
         no_send=no_send,
+        policy_file=policy_file,
     )
     cache_on = resumed is not None or (settings.scan.cache if use_cache is None else use_cache)
     orchestrator = Orchestrator(

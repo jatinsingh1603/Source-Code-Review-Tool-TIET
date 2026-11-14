@@ -79,6 +79,7 @@ def _run_review(state: ServerState, paths: ScanPaths, overrides: Any, provider: 
     from codekavach.core.pipeline.context import ConsentDecision  # noqa: PLC0415
     from codekavach.core.pipeline.runner import run_scan  # noqa: PLC0415
     from codekavach.core.pipeline.salt import ScanSalt  # noqa: PLC0415
+    from codekavach.server.jobs.scan import server_policy  # noqa: PLC0415
 
     env = scan_env(state.config.home_dir, state.passphrase_env)
     loaded = load_settings(target=paths.source, env=env, cli_overrides=overrides)
@@ -93,6 +94,8 @@ def _run_review(state: ServerState, paths: ScanPaths, overrides: Any, provider: 
         consent=consent,
         persist=False,
         no_send=False,
+        # The admin's policy as it stands now governs any new egress, as in a scan.
+        policy_file=server_policy(state.config.data_dir),
     )
     # The review's ledger entries belong to this scan's egress: list them with the scan's own.
     paths.add_review_scan_id(str(outcome.scan.id))

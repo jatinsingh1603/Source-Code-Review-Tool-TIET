@@ -99,6 +99,7 @@ class RunContext:
     no_send: bool = False
     memo: ItemMemo = field(default_factory=NullMemo)
     scan_root: ScanRoot = field(default_factory=ScanRoot)
+    policy_file: Path | None = None
 
     @property
     def source_root(self) -> Path:

@@ -295,7 +295,9 @@ class PrivacyPrepareStage:
             if ctx.artefacts.has(keys.CALL_GRAPH)
             else None
         )
-        policy = PolicyEngine.for_scan(ctx.config, project_root=ctx.source_root)
+        policy = PolicyEngine.for_scan(
+            ctx.config, project_root=ctx.source_root, policy_file=ctx.policy_file
+        )
         decisions: list[PolicyDecisionRow] = []
         _, provider = ctx.config.llm.selected_provider()
         tier = provider.effective_trust_tier

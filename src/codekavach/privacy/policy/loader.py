@@ -198,21 +198,32 @@ def policy_file(project_root: Path) -> Path:
     return project_root / POLICY_FILE
 
 
-def load_policy(settings: Settings, *, project_root: Path) -> tuple[PolicyDocument, str] | None:
+def load_policy(
+    settings: Settings, *, project_root: Path, override: Path | None = None
+) -> tuple[PolicyDocument, str] | None:
     """The project's policy and its hash, or ``None`` when the project has none.
+
+    ``override`` is a policy kept outside the scanned tree (the server's, in its data directory):
+    when given, it is the policy of the scan and a file the project ships is ignored, so a scanned
+    project cannot replace an administrator's ``never_send`` and per-path levels.
 
     Raises:
         PolicyError: any of ``[CK-POL-001]`` to ``[CK-POL-009]``; nothing is clamped or defaulted.
     """
-    path = policy_file(project_root)
+    path = override if override is not None else policy_file(project_root)
+    root = path.parent if override is not None else project_root
     if path.is_symlink():
         raise PolicyError(
             PolicyErrorCode.UNREADABLE, "policy file is a symbolic link", file=POLICY_FILE
         )
     if not path.exists():
+        if override is not None:
+            raise PolicyError(
+                PolicyErrorCode.UNREADABLE, "policy file cannot be read", file=POLICY_FILE
+            )
         return None
     try:
-        document = read_toml(path, max_bytes=MAX_DOCUMENT_BYTES, confine_to=project_root)
+        document = read_toml(path, max_bytes=MAX_DOCUMENT_BYTES, confine_to=root)
     except ConfigError as error:
         raise PolicyError(
             PolicyErrorCode.UNREADABLE, f"policy file refused ({error.code})", file=POLICY_FILE

@@ -303,15 +303,21 @@ def _materialise(project: Project, paths: ScanPaths, job: ScanJob) -> None:
         clone_git(url, source, ref=project.source_ref)
     else:
         raise IntakeError("source_type_unknown", f"unknown source type {project.source_type}")
-    policy = config.data_dir / POLICY_FILE
-    if policy.is_file():
-        # The admin's policy always wins: a policy file shipped in the project (a PR author's or
-        # a third party's) must not replace its never_send and per-path levels.
-        (source / POLICY_FILE).unlink(missing_ok=True)
-        shutil.copyfile(policy, source / POLICY_FILE)
     # An empty .git marks the project root, as the demo does, so the configuration loader does
     # not climb into the server's data directory.
     (source / ".git").mkdir(exist_ok=True)
+
+
+def server_policy(data_dir: Path) -> Path | None:
+    """The admin's stored policy, if any.
+
+    It stays in the data directory and is handed to the pipeline, never copied into the scanned
+    tree (where it would be counted as a source file). It always wins: a policy file shipped in
+    the project (a PR author's or a third party's) must not replace its never_send and per-path
+    levels.
+    """
+    policy = data_dir / POLICY_FILE
+    return policy if policy.is_file() else None
 
 
 def _overrides(row: ScanRow, base: dict[str, Any]) -> dict[str, Any]:
@@ -546,6 +552,7 @@ def _run_pipeline(
             consent=consent,
             persist=False,
             no_send=not scan["send"],
+            policy_file=server_policy(state.config.data_dir),
         )
     finally:
         unsubscribe()
