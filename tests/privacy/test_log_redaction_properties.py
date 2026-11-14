@@ -5,7 +5,7 @@ import re
 import uuid
 from typing import Any
 
-from hypothesis import given
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from codekavach.core.log.redaction import RedactionProcessor, scrub_text
@@ -29,6 +29,9 @@ def place(tree: Any, secret: str, path: list[int]) -> Any:
     return f"prefix {secret} suffix"
 
 
+# Generating secret shapes from their regexes is slow on a loaded machine; a slow draw is not an
+# I3 failure, and the dashboard's invariant card must not show "Fail" because of it.
+@settings(suppress_health_check=[HealthCheck.too_slow])
 @given(
     fake_secrets(),
     nested_json(leaves),
