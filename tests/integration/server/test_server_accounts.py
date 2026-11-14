@@ -27,6 +27,7 @@ def server(
 ) -> Iterator[tuple[TestClient, dict[str, str]]]:
     monkeypatch.delenv(VAULT_PASSPHRASE_ENV, raising=False)
     config = ServerConfig(
+        # pragma: allowlist nextline secret
         data_dir=tmp_path, ui_dir=None, workers=1, admin_password="kavach-admin",
         login_attempts_per_minute=1000,
     )  # fmt: skip
@@ -36,6 +37,7 @@ def server(
 
 def test_user_email_must_look_like_an_address(server: tuple[TestClient, dict[str, str]]) -> None:
     client, admin = server
+    # pragma: allowlist nextline secret
     body = {"username": "priya", "password": "long-enough-1", "email": "not-an-email"}
     assert client.post(f"{API}/users", json=body, headers=admin).status_code == 422
     body["email"] = "priya@example.edu"
@@ -52,10 +54,12 @@ def test_change_own_password_keeps_this_session_and_ends_the_others(
     server: tuple[TestClient, dict[str, str]],
 ) -> None:
     client, admin = server
+    # pragma: allowlist nextline secret
     body = {"username": "dev1", "password": "first-password", "role": "developer"}
     assert client.post(f"{API}/users", json=body, headers=admin).status_code == 201
     mine = _login(client, "dev1", "first-password")
     other = _login(client, "dev1", "first-password")
+    # pragma: allowlist nextline secret
     wrong = {"current_password": "nope", "new_password": "second-password"}
     response = client.post(f"{API}/me/password", json=wrong, headers=mine)
     assert response.status_code == 400
