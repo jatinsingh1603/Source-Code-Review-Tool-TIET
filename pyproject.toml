@@ -211,6 +211,10 @@ filterwarnings = [
   "ignore:A test tried to use socket:UserWarning",
   # Starlette's TestClient (server tests, E32) still runs on httpx; the warning names its successor.
   "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+  # Python 3.13 warns when a SQLite connection is garbage-collected unclosed. The collector runs
+  # inside whichever test happens to be next on that worker, so as an error it failed unrelated
+  # tests at random on the 3.13 CI cells (issue #313). It stays visible in the warnings summary.
+  "default:unclosed database in <sqlite3.Connection:ResourceWarning",
 ]
 markers = [
   "unit: fast, in-process, no subprocess except the interpreter itself, no network",
