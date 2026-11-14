@@ -236,6 +236,32 @@ class TestIndex:
         assert across is not None and across[0] == "m.py"
         assert index.definition_of("missing", "m.py") is None
 
+    def test_definition_of_parses_only_the_imported_module(self) -> None:
+        """A lookup across files must not touch every file: on a server the AST is lazy (a
+        lookup parses the file) and a large project then took minutes per candidate."""
+        sources = {
+            "m.py": SOURCE,
+            "pkg/user.py": "from m import beta\n\n\ndef go():\n    return beta(1)\n",
+        }
+        sources.update({f"other/mod{n}.py": f"def f{n}():\n    return {n}\n" for n in range(20)})
+        index = make_index(sources)
+        asked: list[str] = []
+        parsed = dict(index._ast)
+
+        class Counting(dict[str, Any]):
+            def __contains__(self, path: object) -> bool:
+                asked.append(str(path))
+                return dict.__contains__(self, path)
+
+            def __getitem__(self, path: str) -> Any:
+                asked.append(path)
+                return dict.__getitem__(self, path)
+
+        index._ast = Counting(parsed)
+        across = index.definition_of("beta", "pkg/user.py")
+        assert across is not None and across[0] == "m.py"
+        assert not [path for path in asked if path.startswith("other/")]
+
     @pytest.mark.parametrize(
         ("kwargs", "reason"),
         [

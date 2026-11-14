@@ -186,7 +186,9 @@ class ParseIndex:
             matches = [
                 path
                 for path in self._files
-                if suffix and path in self._ast and _is_module(path, suffix)
+                # The name test first: `in` on the lazy AST parses the file (cache of 32), so
+                # testing every file of a large project made each lookup re-parse all of it.
+                if suffix and _is_module(path, suffix) and path in self._ast
             ]
             found = [
                 (path, r)
