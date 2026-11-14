@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useCurrentProject } from "@/app/project-context";
 import { useFollowScanProject } from "@/app/useSelectedScan";
 import { useQueryClient } from "@tanstack/react-query";
-import { qk, useFindings, usePrivacy, useReports, useScans, useSettings } from "@/api/queries";
+import { qk, useFindings, usePrivacy, useReports, useScan, useScans, useSettings } from "@/api/queries";
 import { downloadApiFile, fetchReport, saveBlob } from "@/api/endpoints";
 import type { Finding, Scan, Severity } from "@/api/types";
 import { isOpen, sevCounts, sortScans } from "@/lib/domain";
@@ -60,6 +60,10 @@ export default function ReportsPage() {
   const scans = useMemo(() => sortScans(scansQ.data ?? []).filter((s) => s.status === "completed"), [scansQ.data]);
   const scanId = params.get("scan") ?? scans[0]?.id;
   const scan = scans.find((s) => s.id === scanId);
+  // A ?scan= that is not a completed scan here: deleted (404) or not finished. A scan of another
+  // project is not stale: useFollowScanProject switches the project to it.
+  const asked = useScan(params.get("scan") ?? undefined);
+  const stale = !scan && !!scanId && !scansQ.isLoading && scans.length > 0 && (asked.isError || (!!asked.data && asked.data.project_id === current?.id));
   const idx = scans.findIndex((s) => s.id === scanId);
   const [baselineId, setBaselineId] = useState<string | null>(null);
   // Only an older scan can be the baseline; a choice made for another scan falls back to the previous one.
@@ -199,6 +203,16 @@ export default function ReportsPage() {
           </Empty>
         )}
       </div>
+
+      {stale && scanId && (
+        // A stale or mistyped ?scan= (a deleted scan, one still running) would otherwise hide the
+        // builder with no word of why, and New report would do nothing.
+        <div className="card">
+          <Empty title={`No report for ${scanLabel(scanId)}`} action="Use the latest scan" onAction={() => scans[0] && select(scans[0].id)}>
+            {`${scanLabel(scanId)} is not a completed scan of ${current?.name ?? "this project"}. Choose a scan above, or use the latest one.`}
+          </Empty>
+        </div>
+      )}
 
       {scan && (
         <section className="g g-side-l">
