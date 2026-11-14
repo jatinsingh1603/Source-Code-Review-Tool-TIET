@@ -31,8 +31,7 @@ SHUTDOWN_WAIT_SECONDS = 10.0
 # Shown on the scan page of a scan the previous server process left unfinished.
 RESTARTED_MESSAGE = (
     "The server stopped while this scan was running, so the scan did not finish. "
-    "Start it again with Run again with changes; anything already sent is listed in the "
-    "egress ledger."
+    "Start it again with Run again; anything already sent is listed in the egress ledger."
 )
 
 
