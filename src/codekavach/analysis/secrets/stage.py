@@ -38,20 +38,41 @@ MAX_FILE_BYTES: Final = 1_000_000
 HISTORY_ENV: Final = "CODEKAVACH_SECRETS_HISTORY"
 _log = get_logger("codekavach.analysis.secrets")
 
+# Severity by what the secret gives an attacker (the CVSS of a secret finding follows it):
+# a private key or a cloud or payment secret is full access, a scoped token is serious, a public
+# identifier (a Razorpay key id is shipped to browsers by design) is only a lead.
+_CRITICAL_SUBTYPES: Final = frozenset(
+    {
+        "private_key_block",
+        "ssh_private_key",
+        "aws_secret_key",
+        "gcp_service_account_key",
+        "azure_storage_connection_string",
+        "azure_client_secret",
+        "stripe_secret_key",
+        "razorpay_key_secret",
+        "paytm_merchant_key",
+        "connection_string",
+    }
+)
 _HIGH_SUBTYPES: Final = frozenset(
     {
         "aws_access_key",
-        "aws_secret_key",
-        "private_key_block",
-        "connection_string",
-        "razorpay_key_secret",
+        "gcp_api_key",
         "github_token",
         "slack_token",
-        "stripe_key",
-        "google_api_key",
+        "slack_webhook",
+        "stripe_restricted_key",
         "jwt",
+        "basic_auth_url",
+        "npm_token",
+        "pypi_token",
+        "docker_registry_auth",
+        "twilio_api_key",
+        "sendgrid_api_key",
     }
 )
+_PUBLIC_SUBTYPES: Final = frozenset({"razorpay_key_id"})
 
 
 def mask_preview(value: str) -> str:
@@ -62,10 +83,20 @@ def mask_preview(value: str) -> str:
 
 
 def severity_for(subtype: str, confidence: Confidence) -> Severity:
-    """High for provider-specific credentials, medium for generic or entropy-only hits."""
-    if subtype in _HIGH_SUBTYPES and confidence >= Confidence.MEDIUM:
-        return Severity.HIGH
-    return Severity.MEDIUM if confidence >= Confidence.MEDIUM else Severity.LOW
+    """The severity of one secret from its type and the detector's confidence.
+
+    Live private keys and cloud or payment secrets are critical, provider tokens high, public
+    identifiers low; generic and entropy-only hits are medium, low when the detector is unsure.
+    A low-confidence provider match is one step lower than its type.
+    """
+    if subtype in _PUBLIC_SUBTYPES:
+        return Severity.LOW
+    unsure = confidence < Confidence.MEDIUM
+    if subtype in _CRITICAL_SUBTYPES:
+        return Severity.HIGH if unsure else Severity.CRITICAL
+    if subtype in _HIGH_SUBTYPES:
+        return Severity.MEDIUM if unsure else Severity.HIGH
+    return Severity.LOW if unsure else Severity.MEDIUM
 
 
 _WORDS: Final = {

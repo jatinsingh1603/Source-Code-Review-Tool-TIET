@@ -70,7 +70,7 @@ Cell label from the product: up to 4 low, up to 9 medium, up to 16 high, 20 and 
 |---------|---------|--------|
 | `source` | `cvss4` | `cvss4`, `owasp` or `strictest` (the higher of the two) |
 | `bands` | FIRST: 9.0 critical, 7.0 high, 4.0 medium, 0.1 low, 0.0 info | Score thresholds |
-| `engine_authoritative_kinds` | `dependency`, `misconfiguration` | Use the engine's per-instance severity for these kinds |
+| `engine_authoritative_kinds` | `dependency`, `misconfiguration`, `hotspot`, `secret` | Use the engine's per-instance severity for these kinds (a secret's comes from its type and confidence: private keys and cloud or payment secrets critical, provider tokens high, generic hits medium, public identifiers such as a Razorpay key id low) |
 | `downgrade_test_code` / `downgrade_vendored` | true / true | One step lower in test or vendored code |
 | `engine_floor` | false | Do not rate below the engine's severity |
 | `model_downgrade` | false | Lower one step when the model says "not vulnerable" with at least `model_downgrade_min_confidence` (high) |

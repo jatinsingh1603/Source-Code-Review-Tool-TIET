@@ -9,7 +9,7 @@ only and records a rationale per changed metric:
 - a taint path ends at the sink through an inadequate sanitiser: no change (still exploitable);
 - the finding is in test code: AT becomes Present (attack requires conditions not in production).
 
-An engine-supplied vector (a SARIF property) always wins over the template. Dependency and
+An engine-supplied vector (a SARIF property) always wins over the template. Dependency, secret and
 misconfiguration findings whose engine rates each instance (a privileged container is critical, a
 root user medium; an advisory carries its own severity) take their vector from ``SEVERITY_LADDER``
 so that the CVSS score agrees with that per-instance severity. A CISA KEV listing sets the Threat
@@ -32,9 +32,15 @@ _log = get_logger(__name__)
 GENERIC_CVSS4: Final = "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:L/VA:L/SC:N/SI:N/SA:N"
 GENERIC_CVSS31: Final = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L"
 # Kinds whose engine rates each instance; a hotspot is a place to review, so its rule's own
-# severity applies rather than the worst case of its weakness family.
+# severity applies rather than the worst case of its weakness family. A secret is rated by its
+# type and the detector's confidence (a private key is not a public key id).
 LADDER_KINDS: Final = frozenset(
-    {CandidateKind.DEPENDENCY, CandidateKind.MISCONFIGURATION, CandidateKind.HOTSPOT}
+    {
+        CandidateKind.DEPENDENCY,
+        CandidateKind.MISCONFIGURATION,
+        CandidateKind.HOTSPOT,
+        CandidateKind.SECRET,
+    }
 )
 # Representative Base vectors whose v4.0 and v3.1 scores fall in each qualitative band (derived).
 SEVERITY_LADDER: Final[dict[Severity, tuple[str, str]]] = {
