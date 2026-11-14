@@ -237,7 +237,7 @@ export default function ScanPage() {
   if (scanQ.isError) {
     return (
       <Content>
-        <PageHeader crumbs={[{ label: "Scans", to: "/scans" }, { label: id ?? "" }]} title="Scan" />
+        <PageHeader crumbs={[{ label: "Scans", to: "/scans" }, { label: scanLabel(id) }]} title="Scan" />
         <ErrorBanner what="This scan could not be loaded." error={scanQ.error} onRetry={() => void scanQ.refetch()} back={{ label: "All scans", to: "/scans" }} />
       </Content>
     );
