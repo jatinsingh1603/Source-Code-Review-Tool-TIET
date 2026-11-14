@@ -444,3 +444,32 @@ body {
 .swrow:has(.sw:disabled) {
   cursor: not-allowed;
 }
+
+/* Overview KPI strip: six tiles in one row, or two rows of three. The design's auto-fit grid
+   left the sixth tile alone on a second row at 125% browser zoom on a laptop (1418px). */
+.ck .kpi-strip.six {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+@media (max-width: 1359px) {
+  .ck .kpi-strip.six {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ck .kpi-strip.six > .kpi:nth-child(3n) {
+    border-right: 0;
+  }
+  .ck .kpi-strip.six > .kpi:nth-child(n + 4) {
+    border-top: 1px solid var(--border);
+  }
+}
+@media (max-width: 640px) {
+  .ck .kpi-strip.six {
+    grid-template-columns: 1fr;
+  }
+  .ck .kpi-strip.six > .kpi {
+    border-right: 0;
+    border-top: 1px solid var(--border);
+  }
+  .ck .kpi-strip.six > .kpi:first-child {
+    border-top: 0;
+  }
+}

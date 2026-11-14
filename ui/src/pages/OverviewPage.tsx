@@ -130,7 +130,7 @@ export default function OverviewPage() {
             <Skeleton />
           </div>
         ) : (
-          <div className="kpi-strip">
+          <div className="kpi-strip six">
             <Kpi
               to="/findings"
               label="Open findings"
