@@ -3,8 +3,9 @@
 from importlib.metadata import entry_points
 from typing import Any
 
+from codekavach.config import Settings
 from codekavach.core.pipeline.events import ItemReviewed, WarningRaised
-from codekavach.server.jobs.scan import STAGE_LABELS, _opening_words, _Progress
+from codekavach.server.jobs.scan import STAGE_LABELS, _floor_words, _opening_words, _Progress
 
 
 class _Log:
@@ -99,3 +100,16 @@ def test_an_l4_scan_says_it_fails_closed() -> None:
     l4 = _opening_words({"level": "L4", "provider": "mock", "send": True}, remote=False)
     assert "payloads sent" not in l4
     assert "fails closed" in l4 and "nothing is sent" in l4
+
+
+def test_the_log_says_when_the_provider_tier_raises_the_level() -> None:
+    """An API scan at L2 with a public provider is prepared at L3: the log must say so."""
+    settings = Settings.model_validate(
+        {"llm": {"enabled": True, "providers": {"hosted": {"kind": "openai", "model": "m"}}}}
+    )
+    words = _floor_words({"level": "L2", "provider": "hosted"}, settings)
+    assert words is not None
+    assert "needs L3 or stricter" in words and "prepared at L3, not L2" in words
+    assert _floor_words({"level": "L3", "provider": "hosted"}, settings) is None
+    assert _floor_words({"level": "L0", "provider": "hosted"}, settings) is None
+    assert _floor_words({"level": "L1", "provider": "mock"}, Settings()) is None

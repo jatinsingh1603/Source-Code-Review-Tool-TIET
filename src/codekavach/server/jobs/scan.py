@@ -505,6 +505,30 @@ def _zero_leak_words(zero_leak: dict[str, Any]) -> str:
     return f"zero-leak FAILED ({found} occurrence{'s' if found != 1 else ''})"
 
 
+def _floor_words(scan: dict[str, Any], settings: Any) -> str | None:
+    """Say so when the provider's trust tier raises the level the scan was started at.
+
+    The dashboard form refuses such a level; a scan started through the API still runs, and
+    the privacy layer prepares every payload at the provider's floor. The scan keeps the level
+    it was asked for, so the log must not leave "Privacy level L2" as the last word.
+    """
+    from codekavach.core.models.enums import PrivacyLevel  # noqa: PLC0415
+
+    if not settings.llm.enabled or str(scan["level"]) in {"L0", "L4"}:
+        return None
+    provider = settings.llm.providers.get(scan["provider"])
+    if provider is None:
+        return None
+    floor = settings.privacy.floor_for_tier(provider.effective_trust_tier)
+    if PrivacyLevel(str(scan["level"])).at_least(floor):
+        return None
+    tier = str(provider.effective_trust_tier.value)
+    return (
+        f"Provider {scan['provider']} ({tier} tier) needs {floor.value} or stricter: "
+        f"payloads are prepared at {floor.value}, not {scan['level']}"
+    )
+
+
 def _opening_words(scan: dict[str, Any], *, remote: bool) -> str:
     """The scan log's privacy line; an L0 scan says nothing goes to a model, not "payloads sent"."""
     if str(scan["level"]) == "L0":
@@ -558,6 +582,8 @@ def _run_pipeline(
         if remote and scan["send"]:
             consent = ConsentDecision(granted=True, source="flag")
     progress.log.append("log", {"level": "info", "message": _opening_words(scan, remote=remote)})
+    if floor_words := _floor_words(scan, loaded.settings):
+        progress.log.append("log", {"level": "warning", "message": floor_words})
     bus = InMemoryEventBus()
     unsubscribe = bus.subscribe(progress.handle)
     try:
