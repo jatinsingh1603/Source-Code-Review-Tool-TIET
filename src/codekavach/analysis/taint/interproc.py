@@ -47,17 +47,25 @@ class ProjectIndex:
     _dotted: dict[str, list[str]] = field(default_factory=dict)
     _sites: dict[str, dict[tuple[int, int, str], FunctionKey]] = field(default_factory=dict)
     _attr_types: dict[tuple[str, str], dict[str, FunctionKey]] = field(default_factory=dict)
+    # Per path, every dotted prefix of a function's qualified name ("A" and "A.B" for "A.B.m"):
+    # the classes ``_is_class`` asks about, without a scan of every function of the project.
+    _scopes: dict[str, set[str]] = field(default_factory=dict)
 
     def add(self, module: IRModule) -> None:
         """Register ``module`` and its functions."""
         self.modules[module.path] = module
+        scopes = self._scopes.setdefault(module.path, set())
         for function in module.functions:
             self.functions.setdefault((module.path, function.qualname), function)
+            qualname = function.qualname
+            dot = qualname.find(".")
+            while dot >= 0:
+                scopes.add(qualname[:dot])
+                dot = qualname.find(".", dot + 1)
         self._dotted.setdefault(_dotted(module.path).rsplit(".", 1)[-1], []).append(module.path)
 
     def _is_class(self, path: str, name: str) -> bool:
-        prefix = name + "."
-        return any(p == path and q.startswith(prefix) for p, q in self.functions)
+        return name in self._scopes.get(path, ())
 
     def _class_of(self, call: Call, caller_path: str, language: str) -> FunctionKey | None:  # noqa: PLR0911 - one return per resolution rule
         """The project class a constructor call instantiates, as (path, class name)."""
