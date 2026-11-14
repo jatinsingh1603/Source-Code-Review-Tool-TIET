@@ -6,6 +6,8 @@ export interface TabItem {
   label: ReactNode;
   count?: number | string;
   disabled?: boolean;
+  /** Tooltip saying what the tab holds. */
+  title?: string;
 }
 
 export interface TabsProps {
@@ -62,6 +64,7 @@ export function Tabs({ tabs, value, onChange, className, label, after }: TabsPro
             aria-selected={active}
             tabIndex={active ? 0 : -1}
             disabled={t.disabled}
+            title={t.title}
             onClick={() => onChange(t.id)}
             className={active ? "on" : undefined}
           >

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { qk, useFindings, useUsers } from "@/api/queries";
 import { endpoints, fetchReport, saveBlob } from "@/api/endpoints";
@@ -119,6 +119,7 @@ const VERDICT_NAMES: Record<string, string> = {
 
 export default function FindingsPage() {
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const { scanId, scans } = useSelectedScan();
   const sorted = useMemo(() => sortScans(scans), [scans]);
   const scan = sorted.find((s) => s.id === scanId);
@@ -286,14 +287,14 @@ export default function FindingsPage() {
     }
   };
 
-  const tabs: { id: View; label: string }[] = [
-    { id: "open", label: "All open" },
-    { id: "crit", label: "Critical and high" },
-    { id: "new", label: "New since baseline" },
-    { id: "review", label: "Needs review" },
-    { id: "mine", label: "Assigned to me" },
-    { id: "suppressed", label: "Suppressed" },
-    { id: "all", label: "All" },
+  const tabs: { id: View; label: string; title: string }[] = [
+    { id: "open", label: "All open", title: "Findings not yet fixed, accepted as a risk or marked a false positive" },
+    { id: "crit", label: "Critical and high", title: "Open findings rated critical or high" },
+    { id: "new", label: "New since baseline", title: "Findings this scan reports that the previous scan of the project did not" },
+    { id: "review", label: "Needs review", title: "Open findings the model left undecided, or with a confidence below 0.65" },
+    { id: "mine", label: "Assigned to me", title: "Findings assigned to you" },
+    { id: "suppressed", label: "Suppressed", title: "Findings marked accepted risk or false positive; they stay in the record" },
+    { id: "all", label: "All", title: "Every finding of this scan, whatever its status" },
   ];
 
   const patchAll = async (patch: FindingPatch, done: string) => {
@@ -361,6 +362,7 @@ export default function FindingsPage() {
           ...tabs.map((t) => ({
             id: t.id as string,
             label: t.label,
+            title: t.title,
             count: findingsQ.data ? all.filter((f) => inView(f, t.id)).length : undefined,
           })),
           ...saved.map((v) => ({
@@ -522,7 +524,17 @@ export default function FindingsPage() {
                   const conf = confidenceFraction(f.llm?.confidence ?? f.llm_confidence ?? f.confidence);
                   const engNames = enginesOf(f);
                   return (
-                    <tr key={f.id} className={selected.has(f.id) ? "sel" : undefined}>
+                    <tr
+                      key={f.id}
+                      className={`click${selected.has(f.id) ? " sel" : ""}`}
+                      // The whole row opens the finding, not only its title; controls inside keep their own click.
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest("a, button, input, label, select")) return;
+                        if (window.getSelection()?.toString()) return;
+                        if (e.ctrlKey || e.metaKey) window.open(`/findings/${f.id}`, "_blank");
+                        else navigate(`/findings/${f.id}`);
+                      }}
+                    >
                       {triage && (
                         <td>
                           <input
@@ -572,7 +584,12 @@ export default function FindingsPage() {
                         ) : f.llm_reviewed ? (
                           <span className="vd">Reviewed</span>
                         ) : (
-                          <span className="sm faint">Not sent</span>
+                          <span
+                            className="sm faint"
+                            title="Not reviewed by a model: beyond the scan's review limit, or no code slice to send. The engine evidence stands; open the finding to ask the model."
+                          >
+                            Not sent
+                          </span>
                         )}
                       </td>
                       <td className="num mono">{conf === null ? "—" : conf.toFixed(2)}</td>
