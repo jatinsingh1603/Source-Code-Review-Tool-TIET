@@ -6,6 +6,7 @@ import { endpoints } from "@/api/endpoints";
 import { PRIVACY_LEVELS, type PersonalToken, type PrivacyLevel, type Settings } from "@/api/types";
 import { roleLabel } from "@/lib/permissions";
 import { fmtDate, LEVEL_NAME } from "@/lib/display";
+import { atLeastAsStrict } from "@/lib/format";
 import { prefsFromServer, readPrefs, writePrefs, type Prefs } from "@/lib/prefs";
 import { Avatar, Button, Content, Segmented, Skeleton, useToast } from "@/components/ui";
 
@@ -472,13 +473,17 @@ function OrgDefaults() {
     if (settings.data) setForm(settings.data);
   }, [settings.data]);
   const prov = (providers.data ?? []).find((p) => p.id === form?.default_provider);
+  // The pair every new scan starts from: a level the provider refuses would open the scan form
+  // already blocked ("needs L3 or stricter"), so say it here and do not save it.
+  const floorBlocked =
+    !!form && !!prov?.min_level && form.default_privacy_level !== "L0" && !atLeastAsStrict(form.default_privacy_level, prov.min_level);
   return (
     <form
       className="card stack"
       id="organisation"
       onSubmit={async (e) => {
         e.preventDefault();
-        if (!form) return;
+        if (!form || floorBlocked) return;
         if (!(form.org_name ?? "").trim()) {
           toast.error("Defaults were not saved", "Enter the organisation name; it appears in the sidebar and on every report.");
           return;
@@ -537,7 +542,7 @@ function OrgDefaults() {
           <div className="g g-2">
             <div className="fld">
               <label htmlFor="od-l">Default privacy level</label>
-              <select id="od-l" className="inp" value={form.default_privacy_level} onChange={(e) => setForm({ ...form, default_privacy_level: e.target.value as PrivacyLevel })}>
+              <select id="od-l" className="inp" value={form.default_privacy_level} aria-invalid={floorBlocked || undefined} aria-describedby={floorBlocked ? "od-l-err" : undefined} onChange={(e) => setForm({ ...form, default_privacy_level: e.target.value as PrivacyLevel })}>
                 {PRIVACY_LEVELS.map((l) => (
                   <option key={l} value={l}>
                     {l} · {LEVEL_NAME[l]}
@@ -550,8 +555,13 @@ function OrgDefaults() {
               <input id="od-o" className="inp" maxLength={200} value={form.org_name ?? ""} onChange={(e) => setForm({ ...form, org_name: e.target.value })} />
             </div>
           </div>
+          {floorBlocked && (
+            <div id="od-l-err" className="banner warn sm" role="alert">
+              {prov?.name} needs {prov?.min_level} or stricter. Choose a stricter level or another provider.
+            </div>
+          )}
           <div>
-            <Button type="submit" loading={save.isPending}>
+            <Button type="submit" loading={save.isPending} disabled={floorBlocked}>
               Save defaults
             </Button>
           </div>

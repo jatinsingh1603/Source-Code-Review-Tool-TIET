@@ -1,0 +1,1 @@
+**Settings**, Organisation defaults, no longer saves a default provider with a level it refuses (AgentRouter at L2): it says "needs L3 or stricter" under the fields and keeps **Save defaults** off, instead of saving a pair that opened every new scan form already blocked.
