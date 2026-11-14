@@ -282,6 +282,13 @@ export interface Finding {
   cvss4_score?: number | null;
   cvss31_vector?: string | null;
   cvss31_score?: number | null;
+  /** How the vectors were chosen (``metric_rationale``) and what changed them (``adjustments``). */
+  risk?: {
+    cvss4_nomenclature?: string;
+    metric_rationale?: [string, string][];
+    adjustments?: unknown[];
+    family?: string;
+  } | null;
   likelihood?: string | null;
   impact?: string | null;
   compliance?: ComplianceRef[];

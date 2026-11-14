@@ -290,15 +290,23 @@ export default function FindingDetailPage() {
         {capec}
       </span>,
     );
-  const seen = new Set<string>();
+  // Every clause of a framework, not only the first: the first is often the baseline control
+  // (PCI DSS 6.2.3, code review) and the weakness-specific one follows (6.2.4, injection).
+  const byFramework = new Map<string, { clause: string; title?: string | null }[]>();
   for (const c of f.compliance ?? []) {
-    if (["owasp-asvs", "capec", "cwe-top25"].includes(c.framework) || seen.has(c.framework))
-      continue;
-    seen.add(c.framework);
-    if (seen.size > 4) break;
+    if (["owasp-asvs", "capec", "cwe-top25"].includes(c.framework)) continue;
+    const list = byFramework.get(c.framework) ?? [];
+    if (!list.some((x) => x.clause === c.clause)) list.push(c);
+    byFramework.set(c.framework, list);
+  }
+  for (const [framework, clauses] of [...byFramework].slice(0, 4)) {
     tags.push(
-      <span key={`c-${c.framework}`} className="tag" title={c.title ?? undefined}>
-        {frameworkLabel(c.framework)} {c.clause}
+      <span
+        key={`c-${framework}`}
+        className="tag"
+        title={clauses.map((c) => `${c.clause}${c.title ? `: ${c.title}` : ""}`).join("\n")}
+      >
+        {frameworkLabel(framework)} {clauses.map((c) => c.clause).join(", ")}
       </span>,
     );
   }
@@ -688,6 +696,13 @@ export default function FindingDetailPage() {
                   {f.cvss4_vector}
                 </p>
               )}
+              {f.risk?.metric_rationale?.length ? (
+                <p className="xs muted" style={{ marginBottom: 12 }}>
+                  {f.risk.cvss4_nomenclature === "CVSS-B" ? "Base score only (CVSS-B). " : ""}
+                  Basis: {f.risk.metric_rationale.map(([, why]) => why).join("; ")}
+                  {f.risk.adjustments?.length ? "" : ", not adjusted for this code's reachability or deployment"}.
+                </p>
+              ) : null}
               {vec && (
                 <dl className="dl sm">
                   {CVSS_ROWS.map(([k, name]) => {
