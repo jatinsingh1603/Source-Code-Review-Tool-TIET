@@ -4,6 +4,7 @@ import { endpoints } from "@/api/endpoints";
 import { asEvaluation, Frontier, type EvaluationData } from "@/components/Frontier";
 import { sampleEvaluation } from "@/lib/sampleEval";
 import { Button, Content, Empty, PageHeader, Skeleton, useToast } from "@/components/ui";
+import { useSession } from "@/app/session";
 
 interface EvalJob {
   id: string;
@@ -17,6 +18,8 @@ const pct = (v: number | null | undefined) => (v === null || v === undefined ? "
 export default function EvaluationPage() {
   const toast = useToast();
   const qc = useQueryClient();
+  const { can } = useSession();
+  const mayRun = can("settings:write"); // the server runs it for admins only
   const [starting, setStarting] = useState(false);
   // The latest run comes back as `job` on GET /evaluation; poll while it runs.
   const q = useQuery({
@@ -73,8 +76,12 @@ export default function EvaluationPage() {
             {data.sample !== false && <span className="chip">Sample results · replace with your runs</span>}
             <Button
               onClick={run}
-              disabled={running}
-              title="Runs the detection and leakage evaluation of the KavachBank sample on this server with the Mock provider (nothing leaves the machine)."
+              disabled={running || !mayRun}
+              title={
+                mayRun
+                  ? "Runs the detection and leakage evaluation of the KavachBank sample on this server with the Mock provider (nothing leaves the machine)."
+                  : "Running the benchmark needs the Admin role."
+              }
             >
               {running ? "Running benchmark…" : "Run benchmark"}
             </Button>

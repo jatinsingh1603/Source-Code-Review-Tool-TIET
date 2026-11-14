@@ -304,9 +304,11 @@ export default function ScanPage() {
                 <Link className="btn" to={`/findings?scan=${scan.id}`}>
                   Open findings
                 </Link>
-                <Link className="btn" to={`/privacy/ledger?scan=${scan.id}`}>
-                  Open ledger
-                </Link>
+                {can("privacy:read") && (
+                  <Link className="btn" to={`/privacy/ledger?scan=${scan.id}`}>
+                    Open ledger
+                  </Link>
+                )}
               </>
             )}
           </>
@@ -365,7 +367,7 @@ export default function ScanPage() {
                 <h2>Egress meter</h2>
                 <p className="sub">What left during this scan, checked as it left</p>
               </div>
-              <MoreLink to={`/privacy/ledger?scan=${scan.id}`}>Open ledger</MoreLink>
+              {can("privacy:read") && <MoreLink to={`/privacy/ledger?scan=${scan.id}`}>Open ledger</MoreLink>}
             </div>
             {scan.privacy_level === "L0" ? (
               <Empty title="Nothing leaves at L0">This scan uses local engines only; no payload is prepared.</Empty>
