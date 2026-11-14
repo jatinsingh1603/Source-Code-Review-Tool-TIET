@@ -128,7 +128,7 @@ export default function HowItWorksPage() {
               background: "var(--surface)",
             }}
           >
-            <span className="sec-h" style={{ color: "var(--high)" }}>
+            <span className="sec-h" style={{ color: "var(--high-t)" }}>
               Remote · or self-hosted
             </span>
             <div className="stand">
@@ -148,7 +148,7 @@ export default function HowItWorksPage() {
 
       <section className="g g-3">
         <div className="card stack">
-          <h3>What crosses the boundary</h3>
+          <h2>What crosses the boundary</h2>
           <p className="sub">
             At the default L3: the minimal vulnerability-relevant slice, with secrets and PII redacted and identifiers, strings and
             comments pseudonymised. No whole files.
@@ -158,7 +158,7 @@ export default function HowItWorksPage() {
           </Link>
         </div>
         <div className="card stack">
-          <h3>How it is measured</h3>
+          <h2>How it is measured</h2>
           <p className="sub">
             Every payload is hashed, checked against the listed-term set and appended to a hash-chained ledger. The chain can be
             verified offline at any time.

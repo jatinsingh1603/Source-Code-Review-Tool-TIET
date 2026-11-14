@@ -341,3 +341,27 @@ body {
     border-bottom: 0;
   }
 }
+
+/*
+ * Contrast fixes (WCAG 1.4.3, found with axe-core): text the design draws a
+ * shade too light for 4.5:1 on its background.
+ */
+.ck a.c.h4 {
+  color: #fff; /* `.ck a { color: inherit }` otherwise wins over `.h4` */
+}
+.ck a.c.h3 {
+  color: var(--hm-3-ink);
+}
+.ck .tc {
+  color: #59636e; /* comments: #6e7781 is 4.4:1 on the code background */
+}
+.ck .tbl tr.sel .faint {
+  color: var(--muted); /* captions on the selected row's accent tint */
+}
+.ck .code .n,
+.ck .console .t {
+  color: var(--faint); /* line numbers and log times: --ln-num is 2.5:1 */
+}
+.ck .console .wl {
+  color: #b54708; /* warnings in the log: --warn is 3.3:1 on --code-bg */
+}
