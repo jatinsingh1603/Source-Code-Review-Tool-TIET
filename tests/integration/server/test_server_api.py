@@ -514,6 +514,10 @@ def test_verdicts_stream_live_most_severe_first(
     ranks = [SEVERITY_RANK[item["severity"]] for item in live]
     assert ranks == sorted(ranks, reverse=True)
     assert {item["verdict"] for item in live} <= {"vulnerable", "not_vulnerable", "undecided"}
+    # each line says which of the reviewed candidates it is, so two of one class stay apart
+    assert all(
+        item["title"].startswith(f"{item['reviewed']} of {item['total']} · ") for item in live
+    )
     reviewed = {cid for item in final for cid in item["candidate_ids"]}
     assert {item["id"] for item in live} <= reviewed
 

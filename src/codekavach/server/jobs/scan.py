@@ -238,6 +238,10 @@ class _Progress:
         severity, cwe = self.queued.get(item, ("medium", []))
         verdict = str(data.get("verdict"))
         label = ", ".join(f"CWE-{number}" for number in cwe) or "Candidate"
+        current, total = data.get("current"), data.get("total")
+        if current and total:
+            # Two candidates of the same class otherwise read as one verdict, then its opposite.
+            label = f"{current} of {total} · {label} ({severity})"
         self.log.append(
             "finding",
             {
