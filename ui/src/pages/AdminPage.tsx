@@ -114,6 +114,11 @@ function UsersTable() {
   const { user: me } = useSession();
   const toast = useToast();
   const [revoke, setRevoke] = useState<User | null>(null);
+  const [reset, setReset] = useState<User | null>(null);
+  const restoreM = useMutation({
+    mutationFn: (id: string) => endpoints.updateUser(id, { active: true }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["users"] }),
+  });
   if (q.isError) return <ErrorBanner what="Users could not be loaded." error={q.error} onRetry={() => void q.refetch()} />;
   return (
     <div className="tbl-wrap">
@@ -141,7 +146,10 @@ function UsersTable() {
                       <Avatar name={name} size="sm" />
                       <div>
                         <b className="sm">{name}</b>
-                        <div className="xs faint">{u.email || u.username}</div>
+                        <div className="xs faint">
+                          <span className="mono">{u.username}</span>
+                          {u.email ? ` · ${u.email}` : ""}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -153,15 +161,18 @@ function UsersTable() {
                       value={u.role}
                       disabled={u.id === me?.id || u.active === false || setRole.isPending}
                       title={u.id === me?.id ? "You cannot change your own role." : u.active === false ? "Access revoked; the account is disabled." : undefined}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        // Read the choice now: the controlled select snaps back to the old role
+                        // until the list reloads, so e.target.value is stale by onSuccess.
+                        const next = e.target.value as Role;
                         setRole.mutate(
-                          { id: u.id, role: e.target.value as Role },
+                          { id: u.id, role: next },
                           {
-                            onSuccess: () => toast.success("Role changed", `${name} is now ${roleLabel(e.target.value as Role)}.`),
+                            onSuccess: () => toast.success("Role changed", `${name} is now ${roleLabel(next)}. Their sessions and tokens were signed out.`),
                             onError: (err) => toast.error("Role not changed", err.message),
                           },
-                        )
-                      }
+                        );
+                      }}
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>
@@ -174,10 +185,31 @@ function UsersTable() {
                   <td className="sm">Local</td>
                   <td className="sm muted">{u.last_login ? fmtShort(u.last_login) : "Never"}</td>
                   <td>
-                    {u.id !== me?.id && u.active !== false && (
-                      <button className="btn sm ghost" type="button" onClick={() => setRevoke(u)}>
-                        Revoke
-                      </button>
+                    {u.id !== me?.id && (
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                        <button className="btn sm ghost" type="button" onClick={() => setReset(u)}>
+                          Reset password
+                        </button>
+                        {u.active === false ? (
+                          <button
+                            className="btn sm ghost"
+                            type="button"
+                            disabled={restoreM.isPending}
+                            onClick={() =>
+                              restoreM.mutate(u.id, {
+                                onSuccess: () => toast.success("Access restored", `${name} can sign in again.`),
+                                onError: (e) => toast.error("Not restored", e.message),
+                              })
+                            }
+                          >
+                            Restore
+                          </button>
+                        ) : (
+                          <button className="btn sm ghost" type="button" onClick={() => setRevoke(u)}>
+                            Revoke
+                          </button>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -215,7 +247,58 @@ function UsersTable() {
           </>
         }
       />
+      <ResetPasswordDialog user={reset} onClose={() => setReset(null)} />
     </div>
+  );
+}
+
+function ResetPasswordDialog({ user, onClose }: { user: User | null; onClose: () => void }) {
+  const toast = useToast();
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const m = useMutation({ mutationFn: (v: { id: string; password: string }) => endpoints.updateUser(v.id, { password: v.password }) });
+  const close = () => {
+    setPassword("");
+    setErr(null);
+    onClose();
+  };
+  const submit = () => {
+    if (!user) return;
+    setErr(null);
+    if (password.length < 10) return setErr("Password: at least 10 characters.");
+    m.mutate(
+      { id: user.id, password },
+      {
+        onSuccess: () => {
+          toast.success("Password reset", `${user.display_name || user.username} is signed out everywhere; share the new password through a separate channel.`);
+          close();
+        },
+        onError: (e) => setErr(e.message),
+      },
+    );
+  };
+  return (
+    <Dialog
+      open={!!user}
+      onClose={close}
+      title="Reset password"
+      description={user ? `Sets a new password for ${user.display_name || user.username} (${user.username}). Their sessions and personal tokens are revoked.` : undefined}
+      footer={
+        <>
+          <Button variant="ghost" onClick={close}>
+            Cancel
+          </Button>
+          <Button variant="primary" loading={m.isPending} onClick={submit}>
+            Reset password
+          </Button>
+        </>
+      }
+    >
+      <Field label="New password" required help="At least 10 characters">
+        {(id, d) => <Input id={id} aria-describedby={d} type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />}
+      </Field>
+      {err && <div className="banner bad sm">{err}</div>}
+    </Dialog>
   );
 }
 
@@ -490,9 +573,10 @@ function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void })
   const submit = async () => {
     setErr(null);
     if (!/^[a-z0-9._-]{3,}$/i.test(form.username)) return setErr("Username: at least 3 letters, digits, dots, dashes or underscores.");
+    if (form.email.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) return setErr("Email: enter a full address, for example name@thapar.edu, or leave it empty.");
     if (form.password.length < 10) return setErr("Password: at least 10 characters.");
     try {
-      await create.mutateAsync(form);
+      await create.mutateAsync({ ...form, email: form.email.trim() });
       toast.success("User created", `${form.username} can sign in now.`);
       setForm({ username: "", display_name: "", email: "", password: "", role: "developer" });
       onClose();
