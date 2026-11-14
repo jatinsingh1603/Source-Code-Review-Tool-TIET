@@ -54,6 +54,7 @@ export function verdictOf(
 
 export function providerName(id: string | null | undefined, providers?: ProviderInfo[]): string {
   if (!id) return "—";
+  if (id === "none") return "None (local only)";
   return providers?.find((p) => p.id === id)?.name ?? id;
 }
 

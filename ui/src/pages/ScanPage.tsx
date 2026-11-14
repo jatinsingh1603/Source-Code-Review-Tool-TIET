@@ -172,7 +172,8 @@ export default function ScanPage() {
   // The top bar describes this scan: its project, level and provider.
   useShell({
     levelPill: scan ? `${scan.privacy_level} · ${LEVEL_NAME[scan.privacy_level] ?? ""}` : undefined,
-    providerPill: scan && scan.provider && scan.provider !== "none" ? providerName(scan.provider, providers) : undefined,
+    // An L0 scan used no provider; say so rather than fall back to the default provider's pill.
+    providerPill: scan && scan.provider ? providerName(scan.provider, providers) : undefined,
   });
   useEffect(() => {
     if (scan?.project_id) setCurrentId(scan.project_id);

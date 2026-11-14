@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentProject } from "@/app/project-context";
@@ -82,16 +82,21 @@ export default function OnboardingPage() {
   const [err, setErr] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(params.get("project"));
   const project = useProject(projectId ?? undefined).data;
-  const [level, setLevel] = useState<PrivacyLevel>("L3");
-  const [providerId, setProviderId] = useState("");
+  // Level and provider live in the URL, so a reload or a settings refetch keeps the choice made.
+  const paramLevel = params.get("level") as PrivacyLevel | null;
+  const level: PrivacyLevel = paramLevel && paramLevel in LEAVES ? paramLevel : settings?.default_privacy_level ?? "L3";
+  const providerId = params.get("provider") ?? settings?.default_provider ?? "";
+  const setChoice = (key: "level" | "provider", value: string) => {
+    const p = new URLSearchParams(params);
+    p.set(key, value);
+    setParams(p, { replace: true });
+  };
+  const setLevel = (l: PrivacyLevel) => setChoice("level", l);
+  const setProviderId = (id: string) => setChoice("provider", id);
   const [consent, setConsent] = useState(false);
   const [dryRun, setDryRun] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (settings?.default_privacy_level) setLevel(settings.default_privacy_level);
-    if (settings?.default_provider) setProviderId((p) => p || settings.default_provider);
-  }, [settings]);
   useShell({ projectPill: project?.name ?? "New project", projectIcon: true, levelPill: `${level} · ${LEVEL_NAME[level]}` });
 
   const providers = providersQ.data ?? [];
@@ -446,8 +451,11 @@ export default function OnboardingPage() {
         </section>
       )}
 
+      {step === 4 && level === "L0" && (
+        <div className="banner sm">At L0 nothing leaves this machine, so no provider is used. Continue to launch.</div>
+      )}
       {step === 4 && (
-        <section className="g g-3" role="radiogroup" aria-label="Provider">
+        <section className="g g-3" role="radiogroup" aria-label="Provider" style={level === "L0" ? { opacity: 0.55 } : undefined}>
           {providers.map((p) => (
             <button
               key={p.id}
@@ -480,7 +488,12 @@ export default function OnboardingPage() {
             <dl className="dl">
               <dt>Repository</dt>
               <dd className="mono">
-                {project?.name ?? "—"} · {project?.source.ref ?? project?.source.type}
+                {project?.name ?? "—"} ·{" "}
+                {project?.source.ref ??
+                  (project?.source as { upload_name?: string } | undefined)?.upload_name ??
+                  project?.source.url ??
+                  project?.source.path ??
+                  project?.source.type}
               </dd>
               <dt>Privacy level</dt>
               <dd>
@@ -502,14 +515,20 @@ export default function OnboardingPage() {
                   : "No path rules"}
               </dd>
             </dl>
-            <label className="swrow" style={{ alignItems: "flex-start" }}>
-              <input type="checkbox" className="chk" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3 }} /> I understand that
-              sanitised slices may be sent to the selected provider and that every payload is recorded in the egress ledger.
-            </label>
-            <label className="swrow">
-              <input type="checkbox" className="sw" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} /> No-send (dry run): build payloads, send
-              nothing
-            </label>
+            {level === "L0" ? (
+              <div className="banner sm">At L0 no connection is opened and nothing is sent, so there is nothing to consent to.</div>
+            ) : (
+              <>
+                <label className="swrow" style={{ alignItems: "flex-start" }}>
+                  <input type="checkbox" className="chk" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3 }} /> I
+                  understand that sanitised slices may be sent to the selected provider and that every payload is recorded in the egress ledger.
+                </label>
+                <label className="swrow">
+                  <input type="checkbox" className="sw" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} /> No-send (dry run): build payloads,
+                  send nothing
+                </label>
+              </>
+            )}
             {provider && !provider.configured && level !== "L0" && <div className="banner warn sm">{provider.name} has no key configured. Choose another provider.</div>}
           </div>
           <div className="note">
