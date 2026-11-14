@@ -763,7 +763,7 @@ export function AssignDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title="Assign findings"
+      title="Assign to a reviewer"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>

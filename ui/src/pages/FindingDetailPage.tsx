@@ -847,7 +847,8 @@ export default function FindingDetailPage() {
         users={users?.map((u) => ({ id: u.username, name: u.display_name || u.username })) ?? []}
         busy={patch.isPending}
         onAssign={(a) => {
-          doPatch({ assignee: a }, `Assigned to ${a}`);
+          const who = users?.find((u) => u.username === a);
+          doPatch({ assignee: a }, `Assigned to ${who?.display_name || a}`);
           setDialog(null);
         }}
       />
