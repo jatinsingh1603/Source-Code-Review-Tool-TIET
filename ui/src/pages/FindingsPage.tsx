@@ -712,7 +712,7 @@ export default function FindingsPage() {
 
       <div className="row between sm muted">
         <span>
-          Showing {filtered.length ? (pg - 1) * PAGE + 1 : 0}-{Math.min(pg * PAGE, filtered.length)} of {filtered.length}
+          {filtered.length ? `Showing ${(pg - 1) * PAGE + 1}-${Math.min(pg * PAGE, filtered.length)} of ${filtered.length}` : "Showing 0 of 0"}
         </span>
         <div className="row">
           <Button size="sm" disabled={pg <= 1} onClick={() => setParam("page", String(pg - 1))}>
