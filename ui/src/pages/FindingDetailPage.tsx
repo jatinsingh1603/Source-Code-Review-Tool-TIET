@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   useFinding,
@@ -158,7 +158,34 @@ export default function FindingDetailPage() {
   const { can } = useSession();
   const toast = useToast();
   const [dialog, setDialog] = useState<null | "assign" | "suppress" | "sync">(null);
-  const [comment, setComment] = useState("");
+  // The draft survives a session that ends mid-sentence: signing in again brings it back.
+  const draftKey = `ck-comment-draft:${id ?? ""}`;
+  const [comment, setCommentState] = useState(() => {
+    try {
+      return sessionStorage.getItem(draftKey) ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const setComment = (v: string) => {
+    setCommentState(v);
+    try {
+      if (v) sessionStorage.setItem(draftKey, v);
+      else sessionStorage.removeItem(draftKey);
+    } catch {
+      /* storage unavailable: the draft lives in memory only */
+    }
+  };
+  // Another finding opened in the same view: show its own draft, not this one's.
+  useEffect(() => {
+    try {
+      setCommentState(sessionStorage.getItem(draftKey) ?? "");
+    } catch {
+      setCommentState("");
+    }
+  }, [draftKey]);
+  /** Set while a comment is on its way, so a double click or Ctrl+Enter twice posts it once. */
+  const sending = useRef(false);
   const [jump, setJump] = useState<number | null>(null);
   /** A taint step picked in a file other than the one the excerpt shows. */
   const [elsewhere, setElsewhere] = useState<TaintStep | null>(null);
@@ -768,12 +795,16 @@ export default function FindingDetailPage() {
                 style={{ marginTop: 14 }}
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (!comment.trim()) return;
+                  if (!comment.trim() || sending.current) return;
+                  sending.current = true;
                   patch.mutate(
                     { id: f.id, patch: { comment: comment.trim() } },
                     {
                       onSuccess: () => setComment(""),
                       onError: (err) => toast.error("Comment not saved", err.message),
+                      onSettled: () => {
+                        sending.current = false;
+                      },
                     },
                   );
                 }}
