@@ -43,7 +43,10 @@ from codekavach.core.pipeline.context import RunContext
 from codekavach.core.pipeline.memo import memo_key
 from codekavach.ingest.models import SourceFile
 
-CACHE_NAMESPACE: Final = "engines.candidates.v1"
+# The key does not cover the adapters' own code: bump the suffix whenever an adapter changes the
+# candidates it makes from the same engine output (v2: Bandit titles in plain words), or a server
+# upgraded in place keeps serving the old candidates for unchanged files.
+CACHE_NAMESPACE: Final = "engines.candidates.v2"
 MIN_TIMEOUT_SECONDS: Final = 1.0
 
 _log = get_logger("codekavach.analysis.engines.scheduler")
