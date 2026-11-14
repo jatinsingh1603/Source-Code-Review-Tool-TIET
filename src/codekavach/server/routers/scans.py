@@ -760,6 +760,7 @@ def download_attestation(
     body = {
         "attestation": attestation.to_api(),
         "scan_id": scan_id,
+        "scan_reference": scan_label(scan_id),
         "core_scan_id": core_id,
         "levels_used": levels,
         "bytes_sent": stored.get("bytes_sent"),

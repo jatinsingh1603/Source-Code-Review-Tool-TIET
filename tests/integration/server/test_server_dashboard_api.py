@@ -236,6 +236,8 @@ def test_attestation_json(
     assert response.status_code == 200
     body = json.loads(response.text)
     assert body["attestation"]["level"] == "L3"
+    # The id the dashboard shows, as in every other export.
+    assert body["scan_reference"] == "SCN-" + scan["id"].removeprefix("scn_")[:6].upper()
     assert body["levels_used"].get("L3", 0) > 0
     assert len(body["digest"]) == 64
     assert body["ledger_head_hash"]
