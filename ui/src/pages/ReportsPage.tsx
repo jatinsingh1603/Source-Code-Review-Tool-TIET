@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useCurrentProject } from "@/app/project-context";
 import { useFollowScanProject } from "@/app/useSelectedScan";
-import { useFindings, usePrivacy, useReports, useScans, useSettings } from "@/api/queries";
+import { useQueryClient } from "@tanstack/react-query";
+import { qk, useFindings, usePrivacy, useReports, useScans, useSettings } from "@/api/queries";
 import { downloadApiFile, fetchReport, saveBlob } from "@/api/endpoints";
 import type { Finding, Scan, Severity } from "@/api/types";
 import { isOpen, sevCounts, sortScans } from "@/lib/domain";
@@ -31,6 +32,25 @@ const SLOW: Record<string, string> = {
   manifest: "Rendering every format and hashing it into the manifest; this can take a minute.",
 };
 
+/**
+ * The report being generated, kept outside the page: leaving Reports while a PDF renders and
+ * coming back must show that it is still running, not offer a second, parallel render.
+ */
+type GenerationJob = { scanId: string; progress: string };
+let generation: GenerationJob | null = null;
+const generationListeners = new Set<() => void>();
+function setGeneration(job: GenerationJob | null) {
+  generation = job;
+  generationListeners.forEach((l) => l());
+}
+function subscribeGeneration(listener: () => void) {
+  generationListeners.add(listener);
+  return () => {
+    generationListeners.delete(listener);
+  };
+}
+const useGeneration = () => useSyncExternalStore(subscribeGeneration, () => generation);
+
 /** Reports (SCREENS.md §15): generated reports, the builder and a page preview. */
 export default function ReportsPage() {
   const [params, setParams] = useSearchParams();
@@ -51,9 +71,11 @@ export default function ReportsPage() {
   const baseFindings = useFindings(baseline?.id).data;
   const privacy = usePrivacy(scanId).data;
   const toast = useToast();
+  const qc = useQueryClient();
   const [chosen, setChosen] = useState<Set<string>>(new Set(["pdf", "docx", "sarif", "json"]));
-  const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState<string | null>(null);
+  const job = useGeneration();
+  const busy = job !== null;
+  const progress = job ? (job.scanId === scanId ? job.progress : `${scanLabel(job.scanId)}: ${job.progress}`) : null;
   const builderRef = useRef<HTMLFormElement>(null);
   const formats = (reportsQ.data ?? []).filter((f) => f.format !== "markdown");
   const frameworks = useMemo(() => {
@@ -72,28 +94,31 @@ export default function ReportsPage() {
   };
 
   const generate = async () => {
-    if (!scanId) return;
-    setBusy(true);
+    if (!scanId || generation) return;
+    const forScan = scanId;
+    setGeneration({ scanId: forScan, progress: "Starting." });
     let ok = 0;
     // The manifest hashes the other files, so it comes last.
     const order = formats.map((f) => f.format).filter((f) => chosen.has(f)).sort((a, b) => Number(a === "manifest") - Number(b === "manifest"));
-    for (const [i, fmt] of order.entries()) {
-      const f = formats.find((x) => x.format === fmt);
-      if (!f?.available) continue;
-      const name = FORMAT_NAME[fmt] ?? fmt.toUpperCase();
-      setProgress(`${i + 1} of ${order.length} · ${f.rendered ? `Downloading ${name}.` : (SLOW[fmt] ?? `Rendering ${name}.`)}`);
-      try {
-        const { blob, filename } = await fetchReport(scanId, fmt);
-        saveBlob(blob, filename);
-        ok += 1;
-      } catch (e) {
-        toast.error(`${name} failed`, e instanceof Error ? e.message : undefined);
+    try {
+      for (const [i, fmt] of order.entries()) {
+        const f = formats.find((x) => x.format === fmt);
+        if (!f?.available) continue;
+        const name = FORMAT_NAME[fmt] ?? fmt.toUpperCase();
+        setGeneration({ scanId: forScan, progress: `${i + 1} of ${order.length} · ${f.rendered ? `Downloading ${name}.` : (SLOW[fmt] ?? `Rendering ${name}.`)}` });
+        try {
+          const { blob, filename } = await fetchReport(forScan, fmt);
+          saveBlob(blob, filename);
+          ok += 1;
+        } catch (e) {
+          toast.error(`${name} failed`, e instanceof Error ? e.message : undefined);
+        }
       }
+    } finally {
+      setGeneration(null);
     }
-    setBusy(false);
-    setProgress(null);
-    void reportsQ.refetch();
-    if (ok) toast.success("Report generated", `${ok} file${ok === 1 ? "" : "s"} downloaded.`);
+    void qc.invalidateQueries({ queryKey: qk.reports(forScan) });
+    if (ok) toast.success(`Report generated · ${scanLabel(forScan)}`, `${ok} file${ok === 1 ? "" : "s"} downloaded.`);
   };
 
   const [deltaBusy, setDeltaBusy] = useState(false);
