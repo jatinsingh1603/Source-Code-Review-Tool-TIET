@@ -190,6 +190,35 @@ def policy_withheld(paths: ScanPaths, core_scan_id: str) -> int:
     return sum(1 for row in rows if row.withheld)
 
 
+def policy_withheld_code(paths: ScanPaths, core_scan_id: str) -> int:
+    """How many withheld candidates are code findings, the kind a payload is made for.
+
+    Secrets, dependencies and configuration findings are never sent with a code slice, so
+    keeping them local does not lower the payload count; this number is what does.
+    """
+    from codekavach.core.models import Candidate  # noqa: PLC0415
+    from codekavach.core.models.enums import CandidateKind  # noqa: PLC0415
+    from codekavach.core.pipeline import keys  # noqa: PLC0415
+    from codekavach.core.store.artefacts import OnDiskArtefactStore  # noqa: PLC0415
+    from codekavach.core.store.layout import StateLayout  # noqa: PLC0415
+    from codekavach.privacy.policy.records import PolicyDecisionRow  # noqa: PLC0415
+
+    code = {CandidateKind.VULNERABILITY, CandidateKind.HOTSPOT}
+    try:
+        store = OnDiskArtefactStore.open_existing(StateLayout(paths.state_dir), core_scan_id)
+        if not (store.has(keys.POLICY_DECISIONS) and store.has(keys.CANDIDATES)):
+            return 0
+        withheld = {
+            str(row.candidate_id)
+            for row in store.get_list(keys.POLICY_DECISIONS, PolicyDecisionRow)
+            if row.withheld
+        }
+        candidates = store.get_list(keys.CANDIDATES, Candidate)
+    except Exception:  # noqa: BLE001 - a log line, never a reason to fail the scan
+        return 0
+    return sum(1 for c in candidates if str(c.id) in withheld and c.kind in code)
+
+
 def finding_columns(finding: "Finding") -> dict[str, Any]:
     """The indexed columns of a finding row."""
     location = finding.locations[0] if finding.locations else None

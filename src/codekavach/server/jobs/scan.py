@@ -43,6 +43,7 @@ from codekavach.server.results import (
     ScanResults,
     finding_columns,
     policy_withheld,
+    policy_withheld_code,
     read_findings,
     scan_env,
     with_attestation,
@@ -441,12 +442,21 @@ def _log_policy_withheld(outcome: Any, paths: ScanPaths, core_id: str, log: Even
     level = outcome.scan.privacy_level.value if outcome.scan.privacy_level else None
     kept = policy_withheld(paths, core_id) if level in {"L1", "L2", "L3"} else 0
     if kept:
+        # Secrets, dependencies and configuration are never sliced, so only the code findings
+        # among them lower the payload count; the log names both, so the two numbers add up.
+        code = policy_withheld_code(paths, core_id)
+        other = kept - code
+        split = (
+            f"{code} {'is a code finding' if code == 1 else 'are code findings'}, the kind sent "
+            f"as a payload; {other} {'is a' if other == 1 else 'are'} secret, dependency or "
+            f"configuration finding{'' if other == 1 else 's'}, which rarely have code to send"
+        )
         log.append(
             "log",
             {"level": "info",
              "message": f"{kept} candidate{'s' if kept != 1 else ''} not sent to the model: the "
              "privacy policy keeps their files local (a never-send path, or L4, which fails "
-             "closed); reported with deterministic evidence"},
+             f"closed). {split}; all are reported with deterministic evidence"},
         )  # fmt: skip
 
 
