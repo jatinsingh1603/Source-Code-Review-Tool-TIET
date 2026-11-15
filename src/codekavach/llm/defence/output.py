@@ -85,6 +85,11 @@ def _scrub(text: str) -> tuple[str, int]:
             return text, count
 
 
+def scrub_text(text: str) -> str:
+    """``text`` without markdown images, active HTML and script or data links."""
+    return _scrub(text)[0]
+
+
 def _texts(verdict: LLMVerdict) -> Iterable[str]:
     yield verdict.reasoning
     yield verdict.impact

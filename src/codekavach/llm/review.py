@@ -9,7 +9,7 @@ Every request goes through ``EgressSession.dispatch``; this module never opens a
 never sees anything but the ``SanitisedPayload`` (I1, I2). Every answer is validated as untrusted
 (``defence.output``); a rejected triage answer fails that candidate and leaves its deterministic
 finding untouched. A failed or rejected explain or remediate answer only leaves the verdict
-without that enrichment.
+without that enrichment; one that is kept has the same markup removed as a triage answer.
 
 Combined mode (``combined=True``, ``llm.review_mode``): the first request is the ``review`` task,
 which returns the triage verdict, the impact and the remediation in one answer, so a confirmed
@@ -41,6 +41,7 @@ from codekavach.llm.defence.output import (
     OutputReport,
     check_text,
     prompt_shingles,
+    scrub_text,
     validate_verdict,
 )
 from codekavach.llm.providers.base import (
@@ -427,12 +428,12 @@ class Reviewer:
         if "explain" in self._enabled:
             explained = self._enrich_call("explain", ExplainAnswer, payload, facts, prior)
             if explained is not None:
-                impact = _impact_text(explained)
+                impact = scrub_text(_impact_text(explained))
                 done = True
         if "remediate" in self._enabled:
             fixed = self._enrich_call("remediate", RemediateAnswer, payload, facts, prior)
             if fixed is not None:
-                remediation = _remediation_text(fixed)
+                remediation = scrub_text(_remediation_text(fixed))
                 done = True
         if done:
             self.counts.enriched += 1

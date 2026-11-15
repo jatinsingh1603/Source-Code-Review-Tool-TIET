@@ -1,0 +1,1 @@
+Privacy: the impact and remediation text of the separate explain and remediate requests now has markdown images, active HTML and script links removed, as the triage and combined-review answers already had.
