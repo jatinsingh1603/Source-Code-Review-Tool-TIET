@@ -26,3 +26,26 @@ describe("mock backend policy routes", () => {
     expect(await optional(client.post("/policy/validate", { toml: "" }))).toBeNull();
   });
 });
+
+describe("mock backend audit log", () => {
+  it("lists a seeded trail, newest first, and records sign-ins", async () => {
+    const client = await signedIn();
+    const log = await client.get<{ chain_intact: boolean; total: number; events: { at: string; actor: string; action: string }[] }>(
+      "/audit",
+      { limit: 50, offset: 0 },
+    );
+    expect(log.chain_intact).toBe(true);
+    expect(log.total).toBeGreaterThan(5);
+    expect(log.events[0]).toMatchObject({ actor: "admin", action: "auth.login" });
+    const times = log.events.map((e) => e.at);
+    expect([...times].sort().reverse()).toEqual(times);
+  });
+
+  it("pages through the log with limit and offset", async () => {
+    const client = await signedIn();
+    const all = await client.get<{ total: number; events: unknown[] }>("/audit", { limit: 1000, offset: 0 });
+    const tail = await client.get<{ events: unknown[] }>("/audit", { limit: 1000, offset: all.total });
+    expect(all.events).toHaveLength(all.total);
+    expect(tail.events).toHaveLength(0);
+  });
+});

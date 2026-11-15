@@ -7,6 +7,7 @@
 import { ApiClient, ApiError, type MockHandler, type RequestOptions } from "@/api/client";
 import { setMockStream } from "@/api/events";
 import type {
+  AuditEvent,
   Finding,
   FindingHistoryEntry,
   FindingStatus,
@@ -46,6 +47,8 @@ interface State {
   settings: Settings;
   policy: string;
   live: Map<string, { events: ScanEvent[]; listeners: Set<(e: ScanEvent) => void> }>;
+  /** Newest first, like GET /audit. */
+  audit: AuditEvent[];
 }
 
 const PROVIDERS: ProviderInfo[] = [
@@ -152,6 +155,7 @@ function seed(): State {
     settings: { default_provider: "agentrouter", default_model: "gpt-5.6-sol", default_privacy_level: "L3", org_name: "Thapar Institute of Engineering & Technology" },
     policy: DEFAULT_POLICY,
     live: new Map(),
+    audit: [],
   };
   // Historic scans to give the overview a trend.
   const plan: { p: string; daysAgo: number; take: number; level: PrivacyLevel; status?: Scan["status"] }[] = [
@@ -209,7 +213,28 @@ function seed(): State {
     state.findings.set(id, fs);
     state.ledgers.set(id, makeLedger(scan));
   });
+  // An audit trail to match: sign-ins, the scans above and the triage of the latest scan.
+  const at = (t: number, actor: string, action: string, resource?: string) => state.audit.push({ id: 0, at: iso(t), actor, action, resource });
+  users.slice(1).forEach((u) => at(t0 - 40 * day + 3600_000, "admin", "user.create", u.id));
+  state.scans.forEach((sc) => {
+    const t = Date.parse(sc.started_at ?? sc.created_at ?? iso(t0));
+    at(t - 120_000, "admin", "auth.login");
+    at(t, "admin", "scan.create", sc.id);
+    at(t + 3 * 3600_000, "auditor", "report.download", sc.id);
+  });
+  const latest = state.scans[state.scans.length - 1]!;
+  const triaged = state.findings.get(latest.id)![0]!;
+  at(Date.parse(latest.started_at!) + 3 * 3600_000 - 300_000, "auditor", "auth.login");
+  at(Date.parse(latest.started_at!) + 3 * 3600_000, "auditor", "finding.update", triaged.id);
+  at(Date.parse(latest.started_at!) + 4 * 3600_000, "auditor", "privacy.read_original", latest.id);
+  state.audit.sort((x, y) => y.at.localeCompare(x.at));
+  state.audit.forEach((e, i) => (e.id = state.audit.length - i));
   return state;
+}
+
+/** Add an event to the in-memory audit log (newest first). */
+function audit(actor: string, action: string, resource?: string, outcome?: string): void {
+  state.audit.unshift({ id: (state.audit[0]?.id as number | undefined ?? 0) + 1, at: iso(now()), actor, action, resource, outcome });
 }
 
 let state: State = seed();
@@ -418,12 +443,14 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
   if (a === "auth" && b === "login" && method === "POST") {
     const u = state.users.find((x) => x.username === body.username && x.password === body.password && x.active !== false);
     if (!u) {
+      audit(String(body.username ?? "").slice(0, 64), "auth.login", undefined, "failed");
       await delay(null, 400);
       err(401, "invalid_credentials", "The username or password is not correct.");
     }
     const token = `mock-${hashish(u.id + now(), 24)}`;
     state.tokens.set(token, u.id);
     u.last_login = iso(now());
+    audit(u.username, "auth.login");
     return delay({ token, user: publicUser(u) }, 350);
   }
 
@@ -488,6 +515,7 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
         error: null,
       };
       state.scans.push(scan);
+      audit(user.username, "scan.create", scan.id);
       simulateScan(scan);
       return delay(scan, 250);
     }
@@ -631,7 +659,7 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
     if (!b) return delay(PROVIDERS);
     if (c === "test") {
       const p = PROVIDERS.find((x) => x.id === b) ?? err(404, "not_found", "Provider not found.");
-      if (!p.configured) return delay({ ok: false, latency_ms: 0, model: p.default_model, message: "Provider is not configured: no endpoint reachable at http://127.0.0.1:11434" }, 600);
+      if (!p.configured) return delay({ ok: false, latency_ms: 0, model: p.default_model, message: `Provider is not configured: no ${p.name} endpoint answered.` }, 600);
       return delay({ ok: true, latency_ms: p.local ? 12 : 3870 + Math.round(Math.random() * 600), model: (body.model as string) || p.default_model, message: "Structured-output probe answered correctly; probe recorded in the egress ledger." }, p.local ? 300 : 1800);
     }
   }
@@ -640,6 +668,7 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
     if (method === "PUT") {
       requireRole("admin");
       state.settings = { ...state.settings, ...body } as Settings;
+      audit(user.username, "settings.update");
     }
     return delay(state.settings);
   }
@@ -664,22 +693,32 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
       if (state.users.some((u) => u.username === body.username)) err(409, "conflict", "A user with this username already exists.");
       const u = { id: `u-${hashish(String(body.username), 6)}`, username: String(body.username), display_name: (body.display_name as string) || null, email: (body.email as string) || null, role: body.role as User["role"], active: true, created_at: iso(now()), last_login: null, password: String(body.password) };
       state.users.push(u);
+      audit(user.username, "user.create", u.id);
       return delay(publicUser(u));
     }
     const u = state.users.find((x) => x.id === b) ?? err(404, "not_found", "User not found.");
     if (method === "PATCH") {
       if (u.id === user.id && body.role && body.role !== "admin") err(409, "conflict", "You cannot remove your own administrator role.");
       Object.assign(u, body);
+      audit(user.username, body.role ? "user.role" : "user.update", u.id);
       return delay(publicUser(u));
     }
     if (method === "DELETE") {
       if (u.id === user.id) err(409, "conflict", "You cannot delete your own account.");
       state.users = state.users.filter((x) => x.id !== u.id);
+      audit(user.username, "user.delete", u.id);
       return delay(null);
     }
   }
 
-  err(404, "not_found", `No mock route for ${method} ${path}`);
+  if (a === "audit" && !b && method === "GET") {
+    requireRole("admin", "auditor");
+    const limit = Number(q.limit ?? 50);
+    const offset = Number(q.offset ?? 0);
+    return delay({ chain_intact: true, checked: state.audit.length, total: state.audit.length, events: state.audit.slice(offset, offset + limit) });
+  }
+
+  err(404, "not_found", "This needs the CodeKavach server; the browser-only demo does not include it.");
 }
 
 function reportBlob(scan: Scan, fmt: string): Blob {
