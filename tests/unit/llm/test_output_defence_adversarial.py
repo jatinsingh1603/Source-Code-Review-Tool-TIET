@@ -1,13 +1,19 @@
 """Adversarial model answers against the output defence: what a steered model might write."""
 
+import json
 from collections.abc import Callable
 
 import pytest
 
 from codekavach.llm.defence.injection import new_canary
 from codekavach.llm.defence.output import OutputRejected, check_text, validate_verdict
+from codekavach.llm.providers.base import Usage, usage_of
+from codekavach.llm.schema.tasks import ExplainAnswer, parse_answer
 from tests.unit.llm.test_review_intelligence import (
+    BodySession,
     ScriptedSession,
+    body_reviewer,
+    payload,
     reviewer,
     verdict,
     vulnerable_payload,
@@ -103,3 +109,26 @@ def test_the_word_data_before_a_colon_is_not_taken_for_a_data_link(ordinary: str
 def test_data_and_script_links_are_still_removed(link: str) -> None:
     cleaned, report = validate_verdict(verdict(remediation=f"use [this]({link}) API"))
     assert link[:12].lower() not in cleaned.remediation.lower() and report.markup_removed >= 1
+
+
+DEEP = "[" * 100_000 + "]" * 100_000
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        DEEP.encode(),
+        json.dumps({"choices": [{"message": {"content": DEEP}}]}).encode(),
+        ('{"choices":[{"message":{"content":{"reasoning":' + DEEP + "}}}]}").encode(),
+    ],
+)
+def test_a_deeply_nested_answer_is_an_invalid_answer_not_an_exception(body: bytes) -> None:
+    session = BodySession(body)
+    outcome = body_reviewer(session, 0).review(payload())
+    assert outcome.verdict is None and outcome.failure == "invalid"
+    assert usage_of(body) == Usage()
+
+
+def test_a_deeply_nested_enrichment_answer_is_refused_as_not_json() -> None:
+    with pytest.raises(ValueError, match="answer_not_json"):
+        parse_answer(ExplainAnswer, DEEP)

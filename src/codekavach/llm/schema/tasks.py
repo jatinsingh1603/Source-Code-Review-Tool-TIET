@@ -212,7 +212,7 @@ def parse_answer[A: BaseModel](model: type[A], text: str) -> A:
     """
     try:
         return model.model_validate(json.loads(text))
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, RecursionError):  # also brackets nested past the limit
         raise ValueError("answer_not_json") from None
     except ValueError:
         raise ValueError("answer_violates_schema") from None

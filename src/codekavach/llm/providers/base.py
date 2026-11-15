@@ -246,7 +246,7 @@ def _document(body: bytes) -> object:
         raise ProviderParseError("response_too_large")
     try:
         return json.loads(body)
-    except ValueError:
+    except (ValueError, RecursionError):  # brackets nested past the interpreter's limit
         raise ProviderParseError("response_not_json") from None
 
 
@@ -291,7 +291,7 @@ def usage_of(body: bytes) -> Usage:
     """The token usage in a response envelope, from whichever field the vendor uses."""
     try:
         document = json.loads(body)
-    except ValueError:
+    except (ValueError, RecursionError):
         return Usage()
     if not isinstance(document, dict):
         return Usage()
