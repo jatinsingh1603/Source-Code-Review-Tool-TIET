@@ -198,3 +198,56 @@ Not fixed:
   as known and passes.
 - **README has no screenshots (informational).** The placeholder table was removed; `docs/img/`
   does not exist.
+
+## Server attack surface (REST API as admin, auditor, developer, viewer, anonymous), 2026-11-15
+
+Checked against a running `codekavach serve`: every route of `/api/docs` with each role and with no
+token; extra fields in request bodies (mass assignment); session and personal-token revocation on
+logout, password change, role change, deactivation and deletion; archive uploads (path traversal,
+absolute and drive paths, symlinks, device files, a 300 MiB decompression bomb, hostile file
+names); git intake (scheme, credentials, host allow-list, loopback and IPv6 literals, option-like
+refs); report and attestation format parameters; pagination bounds; error bodies; response headers.
+The role matrix, the upload checks and the revocation paths held. Fixed in this pass: chunked
+request bodies now count against the body limit, a deeply nested policy no longer answers 500,
+user names are unique whatever their case, and a git ref or URL that cannot be cloned safely is
+refused when the project is saved.
+
+Not fixed:
+
+- **No per-project access control (medium, by design).** Roles are global: every authenticated
+  user, a viewer included, reads every project, scan, finding (with its code excerpt), scan log
+  and report. There is no project membership, so there is no cross-project boundary to test.
+- **An admin may name any secret reference as a provider key (medium).** `PUT /settings` accepts
+  `provider_key_refs` such as `env:CODEKAVACH_SERVER_VAULT_PASSPHRASE` or `file:/etc/passwd`; the
+  value would then be sent as the API key to that provider's endpoint. GitHub sync has an
+  allow-list of references (`github_token_refs`); provider keys have none. Admin only.
+- **Login throttling can lock out a real user (medium).** Attempts are counted per client address
+  and per user name (10 a minute by default). Ten wrong passwords for `admin` from anywhere block
+  the real admin's login for up to a minute, and everybody behind one reverse proxy or NAT shares
+  the address counter. There is no per-account back-off beyond that window and no MFA.
+- **The default admin password is public (medium).** Without `CODEKAVACH_ADMIN_PASSWORD` the first
+  start creates `admin` / `kavach-admin` and prints it; nothing forces a change at first login.
+- **The JSON body limit equals the upload limit (low).** Every route accepts a body of up to
+  about 201 MiB (the upload limit plus 1 MiB), the unauthenticated login route included; field
+  length limits are applied only after the body has been read into memory.
+- **Bearer tokens in the query string (low).** `?access_token=` is accepted on GET for event
+  streams and download links. It is redacted from the server's access log, but it stays in browser
+  history and in the log of any proxy in front of the server.
+- **No TLS in the server itself (low).** `codekavach serve` speaks plain HTTP and sends HSTS only
+  when the request scheme is https; a deployment needs a TLS-terminating proxy.
+- **The interactive API pages have no Content-Security-Policy (low).** `/api/docs` and
+  `/api/redoc` load their scripts from a public CDN and are served without a CSP; they and
+  `/api/openapi.json` are readable without a token, so the route list is public.
+- **Report rendering is on demand and unthrottled (low).** Any role with `report:read` (a viewer
+  included) can request the PDF of every scan; one PDF of the sample took tens of seconds of CPU on
+  the test machine, and there is no per-user rate limit on API calls other than login.
+- **A viewer can read the privacy attestation but not the ledger (informational).** The
+  attestation download needs `report:read`, the ledger pages need `privacy:read_ledger`; the
+  attestation is the summary the report also prints.
+- **Viewers see provider configuration (informational).** `GET /providers` and `GET /settings`
+  show every role the provider endpoints, the names of the key references and whether each
+  reference is set. No key value is returned.
+- **Denied requests grow the audit log without bound (informational).** Each 403 writes an audit
+  event; a logged-in user can add rows as fast as they can send requests.
+- **Unknown API paths answer without a request id (informational).** The JSON 404 for a route
+  that does not exist has no `request_id` field, unlike every other error body.
