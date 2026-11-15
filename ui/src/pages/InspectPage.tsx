@@ -53,7 +53,7 @@ function LatestPayload() {
         {loading ? (
           <Skeleton rows={2} />
         ) : (
-          <Empty title="No payloads to inspect" action="Run the KavachBank demo" to="/demo">
+          <Empty title="No payloads to inspect" action="Getting started" to="/start">
             {scan
               ? `${scanLabel(scan.id)}${scan.privacy_level ? ` (${scan.privacy_level})` : ""} recorded no payload: it ran at L0, at L4 (fails closed in this build) or policy kept every candidate local.`
               : latest

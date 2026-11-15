@@ -327,7 +327,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 </head>
 <body>
 <div id="app"></div>
-<label class="jump">Screen <select id="jump"><option value="Main">00 · Design system</option><option value="Flows">01 · Sitemap and demo flow</option><option value="HowItWorks">02 · How it works</option><option value="DemoMode">03 · Demo mode</option><option value="Login">04 · Login</option><option value="Onboarding">05 · Onboarding (E33-02)</option><option value="Overview">06 · Overview</option><option value="ScanLive">07 · Scan launch and live progress</option><option value="Findings">08 · Findings</option><option value="FindingDetail">09 · Finding detail (E30-02)</option><option value="PrivacyInspect">10 · Privacy Inspect</option><option value="PrivacyCentre">11 · Privacy Centre</option><option value="EgressLedger">12 · Egress Ledger</option><option value="Policy">13 · Policy editor (E25-01)</option><option value="Providers">14 · Providers (E22)</option><option value="Reports">15 · Reports (E30, E31)</option><option value="Integrations">16 · Integrations (E34, E35)</option><option value="Evaluation">17 · Evaluation (E36, E37)</option><option value="Admin">18 · Admin (E32)</option><option value="Settings">19 · Settings</option></select></label>
+<label class="jump">Screen <select id="jump"><option value="Main">00 · Design system</option><option value="Flows">01 · Sitemap and review flow</option><option value="HowItWorks">02 · How it works</option><option value="GettingStarted">03 · Getting started</option><option value="Login">04 · Login</option><option value="Onboarding">05 · Onboarding (E33-02)</option><option value="Overview">06 · Overview</option><option value="ScanLive">07 · Scan launch and live progress</option><option value="Findings">08 · Findings</option><option value="FindingDetail">09 · Finding detail (E30-02)</option><option value="PrivacyInspect">10 · Privacy Inspect</option><option value="PrivacyCentre">11 · Privacy Centre</option><option value="EgressLedger">12 · Egress Ledger</option><option value="Policy">13 · Policy editor (E25-01)</option><option value="Providers">14 · Providers (E22)</option><option value="Reports">15 · Reports (E30, E31)</option><option value="Integrations">16 · Integrations (E34, E35)</option><option value="Evaluation">17 · Evaluation (E36, E37)</option><option value="Admin">18 · Admin (E32)</option><option value="Settings">19 · Settings</option></select></label>
 <template id="tpl-Main">
 
 <div class="ck" style="padding: 56px 64px 72px; display: flex; flex-direction: column; gap: 40px">
@@ -487,7 +487,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <div class="row" style="padding: 12px 14px; border-bottom: 1px solid var(--border)"><svg class="ico faint" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg><span style="flex: 1">inspect KB-2026-0012</span><span class="kbd">esc</span></div>
 <div style="padding: 6px">
 <div class="row" style="padding: 9px 10px; border-radius: 6px; background: var(--surface-3)"><span class="sev c"></span><span style="flex: 1">Open Privacy Inspect for KB-2026-0012</span><span class="kbd">↵</span></div>
-<div class="row" style="padding: 9px 10px"><span class="faint xs mono" style="width: 52px">ACTION</span><span style="flex: 1">Run KavachBank demo (offline)</span></div>
+<div class="row" style="padding: 9px 10px"><span class="faint xs mono" style="width: 52px">ACTION</span><span style="flex: 1">Getting started</span></div>
 <div class="row" style="padding: 9px 10px"><span class="faint xs mono" style="width: 52px">ACTION</span><span style="flex: 1">Verify egress ledger chain</span></div>
 </div>
 </div>
@@ -514,9 +514,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <svg width="8" height="47" viewBox="0 0 8 47" preserveAspectRatio="none" style="position: absolute; left: 1058px; top: 504px; width: 8px; height: 47px; overflow: visible; fill: none; stroke: var(--faint); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-12" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#8592AB" stroke="none" style="stroke: none; fill: #8592AB; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 43" marker-end="url(#dc-arrow-head-filled-12)"></path></svg>
 <svg width="8" height="47" viewBox="0 0 8 47" preserveAspectRatio="none" style="position: absolute; left: 1286px; top: 504px; width: 8px; height: 47px; overflow: visible; fill: none; stroke: var(--faint); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-13" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#8592AB" stroke="none" style="stroke: none; fill: #8592AB; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 43" marker-end="url(#dc-arrow-head-filled-13)"></path></svg>
 
-<div style="position: absolute; left: 64px; top: 56px; font-size: 26px; font-weight: 650; letter-spacing: -0.015em">Sitemap and demo flow</div>
-<div style="position: absolute; left: 64px; top: 96px; width: 900px; font-size: 14px; color: var(--muted)">Wireframe map of every screen on this canvas. Top: the 10-minute demo story. Below: the information architecture behind the sidebar.</div>
-<div style="position: absolute; left: 64px; top: 160px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint)">Demo story · offline, Mock provider</div>
+<div style="position: absolute; left: 64px; top: 56px; font-size: 26px; font-weight: 650; letter-spacing: -0.015em">Sitemap and review flow</div>
+<div style="position: absolute; left: 64px; top: 96px; width: 900px; font-size: 14px; color: var(--muted)">Wireframe map of every screen on this canvas. Top: the review story from sign-in to report. Below: the information architecture behind the sidebar.</div>
+<div style="position: absolute; left: 64px; top: 160px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint)">Review story</div>
 
 <div style="position: absolute; left: 64px; top: 200px; width: 112px; height: 72px; box-sizing: border-box; padding: 8px; display: flex; align-items: center; justify-content: center; text-align: center; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 10px; font-size: 13px"><span><b class="acc">1</b><br>Login</span></div>
 <div style="position: absolute; left: 232px; top: 200px; width: 112px; height: 72px; box-sizing: border-box; padding: 8px; display: flex; align-items: center; justify-content: center; text-align: center; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 10px; font-size: 13px"><span><b class="acc">2</b><br>Demo mode</span></div>
@@ -590,9 +590,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost on" href="#HowItWorks" style="justify-content: flex-start; color: var(--text)">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -607,7 +607,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <div class="user"><span class="avatar">AV</span><span style="line-height: 1.15"><span class="sm" style="font-weight: 600">Asha Verma</span><br><span class="role">Auditor</span></span></div>
 </header>
 <main class="content">
-<div class="ph"><div><div class="crumb"><span>CodeKavach</span><span>/</span><span>How it works</span></div><h1>How CodeKavach works</h1><p class="muted" style="margin-top: 4px; max-width: 760px">Heavy analysis stays on your machine. Only a minimal, sanitised slice crosses the boundary, every outbound byte is written to the egress ledger, and verdicts are mapped back using a vault that never leaves.</p></div><a class="btn pri" href="#DemoMode"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Run KavachBank demo</a></div>
+<div class="ph"><div><div class="crumb"><span>CodeKavach</span><span>/</span><span>How it works</span></div><h1>How CodeKavach works</h1><p class="muted" style="margin-top: 4px; max-width: 760px">Heavy analysis stays on your machine. Only a minimal, sanitised slice crosses the boundary, every outbound byte is written to the egress ledger, and verdicts are mapped back using a vault that never leaves.</p></div><a class="btn pri" href="#GettingStarted"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Run KavachBank demo</a></div>
 
 <section class="card" style="padding: 24px">
 <div style="display: grid; grid-template-columns: minmax(0, 1fr) 170px 230px; gap: 0; min-width: 0; overflow-x: auto">
@@ -653,7 +653,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 </main>
 </div>
 </div>
-</template><template id="tpl-DemoMode">
+</template><template id="tpl-GettingStarted">
 
 <div class="ck app" data-theme="{{theme}}">
 <aside class="side" aria-label="Main navigation">
@@ -678,9 +678,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start; border-color: var(--accent); background: var(--accent-soft)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start; border-color: var(--accent); background: var(--accent-soft)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -696,16 +696,22 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 </header>
 <main class="content">
 <section class="card" style="padding: 32px; display: flex; flex-direction: column; align-items: flex-start; gap: 16px">
-<span class="sec-h">Demo mode · offline</span>
-<h1 style="font-size: 28px; font-weight: 650; letter-spacing: -0.02em">Run the KavachBank demo</h1>
-<p class="muted" style="max-width: 620px">Runs the full 9-stage pipeline on the synthetic KavachBank sample: Python and JavaScript, planted vulnerabilities, fake secrets and an interest and fee engine. Fully offline with the Mock provider. No API key needed.</p>
-<a class="btn pri xl" href="#ScanLive"><svg class="ico lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Run KavachBank demo</a>
-<div class="row"><span class="chip">Privacy level L3</span><span class="chip">Mock provider</span><span class="chip">486 files</span><span class="chip">about 90 seconds</span></div>
+<span class="sec-h">Getting started</span>
+<h1 style="font-size: 28px; font-weight: 650; letter-spacing: -0.02em">Review your first project</h1>
+<p class="muted" style="max-width: 620px">Six steps take a code base from intake to a signed-off audit report. The status of each step is read from <b>kavachbank-core</b>; change the project in the top bar to follow another one.</p>
+<ol style="list-style: none; margin: 0; padding: 0; align-self: stretch" aria-label="Review workflow">
+<li class="listrow" style="align-items: flex-start; flex-wrap: wrap"><div class="row" style="gap: 12px; align-items: flex-start; flex: 1 1 320px; min-width: 0"><span class="mono xs faint" style="padding-top: 2px">01</span><div style="min-width: 0"><b class="sm">Add a project</b><div class="xs muted">Point CodeKavach at a Git repository, upload an archive, or use a folder on the server.</div><div class="xs faint">3 projects · kavachbank-core selected</div></div></div><div class="row"><span class="chip fixed">Done</span><a class="btn sm" href="#">Add another</a></div></li>
+<li class="listrow" style="align-items: flex-start; flex-wrap: wrap"><div class="row" style="gap: 12px; align-items: flex-start; flex: 1 1 320px; min-width: 0"><span class="mono xs faint" style="padding-top: 2px">02</span><div style="min-width: 0"><b class="sm">Run a scan</b><div class="xs muted">Choose the privacy level and the provider. The engines run on this server; only what the level allows is prepared for a model.</div><div class="xs faint">Last completed 12 Nov 2026, 10:42 IST</div></div></div><div class="row"><span class="chip fixed">Done</span><a class="btn sm" href="#">Scan again</a></div></li>
+<li class="listrow" style="align-items: flex-start; flex-wrap: wrap"><div class="row" style="gap: 12px; align-items: flex-start; flex: 1 1 320px; min-width: 0"><span class="mono xs faint" style="padding-top: 2px">03</span><div style="min-width: 0"><b class="sm">Triage the findings</b><div class="xs muted">Confirm, assign, fix or dismiss each finding. Every decision is kept in the finding&#39;s history.</div><div class="xs faint">43 open · 0 triaged</div></div></div><div class="row"><a class="btn pri sm" href="#">Open findings</a></div></li>
+<li class="listrow" style="align-items: flex-start; flex-wrap: wrap"><div class="row" style="gap: 12px; align-items: flex-start; flex: 1 1 320px; min-width: 0"><span class="mono xs faint" style="padding-top: 2px">04</span><div style="min-width: 0"><b class="sm">See what the model saw</b><div class="xs muted">Privacy Inspect shows each payload beside the original code, with every redaction and pseudonym marked.</div><div class="xs faint">142 payloads recorded</div></div></div><div class="row"><span class="chip fixed">Done</span><a class="btn sm" href="#">Open Privacy Inspect</a></div></li>
+<li class="listrow" style="align-items: flex-start; flex-wrap: wrap"><div class="row" style="gap: 12px; align-items: flex-start; flex: 1 1 320px; min-width: 0"><span class="mono xs faint" style="padding-top: 2px">05</span><div style="min-width: 0"><b class="sm">Verify the egress ledger</b><div class="xs muted">Every payload is hashed into a chained ledger. Verify the chain and export it for your auditors.</div><div class="xs faint">Chain verified</div></div></div><div class="row"><span class="chip fixed">Done</span><a class="btn sm" href="#">Open Egress Ledger</a></div></li>
+<li class="listrow" style="align-items: flex-start; flex-wrap: wrap"><div class="row" style="gap: 12px; align-items: flex-start; flex: 1 1 320px; min-width: 0"><span class="mono xs faint" style="padding-top: 2px">06</span><div style="min-width: 0"><b class="sm">Produce the audit report</b><div class="xs muted">Download the report as PDF, Word, Excel, SARIF or JSON, with the privacy attestation attached.</div></div></div><div class="row"><a class="btn sm" href="#">Open Reports</a></div></li>
+</ol>
 </section>
 
-<div class="banner info"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v.5"></path></svg><span><b>Mock provider:</b> the ledger shows what <i>would</i> have been sent. Nothing left this laptop.</span></div>
+<section class="card stack"><div class="row between" style="flex-wrap: wrap"><div style="flex: 1 1 320px; min-width: 0"><h2>No code at hand?</h2><p class="sub">Scan the bundled KavachBank sample application: Python and JavaScript with planted vulnerabilities and synthetic secrets. It runs at L3 with the Mock provider, so nothing leaves this server and no API key is needed.</p></div><a class="btn" href="#ScanLive"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Scan the sample application</a></div></section>
 
-<div class="row between"><h2 style="font-size: 16px; font-weight: 600">Last demo run · 12 Nov 2026, 10:42 IST</h2><span class="st sm"><span class="dot ok"></span>Completed in 1 min 27 s</span></div>
+<div class="row between"><h2 style="font-size: 16px; font-weight: 600">Latest scan · 12 Nov 2026, 10:42 IST</h2><span class="st sm"><span class="dot ok"></span>Completed in 1 min 27 s</span></div>
 <section class="g g-4">
 <a class="card stack" href="#Findings" style="text-decoration: none">
 <div class="row between"><span class="sec-h">Findings</span><svg class="ico faint" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></div>
@@ -753,17 +759,12 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 </section>
 <section style="flex: 1 1 440px; display: flex; align-items: center; justify-content: center; padding: 48px 24px">
 <form class="card stack s16" style="width: 100%; max-width: 420px; padding: 28px; box-shadow: var(--shadow)">
-<div><h2 style="font-size: 20px; font-weight: 650">Sign in</h2><p class="sub" style="margin-top: 4px">Choose your organisation to continue.</p></div>
-<div class="fld"><label for="tenant">Organisation</label><select id="tenant" class="inp"><option>Demo Organisation · demo.codekavach.local</option><option>KavachBank Security</option></select></div>
-<a class="btn pri" href="#Overview" style="width: 100%"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>Continue with SSO (SAML / OIDC)</a>
-<div class="row" style="gap: 10px"><div class="hr" style="flex: 1"></div><span class="xs faint">or local account</span><div class="hr" style="flex: 1"></div></div>
-<div class="fld"><label for="em">Email</label><input id="em" class="inp" type="email" value="asha.verma@demo.codekavach.local"></div>
+<div><h2 style="font-size: 20px; font-weight: 650">Sign in</h2><p class="sub" style="margin-top: 4px">Use your account on this server · codekavach.local</p></div>
+<div class="fld"><label for="em">Email or username</label><input id="em" class="inp" type="email" value="asha.verma@codekavach.local"></div>
 <div class="fld"><label for="pw">Password</label><input id="pw" class="inp" type="password" value="xxxxxxxxxxxx"></div>
-<div class="row between"><label class="swrow"><input type="checkbox" class="chk"> Remember this device</label><a class="sm acc" href="#">Forgot password?</a></div>
+<div class="row between"><label class="swrow"><input type="checkbox" class="chk"> Remember this device</label><span class="sm faint">Forgot password? Ask an admin.</span></div>
 <a class="btn" href="#Overview" style="width: 100%">Sign in</a>
-<div class="hr"></div>
-<a class="btn ghost" href="#DemoMode" style="width: 100%"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Try the offline demo, no account needed</a>
-<p class="xs faint" style="text-align: center">Running air-gapped. No telemetry leaves this machine.</p>
+<p class="xs faint" style="text-align: center">No telemetry leaves this machine.</p>
 </form>
 </section>
 </div>
@@ -792,9 +793,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -876,7 +877,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 
 <sc-if value="{{s4}}" hint-placeholder-val="{{ false }}">
 <section class="g g-3">
-<button type="button" class="lvlcard on"><div class="row between"><span class="provlogo">M</span><span class="chip fixed">Default</span></div><b>Mock</b><span class="sub">Offline · no key. Deterministic verdicts for demos and CI.</span></button>
+<button type="button" class="lvlcard on"><div class="row between"><span class="provlogo">M</span><span class="chip fixed">Default</span></div><b>Mock</b><span class="sub">Offline · no key. Deterministic verdicts for dry runs and CI.</span></button>
 <button type="button" class="lvlcard"><div class="row between"><span class="provlogo">R</span><span class="chip">Offline</span></div><b>Replay</b><span class="sub">Replays recorded verdicts. No key.</span></button>
 <button type="button" class="lvlcard"><div class="row between"><span class="provlogo">L</span><span class="chip">Self-hosted</span></div><b>Ollama / vLLM</b><span class="sub">Qwen, DeepSeek, GLM, Kimi, Llama on your hardware.</span></button>
 <button type="button" class="lvlcard"><div class="row between"><span class="provlogo">A</span><span class="chip">BYO key</span></div><b>Anthropic Claude</b><span class="sub">Key reference: env:ANTHROPIC_API_KEY</span></button>
@@ -929,9 +930,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -1073,9 +1074,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -1186,9 +1187,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -1278,9 +1279,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -1486,9 +1487,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -1685,9 +1686,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -1844,9 +1845,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -1946,9 +1947,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -2070,9 +2071,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -2093,7 +2094,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <div class="card stack">
 <div class="row between"><div class="row" style="gap: 10px"><span class="provlogo">M</span><div><b>Mock</b><div class="xs faint mono">wire: internal</div></div></div><span class="st sm"><span class="dot ok"></span>Healthy</span></div>
 <div class="row"><span class="chip">Structured output</span><span class="chip">Deterministic</span></div>
-<dl class="dl sm"><dt>Key</dt><dd>Offline · no key</dd><dt>Cost</dt><dd>None</dd><dt>Use</dt><dd>Demos, CI, dry runs</dd></dl>
+<dl class="dl sm"><dt>Key</dt><dd>Offline · no key</dd><dt>Cost</dt><dd>None</dd><dt>Use</dt><dd>CI, dry runs</dd></dl>
 </div>
 <div class="card stack">
 <div class="row between"><div class="row" style="gap: 10px"><span class="provlogo">R</span><div><b>Replay</b><div class="xs faint mono">wire: recorded JSONL</div></div></div><span class="st sm"><span class="dot ok"></span>Healthy</span></div>
@@ -2186,9 +2187,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -2298,9 +2299,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -2355,7 +2356,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <div class="card stack">
 <b>CI badge</b>
 <div class="row"><span style="display: inline-flex; font-family: 'IBM Plex Mono', monospace; font-size: 11px; border-radius: 3px; overflow: hidden"><span style="background: #344054; color: #fff; padding: 3px 7px">codekavach</span><span style="background: #B42318; color: #fff; padding: 3px 7px">3 critical</span></span><span style="display: inline-flex; font-family: 'IBM Plex Mono', monospace; font-size: 11px; border-radius: 3px; overflow: hidden"><span style="background: #344054; color: #fff; padding: 3px 7px">privacy</span><span style="background: #067647; color: #fff; padding: 3px 7px">L3 · 0 leaks</span></span></div>
-<div class="code" style="padding: 8px 12px; font-size: 11.5px; white-space: normal; word-break: break-all">![codekavach](https://ck.demo.local/badge/kavachbank-core.svg)</div>
+<div class="code" style="padding: 8px 12px; font-size: 11.5px; white-space: normal; word-break: break-all">![codekavach](https://ck.example.local/badge/kavachbank-core.svg)</div>
 </div>
 </div>
 </section>
@@ -2424,9 +2425,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -2537,14 +2538,14 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
 <header class="top">
-<button class="pill" type="button">Demo Organisation<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<button class="pill" type="button">KavachBank Security<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
 <span class="pill priv"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path></svg>Floor L2 · default L3</span>
 <span class="pill off"><span class="dot"></span>Offline · air-gapped</span>
 <span class="grow"></span>
@@ -2561,10 +2562,10 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <div class="tbl-wrap"><table class="tbl">
 <thead><tr><th>User</th><th>Role</th><th>Projects</th><th>Sign-in</th><th>Last active</th><th></th></tr></thead>
 <tbody>
-<tr><td><div class="row"><span class="avatar" style="width: 26px; height: 26px; font-size: 10px">AV</span><div><b class="sm">Asha Verma</b><div class="xs faint">asha.verma@demo.codekavach.local</div></div></div></td><td><select class="inp" aria-label="Role" style="height: 30px; width: 120px"><option>Admin</option></select></td><td class="sm">All</td><td class="sm">SSO · SAML</td><td class="sm muted">Now</td><td><button class="btn sm ghost" type="button">Edit</button></td></tr>
-<tr><td><div class="row"><span class="avatar" style="width: 26px; height: 26px; font-size: 10px">RI</span><div><b class="sm">Rohan Iyer</b><div class="xs faint">rohan.iyer@demo.codekavach.local</div></div></div></td><td><select class="inp" aria-label="Role" style="height: 30px; width: 120px"><option>Auditor</option></select></td><td class="sm">kavachbank-core</td><td class="sm">SSO · SAML</td><td class="sm muted">10:51</td><td><button class="btn sm ghost" type="button">Edit</button></td></tr>
-<tr><td><div class="row"><span class="avatar" style="width: 26px; height: 26px; font-size: 10px">KS</span><div><b class="sm">Kavya Shah</b><div class="xs faint">kavya.shah@demo.codekavach.local</div></div></div></td><td><select class="inp" aria-label="Role" style="height: 30px; width: 120px"><option>Developer</option></select></td><td class="sm">kavachbank-core, kb-mobile</td><td class="sm">SSO · SAML</td><td class="sm muted">Yesterday</td><td><button class="btn sm ghost" type="button">Edit</button></td></tr>
-<tr><td><div class="row"><span class="avatar" style="width: 26px; height: 26px; font-size: 10px">MD</span><div><b class="sm">Manish Das</b><div class="xs faint">manish.das@demo.codekavach.local</div></div></div></td><td><select class="inp" aria-label="Role" style="height: 30px; width: 120px"><option>Developer</option></select></td><td class="sm">kavachbank-core</td><td class="sm">Local · MFA</td><td class="sm muted">9 Nov</td><td><button class="btn sm ghost" type="button">Edit</button></td></tr>
+<tr><td><div class="row"><span class="avatar" style="width: 26px; height: 26px; font-size: 10px">AV</span><div><b class="sm">Asha Verma</b><div class="xs faint">asha.verma@codekavach.local</div></div></div></td><td><select class="inp" aria-label="Role" style="height: 30px; width: 120px"><option>Admin</option></select></td><td class="sm">All</td><td class="sm">SSO · SAML</td><td class="sm muted">Now</td><td><button class="btn sm ghost" type="button">Edit</button></td></tr>
+<tr><td><div class="row"><span class="avatar" style="width: 26px; height: 26px; font-size: 10px">RI</span><div><b class="sm">Rohan Iyer</b><div class="xs faint">rohan.iyer@codekavach.local</div></div></div></td><td><select class="inp" aria-label="Role" style="height: 30px; width: 120px"><option>Auditor</option></select></td><td class="sm">kavachbank-core</td><td class="sm">SSO · SAML</td><td class="sm muted">10:51</td><td><button class="btn sm ghost" type="button">Edit</button></td></tr>
+<tr><td><div class="row"><span class="avatar" style="width: 26px; height: 26px; font-size: 10px">KS</span><div><b class="sm">Kavya Shah</b><div class="xs faint">kavya.shah@codekavach.local</div></div></div></td><td><select class="inp" aria-label="Role" style="height: 30px; width: 120px"><option>Developer</option></select></td><td class="sm">kavachbank-core, kb-mobile</td><td class="sm">SSO · SAML</td><td class="sm muted">Yesterday</td><td><button class="btn sm ghost" type="button">Edit</button></td></tr>
+<tr><td><div class="row"><span class="avatar" style="width: 26px; height: 26px; font-size: 10px">MD</span><div><b class="sm">Manish Das</b><div class="xs faint">manish.das@codekavach.local</div></div></div></td><td><select class="inp" aria-label="Role" style="height: 30px; width: 120px"><option>Developer</option></select></td><td class="sm">kavachbank-core</td><td class="sm">Local · MFA</td><td class="sm muted">9 Nov</td><td><button class="btn sm ghost" type="button">Edit</button></td></tr>
 <tr><td><div class="row"><span class="avatar" style="width: 26px; height: 26px; font-size: 10px">GV</span><div><b class="sm">Guest viewer</b><div class="xs faint">expires 20 Nov 2026</div></div></div></td><td><select class="inp" aria-label="Role" style="height: 30px; width: 120px"><option>Viewer</option></select></td><td class="sm">Reports only</td><td class="sm">Magic link</td><td class="sm muted">Never</td><td><button class="btn sm ghost" type="button">Revoke</button></td></tr>
 </tbody></table></div>
 
@@ -2645,9 +2646,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <a class="on" href="#Settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg>Settings</a>
 </nav>
 <div class="side-foot">
-<a class="btn sm" href="#DemoMode" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Demo mode</a>
+<a class="btn sm" href="#GettingStarted" style="justify-content: flex-start"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>Getting started</a>
 <a class="btn sm ghost" href="#HowItWorks" style="justify-content: flex-start">How it works</a>
-<div class="xs faint" style="padding: 4px 10px">v0.9.0 · Demo Organisation</div>
+<div class="xs faint" style="padding: 4px 10px">v0.9.0 · KavachBank Security</div>
 </div>
 </aside>
 <div class="main">
@@ -2675,7 +2676,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <div class="card stack s16" id="profile">
 <h2>Profile</h2>
 <div class="row" style="gap: 14px"><span class="avatar" style="width: 48px; height: 48px; font-size: 15px">AV</span><button class="btn sm" type="button">Change photo</button></div>
-<div class="g g-2"><div class="fld"><label for="st-n">Name</label><input id="st-n" class="inp" value="Asha Verma"></div><div class="fld"><label for="st-e">Email</label><input id="st-e" class="inp" value="asha.verma@demo.codekavach.local" disabled></div></div>
+<div class="g g-2"><div class="fld"><label for="st-n">Name</label><input id="st-n" class="inp" value="Asha Verma"></div><div class="fld"><label for="st-e">Email</label><input id="st-e" class="inp" value="asha.verma@codekavach.local" disabled></div></div>
 <div class="g g-2"><div class="fld"><label for="st-r">Role</label><input id="st-r" class="inp" value="Auditor · set by admin" disabled></div><div class="fld"><label for="st-t">Title</label><input id="st-t" class="inp" value="Lead Auditor"></div></div>
 </div>
 <div class="card stack" id="appearance">
@@ -2796,7 +2797,7 @@ class Component extends DCLogic {
 }
 
  return Component; })();
-REG["DemoMode"] = (function(){
+REG["GettingStarted"] = (function(){
 class Component extends DCLogic {
   renderVals() {
     return { theme: 'light' };

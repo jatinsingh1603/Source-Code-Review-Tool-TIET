@@ -138,7 +138,7 @@ export default function PrivacyPage() {
         </div>
       ) : !scanId && !scans.length ? (
         <div className="card">
-          <Empty title="No scans yet" action="Run the KavachBank demo" to="/demo">
+          <Empty title="No scans yet" action="Getting started" to="/start">
             Privacy measurements appear after the first scan.
           </Empty>
         </div>

@@ -87,8 +87,8 @@ export default function OverviewPage() {
             Run a scan to see results here.
           </Empty>
           <div className="row" style={{ justifyContent: "center" }}>
-            <Link className="more" to="/demo">
-              Or run the KavachBank demo <Icon name="arrow-right" />
+            <Link className="more" to="/start">
+              New here? Follow the getting-started steps <Icon name="arrow-right" />
             </Link>
           </div>
         </div>

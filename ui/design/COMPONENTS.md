@@ -67,9 +67,9 @@ Two columns: a 228 to 236 px side nav and a main column. Below 760 px the side n
       <a href="/settings"><Icon name="cog"/>Settings</a>
     </nav>
     <div class="side-foot">
-      <a class="btn sm" href="/demo" style="justify-content:flex-start"><Icon name="play"/>Demo mode</a>
+      <a class="btn sm" href="/start" style="justify-content:flex-start"><Icon name="play"/>Getting started</a>
       <a class="btn sm ghost" href="/how-it-works" style="justify-content:flex-start">How it works</a>
-      <div class="xs faint" style="padding:4px 10px">v0.9.0 · Demo Organisation</div>
+      <div class="xs faint" style="padding:4px 10px">v0.9.0 · KavachBank Security</div>
     </div>
   </aside>
   <div class="main">
@@ -80,7 +80,7 @@ Two columns: a 228 to 236 px side nav and a main column. Below 760 px the side n
 ```
 
 - Active item: `class="on"` (surface-3 background, ink text, 600). A sub-item that is active is `class="subnav on"`. Finding detail keeps "Findings" active.
-- Side footer, active states: on Demo mode the button gets `style="border-color:var(--accent);background:var(--accent-soft)"`; on How it works the ghost button gets `class="btn sm ghost on"` and `color:var(--text)`.
+- Side footer, active states: on Getting started the button gets `style="border-color:var(--accent);background:var(--accent-soft)"`; on How it works the ghost button gets `class="btn sm ghost on"` and `color:var(--text)`.
 - Footer text = `v{GET /version .version} · {settings.org_name}`.
 
 ### Top bar
@@ -160,7 +160,7 @@ Two columns: a 228 to 236 px side nav and a main column. Below 760 px the side n
 - `.card.stack` is common: card with a 12 px vertical gap instead of `.card-h`.
 - `.sec-h`: 11 px uppercase overline, 0.08em tracking, faint.
 - `.more`: accent link with a trailing arrow; external links use the `arrow-up-right` icon.
-- A card that is a link (`<a class="card stack" style="text-decoration:none">`) is used on Demo mode.
+- A card that is a link (`<a class="card stack" style="text-decoration:none">`) is used on Getting started.
 - Highlighted cards: `style="border-color:var(--high)"` (what leaves) and `style="border-color:var(--ok)"` (what stays) on onboarding step 3.
 
 ## 5. KPI
@@ -251,7 +251,7 @@ In tables the badge is just `<span class="lvl">L3</span>` with no meter. "never-
 <button class="btn ghost" type="button">Cancel</button>         <!-- text only -->
 <button class="btn danger" type="button">Purge vault</button>   <!-- red text, red border -->
 <button class="btn sm">…</button>                               <!-- 30 px -->
-<a class="btn pri xl" href="/scans/new"><Icon name="play" class="ico lg"/>Run KavachBank demo</a>  <!-- 48 px -->
+<a class="btn pri xl" href="/scans/new"><Icon name="play" class="ico lg"/>Start scan</a>  <!-- 48 px -->
 <button class="iconbtn" type="button" aria-label="Close"><Icon name="close"/></button>
 ```
 
@@ -498,7 +498,7 @@ Opened by ⌘K / Ctrl+K from the top-bar search.
   <div class="pal-in"><Icon name="search" class="ico faint"/><span style="flex:1">inspect KB-2026-0012</span><span class="kbd">esc</span></div>
   <div class="pal-list">
     <div class="pal-i on"><span class="sev c"></span><span style="flex:1">Open Privacy Inspect for KB-2026-0012</span><span class="kbd">↵</span></div>
-    <div class="pal-i"><span class="pal-k">ACTION</span><span style="flex:1">Run KavachBank demo (offline)</span></div>
+    <div class="pal-i"><span class="pal-k">ACTION</span><span style="flex:1">Getting started</span></div>
     <div class="pal-i"><span class="pal-k">ACTION</span><span style="flex:1">Verify egress ledger chain</span></div>
   </div>
 </div>

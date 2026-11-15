@@ -108,7 +108,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       }
     }
     const actions: [string, string][] = [
-      ["Run KavachBank demo (offline)", "/demo"],
+      ["Getting started", "/start"],
       [
         "Verify egress ledger chain",
         latest ? `/privacy/ledger?scan=${latest.id}` : "/privacy/ledger",

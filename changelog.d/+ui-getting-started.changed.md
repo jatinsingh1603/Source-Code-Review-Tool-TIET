@@ -1,0 +1,1 @@
+The dashboard's "Demo mode" page is now "Getting started" (`/start`): six steps from adding a project to the audit report, each with its status read from the selected project on the server and a link to the page that does it. Scanning the bundled KavachBank sample application remains available there as a secondary action.

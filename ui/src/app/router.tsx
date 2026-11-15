@@ -28,7 +28,7 @@ const ProvidersPage = lazy(() => import("@/pages/ProvidersPage"));
 const EvaluationPage = lazy(() => import("@/pages/EvaluationPage"));
 const AdminPage = lazy(() => import("@/pages/AdminPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
-const DemoPage = lazy(() => import("@/pages/DemoPage"));
+const GettingStartedPage = lazy(() => import("@/pages/GettingStartedPage"));
 const HowItWorksPage = lazy(() => import("@/pages/HowItWorksPage"));
 
 function Root() {
@@ -122,7 +122,7 @@ export const router = createBrowserRouter(
             { path: "admin", element: guard("audit:read", <AdminPage />) },
             { path: "admin/:tab", element: guard("audit:read", <AdminPage />) },
             { path: "settings", element: <SettingsPage /> },
-            { path: "demo", element: <DemoPage /> },
+            { path: "start", element: <GettingStartedPage /> },
             { path: "how-it-works", element: <HowItWorksPage /> },
             // Old addresses kept working.
             { path: "users", element: <Navigate to="/admin/users" replace /> },
@@ -133,7 +133,7 @@ export const router = createBrowserRouter(
     },
   ],
   {
-    // "/" for `codekavach serve`; the Pages demo lives under /Source-Code-Review-Tool-TIET/.
+    // "/" for `codekavach serve`; the hosted preview lives under /Source-Code-Review-Tool-TIET/.
     basename: BASE_PATH || "/",
     future: {
       v7_relativeSplatPath: true,

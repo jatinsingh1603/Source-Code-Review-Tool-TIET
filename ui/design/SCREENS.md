@@ -6,16 +6,16 @@ Conventions:
 
 - **API** names an endpoint of the current contract and the field used, for example `GET /scans/{id}/privacy → zero_leak.checked`. Field names follow `ui/src/api/types.ts`.
 - **NEW** marks data the contract does not provide yet. Each one is collected in [API gaps](#api-gaps) at the end. Until it exists, render the element from mock data or hide it, but keep its place in the layout.
-- Copy in quotes is exact. Numbers, names, hashes and dates are demo data: render them from the API. Names, emails and hosts in the design are fictional; the AWS key is AWS's documented example key.
+- Copy in quotes is exact. Numbers, names, hashes and dates are sample data: render them from the API. Names, emails and hosts in the design are fictional; the AWS key is AWS's documented example key.
 - Dates: `12 Nov 2026, 10:42 IST` long form; `12 Nov, 10:42` in tables; times `10:43:41`. Numbers use thousands separators (`2,486`). Byte sizes `412.6 KB`, `2,914 B`. British English.
 
 ## Contents
 
 - [Shared: app shell, routes, icons, logo, states](#shared)
 - [00 Design system board](#00-design-system-board)
-- [01 Sitemap and demo flow](#01-sitemap-and-demo-flow)
+- [01 Sitemap and review flow](#01-sitemap-and-review-flow)
 - [02 How it works](#02-how-it-works)
-- [03 Demo mode](#03-demo-mode)
+- [03 Getting started](#03-getting-started)
 - [04 Login (landing hero)](#04-login-landing-hero)
 - [05 Set up a project (onboarding)](#05-set-up-a-project-onboarding)
 - [06 Overview](#06-overview)
@@ -62,7 +62,7 @@ Conventions:
 | Evaluation | `/evaluation` | |
 | Admin | `/admin` | tabs as `/admin/users` (default), `/admin/orgs`, `/admin/tokens`, `/admin/keys`, `/admin/audit`, `/admin/retention`, `/admin/health` |
 | Settings | `/settings` | sections as anchors `#profile`, `#appearance`, `#notifications`, `#tokens`, `#language` |
-| Demo mode | `/demo` | |
+| Getting started | `/start` | |
 | How it works | `/how-it-works` | |
 | Design system board | `/design` | development builds only |
 
@@ -70,7 +70,7 @@ Role access (from the sitemap): **Admin** everything. **Auditor** findings, priv
 
 ### App shell
 
-Every screen except Login, the design system board and the sitemap uses the shell in [COMPONENTS.md §1](COMPONENTS.md#1-app-shell): side nav (Overview, Projects, Scans, Findings; "Privacy": Privacy Centre, Privacy Inspect (sub-item), Egress Ledger, Policy; "Deliver": Reports, Integrations, Providers; "Organisation": Evaluation, Admin, Settings), footer (Demo mode, How it works, version · organisation), top bar (project pill, level pill, network pill, provider pill, search with ⌘K, notifications, user).
+Every screen except Login, the design system board and the sitemap uses the shell in [COMPONENTS.md §1](COMPONENTS.md#1-app-shell): side nav (Overview, Projects, Scans, Findings; "Privacy": Privacy Centre, Privacy Inspect (sub-item), Egress Ledger, Policy; "Deliver": Reports, Integrations, Providers; "Organisation": Evaluation, Admin, Settings), footer (Getting started, How it works, version · organisation), top bar (project pill, level pill, network pill, provider pill, search with ⌘K, notifications, user).
 
 Shell data:
 
@@ -85,7 +85,7 @@ Shell data:
 | User name, role, initials | `GET /auth/me → display_name, role` |
 | Footer version · organisation | `GET /version → version`, `GET /settings → org_name` |
 
-Active nav item per screen: Overview → Overview; Onboarding → Projects; Scan live → Scans; Findings and Finding detail → Findings; Privacy Inspect → Privacy Inspect (sub-item); others → their own item. Demo mode and How it works highlight their footer button instead.
+Active nav item per screen: Overview → Overview; Onboarding → Projects; Scan live → Scans; Findings and Finding detail → Findings; Privacy Inspect → Privacy Inspect (sub-item); others → their own item. Getting started and How it works highlight their footer button instead.
 
 ### Icons
 
@@ -106,7 +106,7 @@ Inline SVG, no icon font or library. Every icon is `<svg class="ico" viewBox="0 
 | `bars` | Evaluation | `<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>` |
 | `users` | Admin | `<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M21 20c0-2-1.5-4-4-4.6"/>` |
 | `cog` | Settings | `<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>` |
-| `play` | Demo mode, run demo | `<path d="M8 5v14l11-7z"/>` |
+| `play` | Getting started, scan the sample | `<path d="M8 5v14l11-7z"/>` |
 | `search` | search, palette | `<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>` |
 | `bell` | notifications | `<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>` |
 | `chevron-down` | pill and filter dropdowns | `<path d="M6 9l6 6 6-6"/>` |
@@ -164,15 +164,15 @@ Route `/design` (development only). No shell; `.ck` wrapper with `padding:56px 6
 
 Data: none (static reference).
 
-## 01 Sitemap and demo flow
+## 01 Sitemap and review flow
 
-Not a product screen; it documents navigation. Demo story (offline, Mock provider): 1 Login → 2 Demo mode → 3 Live scan → 4 Findings → 5 Finding detail → 6 Privacy Inspect → 7 Egress Ledger → 8 Audit report. Information architecture under the app shell (sidebar, top bar, ⌘K): **Home** (Overview, Demo mode, How it works), **Scanning** (Projects · onboarding, Scan launch, Live progress), **Findings** (Findings list, Finding detail, Bulk triage), **Privacy** (Privacy Centre, Privacy Inspect, Egress Ledger, Policy editor), **Deliver** (Reports · builder, Integrations, Providers), **Organisation** (Evaluation, Admin, Settings, Login · tenant). Role access note as in [Routes](#routes).
+Not a product screen; it documents navigation. Review story: 1 Login → 2 Getting started → 3 Live scan → 4 Findings → 5 Finding detail → 6 Privacy Inspect → 7 Egress Ledger → 8 Audit report. Information architecture under the app shell (sidebar, top bar, ⌘K): **Home** (Overview, Getting started, How it works), **Scanning** (Projects · onboarding, Scan launch, Live progress), **Findings** (Findings list, Finding detail, Bulk triage), **Privacy** (Privacy Centre, Privacy Inspect, Egress Ledger, Policy editor), **Deliver** (Reports · builder, Integrations, Providers), **Organisation** (Evaluation, Admin, Settings, Login · tenant). Role access note as in [Routes](#routes).
 
 ## 02 How it works
 
 Route `/how-it-works`. Shell; footer "How it works" active.
 
-1. Header: crumb "CodeKavach / How it works"; h1 "How CodeKavach works"; muted paragraph (max 760 px) "Heavy analysis stays on your machine. Only a minimal, sanitised slice crosses the boundary, every outbound byte is written to the egress ledger, and verdicts are mapped back using a vault that never leaves."; primary button `play` "Run KavachBank demo" → `/demo`.
+1. Header: crumb "CodeKavach / How it works"; h1 "How CodeKavach works"; muted paragraph (max 760 px) "Heavy analysis stays on your machine. Only a minimal, sanitised slice crosses the boundary, every outbound byte is written to the egress ledger, and verdicts are mapped back using a vault that never leaves."; primary button `play` "Getting started" → `/start`.
 2. Card (padding 24) holding a three-column diagram (`grid-template-columns: minmax(0,1fr) 170px 230px`, horizontally scrollable):
    - Left, "Your machine · local" (`.sec-h`) / "code, vault and ledger never leave": `surface-2` panel, radius 14 0 0 14. Row 1 (`flow-right` arrows): `.stand` 01 "Ingest & parse" ("ASTs, symbols, call graph"), 02 "Deterministic analysis" ("SAST, secrets, SCA, IaC, taint"), 03 "Candidate findings" ("source-to-sink paths, hits"). Rule. Row 2 (`flow-left` arrows): 09 "Issue sync" ("GitHub issues, Kanban"), 08 "Audit report" ("PDF, DOCX, SARIF, JSON"), 07 "Risk rating" ("CWE, OWASP, CVSS 4.0"). Chips: `lock` "Vault · pseudonym map", `lines` "Egress ledger · hash-chained".
    - Middle, "Boundary": `--priv-bg` with `--priv` top and bottom borders. "04 · OUTBOUND" / "Privacy layer" / "redact → slice → pseudonymise → leak check → ledger"; "THE ARMOUR" (priv colour, 600, 0.06em); "06 · INBOUND" / "De-pseudonymise" / "verdicts mapped back from the local vault".
@@ -181,34 +181,40 @@ Route `/how-it-works`. Shell; footer "How it works" active.
 
 Data: static. Provider list may be built from `GET /providers → name`.
 
-## 03 Demo mode
+## 03 Getting started
 
-Route `/demo`. Shell; footer "Demo mode" button highlighted (accent border and soft background).
+Route `/start`. Shell; footer "Getting started" button highlighted (accent border and soft background).
 
-1. Card (padding 32, items start, gap 16): overline "Demo mode · offline"; h1 28/650 "Run the KavachBank demo"; muted (max 620) "Runs the full 9-stage pipeline on the synthetic KavachBank sample: Python and JavaScript, planted vulnerabilities, fake secrets and an interest and fee engine. Fully offline with the Mock provider. No API key needed."; `.btn.pri.xl` with `play` (20 px) "Run KavachBank demo"; chips "Privacy level L3", "Mock provider", "486 files", "about 90 seconds".
-2. `.banner.info` with `info` icon: "**Mock provider:** the ledger shows what *would* have been sent. Nothing left this laptop."
-3. Row: h2 16/600 "Last demo run · 12 Nov 2026, 10:42 IST"; right `.st` green dot "Completed in 1 min 27 s".
+1. Card (padding 32, items start, gap 16): overline "Getting started"; h1 28/650 "Review your first project"; muted (max 620) "Six steps take a code base from intake to a signed-off audit report. The status of each step is read from **{project}**; change the project in the top bar to follow another one."; then an ordered list of six `.listrow` steps. Each step: mono xs faint number "01" to "06"; `b.sm` title; `xs muted` description; `xs faint` fact line when the server reports one; on the right a `chip fixed` "Done" when the step is done and a `.btn.sm` action (the first step that is not done gets `.btn.pri.sm`).
+   - 01 "Add a project" → `/projects/new` ("Add project" / "Add another").
+   - 02 "Run a scan" → `/projects/{id}/scan` ("Run a scan" / "Scan again"; "Open the live view" while one runs).
+   - 03 "Triage the findings" → `/findings?scan=`; fact "{n} open · {n} triaged".
+   - 04 "See what the model saw" → Privacy Inspect; fact "{n} payloads recorded".
+   - 05 "Verify the egress ledger" → Egress Ledger; fact "Chain verified".
+   - 06 "Produce the audit report" → Reports.
+2. Card `.stack`: h2 "No code at hand?"; sub "Scan the bundled KavachBank sample application: Python and JavaScript with planted vulnerabilities and synthetic secrets. It runs at L3 with the Mock provider, so nothing leaves this server and no API key is needed."; button `play` "Scan the sample application".
+3. Row: h2 16/600 "Latest scan · 12 Nov 2026, 10:42 IST"; right `.st` green dot "Completed in 1 min 27 s".
 4. `.g-4` of four link cards (overline + `arrow-right` faint at the right):
-   - "Findings" → `/findings`: 30/650 "43"; severity row c 3, h 9, m 14, l 11, i 6; sub "SQL injection, command injection, SSRF and 2 planted secrets confirmed."
-   - "Inspect" → Privacy Inspect: "11 <small>of 34 lines</small>"; `.bar.priv` 32%; "See exactly what the model saw for KB-2026-0012, side by side with the real code."
-   - "Ledger verified" → Egress Ledger: "142 <small>records</small>" (weight 500); chips fixed "chain ok", "hashes ok", "0 terms"; "0 listed terms found verbatim across 412.6 KB of payloads."
-   - "Report" → Reports: "KB-AR-014"; tags PDF, SARIF, DOCX; "Audit report with executive summary, risk matrix and privacy attestation."
+   - "Findings" → `/findings`: 30/650 "43"; severity row c 3, h 9, m 14, l 11, i 6; sub "SQL injection, command injection, SSRF found; 2 secrets flagged."
+   - "Inspect" → Privacy Inspect: "11 <small>of 34 lines</small>"; `.bar.priv` 32%; "See exactly what the model saw for the first reviewed finding, side by side with the real code."
+   - "Ledger verified" → Egress Ledger: "142 <small>records</small>" (weight 500); chips fixed "chain ok", "0 terms"; "0 listed terms found verbatim across 142 payloads."
+   - "Report" → Reports: "8 formats"; tags PDF, SARIF, DOCX; "Audit report with executive summary, risk matrix and privacy attestation."
 
-Interactions: "Run KavachBank demo" creates (or reuses) the sample project and starts a scan, then navigates to `/scans/{id}`.
+Interactions: every step action is a link, hidden when the role cannot open its target. "Scan the sample application" creates (or reuses) the sample project and starts a scan, then navigates to `/scans/{id}`; it is shown to roles that may run scans.
 
 Data:
 
 | Element | Source |
 |---|---|
-| Run demo | `POST /projects {name:"kavachbank-core", source:{type:"sample"}}` (or find it in `GET /projects`), then `POST /projects/{id}/scans {privacy_level:"L3", provider:"mock", send:false}` |
-| Chips (files, duration estimate) | `Project.files`; "about 90 seconds" static or **NEW** estimate |
-| Last demo run header | latest scan of the sample project: `GET /scans?project_id=` → `started_at`, `finished_at`, `status` |
-| Findings card | `Scan.counts` (total and per severity); headline sentence: static or **NEW** summary |
-| Inspect card | `GET /scans/{id}/ledger/{seq}` for the headline finding: lines sent vs original. **NEW** `lines_sent`, `lines_total` on the ledger entry (or count from `payload_text`/`original_text`) |
-| Ledger card | `GET /scans/{id}/privacy → payloads, chain_ok, zero_leak`; bytes: **NEW** `bytes_sent` (contract has `tokens_sent` only) |
-| Report card | `GET /scans/{id}/reports → format` list; report id **NEW** (see Reports) |
+| Step 01 | `GET /projects` (count, selected project) |
+| Step 02, rows 3 and 4 header | latest scans of the selected project: `GET /scans?project_id=` → `started_at`, `finished_at`, `status` |
+| Step 03, Findings card | `GET /scans/{id}/findings` (open and triaged counts, per severity) |
+| Steps 04 and 05, Ledger card | `GET /scans/{id}/privacy → payloads, chain_ok, zero_leak` |
+| Scan the sample application | `POST /projects {name:"kavachbank-core", source:{type:"sample"}}` (or find it in `GET /projects`), then `POST /projects/{id}/scans {privacy_level:"L3", provider:"mock"}` |
+| Inspect card | `GET /scans/{id}/ledger/{seq}` for the first reviewed finding: lines sent vs original |
+| Report card | `GET /scans/{id}/reports → format` list |
 
-Empty: before any demo run, hide rows 3 and 4. Loading: skeleton in the four cards while a run is in progress, with a link to the live view.
+Empty: before the selected project has a completed scan, hide rows 3 and 4. Loading: skeleton in place of the steps.
 
 ## 04 Login (landing hero)
 
@@ -222,17 +228,15 @@ Left panel (flex 1 1 520, padding 56, white, right border, space-between):
 
 Right panel (flex 1 1 440, centred, padding 48/24): card form (max 420, padding 28, gap 16):
 
-1. h2 20/650 "Sign in"; sub "Choose your organisation to continue."
-2. Select "Organisation": "Demo Organisation · demo.codekavach.local", "KavachBank Security".
-3. Primary full-width button `lock-wide` "Continue with SSO (SAML / OIDC)".
-4. Divider "or local account".
-5. "Email" input, "Password" input.
-6. Row: checkbox "Remember this device"; link `sm acc` "Forgot password?".
-7. Outline full-width "Sign in".
-8. Rule; ghost full-width `play` "Try the offline demo, no account needed" → `/demo`.
-9. xs faint centred "Running air-gapped. No telemetry leaves this machine."
+1. h2 20/650 "Sign in"; sub "Use your account on this server · {host}".
+2. "Email or username" input, "Password" input.
+3. Row: checkbox "Remember this device"; `sm faint` "Forgot password? Ask an admin.".
+4. Outline full-width "Sign in".
+5. xs faint centred "No telemetry leaves this machine."
 
-Interactions: Sign in → `POST /auth/login {username, password}` → store `token`, go to `/` (or the `next` route). Errors: `.banner.bad.sm` above the button, "Email or password is incorrect." SSO and organisation choice are **NEW** (no tenants or SSO in the contract): show the SSO button disabled with a title, or hide it, until the API supports it. Demo link works without a token only if the API allows an anonymous demo session (**NEW**); otherwise it signs in with the demo account.
+The server has one organisation and local accounts, so the form has no organisation select and no single sign-on button. The hosted preview (a static build with sample data and no server) reads "Hosted preview · sample data in this browser" in the sub line, names the sample accounts in a `.banner.info.sm`, and adds a rule and a ghost full-width `play` "Explore the preview" → `/start` below the Sign in button.
+
+Interactions: Sign in → `POST /auth/login {username, password}` → store `token`, go to `/` (or the `next` route). Errors: `.banner.bad.sm` above the button, "Email or password is incorrect."
 
 ## 05 Set up a project (onboarding)
 
@@ -258,7 +262,7 @@ Stepper `.steps`: "1 Connect repository", "2 Detect inventory", "3 Privacy level
 
 Then `.note`: "**What this does not cover.** At L2 and L3, control flow, literal shapes and public API names are still visible to the model. The leak check is verbatim only." Levels below the organisation floor are disabled (from `GET /policy`).
 
-**Step 4, Provider** (`.g-3` of `.lvlcard`, each with `.provlogo` and a chip): M "Mock" `chip fixed` "Default" / "Offline · no key. Deterministic verdicts for demos and CI."; R "Replay" "Offline" / "Replays recorded verdicts. No key."; L "Ollama / vLLM" "Self-hosted" / "Qwen, DeepSeek, GLM, Kimi, Llama on your hardware."; A "Anthropic Claude" "BYO key" / "Key reference: env:ANTHROPIC_API_KEY"; O "OpenAI · Azure OpenAI" "BYO key" / "Key reference: keyring:openai"; G "Gemini · Grok · Bedrock" "BYO key" / "Key reference: file:/etc/kavach/keys".
+**Step 4, Provider** (`.g-3` of `.lvlcard`, each with `.provlogo` and a chip): M "Mock" `chip fixed` "Default" / "Offline · no key. Deterministic verdicts for dry runs and CI."; R "Replay" "Offline" / "Replays recorded verdicts. No key."; L "Ollama / vLLM" "Self-hosted" / "Qwen, DeepSeek, GLM, Kimi, Llama on your hardware."; A "Anthropic Claude" "BYO key" / "Key reference: env:ANTHROPIC_API_KEY"; O "OpenAI · Azure OpenAI" "BYO key" / "Key reference: keyring:openai"; G "Gemini · Grok · Bedrock" "BYO key" / "Key reference: file:/etc/kavach/keys".
 
 **Step 5, Review and consent** (`.g-side`): card h2 "Review and consent"; `.dl`: Repository (mono "kavachbank-core · main · 9f3c2e1"), Privacy level (`.lvl` "L3 · Minimal slice"), Provider "Mock (offline) · no key", Engines "Opengrep, Bandit, ESLint, Secrets, SCA, IaC, Taint", Policy "Bank strict · floor L2 · config/** never-send"; consent checkbox (top-aligned) "I understand that sanitised slices may be sent to the selected provider and that every payload is recorded in the egress ledger."; switch "No-send (dry run): build payloads, send nothing". Right `.note` "**Before you launch.**" list: "Secrets are redacted before anything is sliced." / "If any privacy step fails, the request is aborted (I4)." / "You can inspect every payload afterwards."
 
@@ -313,7 +317,7 @@ Data:
 | Privacy guard status (I1 to I6) | **NEW** invariant suite results (`GET /health → invariants[] {id, title, passed, run_at, tests}`) |
 | Recent scans | `GET /scans?limit=5 → id, privacy_level, provider, model, counts, status, error, started_at`; target text from `Project.source.ref` and scan mode **NEW** (`mode: branch|diff`, `ref`); payload count **NEW** `Scan.payloads` |
 
-Empty (no scans yet): replace sections 2 to 5 with `.empty` "No scans yet" / "Run a scan to see results here." / "Run a scan →", plus a link to Demo mode.
+Empty (no scans yet): replace sections 2 to 5 with `.empty` "No scans yet" / "Run a scan to see results here." / "Run a scan →", plus a link to Getting started.
 
 ## 07 Scan launch and live progress
 
@@ -572,7 +576,7 @@ Route `/providers`. Shell, "Providers" active.
 
 1. Header: crumb "Organisation / Providers"; h1 "Providers"; sub "Bring your own keys. Keys are stored as references, never as plaintext."; "Run health checks" + primary "+ Add provider".
 2. `.g-3` provider cards (each `.card.stack`): row with `.provlogo` + bold name + xs faint mono "wire: …", right `.st.sm` health ("Healthy" ok, "Unreachable · air-gapped" warn, "Not checked" grey); capability chips; `.dl.sm`:
-   - M "Mock" (wire: internal): chips "Structured output", "Deterministic"; Key "Offline · no key", Cost "None", Use "Demos, CI, dry runs".
+   - M "Mock" (wire: internal): chips "Structured output", "Deterministic"; Key "Offline · no key", Cost "None", Use "CI, dry runs".
    - R "Replay" (wire: recorded JSONL): "Structured output", "Reproducible"; Key, Cost "None", Source mono "replays/SCN-0140.jsonl".
    - O "Ollama · self-hosted" (wire: openai-compatible): "Structured output", "Local network only"; Models (mono xs), Endpoint (mono xs), Cost "Your hardware".
    - A "Anthropic Claude" (wire: messages): "Structured output", "Tool use"; Key "<mono>env:ANTHROPIC_API_KEY</mono> · present", "Rate card" faint "[set by admin]", "Data use" "Per your provider agreement".
@@ -655,7 +659,7 @@ Data: all **NEW** (`GET /evaluation` → `benchmarks[] {dataset, arm, precision,
 
 ## 18 Admin
 
-Route `/admin` (tabs as sub-routes). Shell, "Admin" active. Top bar: organisation pill "Demo Organisation", level pill "Floor L2 · default L3", no provider pill, user role "Admin".
+Route `/admin` (tabs as sub-routes). Shell, "Admin" active. Top bar: organisation pill "KavachBank Security", level pill "Floor L2 · default L3", no provider pill, user role "Admin".
 
 1. Header: crumb "Organisation / Admin"; h1 "Admin"; primary "Invite user".
 2. Tabs: "Users and roles" (on), "Organisations 3", "API tokens", "Provider keys", "Audit log", "Retention", "System health". The design draws the first tab; the panels below appear on it as an overview, and each other tab shows its panel full width.
@@ -711,7 +715,7 @@ Data:
 Data the design shows that the current contract does not provide. Grouped by suggested endpoint; each item names the screens that need it.
 
 **Scans and stats**
-- `Scan`: `mode` (branch|diff), `ref`, `payloads`, `engines[]`, `eta_seconds` (Overview recent scans, Scan live, Demo mode).
+- `Scan`: `mode` (branch|diff), `ref`, `payloads`, `engines[]`, `eta_seconds` (Overview recent scans, Scan live, Getting started).
 - SSE: per-stage `count`/`total` on `stage` events; an `egress` event with payloads, bytes, secrets checked, terms found; timestamps on `log` events (Scan live).
 - `GET /stats`: `mttr_days` and delta, `info` in `TrendPoint`, risk matrix counts, OWASP × engine counts, top CWEs (Overview). Client-side aggregation over findings is a fallback.
 - Engine list with install status (Onboarding step 2, Scan launch, Admin system health).
@@ -727,7 +731,7 @@ Data the design shows that the current contract does not provide. Grouped by sug
 
 **Privacy and ledger**
 - `bytes` on `LedgerEntry` and `bytes_sent` on the privacy summary (the contract counts tokens; the design shows bytes everywhere).
-- Ledger detail: `path`, `start_line`, slice/source/sink lines; per-payload leak check; `lines_sent`/`lines_total` (Privacy Inspect, Finding detail, Demo mode).
+- Ledger detail: `path`, `start_line`, slice/source/sink lines; per-payload leak check; `lines_sent`/`lines_total` (Privacy Inspect, Finding detail, Getting started).
 - Level preview of a payload at other levels, never sent (Privacy Inspect).
 - Verify result counts (`hashes_ok`, `blocked`, `terms_checked`, `terms_found`, `head_hash`); ledger paging, search and filters; JSONL and verification report exports (Egress Ledger).
 - Privacy score parts, exposure budgets and usage, invariant suite results, structured attestation (levels used, bytes, head, signing time and key) and attestation PDF/JSON (Privacy Centre, Overview, Scan live).
@@ -735,7 +739,7 @@ Data the design shows that the current contract does not provide. Grouped by sug
 
 **Providers, reports, integrations, evaluation**
 - Provider `wire`, key references with presence, endpoint, rate card, auto-selection rules, token usage per month, conformance results, add provider (Providers, Onboarding step 4, Admin).
-- Generated reports history and builder options (audience, baseline, sections, frameworks, branding, classification), page previews (Reports, Demo mode).
+- Generated reports history and builder options (audience, baseline, sections, frameworks, branding, classification), page previews (Reports, Getting started).
 - GitHub integration status and switches, Kanban mapping, VS Code and MCP status (Integrations).
 - Evaluation results and benchmark runs (Evaluation, Privacy Centre).
 
@@ -744,4 +748,4 @@ Data the design shows that the current contract does not provide. Grouped by sug
 - Notifications feed and per-user notification settings (shell, Settings).
 - User update and revoke, organisations, API tokens (org and personal), audit log, retention and vault rotate/purge, system health checks (Admin, Settings).
 - Profile update, preferences (density, motion, language, time zone, date format) (Settings).
-- SSO, organisation (tenant) selection and an anonymous demo session (Login).
+- SSO and organisation (tenant) selection: not offered; the server has one organisation and local accounts (Login).

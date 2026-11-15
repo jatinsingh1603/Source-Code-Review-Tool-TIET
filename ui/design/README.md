@@ -4,7 +4,7 @@
 
 The React app in `ui/src` reproduces this design. When the two disagree, the design wins.
 
-Open it in a browser to view all screens (use the "Screen" menu at the bottom right). Names, emails, hosts and values in it are fictional demo data; the AWS key shown is AWS's documented example key.
+Open it in a browser to view all screens (use the "Screen" menu at the bottom right). Names, emails, hosts and values in it are fictional sample data; the AWS key shown is AWS's documented example key.
 
 ## Design kit: use these instead of re-reading the prototype
 

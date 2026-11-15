@@ -28,8 +28,8 @@ export default function HowItWorksPage() {
             checked by the egress guard and its payload recorded in the egress ledger, and verdicts are mapped back using a vault that never leaves.
           </p>
         </div>
-        <ButtonLink variant="primary" to="/demo" icon={<Icon name="play" />}>
-          Run KavachBank demo
+        <ButtonLink variant="primary" to="/start" icon={<Icon name="play" />}>
+          Getting started
         </ButtonLink>
       </div>
 

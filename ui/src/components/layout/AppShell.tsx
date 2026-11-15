@@ -122,7 +122,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
       if (group.some((g) => !g.permission || can(g.permission))) visible.push(e);
     } else if (!e.permission || can(e.permission)) visible.push(e);
   });
-  const demoOn = pathname.startsWith("/demo");
+  const startOn = pathname.startsWith("/start");
   const howOn = pathname.startsWith("/how-it-works");
   return (
     // Close the phone drawer on any link, including the page already open (no route change then).
@@ -169,15 +169,15 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
       <div className="side-foot">
         <Link
           className="btn sm"
-          to="/demo"
+          to="/start"
           style={{
             justifyContent: "flex-start",
-            ...(demoOn ? { borderColor: "var(--accent)", background: "var(--accent-soft)" } : {}),
+            ...(startOn ? { borderColor: "var(--accent)", background: "var(--accent-soft)" } : {}),
           }}
-          aria-current={demoOn ? "page" : undefined}
+          aria-current={startOn ? "page" : undefined}
         >
           <Icon name="play" />
-          Demo mode
+          Getting started
         </Link>
         <Link
           className={cn("btn sm ghost", howOn && "on")}

@@ -24,7 +24,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     }
   });
   const projects = useMemo(() => data ?? [], [data]);
-  // With no choice stored yet, open on the bundled KavachBank sample (the demo's project), else the newest.
+  // With no choice stored yet, open on the bundled KavachBank sample (the bundled sample application), else the newest.
   const current = projects.find((p) => p.id === currentId) ?? projects.find((p) => p.id === SAMPLE_ID) ?? projects[0] ?? null;
 
   useEffect(() => {
