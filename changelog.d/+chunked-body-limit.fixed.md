@@ -1,0 +1,1 @@
+A request body sent without `Content-Length` (chunked transfer) is now counted as it arrives and refused with 413 past the body limit; before, the limit looked at the declared length only, so a chunked body of any size was read into memory, also before login.

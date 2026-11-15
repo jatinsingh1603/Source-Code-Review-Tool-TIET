@@ -6,7 +6,9 @@ API responses get ``Content-Security-Policy: default-src 'none'; frame-ancestors
 ``X-Content-Type-Options: nosniff``, ``Referrer-Policy: no-referrer``, ``X-Frame-Options: DENY``
 and, when authenticated, ``Cache-Control: no-store``. The dashboard's static pages get a CSP that
 allows their own scripts and styles only. Request bodies above the limit are refused with 413
-before they are read. The ``access_token`` query parameter is redacted from the access log.
+before they are read; a body sent without ``Content-Length`` (chunked) is counted as it arrives
+and refused once it passes the same limit. The ``access_token`` query parameter is redacted from
+the access log.
 """
 
 import logging
@@ -17,6 +19,8 @@ from typing import Final
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 API_CSP: Final = "default-src 'none'; frame-ancestors 'none'"
 UI_CSP: Final = (
@@ -58,8 +62,38 @@ def install_log_redaction() -> None:
         logger.addFilter(TokenRedactor())
 
 
+class BodyLimit:
+    """Counts the request body as it is read; past ``max_bytes`` the read fails with 413.
+
+    The ``Content-Length`` check below cannot see a chunked body, which carries no length.
+    """
+
+    def __init__(self, app: ASGIApp, max_bytes: int) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Hand the application a ``receive`` that enforces the limit."""
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        seen = 0
+
+        async def counted() -> Message:
+            nonlocal seen
+            message = await receive()
+            if message["type"] == "http.request":
+                seen += len(message.get("body", b""))
+                if seen > self.max_bytes:
+                    raise HTTPException(status_code=413, detail="request body too large")
+            return message
+
+        await self.app(scope, counted, send)
+
+
 def install_middleware(app: FastAPI, *, max_body_bytes: int) -> None:
     """Add the middleware to ``app``."""
+    app.add_middleware(BodyLimit, max_bytes=max_body_bytes)
 
     @app.middleware("http")
     async def security(
