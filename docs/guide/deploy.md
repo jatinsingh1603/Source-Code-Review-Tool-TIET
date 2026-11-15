@@ -67,6 +67,30 @@ $ git pull && docker compose up -d --build     # the volume is kept
 
 The backup holds vaults, ledgers and reports, which contain client code: store it with the classification of that code.
 
+## Google sign-in
+
+Optional and off by default. With no `CODEKAVACH_GOOGLE_*` variable set the login page shows no Google button, the two Google routes answer 404 and the server contacts no Google host.
+
+| Variable | Meaning |
+|---|---|
+| `CODEKAVACH_GOOGLE_CLIENT_ID` | OAuth 2.0 client ID (type "Web application") from the Google Cloud console. Not a secret. |
+| `CODEKAVACH_GOOGLE_CLIENT_SECRET` | The client secret. A secret value: keep it in `.env` or a secret store, never in git. `CODEKAVACH_GOOGLE_CLIENT_SECRET_FILE` may name a file that holds it instead. |
+| `CODEKAVACH_GOOGLE_ALLOWED_DOMAINS` | Comma list of e-mail domains that may sign in, for example `thapar.edu`. |
+| `CODEKAVACH_GOOGLE_ALLOWED_EMAILS` | Comma list of single addresses that may sign in. If both lists are empty, any Google account with a verified e-mail address may sign in. |
+| `CODEKAVACH_GOOGLE_DEFAULT_ROLE` | Role of an account created by a first sign-in: `viewer` (default), `developer`, `auditor` or `admin`. |
+| `CODEKAVACH_PUBLIC_URL` | The URL people open the dashboard at, for example `https://kavach.example.edu`. Set it behind a reverse proxy or TLS terminator; without it the server uses the scheme and host of the request. |
+
+Sign-in is on only when both the client ID and the client secret are set. In the Google Cloud console (APIs & Services, Credentials, the OAuth client) register:
+
+- **Authorised redirect URI**: `<base>/api/v1/auth/google/callback`, where `<base>` is `CODEKAVACH_PUBLIC_URL` or the address in the browser. For compose on this machine that is `http://localhost:8080/api/v1/auth/google/callback`. It must match exactly, including scheme and port; `localhost` and `127.0.0.1` are different origins to Google.
+- **Authorised JavaScript origin**: `<base>` (for example `http://localhost:8080`). The server flow does not need it; the hosted demo's button does (below).
+
+Role mapping: a person's first sign-in creates a local account whose user name is their e-mail address, with the default role and no local password. An administrator changes the role under Admin, Users and roles; later sign-ins keep it. A local account whose user name is already that e-mail address is reused with its role. Disabling the account blocks Google sign-in too. Every sign-in, refusal and created account is in the audit log.
+
+The flow is OpenID Connect authorisation code with PKCE, `state` and `nonce`; the dashboard receives the same session token as a password login, in the URL fragment. The server calls `oauth2.googleapis.com` once per sign-in and the browser visits `accounts.google.com`. That is identity traffic: it carries a person's name and e-mail address, never source code, does not go through the egress transport and is not written to the egress ledger, which records only what is sent to an LLM provider. The `airgapped` profile cannot reach Google, so leave the variables empty there.
+
+The [hosted demo](../demo/README.md) on GitHub Pages has no server, so its Google button uses Google Identity Services in the browser with the public client ID only (`VITE_GOOGLE_CLIENT_ID` in the Pages workflow) and signs the visitor into the sample data under their own name. It needs the authorised JavaScript origin `https://jatinsingh1603.github.io` and no redirect URI.
+
 ## Run on Kubernetes (Helm)
 
 The chart [`deploy/helm/codekavach`](../../deploy/helm/codekavach) was linted and rendered with Helm 3.17.
