@@ -7,6 +7,7 @@ import { PRIVACY_LEVELS, type PersonalToken, type PrivacyLevel, type Settings } 
 import { roleLabel } from "@/lib/permissions";
 import { fmtDate, LEVEL_NAME } from "@/lib/display";
 import { atLeastAsStrict } from "@/lib/format";
+import { HOSTED_DEMO } from "@/lib/env";
 import { prefsFromServer, readPrefs, writePrefs, type Prefs } from "@/lib/prefs";
 import { Avatar, Button, Content, Segmented, Skeleton, useToast } from "@/components/ui";
 
@@ -356,7 +357,7 @@ export default function SettingsPage() {
                 </div>
               ))}
             <div className="code cmd" style={{ padding: "10px 14px", fontSize: 12, whiteSpace: "pre-wrap" }}>
-              {"curl -H 'Authorization: Bearer <token>' " + (typeof window !== "undefined" ? window.location.origin : "") + "/api/v1/stats\ncodekavach scan . --privacy-level L3 --provider mock"}
+              {"curl -H 'Authorization: Bearer <token>' " + (HOSTED_DEMO ? "https://<your-codekavach-server>" : typeof window !== "undefined" ? window.location.origin : "") + "/api/v1/stats\ncodekavach scan . --privacy-level L3 --provider mock"}
             </div>
           </div>
 

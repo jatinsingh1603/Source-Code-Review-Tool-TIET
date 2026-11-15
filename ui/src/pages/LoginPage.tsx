@@ -6,6 +6,7 @@ import { ApiError } from "@/api/client";
 import { api } from "@/api/client";
 import { Icon, Logo } from "@/components/ui";
 import { MockBar } from "@/components/layout/MockBar";
+import { HOSTED_DEMO } from "@/lib/env";
 
 /** Login (landing hero), SCREENS.md §04. Outside the app shell. */
 export default function LoginPage() {
@@ -126,7 +127,7 @@ export default function LoginPage() {
           <div className="fld">
             <label htmlFor="tenant">Organisation</label>
             <select id="tenant" className="inp">
-              <option>This server · {host}</option>
+              <option>{HOSTED_DEMO ? "Sample organisation · in this browser" : `This server · ${host}`}</option>
             </select>
           </div>
           <button
