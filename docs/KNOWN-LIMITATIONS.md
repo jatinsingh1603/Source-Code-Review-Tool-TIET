@@ -104,3 +104,67 @@ Not fixed:
 - **`javascript:` followed by a space is removed from prose (informational).** "In JavaScript:
   use ..." loses the word "JavaScript:" in model text, because the script-link pattern accepts an
   empty link body. Left alone: narrowing it would weaken the pattern for `javascript: alert(1)`.
+
+## Cryptography and tamper evidence (vault, egress ledger, attestation, reports), 2026-11-15
+
+Checked on a scratch state directory: the vault envelope (AES-256-GCM, counter nonces, scrypt
+header record), the ledger chain and payload store under seven kinds of tampering, file modes,
+the attestation digest, the report manifest, password and token storage, and where random values
+come from (all from `secrets` or `os.urandom`; no `random` module in a security role).
+
+Fixed in this audit: `privacy ledger verify` warns (`payload_orphaned`) when stored payloads are
+named by no entry, and `privacy ledger verify --expect-head HASH` fails when the chain no longer
+contains an entry with that hash.
+
+Not fixed:
+
+- **The ledger chain is unkeyed and its head is not anchored inside the state directory
+  (medium).** Entry hashes are plain SHA-256. Someone who can write the ledger directory can cut
+  whole entries off the end, delete `chain.ndjson`, or rewrite the chain and recompute every
+  hash; `verify_chain`, the dashboard's **Verify again** and the attestation's "chain intact" all
+  pass (reproduced: 5 entries cut to 3, a deleted chain, and a 4-entry chain resealed without
+  entry 2). What does detect it: the head hash kept outside the directory (the report, its
+  `manifest.json` and the verification file print it) checked with `--expect-head`, and, for a cut
+  at the end only, the orphan warning, unless the payload files are removed too. The dashboard
+  does not show the orphan warning and has no expected-head field. A keyed chain (HMAC under the
+  ledger data key) or a signed, externally stored head is the real fix.
+- **A writer appends to a cut chain without complaint (low).** After whole entries are removed
+  from the end, the next append continues from the new last entry. Only a partial last line stops
+  the writer. The index is rebuilt silently when it is ahead of the chain, so it keeps no trace.
+- **The attestation digest and the report manifest are unkeyed (medium).** `Attestation.digest()`
+  is SHA-256 of the attestation and `manifest.json` / `SHA256SUMS` are SHA-256 of the report
+  files. They show accidental change and let a recipient compare against a copy received by
+  another route; anyone who alters a report can regenerate both. `Attestation.sign()` (HMAC)
+  exists but nothing calls it, and no command verifies a signature.
+- **The attestation is rebuilt on every request (low).** Its `ledger_head_hash` is the scan's last
+  entry at the time of the call, not a value recorded when the scan finished, so the server holds
+  no earlier head to compare with. If the ledger cannot be opened at all, the attestation keeps
+  `chain_ok` true with zero entries instead of saying "not checked".
+- **The server keeps the vault passphrase in a file next to the data (medium).** Without
+  `CODEKAVACH_VAULT_PASSPHRASE` in the environment, the server writes a random passphrase to
+  `<data_dir>/vault.passphrase` (mode 0600). A copy of the whole data directory therefore includes
+  the key to every vault and ledger in it; encryption at rest then protects only a copy of a
+  single scan's state directory. Set the variable from a secret store, or use the keyring or
+  key-management source, for a real deployment.
+- **Restoring an older copy of a vault file can repeat GCM nonces (low).** Record nonces are a
+  per-vault prefix plus a counter stored in the vault header. The store refuses a counter lower
+  than the number of records, but a whole-file rollback to an earlier snapshot is consistent, and
+  later records then reuse counter values already used in the discarded copy under the same data
+  key. It matters only to someone who holds both copies and can make the user write to the
+  restored one.
+- **Login passwords use scrypt N=2^14, r=8, p=1 (low).** That is 16 MiB per guess, below the
+  current OWASP recommendation of N=2^17. The parameters are stored with each hash and
+  `needs_rehash` exists, so raising them is a constant change; it was not made because it slows
+  every login and the seeded accounts. Stored parameters are not capped when a hash is verified
+  (the database is trusted). The vault and ledger passphrase uses N=2^15.
+- **Some files rely on the 0700 directory, not their own mode (low).** Vault, ledger, payload,
+  header, lock and index files are 0600 in 0700 directories. `aggregate-<scan id>.json` in the
+  state directory is created with the process umask (0644 observed), and the server's `server.db`
+  is not created through the 0600 helper; both are reachable only through 0700 parents. Nothing
+  checks modes on Windows.
+- **Ledger metadata is not encrypted (informational).** `encrypt_at_rest` seals payload bodies.
+  `chain.ndjson` (provider, model, task, level, token counts, hashes, scan and candidate ids) and
+  the index are plain text by design, so the chain can be verified without a key.
+- **Session and API tokens are stored as unsalted SHA-256 (informational).** The tokens are
+  256-bit random values, looked up by hash, so no salt or slow hash is needed; it is noted because
+  the question is asked.
