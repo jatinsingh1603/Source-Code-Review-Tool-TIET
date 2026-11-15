@@ -4,6 +4,22 @@ Everything for the demo to the Head of Department of Cyber Security (Thapar) and
 
 Audience: security people. They will probe the privacy claim harder than anything else, so the session is built around it. Never claim more than [Known limits](../../README.md#known-limits) allows.
 
+## Hosted demo (no install)
+
+<https://jatinsingh1603.github.io/Source-Code-Review-Tool-TIET/> is the dashboard published to GitHub Pages in mock mode, for anyone who wants to look before or after the session. It is a static site: every API call is answered in the browser from synthetic sample data (`ui/src/mock`), so nothing is scanned and nothing is sent anywhere. A strip at the top of each page says so and links to [`install.md`](install.md). Sign in as `admin` / `kavach-admin` (or `auditor`, `developer`, `viewer` with `kavach-<role>`), or choose **Try the offline demo**. The [Pages workflow](../../.github/workflows/pages.yml) republishes it on every push to `main` that changes `ui/`.
+
+| | Hosted demo (GitHub Pages) | Docker or local install |
+|---|---|---|
+| Overview, findings, finding detail, triage | Yes, on sample data | Yes, on your scans |
+| Privacy Centre, side by side, egress ledger, verify | Yes, on sample data | Yes |
+| Start a scan | Simulated stage by stage over the sample project; an uploaded archive is not read | Real engines, real model or the mock provider |
+| Reports | HTML, SARIF, JSON, CSV and Markdown, built from the sample data; PDF, Word, Excel and delta reports say they need the server | Every format |
+| GitHub issue sync | Preview (dry run) only; creating issues says it needs the server | Real, with a GitHub token |
+| Providers, admin, users, settings, policy | Sample responses; changes last until the page is reloaded | Real |
+| CLI, GitHub Action, VS Code | No | Yes |
+
+For the session itself use the Docker or local install: the hosted demo shows the interface, not the privacy layer at work.
+
 ## Runbooks
 
 | Surface | Runbook | Owner |

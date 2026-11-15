@@ -21,7 +21,23 @@ npm run dev:mock         # no server needed: built-in demo data
 
 ## Mock mode
 
-Mock mode answers every API call from an in-browser backend with realistic data modelled on the KavachBank sample (`src/mock/`). It is for development and offline demonstrations only, and the dashboard shows a "Demo data mode" banner whenever it is active. Turn it on with `VITE_MOCK=1` at dev or build time (`npm run dev:mock`, `npm run build:mock`), or by opening any page with `?mock` (and off again with `?mock=0`). Sign in as `admin` / `kavach-admin` (also `auditor`, `developer`, `viewer` with `kavach-<role>`). Scans started in mock mode are simulated stage by stage over the same event types as the real server.
+Mock mode answers every API call from an in-browser backend with realistic data modelled on the KavachBank sample (`src/mock/`). It is for development and offline demonstrations only, and the dashboard shows a banner whenever it is active. Turn it on with `VITE_MOCK=1` at dev or build time (`npm run dev:mock`, `npm run build:mock`), or by opening any page with `?mock` (and off again with `?mock=0`). Sign in as `admin` / `kavach-admin` (also `auditor`, `developer`, `viewer` with `kavach-<role>`). Scans started in mock mode are simulated stage by stage over the same event types as the real server. What only a server can do says so instead of pretending: PDF, Word, Excel and delta reports, and creating GitHub issues (the dry-run preview works).
+
+## Hosted demo (GitHub Pages)
+
+The [Pages workflow](../.github/workflows/pages.yml) publishes a mock-mode build to <https://jatinsingh1603.github.io/Source-Code-Review-Tool-TIET/> on every push to `main` that changes `ui/` (or by hand with *Run workflow*). It runs:
+
+```bash
+VITE_MOCK=1 VITE_BASE=/Source-Code-Review-Tool-TIET/ npm run build
+cp dist/index.html dist/404.html   # Pages serves 404.html for /…/findings, so deep links load the app
+touch dist/.nojekyll
+```
+
+- `VITE_BASE` sets Vite's `base`; the router takes it as its `basename` (`BASE_PATH` in `src/lib/env.ts`). In-app links go through the router; the few raw URLs (`window.open`, the session's login redirect) use `withBase` and `routerPath`. Without `VITE_BASE` the build serves from `/`, as `codekavach serve` expects.
+- A production build with `VITE_MOCK=1` replaces the banner with "Hosted demo · sample data, runs in your browser · install for real scans", linking to [`docs/demo/install.md`](../docs/demo/install.md), and the login page names the sample accounts.
+- The bundle holds only the synthetic fixtures in `src/mock/`: no server address, key or token.
+
+To try the Pages build locally, serve `dist/` under the same path, for example copy it to `site/Source-Code-Review-Tool-TIET/` and run `python3 -m http.server -d site`.
 
 ## Scripts
 

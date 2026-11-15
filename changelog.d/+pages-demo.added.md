@@ -1,0 +1,1 @@
+A hosted demo of the dashboard at https://jatinsingh1603.github.io/Source-Code-Review-Tool-TIET/, published by a GitHub Pages workflow in mock mode: sample data answered in the browser, with no server or model behind it. The dashboard can now be built under a sub-path with `VITE_BASE`.

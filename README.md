@@ -3,6 +3,8 @@
 [![CI](https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/workflows/ci.yml)
 
 **Privacy-preserving, LLM-assisted secure source code review.**
+
+**Live demo:** <https://jatinsingh1603.github.io/Source-Code-Review-Tool-TIET/>, the dashboard in mock mode: sample data only, answered in your browser, with no server and no model behind it. Sign in as `admin` / `kavach-admin` or choose *Try the offline demo*. To scan real code, [install CodeKavach](docs/demo/install.md).
 *Kavach* (कवच) means armour: CodeKavach lets an organisation get a standards-based security review of its source code from any large language model, **while keeping secrets and personal data local, and minimising and measuring how much business logic is disclosed to the LLM provider.**
 
 > Status: a working product for a local demonstration and hand-over: web dashboard, REST API, CLI, privacy layer with an egress ledger, audit reports and an evaluation harness. Known limits of the privacy approach are stated below and in the [whitepaper](docs/guide/whitepaper.md). Follow progress on the [project board](../../projects) and in the [issue tracker](../../issues).
