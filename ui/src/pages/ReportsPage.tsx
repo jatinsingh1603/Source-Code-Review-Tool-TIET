@@ -287,7 +287,8 @@ export default function ReportsPage() {
               {reportsQ.isLoading && <Skeleton />}
               <div className="row">
                 {formats.map((f) => {
-                  const on = chosen.has(f.format);
+                  // A format this server cannot render never shows as chosen.
+                  const on = chosen.has(f.format) && f.available;
                   return (
                     <button
                       key={f.format}
@@ -311,8 +312,17 @@ export default function ReportsPage() {
                   );
                 })}
               </div>
+              {[...new Set(formats.filter((f) => !f.available && f.reason).map((f) => f.reason as string))].map((r) => (
+                <p key={r} className="xs muted">
+                  {formats
+                    .filter((f) => !f.available && f.reason === r)
+                    .map((f) => FORMAT_NAME[f.format] ?? f.format.toUpperCase())
+                    .join(", ")}
+                  : {r}
+                </p>
+              ))}
             </div>
-            {reportsQ.isError && <ErrorBanner what="Report formats could not be loaded." error={reportsQ.error} />}
+            {reportsQ.isError &&<ErrorBanner what="Report formats could not be loaded." error={reportsQ.error} />}
             <Button variant="primary" onClick={() => void generate()} loading={busy} disabled={!chosen.size || !reportsQ.isSuccess}>
               Generate report
             </Button>

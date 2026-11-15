@@ -214,6 +214,9 @@ function seed(): State {
 
 let state: State = seed();
 
+const SERVER_ONLY_REPORT =
+  "Rendered by the CodeKavach server, which this browser-only demo does not have. Install CodeKavach to download PDF, Word and Excel reports.";
+
 function err(status: number, code: string, message: string): never {
   throw new ApiError(status, code, message);
 }
@@ -556,9 +559,10 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
         return delay({
           formats: [
             { format: "html", available: true },
-            { format: "pdf", available: true },
-            { format: "docx", available: true },
-            { format: "xlsx", available: true },
+            // Office and PDF files are rendered by the server; the browser-only demo cannot make them.
+            { format: "pdf", available: false, reason: SERVER_ONLY_REPORT },
+            { format: "docx", available: false, reason: SERVER_ONLY_REPORT },
+            { format: "xlsx", available: false, reason: SERVER_ONLY_REPORT },
             { format: "sarif", available: true },
             { format: "json", available: true },
             { format: "csv", available: true },
@@ -566,7 +570,11 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
           ],
         });
       }
+      if (["pdf", "docx", "xlsx"].includes(d)) err(501, "server_only", SERVER_ONLY_REPORT);
       return delay(reportBlob(scan, d), 400);
+    }
+    if (c === "delta") {
+      err(501, "server_only", "Delta reports are rendered by the CodeKavach server, which this browser-only demo does not have. Install CodeKavach to compare two scans.");
     }
     if (c === "sync" && d === "github") {
       requireRole("admin", "auditor");

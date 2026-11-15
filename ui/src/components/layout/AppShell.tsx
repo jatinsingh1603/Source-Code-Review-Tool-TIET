@@ -4,7 +4,6 @@ import { useSession } from "@/app/session";
 import { useCurrentProject } from "@/app/project-context";
 import { ShellProvider, useShellOverrides } from "@/app/shell-context";
 import { useHealth, useProviders, useScan, useScans, useSettings, useVersion } from "@/api/queries";
-import { api } from "@/api/client";
 import type { PrivacyLevel } from "@/api/types";
 import type { Permission } from "@/lib/permissions";
 import { roleLabel } from "@/lib/permissions";
@@ -16,6 +15,7 @@ import { pickDefault } from "@/app/useSelectedScan";
 import { Avatar, Icon, Logo, Skeleton, type IconName } from "@/components/ui";
 import { usePopover } from "@/components/ui/Popover";
 import { CommandPalette } from "./CommandPalette";
+import { MockBar } from "./MockBar";
 import { useA11yShell } from "@/lib/a11y";
 import { providerName } from "@/lib/domain";
 
@@ -497,11 +497,7 @@ export function AppShell() {
         <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
         {navOpen && <div className="side-scrim" aria-hidden onClick={() => setNavOpen(false)} />}
         <div className="main">
-          {api.isMock && (
-            <div className="mockbar">
-              Demo data mode: the dashboard is showing built-in sample data, not a live server.
-            </div>
-          )}
+          <MockBar />
           <TopBar onSearch={() => setPalette(true)} navOpen={navOpen} onMenu={() => setNavOpen((x) => !x)} />
           <Suspense
             fallback={

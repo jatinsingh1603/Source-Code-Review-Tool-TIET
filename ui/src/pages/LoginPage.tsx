@@ -5,6 +5,7 @@ import { signOutNotice } from "@/app/tab-sync";
 import { ApiError } from "@/api/client";
 import { api } from "@/api/client";
 import { Icon, Logo } from "@/components/ui";
+import { MockBar } from "@/components/layout/MockBar";
 
 /** Login (landing hero), SCREENS.md §04. Outside the app shell. */
 export default function LoginPage() {
@@ -66,6 +67,8 @@ export default function LoginPage() {
   const host = typeof window !== "undefined" ? window.location.host : "";
 
   return (
+    <>
+    <MockBar />
     <main className="ck" style={{ display: "flex", flexWrap: "wrap", minHeight: "100vh" }}>
       <section
         style={{
@@ -150,6 +153,12 @@ export default function LoginPage() {
           {demoHint && !error && (
             <div className="banner info sm">Sign in with your local account to open the demo.</div>
           )}
+          {api.isMock && !error && (
+            <div className="banner info sm">
+              Sample data in your browser. Sign in as <b>admin</b> / <b>kavach-admin</b> (also auditor, developer or viewer
+              with <b>kavach-&lt;role&gt;</b>), or choose Try the offline demo.
+            </div>
+          )}
           <div className="fld">
             <label htmlFor="em">Email or username</label>
             <input
@@ -203,5 +212,6 @@ export default function LoginPage() {
         </form>
       </section>
     </main>
+    </>
   );
 }
