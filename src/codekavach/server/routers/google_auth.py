@@ -80,12 +80,16 @@ def _sign_in(
     code = request.query_params.get("code", "")
     if request.query_params.get("error") or not code:
         raise google.SsoError("denied")
+    # Each callback past this point costs a request to Google: bound them per client address.
+    client = client_of(request)
+    limit_key = f"google:{client}"
+    if state.login_limiter.hit(limit_key) is not None:
+        raise google.SsoError("rate_limited")
     exchange: google.Exchange = getattr(request.app.state, "google_exchange", google.exchange_code)
     tokens = exchange(config, code, pending.verifier, google.redirect_uri(base))
     identity = google.verify_id_token(config, tokens, pending.nonce)
     # User names are unique without regard to case; the address from Google is lower case.
     user = session.scalars(select(User).where(func.lower(User.username) == identity.email)).first()
-    client = client_of(request)
     if user is None:
         # No local password: the stored hash is of a random value nobody ever saw.
         user = User(
@@ -102,6 +106,7 @@ def _sign_in(
                      client=client, detail={"role": user.role, "method": "google"})  # fmt: skip
     elif not user.active:
         raise google.SsoError("disabled")
+    state.login_limiter.undo(limit_key)  # a completed sign-in costs nothing, as a password login
     user.last_login = utcnow()
     token = issue_token(session, user, state.config.token_ttl_seconds)
     audit.record(state.db, actor=user.username, action="auth.login", client=client,

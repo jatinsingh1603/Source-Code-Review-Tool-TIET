@@ -45,6 +45,7 @@ const SSO_ERRORS: Record<string, string> = {
   token: "Google's answer could not be verified. Try again.",
   unverified: "That Google account's email address is not verified.",
   not_allowed: "That Google account is not allowed on this server. Ask an administrator.",
+  rate_limited: "Too many Google sign-in attempts. Wait a minute and try again.",
   disabled: "Your account on this server is disabled. Ask an administrator.",
 };
 
