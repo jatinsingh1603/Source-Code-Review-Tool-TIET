@@ -10,7 +10,7 @@ user change is audited. Changing a user's role, password or active flag revokes 
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from codekavach.server import audit
 from codekavach.server.auth.dependencies import (
@@ -129,7 +129,10 @@ def create_user(
     principal: Any = AdminDep,
 ) -> dict[str, Any]:
     """Create a user."""
-    exists = session.scalars(select(User).where(User.username == body.username)).first()
+    # Case-insensitive: "Admin" beside "admin" would be a look-alike in the audit trail.
+    exists = session.scalars(
+        select(User).where(func.lower(User.username) == body.username.lower())
+    ).first()
     if exists is not None:
         raise ApiError(409, "user_exists", f"the user {body.username} already exists")
     user = User(

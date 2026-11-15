@@ -100,3 +100,42 @@ def test_organisation_name_cannot_be_blank(server: tuple[TestClient, dict[str, s
     saved = client.put(f"{API}/settings", json={"org_name": "  Thapar CSED  "}, headers=admin)
     assert saved.status_code == 200, saved.text
     assert client.get(f"{API}/settings", headers=admin).json()["org_name"] == "Thapar CSED"
+
+
+def test_usernames_are_unique_whatever_their_case(
+    server: tuple[TestClient, dict[str, str]],
+) -> None:
+    client, admin = server
+    # pragma: allowlist nextline secret
+    body = {"username": "ADMIN", "password": "long-enough-1", "role": "admin"}
+    response = client.post(f"{API}/users", json=body, headers=admin)
+    assert response.status_code == 409, response.text
+    assert response.json()["error"]["code"] == "user_exists"
+    body["username"] = "Asha"
+    assert client.post(f"{API}/users", json=body, headers=admin).status_code == 201
+    body["username"] = "asha"
+    assert client.post(f"{API}/users", json=body, headers=admin).status_code == 409
+
+
+def test_a_chunked_body_past_the_limit_is_refused(tmp_path: Any) -> None:
+    """A body without Content-Length is counted as it arrives, not read whole."""
+    config = ServerConfig(
+        # pragma: allowlist nextline secret
+        data_dir=tmp_path, ui_dir=None, workers=1, admin_password="kavach-admin",
+        max_upload_bytes=1024, seed=False,
+    )  # fmt: skip
+
+    def chunks() -> Iterator[bytes]:
+        yield b'{"username": "'
+        for _ in range(3):
+            yield b"a" * (512 * 1024)
+        yield b'", "password": "x"}'
+
+    with TestClient(create_app(config)) as client:
+        headers = {"Content-Type": "application/json"}
+        response = client.post(f"{API}/auth/login", content=chunks(), headers=headers)
+        assert "content-length" not in response.request.headers
+        assert response.status_code == 413, response.text
+        assert response.json()["detail"] == "request body too large"
+        small = client.post(f"{API}/auth/login", content=iter([b"{}"]), headers=headers)
+        assert small.status_code == 422
