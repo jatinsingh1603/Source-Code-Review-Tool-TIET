@@ -18,6 +18,9 @@ API = "/api/v1"
 POLICY = 'policy_version = 1\n\n[[path]]\npattern = "services/web/**"\nnever_send = true\n'
 
 
+_PASSWORD = "kavach-admin"  # pragma: allowlist secret
+
+
 def _scan(client: TestClient, headers: dict[str, str]) -> tuple[list[str], int]:
     projects = client.get(f"{API}/projects", headers=headers).json()
     sample = next(item for item in projects if item["source"]["type"] == "sample")
@@ -40,11 +43,9 @@ def _scan(client: TestClient, headers: dict[str, str]) -> tuple[list[str], int]:
 
 
 def test_never_send_candidates_are_named_in_the_scan_log(tmp_path: Path) -> None:
-    config = ServerConfig(data_dir=tmp_path, ui_dir=None, workers=1, admin_password="kavach-admin")
+    config = ServerConfig(data_dir=tmp_path, ui_dir=None, workers=1, admin_password=_PASSWORD)
     with TestClient(create_app(config)) as client:
-        reply = client.post(
-            f"{API}/auth/login", json={"username": "admin", "password": "kavach-admin"}  # pragma: allowlist secret
-        )
+        reply = client.post(f"{API}/auth/login", json={"username": "admin", "password": _PASSWORD})
         headers = {"Authorization": f"Bearer {reply.json()['token']}"}
         before, sent_before = _scan(client, headers)
         assert not [m for m in before if "privacy policy keeps their files local" in m]
@@ -71,11 +72,9 @@ def test_never_send_candidates_are_named_in_the_scan_log(tmp_path: Path) -> None
 
 
 def test_review_of_an_l4_finding_says_l4_fails_closed(tmp_path: Path) -> None:
-    config = ServerConfig(data_dir=tmp_path, ui_dir=None, workers=1, admin_password="kavach-admin")
+    config = ServerConfig(data_dir=tmp_path, ui_dir=None, workers=1, admin_password=_PASSWORD)
     with TestClient(create_app(config)) as client:
-        reply = client.post(
-            f"{API}/auth/login", json={"username": "admin", "password": "kavach-admin"}
-        )
+        reply = client.post(f"{API}/auth/login", json={"username": "admin", "password": _PASSWORD})
         headers = {"Authorization": f"Bearer {reply.json()['token']}"}
         projects = client.get(f"{API}/projects", headers=headers).json()
         sample = next(item for item in projects if item["source"]["type"] == "sample")
