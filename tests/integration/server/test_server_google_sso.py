@@ -24,11 +24,11 @@ CLIENT_ID = "test-client.apps.googleusercontent.com"
 BASE = "http://testserver"
 
 
-def _config(tmp_path: Any, sso: google.GoogleSso | None) -> ServerConfig:
+def _config(tmp_path: Any, sso: google.GoogleSso | None, attempts: int = 1000) -> ServerConfig:
     return ServerConfig(
         # pragma: allowlist nextline secret
         data_dir=tmp_path, ui_dir=None, workers=1, admin_password="kavach-admin",
-        login_attempts_per_minute=1000, google=sso,
+        login_attempts_per_minute=attempts, google=sso,
     )  # fmt: skip
 
 
@@ -53,9 +53,13 @@ def flow(tmp_path: Any) -> Iterator[Flow]:
     clients: list[TestClient] = []
 
     def run(
-        sso: google.GoogleSso | None = None, *, state: str | None = None, **changes: Any
+        sso: google.GoogleSso | None = None,
+        *,
+        state: str | None = None,
+        attempts: int = 1000,
+        **changes: Any,
     ) -> Any:
-        app = create_app(_config(tmp_path, sso or _sso()))
+        app = create_app(_config(tmp_path, sso or _sso(), attempts))
         base = (sso.public_url if sso else "") or BASE
         client = TestClient(app, base_url=base, follow_redirects=False)
         client.__enter__()
@@ -86,6 +90,16 @@ def flow(tmp_path: Any) -> Iterator[Flow]:
             f"{API}/auth/google/callback",
             params={"code": "the-code", "state": state or query["state"][0]},
         )
+        cookie = start.cookies[google.STATE_COOKIE]
+
+        def again() -> Any:
+            client.cookies.set(google.STATE_COOKIE, cookie)
+            return client.get(
+                f"{API}/auth/google/callback",
+                params={"code": "the-code", "state": state or query["state"][0]},
+            )
+
+        response.again = again  # type: ignore[attr-defined]
         response.client = client  # type: ignore[attr-defined]
         response.seen = seen  # type: ignore[attr-defined]
         response.query = query  # type: ignore[attr-defined]
@@ -280,3 +294,34 @@ def test_a_local_account_in_another_case_is_reused_not_duplicated(
     assert [u["username"] for u in users if u["username"].lower() == "asha@example.edu"] == [
         "Asha@Example.edu"
     ]
+
+
+def test_failed_callbacks_are_rate_limited_per_client_and_successes_are_free(flow: Flow) -> None:
+    failing = flow(attempts=2, aud="someone-else")
+    assert failing.headers["location"].endswith("sso_error=token")
+    assert failing.again().headers["location"].endswith("sso_error=token")
+    assert failing.again().headers["location"] == f"{BASE}/login?sso_error=rate_limited"
+    passing = flow(attempts=1)
+    assert "#sso_token=" in passing.headers["location"]
+    assert "#sso_token=" in passing.again().headers["location"]
+
+
+def test_a_disabled_account_cannot_sign_in_with_google(flow: Flow) -> None:
+    first = flow()
+    headers = _admin_headers(first.client)
+    users = first.client.get(f"{API}/users", headers=headers).json()
+    user_id = next(user["id"] for user in users if user["username"] == "asha@example.edu")
+    patched = first.client.patch(f"{API}/users/{user_id}", json={"active": False}, headers=headers)
+    assert patched.status_code == 200
+    assert flow().headers["location"] == f"{BASE}/login?sso_error=disabled"
+
+
+def test_sign_ins_and_refusals_are_audited_without_the_code_or_tokens(flow: Flow) -> None:
+    flow(email_verified=False)
+    done = flow()
+    token = done.headers["location"].split("#sso_token=")[1]
+    entries = done.client.get(f"{API}/audit", headers=_admin_headers(done.client)).json()
+    text = json.dumps(entries)
+    assert '"method": "google"' in text and "unverified" in text and "user.create" in text
+    assert "the-code" not in text and token not in text and "test-secret-value" not in text
+
