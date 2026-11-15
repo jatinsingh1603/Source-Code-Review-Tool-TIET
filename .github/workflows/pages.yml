@@ -45,6 +45,9 @@ jobs:
         env:
           VITE_MOCK: "1"
           VITE_BASE: /Source-Code-Review-Tool-TIET/
+          # Public OAuth client ID (not a secret) for the demo's Google sign-in button. The
+          # client secret is used only by a real server and never appears in this repository.
+          VITE_GOOGLE_CLIENT_ID: 263824843636-ib8nqtgq2ebv4pjeut7aqso1tl92asia.apps.googleusercontent.com
         run: npm run build
       - name: Serve deep links and skip Jekyll
         working-directory: ui
