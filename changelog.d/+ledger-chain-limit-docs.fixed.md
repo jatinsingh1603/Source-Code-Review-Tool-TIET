@@ -1,0 +1,1 @@
+Auditor guide and demo hub now state the limit of the egress ledger hash chain: it is tamper-evident, not tamper-proof (unkeyed, not anchored outside the scan directory), and the head hash kept elsewhere is the check.

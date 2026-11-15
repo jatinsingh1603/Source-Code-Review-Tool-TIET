@@ -219,6 +219,8 @@ Go down one rung at a time, and say what you did ("the network is slow, so I wil
 
 **Is the zero-leak proof a proof?** It proves one narrow thing: no recorded original identifier, literal, secret or listed term of four or more characters occurs verbatim in any stored payload. It does not prove no meaning can be inferred, and it cannot find a term nobody listed.
 
+**Can someone with access to the server rewrite the ledger?** Yes, and say so. The hash chain is tamper-evident, not tamper-proof: an edited, inserted, removed or reordered entry is detected, but the hashes are not keyed and nothing outside the scan's directory anchors the chain, so someone who can write to that directory can cut entries off the end or recompute every hash, and verification still passes. The check is the head hash printed in the report and the verification file: keep it somewhere the server's operator cannot change. External anchoring is future work. Step 8 of the terminal demo prints "the log cannot be edited unnoticed"; read that as "an edit to a recorded entry is detected".
+
 **Can we run it without any cloud?** Yes. L0 with a local model (Ollama) or the deterministic engines only, in the air-gapped compose profile.
 
 **What does it cost to run?** The software is free to run. Model cost depends on the provider and level; L3 sends slices, not files, so it is the cheapest of the code-sending levels. Do not quote a figure you have not measured.

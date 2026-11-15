@@ -80,6 +80,8 @@ $ codekavach privacy score --scan latest            # score with every component
 
 The ledger is append-only and hash-chained: each entry includes the hash of the previous one, and the hash of the payload it records. Changing or removing an entry breaks every hash after it. **Verify** recomputes them.
 
+What this shows and what it does not: the chain is tamper-evident, not tamper-proof. An edit to an entry, or an entry inserted, removed or reordered in the middle, is detected. The hashes are not keyed and the ledger is not anchored outside the scan's own directory, so someone who can write to that directory can cut entries off the end or recompute the whole chain, and **Verify** will still pass. The check against that is the ledger head hash: the report appendix and the verification file print it, so keep a copy outside the server (the signed-off report is one) and compare it with the head hash a later verification reports.
+
 ## 6. Sign-off checklist
 
 1. Scope and methodology match the engagement; unsupported languages and skipped paths are acknowledged.
