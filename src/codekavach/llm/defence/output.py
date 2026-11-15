@@ -76,10 +76,13 @@ def echoes_prompt(text: str, shingles: frozenset[tuple[str, ...]]) -> bool:
 
 def _scrub(text: str) -> tuple[str, int]:
     count = 0
-    for pattern in (_IMAGE, _ACTIVE_HTML, _JS_URI):
-        text, n = pattern.subn("", text)
-        count += n
-    return text, count
+    while True:  # removing one fragment can join the two halves of another: repeat until stable
+        before = count
+        for pattern in (_IMAGE, _ACTIVE_HTML, _JS_URI):
+            text, n = pattern.subn("", text)
+            count += n
+        if count == before:
+            return text, count
 
 
 def _texts(verdict: LLMVerdict) -> Iterable[str]:
