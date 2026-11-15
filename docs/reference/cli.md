@@ -960,6 +960,7 @@ Usage: codekavach privacy ledger verify [OPTIONS] [target]
 | `--check-terms` | PATH (repeatable) |  | File of sensitive terms (one per line, 4+ characters) that must not occur verbatim in any stored payload; repeatable. Avoid generic words: a term equal to a placeholder subtype such as email matches the placeholders. |
 | `--ignore-case` | flag | off | Also match terms case-insensitively. |
 | `--include-blocked` | flag | off | Hits in blocked payloads also fail the check. |
+| `--expect-head` | HASH |  | Entry hash (64 hex characters) that the chain must still contain, for example the ledger head hash printed in a report; fails when no entry has it. |
 
 Global options apply.
 

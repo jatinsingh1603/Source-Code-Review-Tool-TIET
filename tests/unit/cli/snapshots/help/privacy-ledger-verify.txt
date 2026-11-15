@@ -14,6 +14,9 @@
 │                                     such as email matches the placeholders.                      │
 │ --ignore-case                       Also match terms case-insensitively.                         │
 │ --include-blocked                   Hits in blocked payloads also fail the check.                │
+│ --expect-head               HASH    Entry hash (64 hex characters) that the chain must still     │
+│                                     contain, for example the ledger head hash printed in a       │
+│                                     report; fails when no entry has it.                          │
 │ --help              -h              Show this message and exit.                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Global options ─────────────────────────────────────────────────────────────────────────────────╮

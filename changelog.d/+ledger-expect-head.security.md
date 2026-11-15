@@ -1,0 +1,1 @@
+`codekavach privacy ledger verify --expect-head HASH` fails when the chain no longer contains the entry with that hash. The head hash printed in a report, its `manifest.json` or a verification file is the anchor: kept outside the state directory, it shows entries cut off the end of the ledger or a chain rewritten with new hashes, which the walk alone passes.

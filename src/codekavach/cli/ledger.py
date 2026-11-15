@@ -17,6 +17,7 @@ without ever printing them. All steps run; the first failing step decides the er
 """
 
 import hashlib
+import re
 from collections import Counter
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
@@ -155,9 +156,12 @@ def chain_step(context: VerifyContext) -> StepResult:
     """Walk the whole chain in ``seq`` order; stop at the first failure."""
     prev: EgressRecord | None = None
     seen: dict[int, str] = {}
+    expected_head = context.options.get("expect_head")
+    head_found = expected_head is None
     try:
         for record in context.reader.records(None):
             context.records += 1
+            head_found = head_found or record.entry_hash == expected_head
             failure = _chain_failure(record, prev, seen)
             if failure is not None:
                 return _chain_broken(*failure)
@@ -170,6 +174,17 @@ def chain_step(context: VerifyContext) -> StepResult:
             prev = record
     except Exception:  # noqa: BLE001 - a line the reader cannot parse is a broken chain, not a crash
         return _chain_broken(context.records + 1, "unreadable_entry")
+    if not head_found:
+        # The walk is consistent, but the entry kept elsewhere (a report, a verification file) is
+        # gone: entries were cut off the end, or the chain was rewritten with new hashes.
+        return StepResult(
+            name="chain",
+            ok=False,
+            error_code="ledger_chain_broken",
+            message="ledger integrity check failed: no entry has the expected hash "
+            "(entries were removed, or the chain was rewritten)",
+            data={"ok": False, "first_bad_seq": None, "reason": "expected_entry_missing"},
+        )
     return StepResult(
         name="chain",
         ok=True,
@@ -398,8 +413,23 @@ def verify_command(  # noqa: PLR0917 - Typer maps each parameter to one option
         bool,
         typer.Option("--include-blocked", help="Hits in blocked payloads also fail the check."),
     ] = False,
+    expect_head: Annotated[
+        str | None,
+        typer.Option(
+            "--expect-head",
+            metavar="HASH",
+            help=(
+                "Entry hash (64 hex characters) that the chain must still contain, for example "
+                "the ledger head hash printed in a report; fails when no entry has it."
+            ),
+        ),
+    ] = None,
 ) -> None:
     """Recompute the hash chain and check stored payloads against their hashes."""
+    if expect_head is not None:
+        expect_head = expect_head.strip().lower()
+        if re.fullmatch(r"[0-9a-f]{64}", expect_head) is None:
+            raise UsageError("--expect-head takes 64 hex characters", code="expect_head_invalid")
     files = list(check_terms or [])
     for path in files:
         if not path.is_file():
@@ -412,6 +442,7 @@ def verify_command(  # noqa: PLR0917 - Typer maps each parameter to one option
             "terms_files": files,
             "ignore_case": ignore_case,
             "include_blocked": include_blocked,
+            "expect_head": expect_head,
         },
     )
     _finish_verify(get_output(ctx), context, run_verify(context, VERIFY_STEPS))

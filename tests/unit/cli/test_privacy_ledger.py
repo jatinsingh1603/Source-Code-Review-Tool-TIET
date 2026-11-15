@@ -299,3 +299,32 @@ def test_no_vault_or_restore_imports() -> None:
         "'codekavach.privacy.restore'))]; assert not bad, bad"
     )
     subprocess.run([sys.executable, "-c", code], check=True)
+
+
+def test_expect_head_fails_when_the_kept_entry_is_gone(
+    cli: Cli, project: Path, reader: FakeReader
+) -> None:
+    head = reader.chain[-1].entry_hash
+    kept = ledger(cli, project, "verify", "--expect-head", head.upper())
+    assert kept.exit_code == 0, kept.stderr
+    assert "chain intact: 3 records" in kept.stdout
+
+    reader.chain.pop()  # whole entries cut off the end: the walk alone still passes
+    assert ledger(cli, project, "verify").exit_code == 0
+    cut = ledger(cli, project, "verify", "--expect-head", head, "--json")
+    assert cut.exit_code == 3
+    assert cut.json["errors"][0]["code"] == "ledger_chain_broken"
+    assert cut.json["data"]["chain"] == {
+        "ok": False,
+        "first_bad_seq": None,
+        "reason": "expected_entry_missing",
+    }
+    # An earlier entry's hash is still there, so an older report still checks out.
+    first = reader.chain[0].entry_hash
+    assert ledger(cli, project, "verify", "--expect-head", first).exit_code == 0
+
+
+def test_expect_head_must_be_a_hash(cli: Cli, project: Path, reader: FakeReader) -> None:
+    result = ledger(cli, project, "verify", "--expect-head", "abc123", "--json")
+    assert result.exit_code == 2
+    assert result.json["errors"][0]["code"] == "expect_head_invalid"
