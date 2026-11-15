@@ -31,7 +31,8 @@ weaknesses:
   - {id: 89, name: "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')", abstraction: base, family: sql-injection, top25: 3, owasp: A03, owasp_basis: official, asvs: [V5.3.4, V5.3.5], capec: [66, 7, 108, 109, 110, 470],
      summary: "An SQL statement is built from external input, so an attacker can read or change data, bypass authentication or run database commands."}
   - {id: 90, name: "Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')", abstraction: base, family: sql-injection, owasp: A03, owasp_basis: official, asvs: [V5.3.7], capec: [136],
-     summary: "An LDAP query is built from external input without neutralising its special elements."}
+     summary: "An LDAP query is built from external input without neutralising its special elements.",
+     remediation: "Escape every untrusted value with the LDAP library's filter and DN escaping functions (for example ldap.filter.escape_filter_chars and ldap.dn.escape_dn_chars) before it enters a search filter or distinguished name, validate it against an allow-list of expected characters, and bind with a least-privilege directory account."}
   - {id: 94, name: "Improper Control of Generation of Code ('Code Injection')", abstraction: base, family: command-injection, top25: 11, owasp: A03, owasp_basis: official, asvs: [V5.2.4], capec: [242, 35, 77],
      summary: "Code is generated or evaluated from external input, letting an attacker run code inside the application."}
   - {id: 95, name: "Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')", abstraction: variant, family: command-injection, owasp: A03, owasp_basis: official, asvs: [V5.2.4], capec: [35],
@@ -51,7 +52,8 @@ weaknesses:
   - {id: 200, name: Exposure of Sensitive Information to an Unauthorized Actor, abstraction: class, family: information-exposure, top25: 17, owasp: A01, owasp_basis: official, asvs: [V8.3.1, V8.3.4], capec: [116, 13, 169],
      summary: "Sensitive information is exposed to an actor who is not authorised to see it."}
   - {id: 208, name: Observable Timing Discrepancy, abstraction: base, family: weak-cryptography, owasp: A02, owasp_basis: derived, asvs: [], capec: [462],
-     summary: "Execution time depends on secret data (for example a non-constant-time comparison), leaking it to an observer."}
+     summary: "Execution time depends on secret data (for example a non-constant-time comparison), leaking it to an observer.",
+     remediation: "Compare secrets, MACs, tokens and password hashes with a constant-time function (for example hmac.compare_digest or crypto.timingSafeEqual) instead of == or an early-exit loop, and keep the code path and response the same whether or not the secret matched."}
   - {id: 209, name: Generation of Error Message Containing Sensitive Information, abstraction: base, family: information-exposure, owasp: A04, owasp_basis: official, asvs: [V7.4.1], capec: [215, 54, 7],
      summary: "Error messages reveal sensitive details about the system, its data or its users."}
   - {id: 214, name: Invocation of Process Using Visible Sensitive Information, abstraction: base, family: information-exposure, owasp: A04, owasp_basis: derived, asvs: [], capec: [],
@@ -82,7 +84,8 @@ weaknesses:
   - {id: 312, name: Cleartext Storage of Sensitive Information, abstraction: base, family: weak-cryptography, owasp: A04, owasp_basis: official, asvs: [V6.1.1], capec: [37],
      summary: "Sensitive information is stored in cleartext where others may read it."}
   - {id: 319, name: Cleartext Transmission of Sensitive Information, abstraction: base, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V9.1.1, V9.2.2], capec: [65, 102, 117, 383],
-     summary: "Sensitive data is sent over a channel that can be sniffed."}
+     summary: "Sensitive data is sent over a channel that can be sniffed.",
+     remediation: "Send the data only over TLS 1.2 or later: use https, ldaps or an equivalent encrypted scheme for every connection that carries it, redirect or refuse plain-text requests, enable HSTS on web endpoints, and keep certificate verification on."}
   - {id: 321, name: Use of Hard-coded Cryptographic Key, abstraction: variant, family: hardcoded-secret, owasp: A02, owasp_basis: official, asvs: [V2.10.4, V6.4.1], capec: [191],
      summary: "A cryptographic key is embedded in the code, so anyone with the code can decrypt or forge data."}
   - {id: 326, name: Inadequate Encryption Strength, abstraction: class, family: weak-cryptography, owasp: A02, owasp_basis: official, asvs: [V6.2.1], capec: [20, 112],
@@ -136,7 +139,7 @@ weaknesses:
      summary: "Credentials are transmitted or stored in a way that lets them be intercepted or retrieved."}
   - {id: 532, name: Insertion of Sensitive Information into Log File, abstraction: base, family: information-exposure, owasp: A09, owasp_basis: official, asvs: [V7.1.1, V7.1.2], capec: [215],
      summary: "Secrets, credentials or personal data are written to log files."}
-  - {id: 539, name: Use of Persistent Cookies Containing Sensitive Information, abstraction: base, family: security-misconfiguration, owasp: A04, owasp_basis: official, asvs: [V3.4.1], capec: [21, 31, 39],
+  - {id: 539, name: Use of Persistent Cookies Containing Sensitive Information, abstraction: variant, family: security-misconfiguration, owasp: A04, owasp_basis: official, asvs: [V3.4.1], capec: [21, 31, 39],
      summary: "Sensitive information is kept in cookies that persist beyond the session."}
   - {id: 598, name: Use of GET Request Method With Sensitive Query Strings, abstraction: variant, family: information-exposure, owasp: A04, owasp_basis: official, asvs: [V8.3.1], capec: [],
      summary: "Sensitive data travels in URL query strings, where it is logged and cached."}
@@ -151,7 +154,8 @@ weaknesses:
   - {id: 639, name: Authorization Bypass Through User-Controlled Key, abstraction: base, family: broken-access-control, owasp: A01, owasp_basis: official, asvs: [V4.2.1], capec: [1, 122],
      summary: "A record is looked up by an identifier from the request without checking that the user may access it (IDOR)."}
   - {id: 643, name: "Improper Neutralization of Data within XPath Expressions ('XPath Injection')", abstraction: base, family: sql-injection, owasp: A03, owasp_basis: official, asvs: [V5.3.10], capec: [83],
-     summary: "An XPath query is built from external input without neutralisation."}
+     summary: "An XPath query is built from external input without neutralisation.",
+     remediation: "Pass untrusted values to the XPath engine as bound variables (for example lxml's xpath(expr, name=value)) instead of formatting them into the expression, or validate them against a strict allow-list of expected characters before use."}
   - {id: 668, name: Exposure of Resource to Wrong Sphere, abstraction: class, family: information-exposure, owasp: A01, owasp_basis: official, asvs: [], capec: [],
      summary: "A resource is made available to actors who should not be able to reach it (for example a service bound to all interfaces or a mounted host path).",
      remediation: "Restrict the resource to the network and principals that need it: make the database private, deny public access by default, and reach it through private networking or a bastion. Define the exposure in reviewed infrastructure as code."}
@@ -168,7 +172,7 @@ weaknesses:
      summary: "Data is written past the end, or before the beginning, of the intended buffer."}
   - {id: 798, name: Use of Hard-coded Credentials, abstraction: base, family: hardcoded-secret, top25: 22, owasp: A07, owasp_basis: official, asvs: [V2.10.4, V6.4.1], capec: [191, 70],
      summary: "Credentials such as passwords, API keys or tokens are embedded in the source code."}
-  - {id: 829, name: Inclusion of Functionality from Untrusted Control Sphere, abstraction: class, family: integrity, owasp: A08, owasp_basis: official, asvs: [V10.3.2], capec: [175, 201, 251],
+  - {id: 829, name: Inclusion of Functionality from Untrusted Control Sphere, abstraction: base, family: integrity, owasp: A08, owasp_basis: official, asvs: [V10.3.2], capec: [175, 201, 251],
      summary: "Functionality (scripts, actions, images, plug-ins) is included from a source outside the product's control.",
      remediation: "Do not check out or run untrusted pull-request code in a privileged workflow (pull_request_target, secrets, a write token). Pin every third-party action to a full commit SHA and give the job token the least permissions it needs."}
   - {id: 862, name: Missing Authorization, abstraction: class, family: broken-access-control, top25: 9, owasp: A01, owasp_basis: official, asvs: [V4.1.1, V4.1.3, V4.2.1], capec: [665],

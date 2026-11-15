@@ -100,3 +100,29 @@ def test_broken_table_is_reported(tmp_path: Path) -> None:
     with pytest.raises(KnowledgeBaseError):
         parse_knowledge_base(tmp_path)
     assert load_knowledge_base(tmp_path) is None
+
+
+def test_abstractions_match_the_mitre_entries(kb: KnowledgeBase) -> None:
+    # CWE-539 is a Variant and CWE-829 a Base in the MITRE list; both were recorded one level up.
+    assert kb.weaknesses[539].abstraction == "variant"
+    assert kb.weaknesses[829].abstraction == "base"
+
+
+@pytest.mark.parametrize(
+    ("cwe", "expected", "family_only"),
+    [
+        (90, "LDAP", "cursor.execute"),
+        (643, "XPath", "cursor.execute"),
+        (208, "constant-time", "AES-GCM"),
+        (319, "TLS", "AES-GCM"),
+    ],
+)
+def test_remediation_fits_the_weakness_not_only_its_family(
+    kb: KnowledgeBase, cwe: int, expected: str, family_only: str
+) -> None:
+    # LDAP and XPath injection used to get SQL advice, and timing or cleartext-transport
+    # weaknesses the cipher-choice advice of their family.
+    remediation = kb.weaknesses[cwe].remediation
+    assert remediation is not None
+    assert expected in remediation
+    assert family_only not in remediation

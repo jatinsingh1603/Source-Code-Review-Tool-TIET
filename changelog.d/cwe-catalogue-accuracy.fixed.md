@@ -1,0 +1,1 @@
+The CWE knowledge base records CWE-539 as a Variant and CWE-829 as a Base, as MITRE does, and LDAP injection (CWE-90), XPath injection (CWE-643), timing discrepancy (CWE-208) and cleartext transmission (CWE-319) now carry remediation advice for that weakness instead of the SQL or cipher-choice advice of their family.
