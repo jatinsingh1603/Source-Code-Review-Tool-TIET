@@ -579,7 +579,8 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
     if (c === "sync" && d === "github") {
       requireRole("admin", "auditor");
       const fs = (state.findings.get(scan.id) ?? []).filter((f) => ["critical", "high", "medium"].includes(f.severity) && f.status !== "false_positive");
-      const dry = body.dry_run !== false;
+      // Invented issue links would point at real repositories; only the preview is simulated.
+      if (body.dry_run === false) err(501, "server_only", "Creating GitHub issues needs the CodeKavach server and a GitHub token, which this browser-only demo does not have. The preview shows what would be created.");
       return delay(
         {
           created: fs.length - 2,
@@ -589,8 +590,8 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
             finding_id: f.id,
             action: i === 0 ? "update" : i === fs.length - 1 ? "close" : "create",
             title: `[CodeKavach] ${f.title}`,
-            issue_number: dry ? null : 40 + i,
-            url: dry ? null : `https://github.com/${String(body.repo)}/issues/${40 + i}`,
+            issue_number: null,
+            url: null,
           })),
         },
         900,
