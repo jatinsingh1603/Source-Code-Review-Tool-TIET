@@ -1,16 +1,13 @@
-# Runbook: the CodeKavach CI pipeline
+# Continuous integration: what is checked on every push
 
-The repository's own continuous integration is part of the demo: a green badge on the README and a passing pipeline that checks the privacy claims on every push, not only on the day of the demo.
+CodeKavach's own pipeline checks the privacy architecture on every push to `main`, not only lint and tests: import contracts that make a second network path a build failure, the invariant tests I1 to I6, and an offline end-to-end scan with a zero-leak check on the egress ledger. This page says what each job checks, so that a green badge can be read for what it does and does not show. To run CodeKavach in the pipeline of a repository you want reviewed, see the [GitHub Action guide](github-action.md) and section 7 of the [command-line guide](cli.md#7-ci-pipelines).
 
 - Workflow: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
 - Runs on `main`: <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/workflows/ci.yml?query=branch%3Amain>
-- Last green run checked for this runbook: see [Reference run](#reference-run).
 
-## What to say (one minute)
+Every job runs the same commands a contributor runs locally with `make check` and `make prepush`.
 
-"Every push to `main` runs the same gates a contributor runs locally with `make check`. Besides lint, types and tests on Linux and macOS with Python 3.12 and 3.13, the pipeline checks the privacy architecture itself: import contracts that make a second network path a build failure, the invariant tests I1 to I6, and the full offline demo with a zero-leak check on the egress ledger. A red pipeline blocks the badge; nothing here is a manual promise."
-
-## What the pipeline proves
+## What each job checks
 
 | Job | Command | What a green result means |
 |-----|---------|---------------------------|
@@ -46,29 +43,18 @@ These run in every `test` cell; the test files are under `tests/privacy/` and `t
 
 Run the privacy tests locally with `uv run pytest -n auto tests/privacy` (about a minute on four cores).
 
-## Exact commands for the demo
-
-Show in the browser (no terminal needed):
-
-1. README on GitHub: the CI badge is green.
-2. Click the badge: the list of runs on `main`. Open the latest green run.
-3. The run summary graph: name the jobs from the table above. Open `test (ubuntu-latest, 3.12)`, scroll to the coverage total in the job summary.
-4. Open the `contracts` job log: the line `Contracts: N kept, 0 broken.`
-5. Open the `demo` job log: the zero-leak line and `report.pdf` written; download the `demo-output` artefact if asked.
-
-Show the same gates locally (terminal, about two minutes without the full suite):
+## Running the same gates locally
 
 ```bash
-export PATH=$HOME/.local/bin:$PATH
 uv sync --all-extras
-make lint type contracts            # quality gates and import contracts
+make lint type contracts                 # quality gates and import contracts
 uv run pytest -q -n auto tests/privacy   # the invariant tests I1 to I6
 uv run pytest -q tests/integration/test_demo_zero_leak.py
 ```
 
-Expected output, in order: `All checks passed!` from Ruff; `Success: no issues found in N source files` from mypy; `Contracts: N kept, 0 broken.` from import-linter; `N passed` from both pytest runs.
+Expected output, in order: `All checks passed!` from Ruff; `Success: no issues found in N source files` from mypy; `Contracts: N kept, 0 broken.` from import-linter; `N passed` from both pytest runs. `make check` runs every code gate and `make prepush` adds the hooks and the documentation, changelog, licence and telemetry checks.
 
-To start a run by hand: on the Actions page choose **CI** then **Run workflow** on `main` (the workflow has a `workflow_dispatch` trigger).
+To start a run by hand: on the Actions page choose **CI**, then **Run workflow** on `main` (the workflow has a `workflow_dispatch` trigger).
 
 ## The time budget (issue #313)
 
@@ -82,25 +68,13 @@ CI never uses a real model and never needs a key: the demo job and every test us
 
 A client who wants their own workflow to call a real provider adds the key as a repository secret named `CODEKAVACH_LLM_API_KEY` (Settings, Secrets and variables, Actions, New repository secret) and passes it to the step as an environment variable; see [`action/README.md`](../../action/README.md) and the [GitHub Actions runbook](github-actions.md). Never put a key in a workflow file or in the repository.
 
-## If something is red on the day
+## Reading a red run
 
-| Symptom | Say | Do |
-|---------|-----|----|
-| The latest run is red or still running | "The team pushed during the last hours; here is the last completed green run." | Open the reference run below instead. |
-| The latest run was cancelled | "Several commits arrived together; the pipeline tests the newest one and drops the queued ones in between." | Open the next completed run. |
-| A macOS cell is slow or queued | "macOS runners are shared and slower; the Linux cells hold the same tests." | Open a Linux cell. |
-| Only `commits` is red | "A commit message broke the convention, for example a subject over 72 characters. History on `main` is never rewritten; the job checks only the commits of each push, so the next push is judged on its own." | Open the job log: it names the commit and the rule. |
-| The warnings summary of a 3.13 test cell lists `unclosed database in <sqlite3.Connection` | "Python 3.13 reports a database connection a test did not close. It is test hygiene, not a product fault, and it lands on whichever test runs when the garbage collector does, so it is listed instead of failing an unrelated test." | Nothing on the day. Afterwards, find the test that creates a server or store without closing it (the serve banner tests were one, fixed in `63b22df`). |
-| Only `hooks` is red at the secret scan step | "The scanner flags anything that looks like a credential, including a variable named `..._PASSWORD`. A real new secret blocks the push." | The log names the file and line; a name that is not a value gets `# pragma: allowlist secret`. |
-| GitHub is unreachable | "The same gates run locally." | Run the local commands above. |
-
-## Reference run
-
-A green run of this pipeline on `main`, checked while preparing this runbook:
-
-- <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43590207032>: commit `14460e7`, 14 November 2026 11:39 UTC, every job green (`ci-ok` success), the second green run in a row. `test (ubuntu-latest, 3.12)` took 8 minutes 21 seconds, `test (ubuntu-latest, 3.13)` 6 minutes 9 seconds, `perf` 4 minutes 29 seconds, `docker` 57 seconds, `ui` 25 seconds.
-- <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43421402124>: commit `0254b15`, 13 November 2026 12:12 UTC, every job green (`ci-ok` success). `test (ubuntu-latest, 3.12)` took 9 minutes 2 seconds, `test (ubuntu-latest, 3.13)` 9 minutes 58 seconds, `perf` 5 minutes 54 seconds.
-- <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43334263876>: commit `f05fcb2`, 13 November 2026, every job green (`ci-ok` success). `test (ubuntu-latest, 3.12)` took 10 minutes 44 seconds, `test (ubuntu-latest, 3.13)` 9 minutes 54 seconds, `perf` 4 minutes 24 seconds.
-- <https://github.com/jatinsingh1603/Source-Code-Review-Tool-TIET/actions/runs/43331968149>: commit `eea512c`, 12 November 2026, every job green (`ci-ok` success), including the four test cells, `perf`, `ui`, `docker`, `demo`, `detector-eval` and `provider-conformance`. The test step of `test (ubuntu-latest, 3.12)` took 11 minutes 23 seconds, the whole job 11 minutes 39 seconds, against its 20-minute limit.
-
-Later pushes from the feature streams may turn a run red until the next fix lands; open this run when the latest one is not green.
+| Symptom | Cause | What to do |
+|---------|-------|------------|
+| The latest run was cancelled | Several commits arrived together; the pipeline tests the newest one and drops the queued ones in between | Open the next completed run. |
+| A macOS cell is slow or queued | macOS runners are shared and slower; the Linux cells hold the same tests | Open a Linux cell. |
+| Only `commits` is red | A commit message broke the convention, for example a subject over 72 characters. History on `main` is not rewritten; the job checks only the commits of each push, so the next push is judged on its own | Open the job log: it names the commit and the rule. |
+| The warnings summary of a 3.13 test cell lists `unclosed database in <sqlite3.Connection` | Python 3.13 reports a database connection a test did not close. It is test hygiene, not a product fault, and it lands on whichever test runs when the garbage collector does, so it is listed instead of failing an unrelated test | Find the test that creates a server or store without closing it. |
+| Only `hooks` is red at the secret scan step | The scanner flags anything that looks like a credential, including a variable named `..._PASSWORD`. A real new secret blocks the push | The log names the file and line; a name that is not a value gets `# pragma: allowlist secret`. |
+| GitHub is unreachable | | Run the local commands above. |
