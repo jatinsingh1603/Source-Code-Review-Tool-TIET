@@ -125,7 +125,15 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const demoOn = pathname.startsWith("/demo");
   const howOn = pathname.startsWith("/how-it-works");
   return (
-    <aside id="main-nav" className={cn("side", open && "open")} aria-label="Main navigation">
+    // Close the phone drawer on any link, including the page already open (no route change then).
+    <aside
+      id="main-nav"
+      className={cn("side", open && "open")}
+      aria-label="Main navigation"
+      onClick={(e) => {
+        if (open && (e.target as HTMLElement).closest("a")) onClose();
+      }}
+    >
       <div className="side-head">
         <Link className="brand" to="/">
           <Logo />
