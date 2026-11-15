@@ -1,0 +1,1 @@
+A git project whose branch starts with `-` or holds white space, or whose URL holds white space or control characters, is refused when the project is saved; before, it was stored and refused only when a scan tried to clone it.

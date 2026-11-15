@@ -248,6 +248,10 @@ def assert_safe_clone_url(
     public. A host given as an IP literal (decimal, octal or mapped forms included) is judged by
     its address and must also be listed.
     """
+    # urlsplit drops tabs and newlines before parsing, so they are refused here: the stored URL
+    # must be the one that was checked.
+    if any(char.isspace() or not char.isprintable() for char in url):
+        raise IntakeError("git_url_invalid", "the git URL holds white space or control characters")
     try:
         parts = urlsplit(url)
     except ValueError:
@@ -291,6 +295,13 @@ def _git_reason(stderr: bytes | str | None) -> str:
     return ""
 
 
+def assert_safe_git_ref(ref: str) -> str:
+    """``ref`` when it cannot be read as a git option; ``IntakeError`` otherwise."""
+    if ref.startswith("-") or any(char.isspace() or not char.isprintable() for char in ref):
+        raise IntakeError("git_ref_invalid", "the git ref is not valid")
+    return ref
+
+
 def clone_git(url: str, destination: Path, *, ref: str | None = None) -> Path:
     """Shallow-clone ``url`` (already checked) into ``destination`` with hardened options."""
     git = shutil.which("git")
@@ -307,9 +318,7 @@ def clone_git(url: str, destination: Path, *, ref: str | None = None) -> Path:
         "clone", "--depth", "1", "--no-tags", "--single-branch", "--no-recurse-submodules",
     ]  # fmt: skip
     if ref:
-        if ref.startswith("-") or any(char.isspace() for char in ref):
-            raise IntakeError("git_ref_invalid", "the git ref is not valid")
-        command += ["--branch", ref]
+        command += ["--branch", assert_safe_git_ref(ref)]
     command += ["--", url, str(destination)]
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),

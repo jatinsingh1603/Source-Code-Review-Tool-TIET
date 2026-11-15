@@ -202,6 +202,16 @@ def test_project_crud(
     )
     assert bad.status_code == 400
     assert bad.json()["error"]["code"] == "git_url_scheme"
+    option = client.post(
+        "/api/v1/projects",
+        json={
+            "name": "Option",
+            "source": {"type": "git", "url": "https://github.com/a/b", "ref": "--upload-pack=x"},
+        },
+        headers=developer,
+    )
+    assert option.status_code == 400
+    assert option.json()["error"]["code"] == "git_ref_invalid"
     assert client.delete(f"/api/v1/projects/{project_id}", headers=developer).status_code == 200
     assert client.get(f"/api/v1/projects/{project_id}", headers=developer).status_code == 404
 

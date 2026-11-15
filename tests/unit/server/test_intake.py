@@ -130,6 +130,26 @@ def test_unsafe_clone_urls_are_refused(url: str, addresses: tuple[str, ...], cod
     assert caught.value.code == code
 
 
+@pytest.mark.parametrize(
+    "url",
+    ["https://github.com/a/b\n--x", "https://github.com/a/b c", "https://github.com/a/\x00b"],
+)
+def test_clone_urls_with_white_space_or_control_characters_are_refused(url: str) -> None:
+    with pytest.raises(IntakeError) as caught:
+        assert_safe_clone_url(url, ALLOWED, _resolver("140.82.112.3"))
+    assert caught.value.code == "git_url_invalid"
+
+
+@pytest.mark.parametrize("ref", ["--upload-pack=touch x", "-x", "main\n--x", "a b", "a\x00b"])
+def test_git_refs_that_read_as_options_are_refused(ref: str) -> None:
+    from codekavach.server.jobs.workspace import assert_safe_git_ref  # noqa: PLC0415
+
+    with pytest.raises(IntakeError) as caught:
+        assert_safe_git_ref(ref)
+    assert caught.value.code == "git_ref_invalid"
+    assert assert_safe_git_ref("release/1.2") == "release/1.2"
+
+
 def test_a_public_allow_listed_url_passes() -> None:
     url = "https://github.com/OWASP/NodeGoat.git"
     assert assert_safe_clone_url(url, ALLOWED, _resolver("140.82.112.3")) == url

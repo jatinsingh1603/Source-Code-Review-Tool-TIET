@@ -28,6 +28,7 @@ from codekavach.server.jobs.workspace import (
     ArchiveLimits,
     IntakeError,
     assert_safe_clone_url,
+    assert_safe_git_ref,
     extract_archive,
 )
 from codekavach.server.rbac import Permission, permitted
@@ -94,6 +95,8 @@ def _check_source(state: ServerState, source: SourceBody, principal: Any) -> Non
         _check_path(state, principal, source.path)
     elif source.type == "git":
         try:
+            if source.ref:
+                assert_safe_git_ref(source.ref)
             assert_safe_clone_url(source.url or "", state.config.git_allowed_hosts)
         except IntakeError as error:
             raise ApiError(400, error.code, error.message) from None
