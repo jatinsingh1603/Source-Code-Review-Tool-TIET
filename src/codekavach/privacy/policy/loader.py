@@ -177,6 +177,11 @@ def load_document(
             file=file,
             line=int(at.group(1)) if at else None,
         ) from None
+    except RecursionError:
+        # A few thousand nested brackets exhaust the parser's stack; refuse, do not crash.
+        raise PolicyError(
+            PolicyErrorCode.UNREADABLE, "policy is nested too deeply", file=file
+        ) from None
     return _validate(data, text, file), sha256_hex(raw)
 
 

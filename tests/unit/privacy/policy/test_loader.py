@@ -22,6 +22,12 @@ def refused(text: str) -> PolicyError:
     return info.value
 
 
+def test_deeply_nested_toml_is_refused_not_a_crash() -> None:
+    error = refused("x = " + "[" * 5000)
+    assert error.code == PolicyErrorCode.UNREADABLE
+    assert "nested" in str(error)
+
+
 def test_registry_is_complete() -> None:
     assert [c.value for c in PolicyErrorCode] == [f"CK-POL-{n:03d}" for n in range(1, 10)]
     assert set(POLICY_ERROR_CODES) == set(PolicyErrorCode)
