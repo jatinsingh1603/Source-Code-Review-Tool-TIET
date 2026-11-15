@@ -43,7 +43,7 @@ def test_never_send_candidates_are_named_in_the_scan_log(tmp_path: Path) -> None
     config = ServerConfig(data_dir=tmp_path, ui_dir=None, workers=1, admin_password="kavach-admin")
     with TestClient(create_app(config)) as client:
         reply = client.post(
-            f"{API}/auth/login", json={"username": "admin", "password": "kavach-admin"}
+            f"{API}/auth/login", json={"username": "admin", "password": "kavach-admin"}  # pragma: allowlist secret
         )
         headers = {"Authorization": f"Bearer {reply.json()['token']}"}
         before, sent_before = _scan(client, headers)
