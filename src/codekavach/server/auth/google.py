@@ -98,6 +98,16 @@ class GoogleSso:
         address = email.lower()
         return address in self.allowed_emails or address.rpartition("@")[2] in self.allowed_domains
 
+    def describe(self) -> str:
+        """One line for the start-up banner: who may sign in, never the secret."""
+        allowed = ", ".join((*self.allowed_domains, *self.allowed_emails))
+        if allowed:
+            return f"on for {allowed} (new accounts: {self.default_role})"
+        return (
+            f"on for ANY verified Google account (new accounts: {self.default_role}); "
+            f"set {ALLOWED_DOMAINS_ENV} or {ALLOWED_EMAILS_ENV} to restrict it"
+        )
+
 
 def from_env(environ: Mapping[str, str] | None = None) -> GoogleSso | None:
     """The settings from the environment; ``None`` (feature off) unless id and secret are set."""

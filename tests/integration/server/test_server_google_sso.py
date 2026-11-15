@@ -145,6 +145,15 @@ def test_settings_come_from_the_environment(tmp_path: Any) -> None:
     assert google.from_env({google.CLIENT_ID_ENV: CLIENT_ID}) is None
 
 
+def test_the_start_up_line_says_who_may_sign_in_and_flags_an_open_server() -> None:
+    restricted = _sso(allowed_domains=("thapar.edu",), allowed_emails=("guest@gmail.com",))
+    assert restricted.describe() == "on for thapar.edu, guest@gmail.com (new accounts: viewer)"
+    unrestricted = _sso().describe()
+    assert "ANY verified Google account" in unrestricted
+    assert google.ALLOWED_DOMAINS_ENV in unrestricted
+    assert "test-secret-value" not in restricted.describe() + unrestricted
+
+
 def test_login_redirects_to_google_with_state_nonce_and_pkce(tmp_path: Any) -> None:
     with TestClient(create_app(_config(tmp_path, _sso())), follow_redirects=False) as client:
         assert client.get(f"{API}/auth/providers").json() == {"google": {"enabled": True}}
