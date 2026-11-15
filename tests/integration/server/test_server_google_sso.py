@@ -8,6 +8,7 @@ from collections.abc import Callable, Iterator, Mapping
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
+import httpx
 import pytest
 
 pytest.importorskip("fastapi")
@@ -325,3 +326,61 @@ def test_sign_ins_and_refusals_are_audited_without_the_code_or_tokens(flow: Flow
     assert '"method": "google"' in text and "unverified" in text and "user.create" in text
     assert "the-code" not in text and token not in text and "test-secret-value" not in text
 
+
+class _Answer:
+    def __init__(self, status_code: int, body: Any) -> None:
+        self.status_code = status_code
+        self._body = body
+
+    def json(self) -> Any:
+        if isinstance(self._body, Exception):
+            raise self._body
+        return self._body
+
+
+def test_the_code_exchange_posts_the_verifier_and_reads_the_answer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sent: dict[str, Any] = {}
+
+    def post(url: str, **kwargs: Any) -> _Answer:
+        sent.update(url=url, **kwargs)
+        return _Answer(200, {"id_token": "a.b.c"})
+
+    monkeypatch.setattr(httpx, "post", post)
+    answer = google.exchange_code(_sso(), "the-code", "the-verifier", f"{BASE}/cb")
+    assert answer == {"id_token": "a.b.c"}
+    assert sent["url"] == "https://oauth2.googleapis.com/token"
+    assert sent["timeout"] == google.TOKEN_TIMEOUT_SECONDS
+    assert sent["data"] == {
+        "grant_type": "authorization_code",
+        "code": "the-code",
+        "client_id": CLIENT_ID,
+        "client_secret": "test-secret-value",  # pragma: allowlist secret
+        "redirect_uri": f"{BASE}/cb",
+        "code_verifier": "the-verifier",
+    }
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        _Answer(400, {"error": "invalid_grant"}),
+        _Answer(200, ["not", "an", "object"]),
+        _Answer(200, ValueError("not JSON")),
+        None,
+    ],
+)
+def test_a_failed_code_exchange_is_one_short_error(
+    monkeypatch: pytest.MonkeyPatch, answer: _Answer | None
+) -> None:
+    def post(url: str, **kwargs: Any) -> _Answer:
+        if answer is None:
+            raise httpx.ConnectError("no route")
+        return answer
+
+    monkeypatch.setattr(httpx, "post", post)
+    with pytest.raises(google.SsoError) as caught:
+        google.exchange_code(_sso(), "the-code", "the-verifier", f"{BASE}/cb")
+    assert caught.value.code == "exchange"
+    assert "test-secret-value" not in str(caught.value)
