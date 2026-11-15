@@ -5,6 +5,10 @@ Owning epic: E32.
 Login is rate-limited per client address and per user name and answers an unknown user and a
 wrong password identically (same code, same work through ``DUMMY_HASH``). Every login, logout and
 user change is audited. Changing a user's role, password or active flag revokes their tokens.
+
+A password somebody else chose (the first admin's, one an admin set or reset) is temporary:
+``must_change_password`` is set, the login answer says so, and until the user has called
+``POST /auth/change-password`` every other route answers 403 ``password_change_required``.
 """
 
 from typing import Any
@@ -26,12 +30,17 @@ from codekavach.server.auth.passwords import (
     needs_rehash,
     verify_password,
 )
-from codekavach.server.auth.tokens import issue_token, revoke_token, revoke_user_tokens
+from codekavach.server.auth.tokens import (
+    issue_token,
+    revoke_token,
+    revoke_user_tokens,
+    token_hash,
+)
 from codekavach.server.db.engine import as_utc
-from codekavach.server.db.models import User, utcnow
+from codekavach.server.db.models import SessionToken, User, utcnow
 from codekavach.server.errors import ApiError, not_found
 from codekavach.server.rbac import PERMISSIONS, Permission, Role
-from codekavach.server.schemas import LoginBody, UserCreate, UserUpdate
+from codekavach.server.schemas import LoginBody, PasswordChange, UserCreate, UserUpdate
 from codekavach.server.state import new_id
 
 router = APIRouter(tags=["auth"])
@@ -47,6 +56,7 @@ def user_json(user: User) -> dict[str, Any]:
         "email": user.email,
         "role": user.role,
         "active": user.active,
+        "must_change_password": bool(user.must_change_password),
         "created_at": as_utc(user.created_at),
         "last_login": as_utc(user.last_login),
         "permissions": sorted(str(item) for item in PERMISSIONS.get(Role(user.role), ())),
@@ -82,13 +92,49 @@ def login(
     # users sharing one address (behind a proxy) do not use up each other's budget.
     state.login_limiter.undo(keys[0])
     state.login_limiter.reset(keys[1])
+    if user.role == Role.admin:
+        # The generated first password is on disk only until an admin has signed in with it.
+        state.discard_initial_password()
     audit.record(state.db, actor=user.username, action="auth.login", client=client)
     return {
         "token": token,
         "token_type": "bearer",
         "expires_in": state.config.token_ttl_seconds,
+        "must_change_password": bool(user.must_change_password),
         "user": user_json(user),
     }
+
+
+def change_password(
+    body: PasswordChange,
+    request: Request,
+    principal: PrincipalDep,
+    state: StateDep,
+    session: SessionDep,
+) -> dict[str, Any]:
+    """Change the caller's own password; every other session and personal token is revoked."""
+    user = session.get(User, principal.user_id)
+    if user is None:
+        raise ApiError(401, "invalid_token", "the user no longer exists")
+    if not verify_password(body.current_password, user.password_hash):
+        audit.record(state.db, actor=principal.username, action="user.password", outcome="failed",
+                     resource=user.id, client=client_of(request))  # fmt: skip
+        raise ApiError(400, "wrong_password", "the current password is not correct")
+    if body.new_password == body.current_password:
+        raise ApiError(400, "same_password", "the new password is the same as the current one")
+    user.password_hash = hash_password(body.new_password)
+    user.must_change_password = False
+    revoked = revoke_user_tokens(session, user.id)
+    current = session.get(SessionToken, token_hash(principal.token))
+    if current is not None and current.revoked:
+        current.revoked = False
+        revoked -= 1
+    audit.record(state.db, actor=principal.username, action="user.password", resource=user.id,
+                 client=client_of(request), detail={"revoked": revoked})  # fmt: skip
+    return {"ok": True, "revoked": revoked, "user": user_json(user)}
+
+
+router.post("/auth/change-password")(change_password)
 
 
 @router.get("/auth/me")
@@ -142,6 +188,7 @@ def create_user(
         email=body.email,
         role=body.role,
         password_hash=hash_password(body.password),
+        must_change_password=body.must_change_password,
     )
     session.add(user)
     audit.record(state.db, actor=principal.username, action="user.create", resource=user.id,
@@ -169,9 +216,18 @@ def update_user(
         changes.get("role", "admin") != "admin" or changes.get("active") is False
     ):
         raise ApiError(409, "self_lockout", "you cannot demote or disable your own account")
+    must_change = changes.pop("must_change_password", None)
     if "password" in changes:
         user.password_hash = hash_password(changes.pop("password"))
+        # A password set for somebody else is temporary unless the admin says otherwise.
+        user.must_change_password = (
+            must_change if must_change is not None else user.id != principal.user_id
+        )
         revoke_user_tokens(session, user.id)
+        changes["password"] = True
+    elif must_change is not None:
+        user.must_change_password = must_change
+        changes["must_change_password"] = must_change
     for key in ("role", "full_name", "email", "active"):
         if key in changes:
             setattr(user, key, changes[key])

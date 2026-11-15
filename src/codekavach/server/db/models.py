@@ -39,6 +39,8 @@ class User(ServerBase):
     email: Mapped[str] = mapped_column(String(256), default="")
     role: Mapped[str] = mapped_column(String(16))
     password_hash: Mapped[str] = mapped_column(String(256))
+    # The password was set for the user (first start, an admin, a reset): they must choose one.
+    must_change_password: Mapped[bool] = mapped_column(default=False, server_default="0")
     active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     last_login: Mapped[datetime | None] = mapped_column(default=None)

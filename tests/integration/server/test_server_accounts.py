@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 from codekavach.server.app import create_app
 from codekavach.server.config import VAULT_PASSPHRASE_ENV, ServerConfig
+from tests.support.server import ADMIN_PASSWORD
 
 API = "/api/v1"
 
@@ -27,12 +28,12 @@ def server(
 ) -> Iterator[tuple[TestClient, dict[str, str]]]:
     monkeypatch.delenv(VAULT_PASSPHRASE_ENV, raising=False)
     config = ServerConfig(
-        # pragma: allowlist nextline secret
-        data_dir=tmp_path, ui_dir=None, workers=1, admin_password="kavach-admin",
+        data_dir=tmp_path, ui_dir=None, workers=1, admin_password=ADMIN_PASSWORD,
+        force_password_change=False,
         login_attempts_per_minute=1000,
     )  # fmt: skip
     with TestClient(create_app(config)) as client:
-        yield client, _login(client, "admin", "kavach-admin")
+        yield client, _login(client, "admin", ADMIN_PASSWORD)
 
 
 def test_user_email_must_look_like_an_address(server: tuple[TestClient, dict[str, str]]) -> None:
@@ -87,9 +88,15 @@ def test_vault_key_origin_names_the_environment_variable(
     tmp_path: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv(VAULT_PASSPHRASE_ENV, "a passphrase the operator chose")
-    config = ServerConfig(data_dir=tmp_path, ui_dir=None, workers=1, admin_password="kavach-admin")
+    config = ServerConfig(
+        data_dir=tmp_path,
+        ui_dir=None,
+        workers=1,
+        admin_password=ADMIN_PASSWORD,
+        force_password_change=False,
+    )
     with TestClient(create_app(config)) as client:
-        admin = _login(client, "admin", "kavach-admin")
+        admin = _login(client, "admin", ADMIN_PASSWORD)
         vault = client.get(f"{API}/vault", headers=admin).json()
     assert vault["key_source"] == "passphrase (environment variable)"
 
@@ -120,8 +127,8 @@ def test_usernames_are_unique_whatever_their_case(
 def test_a_chunked_body_past_the_limit_is_refused(tmp_path: Any) -> None:
     """A body without Content-Length is counted as it arrives, not read whole."""
     config = ServerConfig(
-        # pragma: allowlist nextline secret
-        data_dir=tmp_path, ui_dir=None, workers=1, admin_password="kavach-admin",
+        data_dir=tmp_path, ui_dir=None, workers=1, admin_password=ADMIN_PASSWORD,
+        force_password_change=False,
         max_upload_bytes=1024, seed=False,
     )  # fmt: skip
 

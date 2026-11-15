@@ -10,7 +10,7 @@ audit event when the role lacks the permission.
 
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, Final
 
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
@@ -20,6 +20,19 @@ from codekavach.server.auth.tokens import authenticate_token
 from codekavach.server.errors import ApiError
 from codekavach.server.rbac import Permission, permitted
 from codekavach.server.state import ServerState
+
+# What a user who must still replace a temporary password may call: who am I, my display
+# preferences (the sign-in page reads them), change the password, sign out.
+PASSWORD_CHANGE_ROUTES: Final = frozenset(
+    {
+        ("GET", "/api/v1/auth/me"),
+        ("GET", "/api/v1/me"),
+        ("GET", "/api/v1/me/preferences"),
+        ("POST", "/api/v1/auth/change-password"),
+        ("POST", "/api/v1/me/password"),
+        ("POST", "/api/v1/auth/logout"),
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -83,6 +96,18 @@ def current_principal(request: Request, state: StateDep) -> Principal:
         if user is None:
             raise ApiError(401, "invalid_token", "the token is invalid or has expired")
         principal = Principal(user.id, user.username, user.role, raw)
+        must_change = bool(user.must_change_password)
+    if (
+        must_change
+        and state.config.force_password_change
+        and (request.method, request.url.path.rstrip("/")) not in PASSWORD_CHANGE_ROUTES
+    ):
+        raise ApiError(
+            403,
+            "password_change_required",
+            "choose a new password before using the server",
+            "POST /api/v1/auth/change-password with current_password and new_password",
+        )
     request.state.principal = principal
     return principal
 

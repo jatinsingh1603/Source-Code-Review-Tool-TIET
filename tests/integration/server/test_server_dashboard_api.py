@@ -20,10 +20,11 @@ from fastapi.testclient import TestClient
 from codekavach.server import audit
 from codekavach.server.app import create_app
 from codekavach.server.config import ServerConfig
+from tests.support.server import ADMIN_PASSWORD
 
 pytest.importorskip("fastapi")
 
-ADMIN = {"username": "admin", "password": "kavach-admin"}
+ADMIN = {"username": "admin", "password": ADMIN_PASSWORD}
 API = "/api/v1"
 
 
@@ -37,7 +38,8 @@ def _login(client: TestClient, username: str, password: str) -> dict[str, str]:
 def server(tmp_path_factory: pytest.TempPathFactory) -> Iterator[tuple[TestClient, Any]]:
     data = tmp_path_factory.mktemp("server-dashboard")
     config = ServerConfig(
-        data_dir=data, ui_dir=None, workers=1, admin_password="kavach-admin",
+        data_dir=data, ui_dir=None, workers=1, admin_password=ADMIN_PASSWORD,
+        force_password_change=False,
         login_attempts_per_minute=1000,
     )  # fmt: skip
     app = create_app(config)

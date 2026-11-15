@@ -58,6 +58,7 @@
 │ config      Inspect and manage configuration.                                                    │
 │ rules       List, show, validate, test and bundle native rule packs.                             │
 │ serve       Run the REST API server and the web dashboard.                                       │
+│ admin       Recover access to the server's local accounts.                                       │
 │ sca         Refresh the advisory mirror and list vulnerable dependencies.                        │
 │ sbom        Generate a CycloneDX 1.5 or SPDX 2.3 bill of materials from the manifests of a       │
 │             project.                                                                             │

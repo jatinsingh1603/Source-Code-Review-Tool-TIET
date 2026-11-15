@@ -18,7 +18,10 @@ from typing import Final
 import platformdirs
 
 ADMIN_PASSWORD_ENV: Final = "CODEKAVACH_ADMIN_PASSWORD"  # noqa: S105 - a variable name
-DEFAULT_ADMIN_PASSWORD: Final = "kavach-admin"  # noqa: S105 - documented demo default
+ADMIN_PASSWORD_FILE_ENV: Final = "CODEKAVACH_ADMIN_PASSWORD_FILE"  # noqa: S105 - a variable name
+FORCE_PASSWORD_CHANGE_ENV: Final = "CODEKAVACH_FORCE_PASSWORD_CHANGE"  # noqa: S105 - a name
+INITIAL_PASSWORD_FILE: Final = "initial-admin-password"  # noqa: S105 - a file name
+MIN_PASSWORD_LENGTH: Final = 10
 DEV_ENV: Final = "CODEKAVACH_DEV"
 DATA_DIR_ENV: Final = "CODEKAVACH_SERVER_DATA_DIR"
 VAULT_PASSPHRASE_ENV: Final = "CODEKAVACH_SERVER_VAULT_PASSPHRASE"  # noqa: S105 - a variable name
@@ -33,6 +36,44 @@ def default_data_dir() -> Path:
     if configured:
         return Path(configured).expanduser()
     return Path(platformdirs.user_data_dir("codekavach")) / "server"
+
+
+class AdminPasswordError(ValueError):
+    """The configured initial admin password cannot be used (unreadable file, too short)."""
+
+
+def configured_admin_password() -> str | None:
+    """The initial admin password the operator supplied, or ``None`` to have one generated.
+
+    ``CODEKAVACH_ADMIN_PASSWORD`` wins; otherwise the first line of the file named by
+    ``CODEKAVACH_ADMIN_PASSWORD_FILE`` (a mounted secret). The value is used only when the
+    server has no user yet.
+    """
+    value = os.environ.get(ADMIN_PASSWORD_ENV, "")
+    if value:
+        return value
+    name = os.environ.get(ADMIN_PASSWORD_FILE_ENV, "").strip()
+    if not name:
+        return None
+    try:
+        lines = Path(name).expanduser().read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError) as error:
+        raise AdminPasswordError(
+            f"{ADMIN_PASSWORD_FILE_ENV} names a file that cannot be read ({type(error).__name__})"
+        ) from None
+    value = lines[0].strip() if lines else ""
+    if not value:
+        raise AdminPasswordError(f"{ADMIN_PASSWORD_FILE_ENV} names an empty file")
+    return value
+
+
+def _force_password_change() -> bool:
+    return os.environ.get(FORCE_PASSWORD_CHANGE_ENV, "1").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
 
 
 def repo_root() -> Path | None:
@@ -68,9 +109,11 @@ class ServerConfig:
     data_dir: Path = field(default_factory=default_data_dir)
     ui_dir: Path | None = field(default_factory=default_ui_dir)
     workers: int = 2
-    admin_password: str = field(
-        default_factory=lambda: os.environ.get(ADMIN_PASSWORD_ENV) or DEFAULT_ADMIN_PASSWORD
-    )
+    # The password of the first ``admin`` account; ``None`` has the server generate one.
+    admin_password: str | None = field(default_factory=configured_admin_password)
+    # A user whose password was set for them (the initial admin, an account an admin created
+    # or reset) may only change it until they have chosen their own.
+    force_password_change: bool = field(default_factory=_force_password_change)
     dev: bool = field(default_factory=lambda: os.environ.get(DEV_ENV, "") in {"1", "true", "yes"})
     cors_origins: tuple[str, ...] = ()
     token_ttl_seconds: int = 12 * 3600
@@ -94,6 +137,11 @@ class ServerConfig:
     def db_path(self) -> Path:
         """The server database file."""
         return self.data_dir / "server.db"
+
+    @property
+    def initial_password_path(self) -> Path:
+        """Where a generated admin password waits (mode 0600) until the first admin login."""
+        return self.data_dir / INITIAL_PASSWORD_FILE
 
     @property
     def scans_dir(self) -> Path:

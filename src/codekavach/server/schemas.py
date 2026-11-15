@@ -118,6 +118,8 @@ class UserCreate(_Body):
     full_name: str = Field(default="", max_length=128)
     display_name: str | None = Field(default=None, max_length=128)
     email: str = Field(default="", max_length=256, pattern=EMAIL_PATTERN)
+    # The admin chose this password, so the user replaces it at their first sign-in.
+    must_change_password: bool = True
 
 
 class UserUpdate(_Body):
@@ -129,6 +131,7 @@ class UserUpdate(_Body):
     display_name: str | None = Field(default=None, max_length=128)
     email: str | None = Field(default=None, max_length=256, pattern=EMAIL_PATTERN)
     active: bool | None = None
+    must_change_password: bool | None = None
 
 
 class GithubSyncBody(_Body):
@@ -162,7 +165,7 @@ class ProfileUpdate(_Body):
 
 
 class PasswordChange(_Body):
-    """``POST /me/password``: the caller's own password, confirmed with the current one."""
+    """``POST /auth/change-password``: the caller's own password, confirmed with the current."""
 
     current_password: str = Field(min_length=1, max_length=256)
     new_password: str = Field(min_length=10, max_length=256)

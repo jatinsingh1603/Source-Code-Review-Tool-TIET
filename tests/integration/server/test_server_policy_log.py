@@ -13,12 +13,13 @@ from fastapi.testclient import TestClient
 
 from codekavach.server.app import create_app
 from codekavach.server.config import ServerConfig
+from tests.support.server import ADMIN_PASSWORD
 
 API = "/api/v1"
 POLICY = 'policy_version = 1\n\n[[path]]\npattern = "services/web/**"\nnever_send = true\n'
 
 
-_PASSWORD = "kavach-admin"  # pragma: allowlist secret
+_PASSWORD = ADMIN_PASSWORD
 
 
 def _scan(client: TestClient, headers: dict[str, str]) -> tuple[list[str], int]:
@@ -43,7 +44,13 @@ def _scan(client: TestClient, headers: dict[str, str]) -> tuple[list[str], int]:
 
 
 def test_never_send_candidates_are_named_in_the_scan_log(tmp_path: Path) -> None:
-    config = ServerConfig(data_dir=tmp_path, ui_dir=None, workers=1, admin_password=_PASSWORD)
+    config = ServerConfig(
+        data_dir=tmp_path,
+        ui_dir=None,
+        workers=1,
+        admin_password=_PASSWORD,
+        force_password_change=False,
+    )
     with TestClient(create_app(config)) as client:
         reply = client.post(f"{API}/auth/login", json={"username": "admin", "password": _PASSWORD})
         headers = {"Authorization": f"Bearer {reply.json()['token']}"}
@@ -72,7 +79,13 @@ def test_never_send_candidates_are_named_in_the_scan_log(tmp_path: Path) -> None
 
 
 def test_review_of_an_l4_finding_says_l4_fails_closed(tmp_path: Path) -> None:
-    config = ServerConfig(data_dir=tmp_path, ui_dir=None, workers=1, admin_password=_PASSWORD)
+    config = ServerConfig(
+        data_dir=tmp_path,
+        ui_dir=None,
+        workers=1,
+        admin_password=_PASSWORD,
+        force_password_change=False,
+    )
     with TestClient(create_app(config)) as client:
         reply = client.post(f"{API}/auth/login", json={"username": "admin", "password": _PASSWORD})
         headers = {"Authorization": f"Bearer {reply.json()['token']}"}

@@ -210,6 +210,8 @@ LAZY_COMMANDS: tuple[LazyEntry, ...] = (
               "List, show, validate, test and bundle native rule packs."),
     LazyEntry("serve", "codekavach.cli.serve:serve_command", "command",
               "Run the REST API server and the web dashboard."),
+    LazyEntry("admin", "codekavach.cli.admin:admin_app", "group",
+              "Recover access to the server's local accounts."),
     LazyEntry("sca", "codekavach.cli.sca:sca_app", "group",
               "Refresh the advisory mirror and list vulnerable dependencies."),
     LazyEntry("sbom", "codekavach.cli.sca:sbom_command", "command",

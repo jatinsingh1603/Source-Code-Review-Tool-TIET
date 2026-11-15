@@ -5,8 +5,14 @@ Owning epic: E32.
 ``ServerState`` holds the configuration, the database, the event hub, the job runner and the login
 rate limiter. ``bootstrap`` prepares the data directory, generates the server's vault passphrase
 file on first start (mode 0600, kept in the process environment only as the value of
-``CODEKAVACH_SERVER_VAULT_PASSPHRASE``), seeds the ``admin`` account and the
-"KavachBank (sample)" project, and fails over scans orphaned by a previous process.
+``CODEKAVACH_SERVER_VAULT_PASSPHRASE``), creates the ``admin`` account when the server has no
+user, and fails over scans orphaned by a previous process.
+
+The first admin password comes from ``CODEKAVACH_ADMIN_PASSWORD`` or the file named by
+``CODEKAVACH_ADMIN_PASSWORD_FILE``. Without either the server generates one: only its hash is
+stored, the value is handed once to the caller that starts the server (``codekavach serve``
+prints it) and written to ``<data_dir>/initial-admin-password`` (mode 0600), which is deleted at
+the first successful admin login. Either way the account must choose a new password first.
 """
 
 import os
@@ -20,7 +26,13 @@ from sqlalchemy import func, select
 
 from codekavach.core.log import get_logger
 from codekavach.server.auth.passwords import hash_password
-from codekavach.server.config import VAULT_PASSPHRASE_ENV, ServerConfig
+from codekavach.server.config import (
+    FILE_MODE,
+    MIN_PASSWORD_LENGTH,
+    VAULT_PASSPHRASE_ENV,
+    AdminPasswordError,
+    ServerConfig,
+)
 from codekavach.server.db.engine import Database
 from codekavach.server.db.models import Project, SettingRow, User
 from codekavach.server.events import EventHub
@@ -45,6 +57,11 @@ DEFAULT_SETTINGS: Final[dict[str, Any]] = {
     "provider_key_refs": {},
 }
 KEY_REFERENCE_PREFIXES: Final = ("env:", "file:", "keyring:")
+
+
+def generate_password() -> str:
+    """A random password of 24 URL-safe characters (144 bits)."""
+    return secrets.token_urlsafe(18)
 
 
 def new_id(prefix: str) -> str:
@@ -134,6 +151,8 @@ class ServerState:
         self.login_limiter = RateLimiter(config.login_attempts_per_minute)
         self.runner: JobRunner = JobRunner(self, config.workers)
         self.started_at = time.time()
+        self._generated_admin_password: str | None = None
+        self.admin_created = False  # set by bootstrap when this start created the account
 
     # --- settings ------------------------------------------------------------------------
 
@@ -193,6 +212,44 @@ class ServerState:
         )
         return settings.model_copy(update={"reporting": reporting})
 
+    # --- first admin password --------------------------------------------------------------
+
+    def _initial_admin_password(self) -> str:
+        """The configured password, or a generated one that is also written to the 0600 file."""
+        configured = self.config.admin_password
+        if configured is not None:
+            if len(configured) < MIN_PASSWORD_LENGTH:
+                raise AdminPasswordError(
+                    f"the initial admin password needs at least {MIN_PASSWORD_LENGTH} characters"
+                )
+            return configured
+        generated = generate_password()
+        path = self.config.initial_password_path
+        path.unlink(missing_ok=True)
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, FILE_MODE)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(generated + "\n")
+        self._generated_admin_password = generated
+        return generated
+
+    def take_generated_admin_password(self) -> str | None:
+        """The password generated at this start, once; ``None`` afterwards or when none was."""
+        value, self._generated_admin_password = self._generated_admin_password, None
+        return value
+
+    def discard_initial_password(self) -> bool:
+        """Delete the initial-password file (first admin login, reset); True when it existed."""
+        self._generated_admin_password = None
+        path = self.config.initial_password_path
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            return False
+        except OSError as error:
+            _log.warning("initial_password_file_not_removed", error_type=type(error).__name__)
+            return False
+        return True
+
     # --- lifecycle -----------------------------------------------------------------------
 
     def bootstrap(self) -> dict[str, Any]:
@@ -207,10 +264,12 @@ class ServerState:
                         username="admin",
                         full_name="Administrator",
                         role="admin",
-                        password_hash=hash_password(self.config.admin_password),
+                        password_hash=hash_password(self._initial_admin_password()),
+                        must_change_password=True,
                     )
                 )
-                seeded["admin_created"] = True
+                seeded["admin_created"] = self.admin_created = True
+                seeded["admin_password_generated"] = self._generated_admin_password is not None
             if (
                 self.config.seed
                 and self.config.sample_dir is not None

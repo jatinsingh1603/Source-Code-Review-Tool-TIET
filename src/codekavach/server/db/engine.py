@@ -13,8 +13,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import Engine, create_engine, event
+from sqlalchemy import Engine, create_engine, event, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.schema import CreateColumn
 
 from codekavach.server.db.models import ServerBase
 
@@ -25,6 +26,30 @@ def _pragmas(connection: Any, _record: Any) -> None:
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.execute("PRAGMA busy_timeout=10000")
     cursor.close()
+
+
+def add_missing_columns(engine: Engine) -> list[str]:
+    """Add the columns a newer release declares to the tables an older one created.
+
+    ``create_all`` creates missing tables but never alters an existing one. Only additive
+    changes are made here (``ALTER TABLE ... ADD COLUMN``): a new column must be nullable or
+    carry a server default, so the rows already stored stay valid. Returns ``table.column``
+    for each column added.
+    """
+    added: list[str] = []
+    inspector = inspect(engine)
+    with engine.begin() as connection:
+        for table in ServerBase.metadata.sorted_tables:
+            if not inspector.has_table(table.name):
+                continue
+            present = {column["name"] for column in inspector.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in present:
+                    continue
+                ddl = CreateColumn(column).compile(dialect=engine.dialect)
+                connection.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN {ddl}'))
+                added.append(f"{table.name}.{column.name}")
+    return added
 
 
 class Database:
@@ -38,6 +63,7 @@ class Database:
         )
         event.listen(self.engine, "connect", _pragmas)
         ServerBase.metadata.create_all(self.engine)
+        self.upgraded: list[str] = add_missing_columns(self.engine)
         self._factory = sessionmaker(self.engine, expire_on_commit=False)
 
     def session(self) -> Session:
