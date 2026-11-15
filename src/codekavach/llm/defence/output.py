@@ -26,7 +26,11 @@ _IMAGE: Final = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 _ACTIVE_HTML: Final = re.compile(
     r"</?(?:script|iframe|img|object|embed|style|link|meta|form|svg|a)\b[^>]*>", re.IGNORECASE
 )
-_JS_URI: Final = re.compile(r"(?:javascript|data|vbscript):[^\s)\"']*", re.IGNORECASE)
+# ``data:`` counts only when a media type, ``;`` or ``,`` follows, as in a data URI: the word
+# before a colon in prose or code (``def load(data: bytes)``) is not a link and is kept.
+_JS_URI: Final = re.compile(
+    r"(?:(?:javascript|vbscript):|data:(?=[a-z0-9.+-]+/|[;,]))[^\s)\"']*", re.IGNORECASE
+)
 _SYMBOL: Final = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]{0,127}$")
 _SHINGLE_WORDS: Final = 9
 _MIN_SQUASHED: Final = 12  # shorter canaries are matched exactly only: no chance hits in prose

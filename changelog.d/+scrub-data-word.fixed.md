@@ -1,0 +1,1 @@
+Model answers keep the word "data" before a colon (for example `def load(data: bytes)` in a secure example); only real `data:` links are removed, so reasoning and remediation text is no longer missing words.

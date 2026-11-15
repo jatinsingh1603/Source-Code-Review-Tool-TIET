@@ -72,3 +72,34 @@ def test_a_short_configured_canary_is_matched_exactly_only() -> None:
     check_text("The scan found a bug in the parser.", canaries=("Bug-1",))
     with pytest.raises(OutputRejected, match="canary_in_output"):
         check_text("token Bug-1 here", canaries=("Bug-1",))
+
+
+@pytest.mark.parametrize(
+    "ordinary",
+    [
+        "def load(data: bytes) -> dict:\n    return json.loads(data)",
+        "Validate the metadata: it is user input.",
+        "const body = {data: payload};",
+        "Untrusted data:\n- the request body",
+    ],
+)
+def test_the_word_data_before_a_colon_is_not_taken_for_a_data_link(ordinary: str) -> None:
+    cleaned, report = validate_verdict(verdict(reasoning=ordinary, remediation=ordinary))
+    assert cleaned.reasoning == ordinary and cleaned.remediation == ordinary
+    assert report.markup_removed == 0
+
+
+@pytest.mark.parametrize(
+    "link",
+    [
+        "data:text/html,<b>x</b>",
+        "DATA:image/svg+xml;base64,AAAA",
+        "data:;base64,AAAA",
+        "data:,hello",
+        "javascript:alert(1)",
+        "vbscript:msgbox(1)",
+    ],
+)
+def test_data_and_script_links_are_still_removed(link: str) -> None:
+    cleaned, report = validate_verdict(verdict(remediation=f"use [this]({link}) API"))
+    assert link[:12].lower() not in cleaned.remediation.lower() and report.markup_removed >= 1
