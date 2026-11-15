@@ -17,6 +17,7 @@ import type { User } from "@/api/types";
 import { minimumRoleFor, permissionsFor, roleLabel, type Permission } from "@/lib/permissions";
 import { loadPrefsFor } from "@/lib/prefs";
 import { routerPath } from "@/lib/env";
+import { consumeSsoToken, type GoogleProfile } from "@/lib/sso";
 import { Content, Empty, Skeleton } from "@/components/ui";
 
 interface Session {
@@ -25,6 +26,8 @@ interface Session {
   permissions: Set<Permission>;
   can: (p: Permission) => boolean;
   login: (username: string, password: string, remember?: boolean) => Promise<User>;
+  /** Hosted mock demo only: sign into the sample data as a Google account's name and email. */
+  loginWithGoogleDemo: (profile: GoogleProfile) => Promise<User>;
   logout: () => Promise<void>;
 }
 
@@ -35,10 +38,26 @@ function withPrefs(user: User | null): Promise<void> {
   return loadPrefsFor(user?.username ?? null, () => endpoints.myPreferences());
 }
 
+/**
+ * A Google sign-in on the server ends at /login#sso_token=<token>: keep the token exactly as a
+ * password login does (this tab only) and drop it from the address bar before anything renders.
+ */
+function adoptSsoToken(): void {
+  if (api.isMock || typeof window === "undefined") return;
+  const token = consumeSsoToken();
+  if (!token) return;
+  api.setToken(token);
+  signOutNotice.elsewhere = false;
+  signOutNotice.expired = false;
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   // Without a token of its own, a tab first asks the other open tabs (see tab-sync.ts).
-  const [loading, setLoading] = useState<boolean>(() => !api.isMock || api.getToken() !== null);
+  const [loading, setLoading] = useState<boolean>(() => {
+    adoptSsoToken();
+    return !api.isMock || api.getToken() !== null;
+  });
   const navigate = useNavigate();
   const qc = useQueryClient();
   const tabs = useRef<ReturnType<typeof openTabChannel> | null>(null);
@@ -123,6 +142,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return res.user;
   }, []);
 
+  const loginWithGoogleDemo = useCallback(async (profile: GoogleProfile) => {
+    const res = await endpoints.googleDemoLogin(profile);
+    api.setToken(res.token);
+    signOutNotice.elsewhere = false;
+    signOutNotice.expired = false;
+    await withPrefs(res.user);
+    setUser(res.user);
+    return res.user;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await endpoints.logout();
@@ -139,8 +168,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Session>(() => {
     const permissions = permissionsFor(user?.role, user?.permissions);
-    return { user, loading, permissions, can: (p) => permissions.has(p), login, logout };
-  }, [user, loading, login, logout]);
+    return { user, loading, permissions, can: (p) => permissions.has(p), login, loginWithGoogleDemo, logout };
+  }, [user, loading, login, loginWithGoogleDemo, logout]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

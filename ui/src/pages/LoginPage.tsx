@@ -7,6 +7,8 @@ import { api } from "@/api/client";
 import { Icon, Logo } from "@/components/ui";
 import { MockBar } from "@/components/layout/MockBar";
 import { HOSTED_PREVIEW } from "@/lib/env";
+import { GoogleSignIn } from "@/components/GoogleSignIn";
+import { ssoErrorMessage } from "@/lib/sso";
 
 /** Login (landing hero), SCREENS.md §04. Outside the app shell. */
 export default function LoginPage() {
@@ -19,7 +21,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => ssoErrorMessage(location.search));
   const [busy, setBusy] = useState(false);
   const next = state.from && state.from !== "/login" ? state.from : "/";
 
@@ -168,6 +170,12 @@ export default function LoginPage() {
           <button className="btn" type="submit" style={{ width: "100%" }} disabled={busy} aria-busy={busy || undefined}>
             {busy ? "Signing in…" : "Sign in"}
           </button>
+          <GoogleSignIn
+            onSignedIn={() => {
+              navigate(next, { replace: true });
+            }}
+            onError={setError}
+          />
           {api.isMock && (
             <>
               <div className="hr" />

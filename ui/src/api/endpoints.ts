@@ -118,6 +118,11 @@ export const endpoints = {
   login: (username: string, password: string) =>
     api.post<LoginResponse>("/auth/login", { username, password }),
   me: () => api.get<User>("/auth/me"),
+  /** Extra sign-in providers the server has switched on (null on a server without the route). */
+  authProviders: () => optional(api.get<{ google?: { enabled?: boolean } }>("/auth/providers")),
+  /** Mock mode only: enter the sample data as the person a Google demo sign-in named. */
+  googleDemoLogin: (profile: { name: string; email: string }) =>
+    api.post<LoginResponse>("/auth/google-demo", profile),
   logout: () => api.post<void>("/auth/logout"),
 
   // meta
