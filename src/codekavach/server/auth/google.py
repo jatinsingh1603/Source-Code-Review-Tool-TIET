@@ -197,9 +197,7 @@ def authorization_url(config: GoogleSso, pending: Pending, base: str) -> str:
     return f"{AUTH_URL}?{urlencode(query)}"
 
 
-def exchange_code(
-    config: GoogleSso, code: str, verifier: str, callback: str
-) -> Mapping[str, Any]:  # pragma: no cover - the one network call; tests replace it
+def exchange_code(config: GoogleSso, code: str, verifier: str, callback: str) -> Mapping[str, Any]:
     """Exchange the authorisation code at Google's token endpoint (10 s timeout)."""
     import httpx  # noqa: PLC0415 - loaded only when Google sign-in is used
 
