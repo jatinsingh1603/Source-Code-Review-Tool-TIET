@@ -17,6 +17,9 @@ from typing import Final
 
 import platformdirs
 
+from codekavach.server.auth.google import GoogleSso
+from codekavach.server.auth.google import from_env as google_from_env
+
 ADMIN_PASSWORD_ENV: Final = "CODEKAVACH_ADMIN_PASSWORD"  # noqa: S105 - a variable name
 DEFAULT_ADMIN_PASSWORD: Final = "kavach-admin"  # noqa: S105 - documented demo default
 DEV_ENV: Final = "CODEKAVACH_DEV"
@@ -84,6 +87,8 @@ class ServerConfig:
     # The only secret references a GitHub sync may name: any other reference could make the
     # server send another secret (a provider key, the vault passphrase) to GitHub as a token.
     github_token_refs: tuple[str, ...] = ("env:GITHUB_TOKEN", "env:GH_TOKEN")
+    # Optional Google sign-in; None (off) unless the CODEKAVACH_GOOGLE_* variables are set.
+    google: GoogleSso | None = field(default_factory=google_from_env)
     seed: bool = True
     sample_dir: Path | None = field(default_factory=sample_project_dir)
 
