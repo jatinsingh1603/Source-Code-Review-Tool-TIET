@@ -85,6 +85,7 @@ def serve_command(  # noqa: PLR0917 - Typer maps each parameter to one option
                 f"  admin login: admin / {DEFAULT_ADMIN_PASSWORD}  (default; change it in Users)"
                 if config.admin_password == DEFAULT_ADMIN_PASSWORD
                 else f"  admin login: admin / (password from {ADMIN_PASSWORD_ENV})",
+                *([f"  Google sign-in: {config.google.describe()}"] if config.google else []),
             ]
         ),
         err=True,

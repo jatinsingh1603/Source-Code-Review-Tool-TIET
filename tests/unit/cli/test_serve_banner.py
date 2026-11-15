@@ -45,3 +45,18 @@ def test_default_password_is_printed_as_a_warning(
     out = _banner(tmp_path, monkeypatch, capsys)
     assert f"admin / {DEFAULT_ADMIN_PASSWORD}" in out
     assert "change it" in out
+
+
+def test_google_sign_in_is_announced_without_its_secret(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("CODEKAVACH_GOOGLE_CLIENT_ID", raising=False)
+    assert "Google sign-in" not in _banner(tmp_path / "off", monkeypatch, capsys)
+    monkeypatch.setenv("CODEKAVACH_GOOGLE_CLIENT_ID", "banner.apps.googleusercontent.com")
+    # pragma: allowlist nextline secret
+    monkeypatch.setenv("CODEKAVACH_GOOGLE_CLIENT_SECRET", "banner-client-secret-value")
+    monkeypatch.delenv("CODEKAVACH_GOOGLE_ALLOWED_DOMAINS", raising=False)
+    monkeypatch.delenv("CODEKAVACH_GOOGLE_ALLOWED_EMAILS", raising=False)
+    out = _banner(tmp_path / "on", monkeypatch, capsys)
+    assert "Google sign-in: on for ANY verified Google account" in out
+    assert "banner-client-secret-value" not in out
