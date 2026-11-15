@@ -1,0 +1,1 @@
+Optional Google sign-in for the dashboard (OpenID Connect with PKCE). It is off until `CODEKAVACH_GOOGLE_CLIENT_ID` and `CODEKAVACH_GOOGLE_CLIENT_SECRET` are set; allowed domains or addresses and the role of new accounts are configurable. The hosted Pages demo gains a clearly labelled demo sign-in with Google.

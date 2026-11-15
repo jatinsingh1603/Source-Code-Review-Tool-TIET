@@ -500,6 +500,8 @@ EXPECTED_MODULES: frozenset[str] = frozenset(
 ALLOWED_EXTRA_MODULES: frozenset[str] = frozenset(
     {
         "codekavach.integrations.store",
+        "codekavach.server.auth.google",
+        "codekavach.server.routers.google_auth",
         "codekavach.integrations.github.transport",
         "codekavach.integrations.github.findings",
         "codekavach.integrations.github.sarif",

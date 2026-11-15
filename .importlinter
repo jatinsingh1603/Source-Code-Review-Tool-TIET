@@ -53,6 +53,10 @@
 root_package = codekavach
 include_external_packages = True
 
+# codekavach.server.auth.google contacts oauth2.googleapis.com (the browser goes to
+# accounts.google.com) only when Google sign-in is configured with CODEKAVACH_GOOGLE_CLIENT_ID
+# and CODEKAVACH_GOOGLE_CLIENT_SECRET. That is identity traffic, not code egress: it carries no
+# source code and is deliberately outside the egress transport and its ledger.
 [importlinter:contract:i1-single-egress]
 name = I1 only privacy.egress.transport may import network client libraries (ADR-0003)
 type = forbidden
@@ -91,6 +95,7 @@ ignore_imports =
     codekavach.privacy.egress.transport -> httpcore
     codekavach.privacy.vault.kms -> httpx
     codekavach.integrations.github.transport -> httpx
+    codekavach.server.auth.google -> httpx
 unmatched_ignore_imports_alerting = none
 
 [importlinter:contract:adr0002-no-engine-imports]
