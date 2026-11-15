@@ -47,10 +47,10 @@ interface Props {
 /**
  * "Sign in with Google" for the login page. Renders nothing unless the server
  * says Google sign-in is configured, or (mock mode only) the build carries a
- * Google client ID for the hosted demo.
+ * Google client ID for the hosted preview.
  */
 export function GoogleSignIn(props: Props) {
-  if (api.isMock) return GOOGLE_CLIENT_ID ? <DemoGoogleSignIn {...props} /> : null;
+  if (api.isMock) return GOOGLE_CLIENT_ID ? <PreviewGoogleSignIn {...props} /> : null;
   return <ServerGoogleSignIn />;
 }
 
@@ -102,13 +102,13 @@ function loadGsi(): Promise<GsiId> {
   });
 }
 
-function DemoGoogleSignIn({ onSignedIn, onError }: Props) {
-  const { loginWithGoogleDemo } = useSession();
+function PreviewGoogleSignIn({ onSignedIn, onError }: Props) {
+  const { loginWithGooglePreview } = useSession();
   const holder = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
-  const handlers = useRef({ onSignedIn, onError, loginWithGoogleDemo });
+  const handlers = useRef({ onSignedIn, onError, loginWithGooglePreview });
   useEffect(() => {
-    handlers.current = { onSignedIn, onError, loginWithGoogleDemo };
+    handlers.current = { onSignedIn, onError, loginWithGooglePreview };
   });
 
   useEffect(() => {
@@ -125,9 +125,9 @@ function DemoGoogleSignIn({ onSignedIn, onError }: Props) {
               return;
             }
             handlers.current
-              .loginWithGoogleDemo(profile)
+              .loginWithGooglePreview(profile)
               .then(() => handlers.current.onSignedIn())
-              .catch(() => handlers.current.onError("Google sign-in failed in the demo."));
+              .catch(() => handlers.current.onError("Google sign-in failed in the preview."));
           },
         });
         gsi.renderButton(holder.current, {
@@ -148,10 +148,10 @@ function DemoGoogleSignIn({ onSignedIn, onError }: Props) {
 
   if (failed) return null;
   return (
-    <div className="stack s6" data-testid="google-demo-sign-in">
+    <div className="stack s6" data-testid="google-preview-sign-in">
       <div ref={holder} style={{ display: "flex", justifyContent: "center", minHeight: 44 }} />
       <p className="xs faint" style={{ textAlign: "center" }}>
-        Demo sign-in: Google tells this page only your name and email, which stay in your browser. You see sample data.
+        Preview sign-in: Google tells this page only your name and email, which stay in your browser. You see sample data.
       </p>
     </div>
   );

@@ -26,8 +26,8 @@ interface Session {
   permissions: Set<Permission>;
   can: (p: Permission) => boolean;
   login: (username: string, password: string, remember?: boolean) => Promise<User>;
-  /** Hosted mock demo only: sign into the sample data as a Google account's name and email. */
-  loginWithGoogleDemo: (profile: GoogleProfile) => Promise<User>;
+  /** Hosted preview only: sign into the sample data as a Google account's name and email. */
+  loginWithGooglePreview: (profile: GoogleProfile) => Promise<User>;
   logout: () => Promise<void>;
 }
 
@@ -142,8 +142,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return res.user;
   }, []);
 
-  const loginWithGoogleDemo = useCallback(async (profile: GoogleProfile) => {
-    const res = await endpoints.googleDemoLogin(profile);
+  const loginWithGooglePreview = useCallback(async (profile: GoogleProfile) => {
+    const res = await endpoints.googlePreviewLogin(profile);
     api.setToken(res.token);
     signOutNotice.elsewhere = false;
     signOutNotice.expired = false;
@@ -168,8 +168,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Session>(() => {
     const permissions = permissionsFor(user?.role, user?.permissions);
-    return { user, loading, permissions, can: (p) => permissions.has(p), login, loginWithGoogleDemo, logout };
-  }, [user, loading, login, loginWithGoogleDemo, logout]);
+    return { user, loading, permissions, can: (p) => permissions.has(p), login, loginWithGooglePreview, logout };
+  }, [user, loading, login, loginWithGooglePreview, logout]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

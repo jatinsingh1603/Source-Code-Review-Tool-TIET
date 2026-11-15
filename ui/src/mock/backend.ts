@@ -256,8 +256,8 @@ function delay<T>(v: T, ms = 120 + Math.random() * 180): Promise<T> {
 
 let currentToken: () => string | null = () => null;
 
-/** Role of a visitor who enters the hosted demo with Google: the whole sample dashboard. */
-const GOOGLE_DEMO_ROLE: User["role"] = "admin";
+/** Role of a visitor who enters the hosted preview with Google: the whole sample dashboard. */
+const GOOGLE_PREVIEW_ROLE: User["role"] = "admin";
 
 function me(): User & { password: string } {
   const t = currentToken();
@@ -459,14 +459,14 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
 
   if (a === "auth" && b === "providers" && method === "GET") return delay({ google: { enabled: false } });
 
-  // Hosted demo: a Google Identity Services sign-in names the visitor; nothing is verified and
+  // Hosted preview: a Google Identity Services sign-in names the visitor; nothing is verified and
   // the account exists only in this tab, over the same sample data.
-  if (a === "auth" && b === "google-demo" && method === "POST") {
+  if (a === "auth" && b === "google-preview" && method === "POST") {
     const email = String(body.email ?? "").trim().toLowerCase().slice(0, 256);
     if (!email.includes("@")) err(400, "invalid_request", "Google did not return an email address.");
     let u = state.users.find((x) => x.username === email);
     if (!u) {
-      u = { id: `u-${hashish(email, 6)}`, username: email, display_name: String(body.name ?? "").slice(0, 128) || email, email, role: GOOGLE_DEMO_ROLE, active: true, created_at: iso(now()), last_login: null, password: `sso-${hashish(email + now(), 24)}` };
+      u = { id: `u-${hashish(email, 6)}`, username: email, display_name: String(body.name ?? "").slice(0, 128) || email, email, role: GOOGLE_PREVIEW_ROLE, active: true, created_at: iso(now()), last_login: null, password: `sso-${hashish(email + now(), 24)}` };
       state.users.push(u);
     }
     const token = `mock-${hashish(u.id + now(), 24)}`;

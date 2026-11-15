@@ -6,12 +6,12 @@
  * token is never sent to a server or written to an access log), or to
  * `/login?sso_error=<code>` when the sign-in failed.
  *
- * Hosted mock demo: with `VITE_GOOGLE_CLIENT_ID` set at build time the login
+ * Hosted preview: with `VITE_GOOGLE_CLIENT_ID` set at build time the login
  * page shows a Google Identity Services button; the ID token is decoded in the
  * browser only to greet the visitor by name. Nothing is verified or stored.
  */
 
-/** The public OAuth client ID for the hosted demo's Google button ("" = off). */
+/** The public OAuth client ID for the hosted preview's Google button ("" = off). */
 export const GOOGLE_CLIENT_ID: string = String(import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "").trim();
 
 /** Where the server starts the Google sign-in (same origin as the API). */
