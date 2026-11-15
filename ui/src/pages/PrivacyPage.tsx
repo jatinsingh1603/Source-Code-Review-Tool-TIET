@@ -73,7 +73,8 @@ export default function PrivacyPage() {
   const privacyQ = usePrivacy(scanId);
   const prevPrivacy = usePrivacy(prev?.id).data;
   const policy = usePolicy().data;
-  const invariants = useOptional("invariants", endpoints.invariants).data;
+  const invariantsQ = useOptional("invariants", endpoints.invariants);
+  const invariants = invariantsQ.data;
   const budgets = useOptional(`budgets-${scanId}`, () => endpoints.budgets(scanId!), !!scanId).data;
   const findings = useFindings(scanId).data;
   const providers = useProviders().data;
@@ -203,12 +204,15 @@ export default function PrivacyPage() {
               <div className="card-h">
                 <h2>Invariant suite</h2>
                 <span className="xs faint">
-                  {invariants?.recorded
-                    ? `${invariants.run_at ? `Run ${fmtLong(invariants.run_at)} · ` : ""}${invariants.invariants.reduce((a, r) => a + (r.tests?.passed ?? 0) + (r.tests?.failed ?? 0), 0)} tests`
-                    : "not recorded on this server"}
+                  {invariantsQ.isLoading
+                    ? ""
+                    : invariants?.recorded
+                      ? `${invariants.run_at ? `Run ${fmtLong(invariants.run_at)} · ` : ""}${invariants.invariants.reduce((a, r) => a + (r.tests?.passed ?? 0) + (r.tests?.failed ?? 0), 0)} tests`
+                      : "not recorded on this server"}
                 </span>
               </div>
-              {INVARIANTS_LONG.map(([id, t]) => {
+              {/* Until the suite and this scan's evidence are in, every row would say "not recorded". */}
+              {invariantsQ.isLoading || privacyQ.isLoading ? <Skeleton rows={6} /> : INVARIANTS_LONG.map(([id, t]) => {
                 const r = invariants?.invariants.find((x) => x.id === id);
                 let res: React.ReactNode = <span className="xs faint">not recorded</span>;
                 if (r && invariants?.recorded) res = r.passed ? "pass" : <span className="note-w">Fail</span>;

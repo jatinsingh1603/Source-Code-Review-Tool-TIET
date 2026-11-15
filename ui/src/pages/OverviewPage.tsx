@@ -68,7 +68,8 @@ export default function OverviewPage() {
   const prevPrivacy = usePrivacy(prev?.id).data;
   const stats = useStats(current?.id).data;
   const providers = useProviders().data;
-  const invariants = useOptional("invariants", endpoints.invariants).data;
+  const invariantsQ = useOptional("invariants", endpoints.invariants);
+  const invariants = invariantsQ.data;
 
   const crumbs = [{ label: current?.name ?? "Project" }, { label: "Overview" }];
   const loading = projLoading || scansQ.isLoading;
@@ -193,7 +194,11 @@ export default function OverviewPage() {
         <OwaspCard findings={open} loading={loading || findingsQ.isLoading} />
         <div className="stack s16">
           <TopCwes findings={open} loading={loading || findingsQ.isLoading} />
-          <GuardCard report={invariants} privacy={privacyQ.data} />
+          <GuardCard
+            report={invariants}
+            privacy={privacyQ.data}
+            loading={loading || invariantsQ.isLoading || privacyQ.isLoading}
+          />
         </div>
       </section>
 
@@ -658,14 +663,27 @@ const INVARIANTS: [string, string][] = [
   ["I6", "No listed term in ledger payloads"],
 ];
 
-function GuardCard({
+export function GuardCard({
   report,
   privacy,
+  loading,
 }: {
   report?: InvariantReport | null;
   privacy?: PrivacySummary;
+  /** Until the suite and this scan's evidence are in, every row would say "not recorded". */
+  loading?: boolean;
 }) {
   const recorded = report?.recorded;
+  if (loading)
+    return (
+      <div className="card">
+        <div className="card-h">
+          <h2>Privacy guard status</h2>
+          <MoreLink to="/privacy">Details</MoreLink>
+        </div>
+        <Skeleton rows={6} />
+      </div>
+    );
   return (
     <div className="card">
       <div className="card-h">
