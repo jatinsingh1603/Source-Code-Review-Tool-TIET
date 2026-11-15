@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useSession } from "@/app/session";
 import { signOutNotice } from "@/app/tab-sync";
@@ -6,7 +6,7 @@ import { ApiError } from "@/api/client";
 import { api } from "@/api/client";
 import { Icon, Logo } from "@/components/ui";
 import { MockBar } from "@/components/layout/MockBar";
-import { HOSTED_DEMO } from "@/lib/env";
+import { HOSTED_PREVIEW } from "@/lib/env";
 
 /** Login (landing hero), SCREENS.md §04. Outside the app shell. */
 export default function LoginPage() {
@@ -21,11 +21,9 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [demoHint, setDemoHint] = useState(false);
-  const nextRef = useRef<string>(state.from ?? "/");
-  const emailRef = useRef<HTMLInputElement>(null);
+  const next = state.from && state.from !== "/login" ? state.from : "/";
 
-  if (!loading && user) return <Navigate to={nextRef.current && nextRef.current !== "/login" ? nextRef.current : "/"} replace />;
+  if (!loading && user) return <Navigate to={next} replace />;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -37,8 +35,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(username.trim(), password, remember);
-      const to = nextRef.current && nextRef.current !== "/login" ? nextRef.current : "/";
-      navigate(to, { replace: true });
+      navigate(next, { replace: true });
     } catch (err) {
       if (err instanceof ApiError && (err.status === 401 || err.status === 400 || err.status === 403)) {
         setError("Email or password is incorrect.");
@@ -54,15 +51,9 @@ export default function LoginPage() {
     }
   };
 
-  const tryDemo = () => {
-    nextRef.current = "/demo";
-    if (api.isMock) {
-      void login("admin", "kavach-admin").then(() => navigate("/demo", { replace: true }));
-      return;
-    }
-    setError(null);
-    setDemoHint(true);
-    emailRef.current?.focus();
+  /** The hosted preview has no server to hold accounts: open it with its sample administrator. */
+  const explorePreview = () => {
+    void login("admin", "kavach-admin").then(() => navigate("/start", { replace: true }));
   };
 
   const host = typeof window !== "undefined" ? window.location.host : "";
@@ -121,29 +112,8 @@ export default function LoginPage() {
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 650 }}>Sign in</h2>
             <p className="sub" style={{ marginTop: 4 }}>
-              Choose your organisation to continue.
+              {HOSTED_PREVIEW ? "Hosted preview · sample data in this browser" : `Use your account on this server · ${host}`}
             </p>
-          </div>
-          <div className="fld">
-            <label htmlFor="tenant">Organisation</label>
-            <select id="tenant" className="inp">
-              <option>{HOSTED_DEMO ? "Sample organisation · in this browser" : `This server · ${host}`}</option>
-            </select>
-          </div>
-          <button
-            className="btn pri"
-            type="button"
-            style={{ width: "100%" }}
-            disabled
-            title="Single sign-on is not configured on this server. Use a local account."
-          >
-            <Icon name="lock-wide" />
-            Continue with SSO (SAML / OIDC)
-          </button>
-          <div className="row" style={{ gap: 10 }}>
-            <div className="hr" style={{ flex: 1 }} />
-            <span className="xs faint">or local account</span>
-            <div className="hr" style={{ flex: 1 }} />
           </div>
           {expired && !signedOutElsewhere && !error && (
             <div className="banner warn sm">Your session has ended. Sign in again; you will return to the page you were on.</div>
@@ -151,20 +121,16 @@ export default function LoginPage() {
           {signedOutElsewhere && !error && (
             <div className="banner sm">You signed out in another tab. Sign in again to continue.</div>
           )}
-          {demoHint && !error && (
-            <div className="banner info sm">Sign in with your local account to open the demo.</div>
-          )}
           {api.isMock && !error && (
             <div className="banner info sm">
               Sample data in your browser. Sign in as <b>admin</b> / <b>kavach-admin</b> (also auditor, developer or viewer
-              with <b>kavach-&lt;role&gt;</b>), or choose Try the offline demo.
+              with <b>kavach-&lt;role&gt;</b>), or choose Explore the preview.
             </div>
           )}
           <div className="fld">
             <label htmlFor="em">Email or username</label>
             <input
               id="em"
-              ref={emailRef}
               className="inp"
               type="text"
               autoComplete="username"
@@ -202,11 +168,15 @@ export default function LoginPage() {
           <button className="btn" type="submit" style={{ width: "100%" }} disabled={busy} aria-busy={busy || undefined}>
             {busy ? "Signing in…" : "Sign in"}
           </button>
-          <div className="hr" />
-          <button className="btn ghost" type="button" style={{ width: "100%" }} onClick={tryDemo}>
-            <Icon name="play" />
-            Try the offline demo
-          </button>
+          {api.isMock && (
+            <>
+              <div className="hr" />
+              <button className="btn ghost" type="button" style={{ width: "100%" }} onClick={explorePreview}>
+                <Icon name="play" />
+                Explore the preview
+              </button>
+            </>
+          )}
           <p className="xs faint" style={{ textAlign: "center" }}>
             No telemetry leaves this machine.
           </p>

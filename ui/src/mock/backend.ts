@@ -127,7 +127,7 @@ function seed(): State {
   const projects: Project[] = [
     {
       id: "p-kavachbank",
-      name: "KavachBank (sample)",
+      name: "KavachBank",
       description: "Deliberately vulnerable retail-banking application: Python API and Node web front end.",
       source: { type: "sample", path: "fixtures/kavachbank" },
       created_at: iso(t0 - 35 * day),
@@ -240,7 +240,7 @@ function audit(actor: string, action: string, resource?: string, outcome?: strin
 let state: State = seed();
 
 const SERVER_ONLY_REPORT =
-  "Rendered by the CodeKavach server, which this browser-only demo does not have. Install CodeKavach to download PDF, Word and Excel reports.";
+  "Rendered by the CodeKavach server, which this browser-only preview does not have. Install CodeKavach to download PDF, Word and Excel reports.";
 
 function err(status: number, code: string, message: string): never {
   throw new ApiError(status, code, message);
@@ -438,7 +438,7 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
   const [a, b, c, d] = seg;
 
   if (a === "health") return delay({ status: "ok", mode: "mock" });
-  if (a === "version") return delay({ version: "0.9.0-demo", api: "v1" });
+  if (a === "version") return delay({ version: "0.9.0-preview", api: "v1" });
 
   if (a === "auth" && b === "login" && method === "POST") {
     const u = state.users.find((x) => x.username === body.username && x.password === body.password && x.active !== false);
@@ -587,7 +587,7 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
         return delay({
           formats: [
             { format: "html", available: true },
-            // Office and PDF files are rendered by the server; the browser-only demo cannot make them.
+            // Office and PDF files are rendered by the server; the browser-only preview cannot make them.
             { format: "pdf", available: false, reason: SERVER_ONLY_REPORT },
             { format: "docx", available: false, reason: SERVER_ONLY_REPORT },
             { format: "xlsx", available: false, reason: SERVER_ONLY_REPORT },
@@ -602,13 +602,13 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
       return delay(reportBlob(scan, d), 400);
     }
     if (c === "delta") {
-      err(501, "server_only", "Delta reports are rendered by the CodeKavach server, which this browser-only demo does not have. Install CodeKavach to compare two scans.");
+      err(501, "server_only", "Delta reports are rendered by the CodeKavach server, which this browser-only preview does not have. Install CodeKavach to compare two scans.");
     }
     if (c === "sync" && d === "github") {
       requireRole("admin", "auditor");
       const fs = (state.findings.get(scan.id) ?? []).filter((f) => ["critical", "high", "medium"].includes(f.severity) && f.status !== "false_positive");
       // Invented issue links would point at real repositories; only the preview is simulated.
-      if (body.dry_run === false) err(501, "server_only", "Creating GitHub issues needs the CodeKavach server and a GitHub token, which this browser-only demo does not have. The preview shows what would be created.");
+      if (body.dry_run === false) err(501, "server_only", "Creating GitHub issues needs the CodeKavach server and a GitHub token, which this browser-only preview does not have. The preview shows what would be created.");
       return delay(
         {
           created: fs.length - 2,
@@ -718,7 +718,7 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
     return delay({ chain_intact: true, checked: state.audit.length, total: state.audit.length, events: state.audit.slice(offset, offset + limit) });
   }
 
-  err(404, "not_found", "This needs the CodeKavach server; the browser-only demo does not include it.");
+  err(404, "not_found", "This needs the CodeKavach server; the browser-only preview does not include it.");
 }
 
 function reportBlob(scan: Scan, fmt: string): Blob {
@@ -729,7 +729,7 @@ function reportBlob(scan: Scan, fmt: string): Blob {
       .join("");
     return new Blob(
       [
-        `<!doctype html><html><head><meta charset="utf-8"><title>CodeKavach report</title><style>body{font-family:system-ui;margin:2rem;color:#111}h1{margin:0}table{border-collapse:collapse;width:100%;margin-top:1rem}td,th{border-bottom:1px solid #ddd;padding:6px 8px;text-align:left;font-size:13px}</style></head><body><h1>Security assessment: ${esc(scan.project_name ?? scan.project_id)}</h1><p>Scan ${scan.id} · privacy level ${scan.privacy_level} · ${fs.length} findings (demo data)</p><table><tr><th>Severity</th><th>Title</th><th>CWE</th><th>Location</th></tr>${rows}</table></body></html>`,
+        `<!doctype html><html><head><meta charset="utf-8"><title>CodeKavach report</title><style>body{font-family:system-ui;margin:2rem;color:#111}h1{margin:0}table{border-collapse:collapse;width:100%;margin-top:1rem}td,th{border-bottom:1px solid #ddd;padding:6px 8px;text-align:left;font-size:13px}</style></head><body><h1>Security assessment: ${esc(scan.project_name ?? scan.project_id)}</h1><p>Scan ${scan.id} · privacy level ${scan.privacy_level} · ${fs.length} findings (sample data)</p><table><tr><th>Severity</th><th>Title</th><th>CWE</th><th>Location</th></tr>${rows}</table></body></html>`,
       ],
       { type: "text/html" },
     );
@@ -737,7 +737,7 @@ function reportBlob(scan: Scan, fmt: string): Blob {
   if (fmt === "json" || fmt === "sarif") return new Blob([JSON.stringify(fmt === "json" ? { scan, findings: fs } : { version: "2.1.0", runs: [] }, null, 2)], { type: "application/json" });
   if (fmt === "csv") return new Blob([["severity,title,cwe,path,line", ...fs.map((f) => `${f.severity},"${f.title}",${f.cwe},${f.locations[0]?.path},${f.locations[0]?.start_line}`)].join("\n")], { type: "text/csv" });
   if (fmt === "md") return new Blob([`# CodeKavach report\n\n${fs.map((f) => `- **${f.severity}** ${f.title}`).join("\n")}\n`], { type: "text/markdown" });
-  return new Blob([`Demo ${fmt} report for ${scan.id}`], { type: "application/octet-stream" });
+  return new Blob([`Sample ${fmt} report for ${scan.id}`], { type: "application/octet-stream" });
 }
 
 function esc(s: string): string {

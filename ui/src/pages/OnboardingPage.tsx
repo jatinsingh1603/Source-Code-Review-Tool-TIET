@@ -45,7 +45,7 @@ function providerChip(p: ProviderInfo, def?: string): string {
 }
 
 function providerSub(p: ProviderInfo): string {
-  if (p.kind === "mock") return "Offline · no key. Deterministic verdicts for demos and CI.";
+  if (p.kind === "mock") return "Offline · no key. Deterministic verdicts for dry runs and CI.";
   if (p.kind === "replay") return "Replays recorded verdicts. No key.";
   if (p.key_refs?.length) return `Key reference: ${p.key_refs.join(", ")}${p.configured ? "" : " · missing"}`;
   if (p.local) return `${p.models.slice(0, 4).join(", ") || "Models"} on your hardware.`;
