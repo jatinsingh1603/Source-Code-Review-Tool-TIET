@@ -168,3 +168,33 @@ Not fixed:
 - **Session and API tokens are stored as unsalted SHA-256 (informational).** The tokens are
   256-bit random values, looked up by hash, so no salt or slow hash is needed; it is noted because
   the question is asked.
+
+## Documentation claims against the code, 2026-11-15
+
+Checked: `README.md`, `docs/demo/README.md`, `DEMO1.md`, `cli.md` and the auditor guide against the
+code; `scripts/demo-cli.sh --auto --provider mock` and `codekavach demo --out` run in a scratch
+directory (seeded numbers in the demo hub match: 59 findings, 11 critical, 26 high, 14 payloads at
+L3); option names in the documented commands against `--help`; `tools/dev/check_docs.py`. Not
+checked in this pass: the Docker commands (`DEMO2.md`, `docker.md`, `handover.md`) were not run,
+and `docs/reference` and the dashboard's page texts were only searched for absolute claims.
+
+Not fixed:
+
+- **Step 8 of the terminal demo overstates the ledger (medium).** `scripts/demo-cli.sh` prints
+  "the log cannot be edited unnoticed" (also in `docs/demo/cli-transcript.md`). The chain is
+  unkeyed and not anchored outside the scan directory (`privacy/egress/ledger.py` says so): entries
+  cut off the end, or a chain recomputed by someone with write access, pass verification. The
+  auditor guide and the demo hub's questions now state this; the script line was left because it is
+  demo output. Accurate wording: "an edit to a recorded entry is detected".
+- **"Writes an HTML and PDF report" depends on the machine (low).** `README.md` and `DEMO1.md` say
+  `codekavach demo` writes a PDF. Without the PDF engine's system libraries the run ends with exit
+  0 and "skipped pdf: the PDF engine is not available"; XLSX and DOCX need the optional extras
+  (`uv sync --all-extras`), without which `codekavach report` exits 4 for those formats.
+- **README "Known limits" predates the leakage evaluation (low).** It says "until those
+  measurements exist"; `codekavach eval leakage` now produces them (identifier recovery and a
+  leakage score on the sample). The sentence errs on the cautious side.
+- **Two links point at documents that are not written (low).** `CONTRIBUTING.md` links
+  `CODE_OF_CONDUCT.md` and `SECURITY.md` links `docs/THREAT_MODEL.md`; the docs check reports both
+  as known and passes.
+- **README has no screenshots (informational).** The placeholder table was removed; `docs/img/`
+  does not exist.
