@@ -32,6 +32,7 @@ from codekavach.server.results import finding_summary
 MAX_LIMIT = 1000
 VERDICTS = frozenset({"vulnerable", "not_vulnerable", "uncertain", "unreviewed"})
 BASELINE_STATES = frozenset({"new", "unchanged", "fixed"})
+_SHORT_ID = re.compile(r"(?i)^f-([0-9a-z]{6})$")
 
 
 def _split(value: str | None) -> list[str]:
@@ -102,7 +103,7 @@ def _sql(scan_ids: Sequence[str], filters: FindingFilters, me: str | None) -> An
         query = query.where(FindingRow.assignee == who)
     if filters.q:
         pattern = f"%{filters.q.lower()}%"
-        query = query.where(
+        condition = (
             FindingRow.title.ilike(pattern)
             | FindingRow.path.ilike(pattern)
             | FindingRow.rule_id.ilike(pattern)
@@ -110,6 +111,11 @@ def _sql(scan_ids: Sequence[str], filters: FindingFilters, me: str | None) -> An
             | FindingRow.id.ilike(pattern)
             | FindingRow.fingerprint.ilike(pattern)
         )
+        # The dashboard shows a finding as "F-" plus the last six characters of its id.
+        short = _SHORT_ID.match(filters.q.strip())
+        if short:
+            condition = condition | FindingRow.id.ilike(f"%{short.group(1).lower()}")
+        query = query.where(condition)
     return query.order_by(FindingRow.severity_rank.desc(), FindingRow.path, FindingRow.line)
 
 

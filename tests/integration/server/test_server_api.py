@@ -415,6 +415,17 @@ def test_findings_search_matches_the_report_fingerprint(
     assert [item["id"] for item in found] == [first["id"]]
 
 
+def test_findings_search_matches_the_short_id_the_dashboard_shows(
+    server: tuple[TestClient, Any], scan: dict[str, Any], users: dict[str, dict[str, str]]
+) -> None:
+    client = server[0]
+    url = f"/api/v1/scans/{scan['id']}/findings"
+    first = client.get(url, headers=users["viewer"]).json()[0]
+    for shown in (f"F-{first['id'][-6:].upper()}", f"f-{first['id'][-6:].lower()}"):
+        found = client.get(url, params={"q": shown}, headers=users["viewer"]).json()
+        assert [item["id"] for item in found] == [first["id"]]
+
+
 def test_manifest_is_stable_while_the_reports_do_not_change(
     server: tuple[TestClient, Any], scan: dict[str, Any], users: dict[str, dict[str, str]]
 ) -> None:
