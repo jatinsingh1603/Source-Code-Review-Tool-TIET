@@ -16,6 +16,7 @@ import { ASK_TIMEOUT_MS, openTabChannel, signOutNotice } from "@/app/tab-sync";
 import type { User } from "@/api/types";
 import { minimumRoleFor, permissionsFor, roleLabel, type Permission } from "@/lib/permissions";
 import { loadPrefsFor } from "@/lib/prefs";
+import { routerPath } from "@/lib/env";
 import { Content, Empty, Skeleton } from "@/components/ui";
 
 interface Session {
@@ -63,7 +64,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         signOutNotice.elsewhere = true;
         setUser(null);
         qc.clear();
-        navigate("/login", { replace: true, state: { from: window.location.pathname } });
+        navigate("/login", { replace: true, state: { from: routerPath() } });
       }
     });
     tabs.current = channel;
@@ -77,9 +78,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     api.onUnauthorised(() => {
       setUser(null);
       qc.clear();
-      if (!window.location.pathname.startsWith("/login")) {
+      if (!routerPath().startsWith("/login")) {
         signOutNotice.expired = true;
-        navigate("/login", { replace: true, state: { from: window.location.pathname } });
+        navigate("/login", { replace: true, state: { from: routerPath() } });
       }
     });
     return () => api.onUnauthorised(null);

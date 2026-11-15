@@ -12,6 +12,7 @@ import { confidenceFraction, SEVERITY_LABEL, STATUS_LABEL } from "@/lib/format";
 import { engineLabel, findingLabel, LEVEL_NAME, riskLevel, scanLabel } from "@/lib/display";
 import { parseOwasp } from "@/lib/taxonomy";
 import { filterCsv } from "@/lib/csv";
+import { withBase } from "@/lib/env";
 import { FilterMenu } from "@/components/FilterMenu";
 import { GithubSyncDialog } from "@/components/GithubSyncDialog";
 import {
@@ -621,7 +622,7 @@ export default function FindingsPage() {
                       onClick={(e) => {
                         if ((e.target as HTMLElement).closest("a, button, input, label, select")) return;
                         if (window.getSelection()?.toString()) return;
-                        if (e.ctrlKey || e.metaKey) window.open(`/findings/${f.id}`, "_blank");
+                        if (e.ctrlKey || e.metaKey) window.open(withBase(`/findings/${f.id}`), "_blank");
                         else navigate(`/findings/${f.id}`);
                       }}
                     >

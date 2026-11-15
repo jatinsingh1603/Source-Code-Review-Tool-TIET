@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, useRouteError } from "react-rout
 import { AppShell } from "@/components/layout/AppShell";
 import { Content, ErrorBanner, ToastProvider } from "@/components/ui";
 import type { Permission } from "@/lib/permissions";
+import { BASE_PATH } from "@/lib/env";
 import { RequireAuth, RequirePermission, SessionProvider } from "./session";
 import { ProjectProvider } from "./project-context";
 import LoginPage from "@/pages/LoginPage";
@@ -132,6 +133,8 @@ export const router = createBrowserRouter(
     },
   ],
   {
+    // "/" for `codekavach serve`; the Pages demo lives under /Source-Code-Review-Tool-TIET/.
+    basename: BASE_PATH || "/",
     future: {
       v7_relativeSplatPath: true,
       v7_fetcherPersist: true,

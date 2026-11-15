@@ -4,10 +4,11 @@ import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 
 // The dashboard is served from "/" by `codekavach serve`; in development the
-// Vite server proxies the REST API to the local CodeKavach server.
+// Vite server proxies the REST API to the local CodeKavach server. The GitHub
+// Pages demo is built under a sub-path: VITE_BASE=/Source-Code-Review-Tool-TIET/.
 export default defineConfig({
   plugins: [react()],
-  base: "/",
+  base: process.env.VITE_BASE || "/",
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },

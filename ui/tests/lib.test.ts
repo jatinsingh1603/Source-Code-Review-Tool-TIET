@@ -12,6 +12,7 @@ import { loadPrefsFor } from "@/lib/prefs";
 import { ApiError } from "@/api/client";
 import { errorText } from "@/components/ui/Feedback";
 import { providerName } from "@/lib/domain";
+import { routerPath, withBase } from "@/lib/env";
 import type { ProviderInfo } from "@/api/types";
 
 describe("providerName", () => {
@@ -228,5 +229,21 @@ describe("auditTarget", () => {
     // a finding reads as on the findings page
     expect(auditTarget("find_01M7D2E2DZ6SJMS4ZE5NCNRKQX")).toBe("F-CNRKQX"); // pragma: allowlist secret
     expect(auditTarget(null)).toBe("—");
+  });
+});
+
+describe("routerPath (dashboard served under a sub-path)", () => {
+  const base = "/Source-Code-Review-Tool-TIET";
+  it("strips the Pages base so session checks see router paths", () => {
+    expect(routerPath(`${base}/login`, base)).toBe("/login");
+    expect(routerPath(`${base}/findings/F-1`, base)).toBe("/findings/F-1");
+    expect(routerPath(base, base)).toBe("/");
+  });
+  it("leaves paths alone when served from / or outside the base", () => {
+    expect(routerPath("/login", "")).toBe("/login");
+    expect(routerPath(`${base}x/a`, base)).toBe(`${base}x/a`);
+  });
+  it("adds no prefix to in-app URLs in the normal build", () => {
+    expect(withBase("/findings/F-1")).toBe("/findings/F-1");
   });
 });
