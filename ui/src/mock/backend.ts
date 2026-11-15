@@ -644,7 +644,9 @@ async function handle(method: string, path: string, opts: RequestOptions): Promi
     return delay(state.settings);
   }
 
-  if (a === "policy") {
+  // Only the policy document itself: /policy/explain, /policy/templates and /policy/validate
+  // fall through to a 404, which the pages treat as "not available" and work out themselves.
+  if (a === "policy" && !b) {
     if (method === "PUT") {
       requireRole("admin");
       const toml = String(body.toml ?? "");
