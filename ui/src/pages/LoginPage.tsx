@@ -132,16 +132,25 @@ export default function LoginPage() {
               <option>{HOSTED_DEMO ? "Sample organisation · in this browser" : `This server · ${host}`}</option>
             </select>
           </div>
-          <button
-            className="btn pri"
-            type="button"
-            style={{ width: "100%" }}
-            disabled
-            title="Single sign-on is not configured on this server. Use a local account."
-          >
-            <Icon name="lock-wide" />
-            Continue with SSO (SAML / OIDC)
-          </button>
+          <GoogleSignIn
+            onSignedIn={() => {
+              const to = nextRef.current && nextRef.current !== "/login" ? nextRef.current : "/";
+              navigate(to, { replace: true });
+            }}
+            onError={setError}
+            fallback={
+              <button
+                className="btn pri"
+                type="button"
+                style={{ width: "100%" }}
+                disabled
+                title="Single sign-on is not configured on this server. Use a local account."
+              >
+                <Icon name="lock-wide" />
+                Continue with SSO (SAML / OIDC)
+              </button>
+            }
+          />
           <div className="row" style={{ gap: 10 }}>
             <div className="hr" style={{ flex: 1 }} />
             <span className="xs faint">or local account</span>
@@ -204,13 +213,6 @@ export default function LoginPage() {
           <button className="btn" type="submit" style={{ width: "100%" }} disabled={busy} aria-busy={busy || undefined}>
             {busy ? "Signing in…" : "Sign in"}
           </button>
-          <GoogleSignIn
-            onSignedIn={() => {
-              const to = nextRef.current && nextRef.current !== "/login" ? nextRef.current : "/";
-              navigate(to, { replace: true });
-            }}
-            onError={setError}
-          />
           <div className="hr" />
           <button className="btn ghost" type="button" style={{ width: "100%" }} onClick={tryDemo}>
             <Icon name="play" />

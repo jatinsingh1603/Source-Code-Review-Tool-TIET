@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "@/api/client";
 import { endpoints } from "@/api/endpoints";
 import { useSession } from "@/app/session";
@@ -42,19 +42,21 @@ export function GoogleMark({ size = 16 }: { size?: number }) {
 interface Props {
   onSignedIn: () => void;
   onError: (message: string) => void;
+  /** Shown in the same place while Google sign-in is not available. */
+  fallback?: ReactNode;
 }
 
 /**
- * "Sign in with Google" for the login page. Renders nothing unless the server
- * says Google sign-in is configured, or (mock mode only) the build carries a
- * Google client ID for the hosted demo.
+ * "Sign in with Google" for the login page's single sign-on place. Renders the
+ * fallback unless the server says Google sign-in is configured, or (mock mode
+ * only) the build carries a Google client ID for the hosted demo.
  */
 export function GoogleSignIn(props: Props) {
-  if (api.isMock) return GOOGLE_CLIENT_ID ? <DemoGoogleSignIn {...props} /> : null;
-  return <ServerGoogleSignIn />;
+  if (api.isMock) return GOOGLE_CLIENT_ID ? <DemoGoogleSignIn {...props} /> : <>{props.fallback ?? null}</>;
+  return <ServerGoogleSignIn fallback={props.fallback} />;
 }
 
-function ServerGoogleSignIn() {
+function ServerGoogleSignIn({ fallback }: Pick<Props, "fallback">) {
   const [enabled, setEnabled] = useState(false);
   useEffect(() => {
     let live = true;
@@ -68,7 +70,7 @@ function ServerGoogleSignIn() {
       live = false;
     };
   }, []);
-  if (!enabled) return null;
+  if (!enabled) return <>{fallback ?? null}</>;
   return (
     <a
       className="btn"
@@ -102,7 +104,7 @@ function loadGsi(): Promise<GsiId> {
   });
 }
 
-function DemoGoogleSignIn({ onSignedIn, onError }: Props) {
+function DemoGoogleSignIn({ onSignedIn, onError, fallback }: Props) {
   const { loginWithGoogleDemo } = useSession();
   const holder = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
@@ -146,7 +148,7 @@ function DemoGoogleSignIn({ onSignedIn, onError }: Props) {
     };
   }, []);
 
-  if (failed) return null;
+  if (failed) return <>{fallback ?? null}</>;
   return (
     <div className="stack s6" data-testid="google-demo-sign-in">
       <div ref={holder} style={{ display: "flex", justifyContent: "center", minHeight: 44 }} />
