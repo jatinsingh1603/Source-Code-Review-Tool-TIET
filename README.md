@@ -14,10 +14,7 @@
 CodeKavach finds vulnerabilities in source code with deterministic engines, lets a large language model judge and explain each candidate, and produces an audit-style report. Between the two it puts a **privacy layer**: secrets and personal data are redacted, identifiers are pseudonymised, only a minimal slice of code is prepared, an **egress guard** blocks anything that still contains a known secret or business term, and an **egress ledger** records every byte that left, so the claim "this is what the provider saw" can be checked.
 
 <!-- Screenshots: add docs/img/dashboard-overview.png, dashboard-finding.png and dashboard-ledger.png
-     (taken from the running dashboard), then replace this comment with the image links. -->
-| Overview | Finding detail | Egress ledger |
-|----------|----------------|---------------|
-| _screenshot: docs/img/dashboard-overview.png_ | _screenshot: docs/img/dashboard-finding.png_ | _screenshot: docs/img/dashboard-ledger.png_ |
+     (taken from the running dashboard), then add the image links here. -->
 
 ## Quickstart
 
