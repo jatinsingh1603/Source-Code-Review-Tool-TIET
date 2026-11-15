@@ -25,6 +25,14 @@ x-codekavach-env: &codekavach-env
   # Secret value read at run time: passphrase that derives the pseudonym vault key. Empty: the
   # server generates one in the data volume (/data/vault.passphrase, mode 0600) and keeps it.
   CODEKAVACH_SERVER_VAULT_PASSPHRASE: ${CODEKAVACH_VAULT_PASSPHRASE:-}
+  # Optional Google sign-in (docs/guide/deploy.md). Off while the client ID or secret is empty.
+  # The client secret is a secret value read at run time; the other four are plain values.
+  CODEKAVACH_GOOGLE_CLIENT_ID: ${CODEKAVACH_GOOGLE_CLIENT_ID:-}
+  CODEKAVACH_GOOGLE_CLIENT_SECRET: ${CODEKAVACH_GOOGLE_CLIENT_SECRET:-}
+  CODEKAVACH_GOOGLE_ALLOWED_DOMAINS: ${CODEKAVACH_GOOGLE_ALLOWED_DOMAINS:-}
+  CODEKAVACH_GOOGLE_ALLOWED_EMAILS: ${CODEKAVACH_GOOGLE_ALLOWED_EMAILS:-}
+  CODEKAVACH_GOOGLE_DEFAULT_ROLE: ${CODEKAVACH_GOOGLE_DEFAULT_ROLE:-}
+  CODEKAVACH_PUBLIC_URL: ${CODEKAVACH_PUBLIC_URL:-}
   # The default provider, model and privacy level are chosen in the dashboard (Settings) and per
   # scan; nothing here selects a remote provider by itself.
 
