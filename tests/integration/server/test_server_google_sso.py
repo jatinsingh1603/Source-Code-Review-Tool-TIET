@@ -2,6 +2,7 @@
 
 import base64
 import json
+import logging
 import time
 from collections.abc import Callable, Iterator, Mapping
 from typing import Any
@@ -16,6 +17,7 @@ from fastapi.testclient import TestClient
 from codekavach.server.app import create_app
 from codekavach.server.auth import google
 from codekavach.server.config import ServerConfig
+from codekavach.server.middleware import ACCESS_LOGGER
 
 API = "/api/v1"
 CLIENT_ID = "test-client.apps.googleusercontent.com"
@@ -230,3 +232,20 @@ def test_existing_user_keeps_their_role(flow: Flow, tmp_path: Any) -> None:
     token = second.headers["location"].split("#sso_token=")[1]
     me = second.client.get(f"{API}/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert me.json()["role"] == "auditor"
+
+
+def test_the_callback_query_is_kept_out_of_the_access_log(
+    tmp_path: Any, caplog: pytest.LogCaptureFixture
+) -> None:
+    logger = logging.getLogger(ACCESS_LOGGER)
+    with (
+        TestClient(create_app(_config(tmp_path, _sso()))),
+        caplog.at_level(logging.INFO, logger=ACCESS_LOGGER),
+    ):
+        logger.info(
+            '%s - "%s %s HTTP/%s" %d',
+            "127.0.0.1:1", "GET", f"{API}/auth/google/callback?state=st-123&code=4/one-time",
+            "1.1", 302,
+        )  # fmt: skip
+    assert "one-time" not in caplog.text and "st-123" not in caplog.text
+    assert f"{API}/auth/google/callback?[redacted]" in caplog.text
