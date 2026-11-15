@@ -6,6 +6,7 @@ import { installMockBackend } from "@/mock/backend";
 async function signedIn(): Promise<ApiClient> {
   const client = new ApiClient(() => Promise.reject(new Error("mock mode must not fetch")), null);
   installMockBackend(client);
+  // The documented demo sign-in of the mock backend. pragma: allowlist nextline secret
   const { token } = await client.post<{ token: string }>("/auth/login", { username: "admin", password: "kavach-admin" });
   client.setToken(token);
   return client;
