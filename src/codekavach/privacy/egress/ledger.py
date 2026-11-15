@@ -15,10 +15,13 @@ Verification always reads ``chain.ndjson`` and the payload bodies; the index is 
 verdict. Directories are created 0o700 and files 0o600 (POSIX), through the helpers of E04-02.
 
 **What the chain proves, and what it does not.** Each entry's hash covers the entry and the hash of
-its predecessor, so a modification, insertion, deletion, reordering or truncation changes what a
-walk reads at a specific ``seq``. The chain is tamper-*evident*. It is not tamper-*proof*: a file
-truncated and rewritten from scratch by someone who can recompute every hash is not detected,
-because nothing outside this directory anchors the chain. External anchoring is future work.
+its predecessor, so a modification, insertion, deletion, reordering or cut inside a line changes
+what a walk reads at a specific ``seq``. The chain is tamper-*evident*. It is not tamper-*proof*:
+the hashes are unkeyed and nothing outside this directory anchors the head, so whole entries cut
+off the end, a deleted chain file, or a chain rewritten by someone who recomputes every hash all
+pass the walk. A cut at the end leaves payload files that no entry names, which
+``orphaned_payloads`` lists, unless those files are removed too. Keeping the head hash elsewhere
+(the report and the verification file print it) is the check; external anchoring is future work.
 
 **Crash safety.** An append writes the payload body first (atomic rename after fsync), then the
 chain line, fsyncs it, and only then returns. A crash before the chain line leaves an orphaned
@@ -796,6 +799,21 @@ class LedgerReader:
             pruned_seqs=tuple(sorted(pruned)),
             orphans=self._orphans(set(referencing)),
         )
+
+    def orphaned_payloads(self) -> tuple[str, ...]:
+        """Stored payload files that no chain entry names; no payload is read.
+
+        An interrupted append leaves one, and so does cutting whole entries off the end of the
+        chain, which the chain walk alone cannot see. Empty when an entry cannot be read: the
+        chain check reports that, and every later payload would otherwise look orphaned.
+        """
+        referenced: set[str] = set()
+        for _offset, raw, complete in self._lines():
+            record = _decode(raw) if complete else None
+            if record is None:
+                return ()
+            referenced.add(record.payload_hash)
+        return self._orphans(referenced)
 
     def _orphans(self, referenced: set[str]) -> tuple[str, ...]:
         if not self._payloads.is_dir():

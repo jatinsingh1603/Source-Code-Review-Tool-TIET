@@ -178,6 +178,17 @@ def chain_step(context: VerifyContext) -> StepResult:
     )
 
 
+def _orphaned_payloads(context: VerifyContext) -> tuple[str, ...]:
+    """Payload files no chain entry names; a reader that cannot tell reports none."""
+    lister = getattr(context.reader, "orphaned_payloads", None)
+    if lister is None:
+        return ()
+    try:
+        return tuple(lister())
+    except Exception:  # noqa: BLE001 - a hint only; the chain and payload checks give the verdict
+        return ()
+
+
 def payloads_step(context: VerifyContext) -> StepResult:
     """Every stored payload of a sent or blocked record must still match its hash."""
     mismatched: list[str] = []
@@ -198,6 +209,13 @@ def payloads_step(context: VerifyContext) -> StepResult:
     data = {"mismatched": mismatched, "missing": missing, "unreadable": unreadable}
     warnings = [("payload_missing", f"payload {h[:12]} is not stored") for h in missing]
     warnings += [("payload_unreadable", f"payload {h[:12]} cannot be read") for h in unreadable]
+    orphans = _orphaned_payloads(context)
+    if orphans:
+        notice = (
+            f"{len(orphans)} stored payload(s) are named by no ledger entry: an append was "
+            "interrupted, or entries were removed from the end of the chain"
+        )
+        warnings.append(("payload_orphaned", notice))
     summary = f"payloads: {checked} checked, {len(mismatched)} mismatches"
     if mismatched:
         return StepResult(

@@ -1,0 +1,1 @@
+`codekavach privacy ledger verify` warns (`payload_orphaned`) when stored payloads are named by no ledger entry, the trace left by whole entries cut off the end of the chain; the walk alone passes that cut because nothing anchors the head. The ledger module's description of what the chain proves now says so.

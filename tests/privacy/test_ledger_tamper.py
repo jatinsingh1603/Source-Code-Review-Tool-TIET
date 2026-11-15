@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+from codekavach.cli.ledger import VerifyContext, payloads_step
 from codekavach.core.models.canonical import sha256_hex
 from codekavach.core.models.egress import EgressRecord, TokenCounts
 from codekavach.core.models.enums import EgressOutcome, PrivacyLevel
@@ -209,3 +210,26 @@ def test_no_passing_report_for_any_chain_mutation(state: Path) -> None:
         write_lines(state, mutated)
         assert not chain_report(state).ok
         write_lines(state, original)
+
+
+def test_cutting_whole_entries_off_the_end_leaves_named_orphans(state: Path) -> None:
+    # The walk cannot see this cut (nothing anchors the head); the payload store can.
+    reader = open_reader(state)
+    assert reader.orphaned_payloads() == ()
+    assert payloads_step(VerifyContext(reader)).warnings == []
+
+    write_lines(state, lines_of(state)[:2])
+    reader = open_reader(state)
+    assert chain_report(state).ok
+    assert set(reader.orphaned_payloads()) == {sha256_hex(text_of(3)), sha256_hex(text_of(4))}
+    result = payloads_step(VerifyContext(reader))
+    assert result.ok
+    assert [code for code, _text in result.warnings] == ["payload_orphaned"]
+    assert "2 stored payload(s)" in result.warnings[0][1]
+
+
+def test_orphans_are_not_listed_when_an_entry_cannot_be_read(state: Path) -> None:
+    lines = lines_of(state)
+    lines[1] = b"not json\n"
+    write_lines(state, lines)
+    assert open_reader(state).orphaned_payloads() == ()
