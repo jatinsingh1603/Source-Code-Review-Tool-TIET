@@ -1,8 +1,11 @@
 """Adversarial model answers against the output defence: what a steered model might write."""
 
+from collections.abc import Callable
+
 import pytest
 
-from codekavach.llm.defence.output import validate_verdict
+from codekavach.llm.defence.injection import new_canary
+from codekavach.llm.defence.output import OutputRejected, check_text, validate_verdict
 from tests.unit.llm.test_review_intelligence import (
     ScriptedSession,
     reviewer,
@@ -45,3 +48,27 @@ def test_explain_and_remediate_answers_are_scrubbed_like_a_triage_answer() -> No
     assert merged.impact.startswith("Data is lost") and "Bind it" in merged.remediation
     for text in (merged.impact, merged.remediation):
         assert "evil.example" not in text and "<script" not in text and "<img" not in text
+
+
+@pytest.mark.parametrize(
+    "disguise",
+    [
+        str.lower,
+        " ".join,
+        lambda canary: canary.replace("-", " "),
+        lambda canary: canary.replace("-", "_").title(),
+        lambda canary: "`" + "`-`".join(canary.split("-")) + "`",
+    ],
+)
+def test_a_disguised_canary_in_the_answer_still_rejects_it(
+    disguise: Callable[[str], str],
+) -> None:
+    canary = new_canary()
+    with pytest.raises(OutputRejected, match="canary_in_output"):
+        validate_verdict(verdict(reasoning=f"As ordered: {disguise(canary)}."), canaries=[canary])
+
+
+def test_a_short_configured_canary_is_matched_exactly_only() -> None:
+    check_text("The scan found a bug in the parser.", canaries=("Bug-1",))
+    with pytest.raises(OutputRejected, match="canary_in_output"):
+        check_text("token Bug-1 here", canaries=("Bug-1",))

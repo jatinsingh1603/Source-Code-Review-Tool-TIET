@@ -29,6 +29,7 @@ _ACTIVE_HTML: Final = re.compile(
 _JS_URI: Final = re.compile(r"(?:javascript|data|vbscript):[^\s)\"']*", re.IGNORECASE)
 _SYMBOL: Final = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]{0,127}$")
 _SHINGLE_WORDS: Final = 9
+_MIN_SQUASHED: Final = 12  # shorter canaries are matched exactly only: no chance hits in prose
 
 
 class OutputRejected(ValueError):  # noqa: N818 - a verdict is rejected, not an error in itself
@@ -51,6 +52,11 @@ class OutputReport:
     def clean(self) -> bool:
         """True when the answer needed no change."""
         return not (self.cwes_dropped or self.markup_removed or self.contexts_dropped)
+
+
+def _squash(text: str) -> str:
+    """``text`` in lower case with everything but letters and digits removed."""
+    return re.sub(r"[^a-z0-9]", "", text.lower())
 
 
 def _words(text: str) -> list[str]:
@@ -110,7 +116,12 @@ def check_text(
     Raises:
         OutputRejected: one of the checks fired.
     """
-    if any(canary and canary in text for canary in canaries):
+    canary_list = [canary for canary in canaries if canary]
+    if any(canary in text for canary in canary_list):
+        raise OutputRejected("canary_in_output")
+    # A steered model may be told to disguise the token: other case, spaces, a changed separator.
+    squashed = _squash(text) if canary_list else ""
+    if any(len(key) >= _MIN_SQUASHED and key in squashed for key in map(_squash, canary_list)):
         raise OutputRejected("canary_in_output")
     if "=====CK-" in text:
         raise OutputRejected("delimiter_in_output")
