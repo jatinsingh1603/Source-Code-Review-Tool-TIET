@@ -14,7 +14,7 @@ from typing import Any
 
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from codekavach.server import audit
@@ -83,7 +83,8 @@ def _sign_in(
     exchange: google.Exchange = getattr(request.app.state, "google_exchange", google.exchange_code)
     tokens = exchange(config, code, pending.verifier, google.redirect_uri(base))
     identity = google.verify_id_token(config, tokens, pending.nonce)
-    user = session.scalars(select(User).where(User.username == identity.email)).first()
+    # User names are unique without regard to case; the address from Google is lower case.
+    user = session.scalars(select(User).where(func.lower(User.username) == identity.email)).first()
     client = client_of(request)
     if user is None:
         # No local password: the stored hash is of a random value nobody ever saw.

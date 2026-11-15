@@ -249,3 +249,34 @@ def test_the_callback_query_is_kept_out_of_the_access_log(
         )  # fmt: skip
     assert "one-time" not in caplog.text and "st-123" not in caplog.text
     assert f"{API}/auth/google/callback?[redacted]" in caplog.text
+
+
+def _admin_headers(client: TestClient) -> dict[str, str]:
+    login = client.post(f"{API}/auth/login", json={"username": "admin", "password": "kavach-admin"})
+    return {"Authorization": f"Bearer {login.json()['token']}"}
+
+
+def test_a_local_account_in_another_case_is_reused_not_duplicated(
+    flow: Flow, tmp_path: Any
+) -> None:
+    with TestClient(create_app(_config(tmp_path, _sso()))) as client:
+        headers = _admin_headers(client)
+        created = client.post(
+            f"{API}/users",
+            json={
+                "username": "Asha@Example.edu",
+                "password": "a-long-local-pass-1",  # pragma: allowlist secret
+                "role": "developer",
+            },
+            headers=headers,
+        )
+        assert created.status_code in {200, 201}, created.text
+    response = flow()
+    token = response.headers["location"].split("#sso_token=")[1]
+    me = response.client.get(f"{API}/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert me.json()["username"] == "Asha@Example.edu"
+    assert me.json()["role"] == "developer"
+    users = response.client.get(f"{API}/users", headers=_admin_headers(response.client)).json()
+    assert [u["username"] for u in users if u["username"].lower() == "asha@example.edu"] == [
+        "Asha@Example.edu"
+    ]
