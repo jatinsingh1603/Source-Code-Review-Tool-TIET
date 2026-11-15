@@ -695,6 +695,6 @@ function inviteErrors(form: { username: string; email: string; password: string 
   if (!/^[a-z0-9._-]{3,}$/i.test(form.username)) errors.username = "At least 3 letters, digits, dots, dashes or underscores.";
   const email = form.email.trim();
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) errors.email = "Enter a full address, for example name@thapar.edu, or leave it empty.";
-  if (form.password.length < 10) errors.password = "At least 10 characters.";
+  if (form.password.length < 10) errors.password = "At least 10 characters."; // pragma: allowlist secret
   return errors;
 }

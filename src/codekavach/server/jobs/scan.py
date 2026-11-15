@@ -61,7 +61,7 @@ STAGE_LABELS: Final = {
     "intake": "Preparing source",
     "ingest": "Ingesting files",
     "parse": "Parsing code",
-    "analyse-secrets": "Scanning for secrets",
+    "analyse-secrets": "Scanning for secrets",  # pragma: allowlist secret
     "analyse-iac": "Checking infrastructure as code",
     "analyse-sca": "Checking dependencies against OSV",
     "analyse-engines": "Running external engines",

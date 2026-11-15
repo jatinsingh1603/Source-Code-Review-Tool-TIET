@@ -226,7 +226,7 @@ describe("auditTarget", () => {
     expect(auditTarget("scn_38e61cad98c75c52f8ab.pdf")).toBe("SCN-38E61C.pdf");
     expect(auditTarget("prj_kavachbank_sample")).toBe("prj_kavachbank_sample");
     // a finding reads as on the findings page
-    expect(auditTarget("find_01M7D2E2DZ6SJMS4ZE5NCNRKQX")).toBe("F-CNRKQX");
+    expect(auditTarget("find_01M7D2E2DZ6SJMS4ZE5NCNRKQX")).toBe("F-CNRKQX"); // pragma: allowlist secret
     expect(auditTarget(null)).toBe("—");
   });
 });
