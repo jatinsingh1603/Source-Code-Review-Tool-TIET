@@ -33,16 +33,18 @@ DOCS_PATHS: Final = ("/api/docs", "/api/redoc", "/api/openapi.json")
 
 
 _TOKEN_PARAM: Final = re.compile(r"(?i)(access_token=)[^&\s\"]*")
+# The Google sign-in callback carries the one-time authorisation code and the state.
+_SSO_CALLBACK: Final = re.compile(r"(?i)(/auth/google/callback\?)[^\s\"]*")
 ACCESS_LOGGER: Final = "uvicorn.access"
 
 
 def redact_token(text: str) -> str:
-    """``text`` with the value of any ``access_token`` query parameter replaced."""
-    return _TOKEN_PARAM.sub(r"\1[redacted]", text)
+    """``text`` without ``access_token`` values and without a sign-in callback's query."""
+    return _SSO_CALLBACK.sub(r"\1[redacted]", _TOKEN_PARAM.sub(r"\1[redacted]", text))
 
 
 class TokenRedactor(logging.Filter):
-    """Keeps bearer tokens passed as ``?access_token=`` out of the access log."""
+    """Keeps ``?access_token=`` bearer tokens and sign-in callback queries out of the access log."""
 
     def filter(self, record: logging.LogRecord) -> bool:
         """Redact the record in place; never drops it."""
