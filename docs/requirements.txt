@@ -1,2 +1,2 @@
 # Documentation site: pip install -r docs/requirements.txt && mkdocs serve
-mkdocs-material==9.5.50
+mkdocs-material==9.8.1
